@@ -5,3 +5,8 @@
 *~
 .idea/
 .vscode/
+
+# Auto Loop
+auto-loop-state.md
+.auto-loop-off
+auto-loop-log.md
