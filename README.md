@@ -2,7 +2,7 @@
   <h1 align="center">🤖 Agent Interview 100</h1>
   <p align="center"><strong>AI Agent 面试知识库 — 100 篇精选面试题，助你拿下 Agent 方向 Offer</strong></p>
   <p align="center">
-    <img src="https://img.shields.io/badge/题目数量-100-blue?style=flat-square" />
+    <img src="https://img.shields.io/badge/题目数量-108-blue?style=flat-square" />
     <img src="https://img.shields.io/badge/主题模块-11-green?style=flat-square" />
     <img src="https://img.shields.io/badge/难度覆盖-基础 · 中级 · 高级-orange?style=flat-square" />
     <img src="https://img.shields.io/badge/语言-中文-red?style=flat-square" />
@@ -14,7 +14,7 @@
 
 ## ✨ 项目亮点
 
-- 📚 **100 篇精选面试题** — 覆盖 AI Agent 开发的方方面面，从基础概念到生产实践，包含丰富的场景故障题
+- 📚 **108 篇精选面试题** — 覆盖 AI Agent 开发的方方面面，从基础概念到生产实践，包含场景故障题、系统设计题、代码 Review 题、量化计算题、面试追问链等多种题型
 - 🏗️ **11 大主题模块** — 系统化组织知识体系，循序渐进
 - 🎯 **三级难度分布** — 基础 (30%) · 中级 (50%) · 高级 (20%)，适配不同阶段候选人
 - 📝 **统一四段式结构** — 每篇文章均包含：简短回答 → 详细解析 → 常见误区/面试追问 → 参考资料
@@ -25,7 +25,7 @@
 
 ## 📖 目录结构
 
-### 一、🏛️ Agent 架构 (`01-agent-architecture/`) — 10 题
+### 一、🏛️ Agent 架构 (`01-agent-architecture/`) — 12 题
 
 Agent 系统的核心设计理念，从基本概念到生产级架构设计。
 
@@ -41,6 +41,8 @@ Agent 系统的核心设计理念，从基本概念到生产级架构设计。
 | 008 | [如何设计 Agent 的错误恢复与重试机制？](01-agent-architecture/008-error-recovery-retry.md) |
 | 009 | [如何实现 Agent 的自我反思（Self-Reflection）和自我纠正？](01-agent-architecture/009-self-reflection-correction.md) |
 | 010 | [设计一个生产级 Agent 系统：从单轮对话到多步任务执行](01-agent-architecture/010-production-agent-system-design.md) |
+| 106 | [🆕 系统设计题：设计一个日均 10 万对话的智能客服 Agent 系统](01-agent-architecture/106-agent-system-design-customer-service.md) |
+| 108 | [🆕 面试追问链：从「什么是 Agent」到系统设计的 10 层递进追问](01-agent-architecture/108-interview-deep-dive-chain.md) |
 
 ### 二、🔍 RAG (`02-rag/`) — 10 题
 
@@ -76,7 +78,7 @@ LLM 与外部工具的交互，从 Function Calling 到安全管控。
 | 029 | [如何实现动态工具发现和注册？](03-tool-use/029-dynamic-tool-discovery.md) |
 | 030 | [工具使用的安全性：防止注入攻击和越权操作](03-tool-use/030-tool-use-security.md) |
 
-### 四、🤝 多 Agent (`04-multi-agent/`) — 9 题
+### 四、🤝 多 Agent (`04-multi-agent/`) — 10 题
 
 多 Agent 协作系统的设计、编排、调试与场景故障处理。
 
@@ -91,6 +93,7 @@ LLM 与外部工具的交互，从 Function Calling 到安全管控。
 | 037 | [如何实现 Agent 间的 Handoff（任务交接）？](04-multi-agent/037-agent-handoff.md) |
 | 038 | [多 Agent 系统中的涌现行为与可控性](04-multi-agent/038-emergent-behavior.md) |
 | 039 | [如何调试和监控多 Agent 系统？](04-multi-agent/039-debugging-monitoring-multi-agent.md) |
+| 101 | [🆕 A2A（Agent-to-Agent）协议是什么？它与 MCP 有何区别？](04-multi-agent/101-a2a-protocol.md) |
 
 ### 五、🧠 记忆与状态 (`05-memory-and-state/`) — 9 题
 
@@ -108,7 +111,7 @@ Agent 的记忆管理，从上下文窗口到知识图谱。
 | 047 | [设计 Agent 的知识图谱记忆系统](05-memory-and-state/047-knowledge-graph-memory.md) |
 | 048 | [记忆的遗忘与更新机制：如何处理过时信息？](05-memory-and-state/048-memory-forgetting-updating.md) |
 
-### 六、🧩 规划与推理 (`06-planning-and-reasoning/`) — 10 题
+### 六、🧩 规划与推理 (`06-planning-and-reasoning/`) — 11 题
 
 LLM 的推理能力增强与任务规划策略。
 
@@ -124,8 +127,9 @@ LLM 的推理能力增强与任务规划策略。
 | 056 | [Monte Carlo Tree Search 在 Agent 规划中的应用](06-planning-and-reasoning/056-mcts-in-agent-planning.md) |
 | 057 | [如何评估 Agent 的推理质量？](06-planning-and-reasoning/057-reasoning-quality-evaluation.md) |
 | 058 | [因果推理在 Agent 决策中的作用](06-planning-and-reasoning/058-causal-reasoning.md) |
+| 103 | [🆕 Agentic-RL 是什么？如何用 GRPO 训练 Agent 的决策能力？](06-planning-and-reasoning/103-agentic-rl-grpo.md) |
 
-### 七、✍️ 提示工程 (`07-prompt-engineering/`) — 10 题
+### 七、✍️ 提示工程 (`07-prompt-engineering/`) — 11 题
 
 Prompt 设计、优化与管理的最佳实践。
 
@@ -141,8 +145,9 @@ Prompt 设计、优化与管理的最佳实践。
 | 066 | [Prompt 版本管理与 A/B 测试](07-prompt-engineering/066-prompt-versioning-ab-testing.md) |
 | 067 | [Meta-Prompting：让 LLM 自动生成和优化 Prompt](07-prompt-engineering/067-meta-prompting.md) |
 | 068 | [跨模型 Prompt 迁移：如何编写模型无关的 Prompt？](07-prompt-engineering/068-cross-model-prompt-portability.md) |
+| 102 | [🆕 什么是 Context Engineering？它与 Prompt Engineering 有何本质区别？](07-prompt-engineering/102-context-engineering.md) |
 
-### 八、📊 评估 (`08-evaluation/`) — 9 题
+### 八、📊 评估 (`08-evaluation/`) — 10 题
 
 Agent 系统的评估方法、基准测试、可观测性与 RAG 评估指标。
 
@@ -157,6 +162,7 @@ Agent 系统的评估方法、基准测试、可观测性与 RAG 评估指标。
 | 075 | [评估工具对比：Ragas、LangSmith、Braintrust](08-evaluation/075-evaluation-tools-comparison.md) |
 | 076 | [静态 Benchmark 的陷阱：为什么 95% 准确率在生产中会失效？](08-evaluation/076-static-benchmark-trap.md) |
 | 077 | [如何构建持续评估（Continuous Evaluation）流水线？](08-evaluation/077-continuous-evaluation-pipeline.md) |
+| 105 | [🆕 量化计算题：手算 RAG 评估指标（Precision@K、MRR、NDCG、Context Recall）](08-evaluation/105-rag-metrics-calculation.md) |
 
 ### 九、🛡️ 安全与对齐 (`09-safety-and-alignment/`) — 8 题
 
@@ -173,7 +179,7 @@ Agent 系统的安全风险防控与对齐策略。
 | 084 | [Agent 对齐问题：如何确保 Agent 行为符合人类意图？](09-safety-and-alignment/084-agent-alignment.md) |
 | 085 | [Red Teaming：如何对 Agent 系统进行对抗测试？](09-safety-and-alignment/085-red-teaming-agents.md) |
 
-### 十、🚀 生产部署 (`10-production-and-deployment/`) — 10 题
+### 十、🚀 生产部署 (`10-production-and-deployment/`) — 12 题
 
 从开发到生产的全链路工程实践。
 
@@ -189,6 +195,8 @@ Agent 系统的安全风险防控与对齐策略。
 | 093 | [如何实现 Agent 的灰度发布和 A/B 测试？](10-production-and-deployment/093-canary-ab-testing.md) |
 | 094 | [高并发场景下的 Agent 系统扩展策略](10-production-and-deployment/094-scaling-strategies.md) |
 | 095 | [Agent 系统的灾难恢复与高可用设计](10-production-and-deployment/095-disaster-recovery-ha.md) |
+| 104 | [🆕 场景题：你的 Agent 在生产环境出了故障，如何系统性排查和修复？](10-production-and-deployment/104-agent-production-troubleshooting.md) |
+| 107 | [🆕 代码 Review 题：找出这段 Agent 代码中的设计问题并修复](10-production-and-deployment/107-agent-code-review.md) |
 
 ### 十一、🧰 框架选型 (`11-frameworks/`) — 5 题
 
@@ -206,18 +214,13 @@ Agent 系统的安全风险防控与对齐策略。
 
 ## 📋 使用说明
 
-### 🎯 面试准备路线
-
-1. **入门阶段**（1-2 周）：先通读所有「基础」难度题目（30 篇），建立知识全景
-2. **进阶阶段**（2-3 周）：深入「中级」题目（50 篇），掌握核心技术细节
-3. **冲刺阶段**（1-2 周）：攻克「高级」题目（20 篇），构建系统设计能力
-
 ### 💡 推荐学习方式
 
 - **先答后看**：先尝试自己回答问题，再对照文章查漏补缺
 - **关注追问**：每篇文章末尾的「面试追问」是高频考点，务必准备
-- **动手实践**：文章中的代码示例建议实际运行，加深理解
+- **动手实践**：文章中的代码示例建议实际运行，配合上方「实践项目推荐」动手练习
 - **横向关联**：注意不同模块间的知识联系（如 RAG + 评估、安全 + 工具使用）
+- **新题型优先**：场景题、系统设计题、代码 Review 题更接近真实面试，建议重点准备
 
 ---
 
@@ -225,17 +228,128 @@ Agent 系统的安全风险防控与对齐策略。
 
 | 模块 | 题数 | 简介 |
 |------|------|------|
-| 🏛️ Agent 架构 | 10 | Agent 的定义、核心组件、架构模式（ReAct/Plan-and-Execute/LATS/Proactive）、循环设计与生产级系统设计 |
-| 🔍 RAG | 10 | 检索增强生成全流程：文档分块、向量数据库、混合检索、Re-ranking、Agentic RAG、评估指标（Context Relevancy/MRR/MAP） |
+| 🏛️ Agent 架构 | 12 | Agent 定义、架构模式、循环设计、生产级系统设计、**系统设计题**、**面试追问链** |
+| 🔍 RAG | 10 | 检索增强生成全流程：文档分块、向量数据库、混合检索、Re-ranking、Agentic RAG、评估指标 |
 | 🔧 工具使用 | 10 | Function Calling、Tool Schema、MCP 协议、工具安全与动态发现 |
-| 🤝 多 Agent | 9 | 多 Agent 通信与编排模式、任务协调、Handoff、涌现行为、调试与场景故障处理 |
+| 🤝 多 Agent | 10 | 多 Agent 通信与编排模式、任务协调、Handoff、涌现行为、**A2A 协议** |
 | 🧠 记忆与状态 | 9 | 短期/长期/工作记忆、上下文窗口管理、持久化记忆、知识图谱记忆 |
-| 🧩 规划与推理 | 10 | CoT/ToT 推理、任务分解、动态重规划、MCTS、因果推理 |
-| ✍️ 提示工程 | 10 | System Prompt 设计、结构化输出、Prompt Injection 防御、DSPy、Meta-Prompting |
-| 📊 评估 | 9 | 自动/人工评估、LLM-as-Judge、Benchmark 设计、可观测性、持续评估、RAG 评估指标（Context Relevancy/MRR/MAP） |
+| 🧩 规划与推理 | 11 | CoT/ToT 推理、任务分解、动态重规划、MCTS、因果推理、**Agentic-RL/GRPO** |
+| ✍️ 提示工程 | 11 | System Prompt 设计、结构化输出、Prompt Injection 防御、DSPy、**Context Engineering** |
+| 📊 评估 | 10 | 自动/人工评估、LLM-as-Judge、Benchmark 设计、可观测性、**RAG 指标量化计算** |
 | 🛡️ 安全与对齐 | 8 | 安全风险、Guardrails、权限最小化、幻觉检测、Red Teaming |
-| 🚀 生产部署 | 10 | LLMOps、成本优化、模型路由、延迟优化、灰度发布、高可用设计 |
+| 🚀 生产部署 | 12 | LLMOps、成本优化、模型路由、延迟优化、**场景故障排查**、**代码 Review** |
 | 🧰 框架选型 | 5 | LangChain/LlamaIndex/LangGraph 对比、框架 vs 自研决策、可扩展架构设计 |
+
+---
+
+## 🆕 新题型说明
+
+本项目在传统问答题的基础上，引入了 **5 种创新题型**，模拟真实面试的多种考察方式：
+
+| 题型 | 代表题目 | 考察重点 |
+|------|---------|---------|
+| 🔥 **场景故障排查** | [#104](10-production-and-deployment/104-agent-production-troubleshooting.md) | 给出生产故障场景，要求排查根因并修复。考察工程经验和系统性思维 |
+| 📐 **量化计算** | [#105](08-evaluation/105-rag-metrics-calculation.md) | 手算 Precision@K、MRR、NDCG 等指标。考察对评估体系的深度理解 |
+| 🏗️ **系统设计** | [#106](01-agent-architecture/106-agent-system-design-customer-service.md) | 从零设计完整的 Agent 系统。考察架构能力和工程全局观 |
+| 🔍 **代码 Review** | [#107](10-production-and-deployment/107-agent-code-review.md) | 审查有问题的 Agent 代码并修复。考察代码质量意识和最佳实践 |
+| 🔗 **面试追问链** | [#108](01-agent-architecture/108-interview-deep-dive-chain.md) | 10 层递进追问，从基础到系统设计。模拟真实面试的深度挖掘过程 |
+
+---
+
+## 🗺️ 推荐学习路径
+
+### 按岗位推荐
+
+#### 🛠️ Agent 应用工程师（偏工程实现）
+
+> 核心能力：能独立开发和部署 Agent 应用
+
+```
+Week 1: 基础概念
+001 → 002 → 003 → 021 → 022 → 040 → 041
+
+Week 2: 核心技能
+006 → 027 → 028 → 062 → 063 → 044 → 059
+
+Week 3: 生产实践
+086 → 087 → 090 → 092 → 026 → 104（场景题）→ 107（代码 Review）
+
+Week 4: 进阶提升
+008 → 009 → 037 → 074 → 094 → 095 → 108（追问链）
+```
+
+#### 🔍 RAG 工程师（偏检索增强）
+
+> 核心能力：设计和优化 RAG 系统
+
+```
+Week 1: RAG 基础
+011 → 012 → 013 → 014 → 015
+
+Week 2: RAG 进阶
+016 → 017 → 018 → 019 → 061
+
+Week 3: RAG 评估与优化
+020 → 069 → 071 → 075 → 105（量化计算题）
+
+Week 4: 生产化
+076 → 077 → 090 → 088 → 102（Context Engineering）
+```
+
+#### 🏗️ AI 架构师（偏系统设计）
+
+> 核心能力：设计大规模 Agent 系统架构
+
+```
+Week 1: 架构基础
+001 → 004 → 005 → 007 → 010
+
+Week 2: 多 Agent 与编排
+031 → 033 → 034 → 036 → 037 → 101（A2A 协议）
+
+Week 3: 生产架构
+087 → 089 → 093 → 094 → 095 → 106（系统设计题）
+
+Week 4: 前沿技术
+055 → 103（Agentic-RL）→ 098 → 100 → 108（追问链）
+```
+
+#### 🛡️ AI 安全工程师（偏安全对齐）
+
+> 核心能力：保障 Agent 系统的安全性
+
+```
+Week 1-2: 安全基础
+078 → 079 → 080 → 081 → 082 → 083 → 084 → 085
+
+Week 3: 安全实践
+030 → 064 → 024 → 104（场景题 - 含危险操作场景）
+
+Week 4: 评估与监控
+070 → 073 → 074 → 076 → 092 → 107（代码 Review - 含安全审查）
+```
+
+### 按难度推荐
+
+- **入门阶段**（1-2 周）：先通读所有「基础」难度题目（30 篇），建立知识全景
+- **进阶阶段**（2-3 周）：深入「中级」题目（54 篇，含新增），掌握核心技术细节
+- **冲刺阶段**（1-2 周）：攻克「高级」题目（24 篇，含新增），构建系统设计能力
+
+---
+
+## 🔨 实践项目推荐
+
+配合面试题学习，建议动手实践以下 mini-project：
+
+| 项目 | 描述 | 涉及面试题 |
+|------|------|-----------|
+| **tiny-agent-loop** | 从零实现一个最小 Agent 循环（50 行 Python），包含 Tool Calling、循环终止、错误处理 | #001 #006 #008 #021 |
+| **tiny-rag** | 搭建简单 RAG 系统，支持文档分块、向量检索、Re-ranking | #011 #012 #013 #016 #017 |
+| **tiny-multi-agent** | 实现两个 Agent 的协作对话（Router + Worker 模式），体验 Handoff | #031 #033 #037 #101 |
+| **tiny-eval** | 用 Ragas 框架评估你的 RAG 系统，手算并验证评估指标 | #020 #075 #105 |
+| **tiny-mcp-server** | 实现一个 MCP Server，让 Agent 调用自定义工具 | #027 #029 #024 |
+
+> 💡 参考项目：[wdndev/tiny-rag](https://github.com/wdndev/llm_interview_note)、[datawhalechina/hello-agents](https://github.com/datawhalechina/hello-agents)
 
 ---
 
