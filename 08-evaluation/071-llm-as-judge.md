@@ -73,8 +73,27 @@ known_biases = {
         "现象": "提供参考答案时 Judge 被参考答案锚定",
         "缓解": "不提供参考答案做 reference-free 评估",
     },
+    "修辞偏差 (Rhetoric Bias)": {
+        "现象": "内容不变、只改修辞表达即可系统性抬高 Judge 打分（可被对手主动利用）",
+        "缓解": "对同一内容做多版修辞改写做稳健性测试；Rubric 锚定可核验的实质断言而非表达力",
+        "出处": "How Can Rhetoric Reward-Hack AI Reviewers? arXiv:2608.08975（2026-08-14）",
+    },
 }
 ```
+
+**关于修辞偏差的补充说明。** 这一条与前面几条的性质不同，值得单独展开。arXiv:2608.08975《How Can Rhetoric Reward-Hack AI Reviewers?》（2026-08-14 登上 HuggingFace Daily Papers，48 upvote）用 4200 篇改写稿（源自 120 篇 ICLR 2026 投稿）做实验，**该文报告**：在科学内容完全不变的前提下，纯修辞维度的改写可以系统性地操纵 AI 审稿的打分。
+
+差别在攻击者的位置：
+
+| | 位置 / 冗长 / 格式偏差 | 修辞偏差 |
+|---|---|---|
+| 层次 | **格式层**——排序、长度、排版这类表层特征 | **修辞层**——论证语气、确定性措辞、框架叙述 |
+| 性质 | 被动干扰，方向大体固定，接近**随机噪声** | 主动攻击，攻击者可**定向优化**（reward hacking，即针对评分机制本身刷分而非真正提升质量） |
+| 缓解 | 交换位置、统一格式等**机械手段**基本可消除 | 机械手段无效——改写本身合法合规，没有可对齐的「正确格式」 |
+
+含义是：**只要打分会带来收益（论文录用、模型排行榜位次、RLAIF 奖励信号），Judge 面对的就不是随机噪声，而是有动机的对手。**据其实验，被评估方无需改动任何实质内容即可拿到更高分，这直接威胁到把 LLM Judge 用作奖励模型或准入门槛的场景。
+
+需要说明的是，这是社区的单次实验结果，截至本文更新时尚未见独立复现，实际影响幅度和跨 Judge 模型的普适性仍待验证——引用时应作为「需要防范的风险面」而非已确立的定量结论。
 
 ### 构建可靠的 LLM Judge 系统
 
@@ -192,6 +211,8 @@ class AgentJudge:
 
 4. **追问："LLM Judge 的成本如何控制？"** — (1) 对大规模评估采样而非全量评估；(2) 先用便宜模型做初筛，只对边界案例用强 Judge；(3) 缓存相同输入的评估结果。通常 LLM Judge 成本是人工评估的 1/10。
 
+5. **追问："缓解了位置偏差和冗长偏差，Judge 就可信了吗？"** — 不够。位置/冗长/格式属于**格式层**的被动干扰，交换位置、统一排版这类机械手段基本可以消除；但 arXiv:2608.08975（2026-08-14）指出还存在**修辞层**的主动攻击面——**该文报告**用 4200 篇改写稿（源自 120 篇 ICLR 2026 投稿）验证，在科学内容完全不变的前提下，纯修辞改写可以系统性操纵 AI 审稿打分。区别在于前者接近随机噪声、可用固定流程抵消，后者是有动机的对手针对评分机制做的定向优化（reward hacking），改写本身合法合规，没有可对齐的「正确格式」可言。**实践含义**：凡是打分会带来实际收益的场景（排行榜、准入门槛、RLAIF 奖励信号），都必须假设被评估方会针对 Judge 优化，评估设计要包含对抗性改写的稳健性测试，并保留人工抽检。**需注意**该结论来自社区单次实验、尚未见独立复现，应作为风险面对待而非定量事实。
+
 ## 参考资料
 
 - [LLM-as-a-Judge Simply Explained (Confident AI)](https://www.confident-ai.com/blog/why-llm-as-a-judge-is-the-best-llm-evaluation-method)
@@ -199,3 +220,4 @@ class AgentJudge:
 - [Comprehensive Guide to LLM-as-a-Judge Evaluation (Galileo AI)](https://galileo.ai/blog/llm-as-a-judge-guide-evaluation)
 - [The Rise of Agent-as-a-Judge Evaluation for LLMs (arXiv)](https://arxiv.org/html/2508.02994v1)
 - [LLM As a Judge: Tutorial and Best Practices (Patronus AI)](https://www.patronus.ai/llm-testing/llm-as-a-judge)
+- [How Can Rhetoric Reward-Hack AI Reviewers? (arXiv:2608.08975，2026-08-14；社区单次实验，未见独立复现)](https://arxiv.org/abs/2608.08975)

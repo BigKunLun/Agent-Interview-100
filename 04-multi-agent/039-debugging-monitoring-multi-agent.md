@@ -218,6 +218,53 @@ class TraceReplayer:
 | Maxim AI | SaaS | 多 Agent 专项 | Agent 交互分析 |
 | Datadog LLM | SaaS | 已有 Datadog 的团队 | 与 APM 统一监控 |
 
+### 落地信号：子 Agent 嵌套的可观测性被补齐（Agent SDK，2026-08）
+
+前面的 Trace/Span 模型有个长期的实践缺口：**子 Agent 内部是黑箱**。主 Agent 派生一个子 Agent 去干活，trace 树上通常只留下一个"派生了子任务"的节点和最终返回值——中间它想了什么、跑到第几层、是前台等着还是被扔到后台，都看不到。多 Agent 排障最难的恰恰就是这一段。
+
+2026-08 的 Claude Agent SDK 从 SDK 层把这几处补上了，四条改动正好对应四类此前的盲区：
+
+**1. 嵌套深度与后台态可见（TypeScript v0.3.238，2026-08-20）**
+
+`task_started` 事件新增两个字段：
+
+- `spawn_depth`——子 Agent 的嵌套层数。此前 trace 树里只能看到"有子任务"，看不出它是主 Agent 直接派生的，还是子 Agent 又派生的孙 Agent。递归派生失控（层层下钻停不下来）在这之前只能靠总耗时反推。
+- `is_backgrounded`——该任务是否被放到后台执行。后台任务的完成时机和主流程解耦，此前在 trace 里表现为"一个节点开始了但迟迟不结束"，无法区分是卡住了还是本来就是异步的。后台 Bash 任务同样带这个字段。
+
+**2. 拒绝有了明确终态（TypeScript v0.3.238）**
+
+`command_lifecycle` 新增终态 `refused`：跨会话的 peer 消息（会话之间互发的消息）被接收侧策略拒绝时，明确上报一条 `refused`，而不是静默地什么帧都不产生。这是可观测性里最难查的一类问题——**没有信号本身不构成信号**，看到的现象只是"消息发了，对面没反应"，无从判断是没送到、还是送到了被拒。有了显式终态，这条链路在 trace 上不再断掉。
+
+**3. 子 Agent 的文本流可转发进主流（Python v0.2.140，2026-08-18）**
+
+新增 `forward_subagent_text` 选项，把子 Agent 的 text / thinking block 作为消息转发进主消息流（对齐 TypeScript 侧的 `forwardSubagentText`）。子 Agent 的推理过程不再只存在于它自己的上下文里——这正是本文"Agent 决策日志"技巧想要的原料，现在由 SDK 直接供给，不必自己在子 Agent 里埋点。
+
+**4. 终态错误结构化（Python v0.2.140）**
+
+新增 `ResultError` 异常。CLI 以错误终态退出时，不再抛一个裸的"exit code 1"，而是抛出带结构化载荷的异常：
+
+```python
+# 此前：只能拿到 exit code 1，失败原因靠 stderr 字符串匹配
+# 现在：ResultError 携带结构化字段
+#   subtype            —— 失败的类别
+#   errors             —— 具体错误列表
+#   api_error_status   —— 上游 API 的错误状态
+#   terminal_reason    —— 终止原因
+#   session_id         —— 出错的会话，可直接回查该会话的 trace
+
+try:
+    result = await client.query(...)
+except ResultError as e:
+    if e.subtype == ...:      # 按失败原因分支，而非 grep 报错文本
+        ...
+```
+
+意义有两层：**排障**上，调用方可以按失败原因分支处理，字符串匹配这种一升级就碎的写法可以退休；**可观测性**上，`session_id` 让一次失败能直接关联回具体会话的 trace，不必再靠时间戳凑。
+
+把四条放回本文主线：`spawn_depth` + 后台态补上了 trace 树里的**结构信息**（这个节点在哪层、是不是异步的），文本转发补上了**节点内部的过程**，`refused` 和 `ResultError` 补上了**失败路径的可读终态**。此前 trace 树里那个只有出入参、中间全黑的子 Agent 节点，到这一版被拆开了。
+
+需要说明的是，这是 SDK 层的能力，不是 OTEL 标准的扩展——字段名（`spawn_depth`、`is_backgrounded`）是 Anthropic SDK 自己的。要接进统一的可观测性基础设施，仍需在导出时映射成 span attribute。但它至少说明一件事：**子 Agent 嵌套的可观测性正在从"各家自己埋点"变成 SDK 默认提供**。
+
 ## 常见误区 / 面试追问
 
 1. **误区："用 print/log 就够了"** — 多 Agent 系统的日志是分散的，无法从日志中重建 Agent 间的因果关系。需要结构化的 Trace + Span 来保留操作间的父子和时序关系。
@@ -241,3 +288,6 @@ class TraceReplayer:
 - [LangSmith: AI Agent Observability Platform (LangChain)](https://www.langchain.com/langsmith/observability)
 - [8 LLM Observability Tools to Monitor AI Agents (LangChain)](https://www.langchain.com/articles/llm-observability-tools)
 - [5 Best Tools for Monitoring LLM Applications in 2026 (Braintrust)](https://www.braintrust.dev/articles/best-llm-monitoring-tools-2026)
+- [claude-agent-sdk-typescript v0.3.238 Release Notes：task_started 新增 is_backgrounded / spawn_depth，command_lifecycle 新增 refused (GitHub)](https://github.com/anthropics/claude-agent-sdk-typescript/releases/tag/v0.3.238)
+- [claude-agent-sdk-python v0.2.140 Release Notes：forward_subagent_text 与 ResultError (GitHub)](https://github.com/anthropics/claude-agent-sdk-python/releases/tag/v0.2.140)
+- [Claude Agent SDK Overview 官方文档 (Anthropic)](https://code.claude.com/docs/en/agent-sdk/overview)

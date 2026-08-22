@@ -194,7 +194,7 @@ Sandbox 同时承担两个职责：(1) **安全**——隔离 Agent 可能产生
 
 **反面教材**：2025 年 Zhu et al. 审计 37 个公开 agent benchmark suite，**普遍存在"成功标准未充分定义"和"低精度评估器"问题**——这正是 τ²-bench 强调"对比数据库最终状态"而非"agent 说了什么"的根源。
 
-### 评测 harness 的安全边界：一个真实事故
+### 评测 harness 的安全边界：两起跨厂商事故
 
 结论先行：**prompt 里声明的隔离不是隔离**。Anthropic 2026-07 复盘了三起网络安全评测事故——本应完全隔离的评测环境实际连着真实互联网，而评测 prompt 却告诉 Claude"你处在模拟环境、没有网络访问"，模型于是在真实系统上执行了本以为是演习的操作。
 
@@ -205,6 +205,15 @@ Sandbox 同时承担两个职责：(1) **安全**——隔离 Agent 可能产生
 - Anthropic 的结论：把 defense-in-depth 从生产环境**延伸到评测基础设施本身**，隔离承诺必须与实际网络拓扑对账，而不是写在 prompt 里
 
 对 harness 设计的直接推论：sandbox 类型不只是可复现性参数，也是安全参数。写进 eval 报告的 `sandbox=docker` 必须能在网络层被验证（出口规则、DNS、代理白名单），否则考场本身会成为真实世界的攻击面。
+
+**第二例：OpenAI 披露第三方网安评测越界。** OpenAI 在一篇官方说明中披露，在与 UK AISI、Irregular 合作的第三方网络安全评测中，因**安全护栏放宽 + 环境配置失当**两件事叠加，模型访问了公网、超出了预定测试边界（[原文](https://openai.com/index/third-party-cyber-evaluations-involving-openai-models/)；该页在列表页标注为 2026-08-04，正文页未渲染日期，本条日期未做正文交叉验证）。OpenAI 据此收紧了第三方评测协议，三条措施是：识别高风险评测、事前约定测试范围、联网请求需经审批。
+
+**两例合起来的价值不在细节，而在于它证明这是一类模式而非个例**——不同厂商、不同评测方、不同时间点，评测 harness 的隔离边界都失守了。可提炼两条通用原则：
+
+- **声明的隔离 ≠ 实际拓扑**。无论隔离承诺写在 prompt 里（Anthropic 例）还是写在环境配置里（OpenAI 例），只要没有独立于承诺的网络层验证，它就只是一句话。隔离必须由出口规则、DNS 策略、代理白名单在外部证明，并定期与承诺对账。
+- **第三方评测的边界责任必须在协议里落地**。第三方评测天然存在责任真空：评测方搭环境、模型方放护栏，两边都容易默认对方兜底。而"放宽护栏"本身是网安评测的常规操作（不放宽就测不出能力上限），这恰恰意味着**隔离不能靠模型侧克制，只能由环境侧独立保证**。OpenAI 的三条措施（高风险识别 / 范围约定 / 联网审批）本质上就是把这个责任归属显式写进流程。
+
+对 eval 报告的实操推论：`sandbox` 字段之外，应同时记录**这套隔离是被谁、用什么方式验证过的**。"我们用了 Docker"和"我们验证过容器出网被 deny-by-default 拦住"是两个强度完全不同的声明。
 
 ### Agent Eval vs Model Eval 的根本差异
 
@@ -248,6 +257,19 @@ Sandbox 同时承担两个职责：(1) **安全**——隔离 Agent 可能产生
 - 公开 benchmark 用于初筛，不作为最终决策
 - 必须有"训练截止日期之后"的私有评测集
 - 关注**动态 benchmark**（SWE-MERA 持续从最新 GitHub Issue 收题、LiveCodeBench 每月更新）
+
+### 前沿动向：评测本身正在 harness 化（2026-08）
+
+前面讲的都是"如何用 harness 跑出一个可信的分数"。2026-08 出现的一批工作在改的是更前面一步的东西：**评测的产出形态本身**——从"打一个分"转向"留下一份可审查的过程记录"。
+
+**以下均为社区单次实验、尚无独立复现**，引用时连出处与日期一起标注。
+
+- *HarnessEval-W: Agentifying the Evaluation of Visual Worlds*（[arXiv 2608.16859](https://arxiv.org/abs/2608.16859)，2026-08-17）把 harness 范式直接搬进了评分环节：**不套固定 rubric**（预先写死的评分细则），而是让 agent 按具体上下文自行组织判据，并留下可审查的推理链。据其报告，输出的不再只是一个标量分数，而是"判据 + 推理过程 + 结论"这一整套东西。
+- *Beyond Final Scores: A Systematic Evaluation of Agents for Long-Horizon AI R&D*（[arXiv 2608.13417](https://arxiv.org/abs/2608.13417)）从另一侧逼近同一个点：用规则指标（而非 LLM judge）把一次 run 内部的行为拆成 **Solution Framing / Execution / Feedback Control** 三个维度，覆盖 7 个前沿模型 × 36 个长时程任务，并做受控对比考察经验能否在任务内、跨任务之间复用。该文的立意就写在标题里——最终分数之外的东西才是长时程任务的信息量所在。
+
+**这跟本文主线是什么关系**：是延伸，不是改写。"先固定 harness 再换模型测"依然成立，而且在过程记录范式下**更重要**——标量分数至少还能勉强跨 harness 比较（哪怕比得很粗糙），过程记录则完全由 harness 的组织方式决定，harness 一变，记录的粒度、字段、判据全变，压根无从对齐。往前看，eval 报告里要固定并披露的东西只会更多：除了 sandbox 类型、资源配额、scaffold 版本，还要加上判据是怎么生成的、推理链保留到什么粒度。
+
+这条线也与前文两处呼应：轨迹评估的现实困难（trajectory-opaque eval 漏 44% 安全违规）说明只看终态不够，而 METR 的 MALT 数据集说明轨迹里的行为本身就是评测对象。过程记录范式是这两件事在 harness 层面的自然延续。
 
 ### 选型决策树
 
@@ -304,7 +326,11 @@ Sandbox 同时承担两个职责：(1) **安全**——隔离 Agent 可能产生
    - **Watermarking 检测**：arXiv 2502.17259，5% 污染即可在 p<10⁻³ 显著性下检出
    - 警惕信号：模型在"只给文件结构、不给 issue 描述"时仍能定位正确文件——说明训练集见过仓库结构
 
-8. **误区："评测跑在沙箱里，最坏也就是结果不准"** — Anthropic 2026-07 复盘的三起网络安全评测事故是反例：环境自称隔离、实际连着公网，模型按 prompt 描述"在模拟环境里"行动，结果操作了真实系统。模型本身没有失准，错的是它被喂的世界模型。隔离必须由网络拓扑保证并定期与承诺对账，prompt 里的一句"你没有网络访问"不构成任何隔离。
+8. **误区："评测跑在沙箱里，最坏也就是结果不准"** — Anthropic 2026-07 复盘的三起网络安全评测事故是反例：环境自称隔离、实际连着公网，模型按 prompt 描述"在模拟环境里"行动，结果操作了真实系统。模型本身没有失准，错的是它被喂的世界模型。隔离必须由网络拓扑保证并定期与承诺对账，prompt 里的一句"你没有网络访问"不构成任何隔离。**而且这已经不是孤例**：OpenAI 也披露过在 UK AISI、Irregular 的第三方网安评测中，因安全护栏放宽叠加环境配置失当，模型访问公网、超出预定测试边界。两家、两套流程、同一种失守方式。
+
+9. **追问："第三方做的评测出了越界事故，责任在谁？"** — 这是上面两起事故合起来才问得出的问题，答题要点是"责任真空来自默认对方兜底"。评测方负责搭环境、模型方负责放护栏，而网安评测又必须放宽护栏才测得出能力上限——于是隔离既不能指望模型侧克制，评测方又未必清楚护栏被放到了什么程度。OpenAI 收紧第三方评测协议的三条措施正是把这个归属显式化：**高风险评测识别（哪些评测需要额外约束）、测试范围事前约定（边界写进协议而非口头）、联网请求审批（出网是需要批准的动作，不是默认能力）**。落到 harness 设计上就一句话：隔离必须有一个独立于评测方声明的验证方，`sandbox=docker` 之外还要能答出"谁验证的、怎么验证的"。
+
+10. **追问："评测只输出一个分数够不够？"** — 2026-08 的两篇工作给出的答案是不够，方向是"留下可审查的过程记录"。HarnessEval-W（[arXiv 2608.16859](https://arxiv.org/abs/2608.16859)，2026-08-17）不套固定 rubric，让 agent 按上下文自行组织判据并留下推理链；Beyond Final Scores（[arXiv 2608.13417](https://arxiv.org/abs/2608.13417)）用规则指标把 run 内行为拆成 Solution Framing / Execution / Feedback Control 三维，覆盖 7 个模型 × 36 个长时程任务。**注意这不推翻"先固定 harness"，反而加强它**——标量分数还能粗糙地跨 harness 比，过程记录的粒度与字段完全由 harness 决定，不固定就无从对齐。两篇均为社区单次实验、未经独立复现，答题时要标出来。
 
 ## 参考资料
 
@@ -322,6 +348,9 @@ Sandbox 同时承担两个职责：(1) **安全**——隔离 Agent 可能产生
 - [Detecting Benchmark Contamination Through Watermarking（arXiv 2502.17259）](https://arxiv.org/abs/2502.17259) — 2025 watermarking 检测
 - [Beyond the Final Answer: Evaluating Reasoning Trajectories（arXiv 2510.02837）](https://arxiv.org/pdf/2510.02837) — Trajectory-opaque eval 漏 44% 安全违规
 - [Investigating three real-world incidents in our cybersecurity evaluations — Anthropic](https://www.anthropic.com/news/investigating-incidents-cybersecurity-evals) — 评测环境自称隔离实则联网，defense-in-depth 需覆盖评测基础设施
+- [Third-party cyber evaluations involving OpenAI models — OpenAI](https://openai.com/index/third-party-cyber-evaluations-involving-openai-models/) — 同类事故第二例：护栏放宽 + 环境配置失当导致越界，及随后收紧的第三方评测协议（列表页标注 2026-08-04，正文页未渲染日期）
+- [HarnessEval-W: Agentifying the Evaluation of Visual Worlds（arXiv 2608.16859，2026-08-17）](https://arxiv.org/abs/2608.16859) — 评分环节 harness 化：不套固定 rubric，agent 自组织判据并留推理链（社区单次实验，未经复现）
+- [Beyond Final Scores: A Systematic Evaluation of Agents for Long-Horizon AI R&D（arXiv 2608.13417）](https://arxiv.org/abs/2608.13417) — 规则指标拆 run 内行为为 Solution Framing / Execution / Feedback Control 三维（社区单次实验，未经复现）
 
 ## 相关阅读
 
