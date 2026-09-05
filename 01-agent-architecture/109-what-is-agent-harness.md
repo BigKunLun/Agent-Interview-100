@@ -245,6 +245,7 @@ graph.add_conditional_edges("reason", lambda s: s["next_step"])
 - [atalupadhyay — The Agent Harness: What It Is, Why It Matters](https://atalupadhyay.wordpress.com/2026/05/02/the-agent-harness-what-it-is-why-it-matters-and-how-to-build-one-from-scratch/) — 从零构建 harness 的工程视角
 - [Anthropic — Equipping Agents for the Real World with Agent Skills](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills) — Progressive Disclosure 与 Harness 中 Skill 抽象的关系
 - [Artificial Analysis — Coding Agents Leaderboard](https://artificialanalysis.ai/agents/coding) — Terminal Bench 实时排行，「Harness > 模型」杠杆的持续证据
+- [arXiv 2609.01437 — HarnessDev: Can LLMs Create and Evolve Their Own Agent Harness?](https://arxiv.org/abs/2609.01437) — 学术侧把 harness 当作可自动优化对象的系统研究（HF Daily Papers 238 upvotes，2026-09；更多同向工作见 docs/pending/118 立题草稿）
 
 **前沿动向（2026-08，社区单次实验、未经独立复现）**：
 

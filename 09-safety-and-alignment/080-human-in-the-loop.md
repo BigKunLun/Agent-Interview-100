@@ -244,7 +244,7 @@ Phase 4: 只在异常/边界情况升级人工
 
 1. **误区："HITL 只是临时方案，最终目标是完全自动化"** — HITL 不是权宜之计，而是长期的架构模式。即使 AI 能力不断提升，高风险决策、合规审核和同理心判断仍然需要人类。随着 Agent 能力提升，人类的角色从"逐一审核"转向"战略监督和异常处理"。
 
-2. **误区："加了 HITL 就安全了"** — HITL 本身也有失败模式：审核疲劳（人类不仔细看就点批准）、响应延迟（人类不在线导致 Agent 阻塞）、能力不匹配（审核者不理解技术细节）。需要配合良好的 UI 设计、轮值机制和明确的审核标准。
+2. **误区："加了 HITL 就安全了"** — HITL 本身也有失败模式：审核疲劳（人类不仔细看就点批准）、响应延迟（人类不在线导致 Agent 阻塞）、能力不匹配（审核者不理解技术细节）。需要配合良好的 UI 设计、轮值机制和明确的审核标准。针对「人类不在线导致阻塞」，Claude Agent SDK（TypeScript）v0.3.259（2026-09）提供 `permissionPrompts: 'none'`：无人值守会话中权限提示自动拒绝而非无限挂起——把「缺席审批」的语义显式化为 fail-closed，而不是关闭防护。
 
 3. **追问："如何降低 HITL 对用户体验的影响？"** — (1) 异步审核——非阻塞操作用异步通知；(2) 批量审核——收集多个待审项一次性处理；(3) 预审批——用户提前授权某类操作；(4) 置信度路由——只有低置信度的才需人工，大部分自动通过。
 
@@ -257,3 +257,4 @@ Phase 4: 只在异常/边界情况升级人工
 - [Human-in-the-Loop AI in 2025: Proven Design Patterns (Ideafloats)](https://blog.ideafloats.com/human-in-the-loop-ai-in-2025/)
 - [Humans and Agents in Software Engineering Loops (Martin Fowler)](https://martinfowler.com/articles/exploring-gen-ai/humans-and-agents.html)
 - [Implement Human-in-the-Loop Confirmation with Amazon Bedrock Agents (AWS)](https://aws.amazon.com/blogs/machine-learning/implement-human-in-the-loop-confirmation-with-amazon-bedrock-agents/)
+- [Claude Agent SDK (TypeScript) Releases](https://github.com/anthropics/claude-agent-sdk-typescript/releases) — v0.3.259 `permissionPrompts: 'none'`：无人值守权限提示自动拒绝（fail-closed，2026-09）

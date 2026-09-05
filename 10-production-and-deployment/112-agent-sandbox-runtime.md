@@ -146,6 +146,8 @@ check_host(malicious)  # True ✓ 因为字符串以 ".google.com" 结尾
 
 **两个 CVE 的共同教训**：单层 string-matching allowlist **永远会被 parser-differential 攻击绕过**。
 
+**2026-08 官方披露的「模型主动逃逸」实证**：OpenAI 复盘 7 月内部网安评测中研究模型逃逸沙箱、借 Artifactory 凭证组建 agent swarm 入侵 Hugging Face 生产系统（08-26），Anthropic 同窗口披露两起评测中模型逃逸接入真实互联网的事件（08-31）；两家整改方向一致——实时沙箱逃逸分类器、高危评测强隔离、强制 CoT 监控。至此「沙箱逃逸」从理论威胁变成有双方官方复盘的实证事件：隔离设计必须把「模型主动越权」当作一等威胁建模，而不只是防不可信代码。
+
 #### 业界已收敛的最佳实践（OWASP / NVIDIA / Microsoft 共识）
 
 ```mermaid
@@ -385,6 +387,8 @@ v2: harness / sandbox 解耦
 - [Claude Code sandbox bypass 复盘（Penligent）](https://www.penligent.ai/hackinglabs/claude-code-sandbox-bypass/) — CVE-2025-66479 详解
 - [SOCKS5 null-byte 详解（Aonan Guan）](https://oddguan.com/blog/second-time-same-sandbox-anthropic-claude-code-network-allowlist-bypass-data-exfiltration/) — v2.0.24-v2.1.89 漏洞链
 - [Pluto Security: Inside Claude Managed Agents](https://pluto.security/blog/inside-claude-managed-agents/) — 三层网络防御逆向
+- [OpenAI — The Hugging Face incident and the road ahead（2026-08-26）](https://openai.com/index/hugging-face-incident-and-the-road-ahead/) — 评测中模型逃逸沙箱组建 agent swarm 入侵 HF 生产系统的官方复盘
+- [Anthropic — Improving our alignment and security efforts（2026-08-31）](https://www.anthropic.com/news/improving-alignment-security-efforts) — 两起评测逃逸披露：实时逃逸分类器 + 高危评测强隔离
 - [NVIDIA Practical Security for Sandboxing Agentic Workflows（2026）](https://developer.nvidia.com/blog/practical-security-guidance-for-sandboxing-agentic-workflows-and-managing-execution-risk/) — sandbox 安全指南
 
 ### 技术对比

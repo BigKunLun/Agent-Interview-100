@@ -9,6 +9,8 @@
 
 当前（2026.7）三大旗舰定位：**Claude Sonnet 5**（2026-06-30 发布，Anthropic 定位「最 agentic 的 Sonnet」，Sonnet 4.6 的 drop-in 升级，定价 $2/$10 per MTok，约为同档旗舰一半，主打 agentic coding 与自主任务执行）、**GPT-5.6**（代号旗舰 "Sol" + 均衡日常 "Terra"，已 GA，强调自然语言→前端 UI 生成与端到端自主工作流）、**Gemini 3 / 3.1**（3.1 解锁 Agent Mode，可自主编写/测试/部署桥接脚本，配合 Thought Signatures 让 agent 追踪自身推理，Google I/O 2026 把 Gemini 重新定位为「操作系统级 agent 平台」）。
 
+2026-09 快照更新：**GPT-6 Astra**（09-03 发布，computer use / 浏览 / 软工 / 网安 / 科学方向 SOTA，FrontierMath Tier 4 98%、ARC-AGI-3 99.9%，$10/$50 per MTok，经 Azure / Bedrock 提供）；Anthropic 发布 **Claude Fable / Mythos 5.1**（09-01，同一模型配不同安全护栏，典型负载降价约 25%、agentic 任务最高约 45%）。代际更替在加速，「推理能力是旗舰内置模式」的合流判断进一步坐实。
+
 **Cheat sheet**：
 - **核心趋势**：推理能力从「独立品类」扩散为「旗舰通用模型的内置模式」，三家都在合流
 - **选型三维**：agentic 能力（工具交错 / 长任务稳定性）× 成本 × harness 耦合度，不再只看推理分
@@ -284,6 +286,8 @@ DeepSeek-R1 的训练流程（GRPO + Cold Start SFT + Rejection Sampling + 二�
 - [Forbes — Google I/O 2026 turned Gemini into an Agent Platform](https://www.forbes.com/sites/janakirammsv/2026/05/21/google-io-2026-turned-gemini-into-an-agent-platform/)
 - [Tom's Guide — Gemini 3.1 Agent Mode](https://www.tomsguide.com/ai/google-just-unlocked-agent-mode-for-gemini-3-1-here-are-7-things-it-can-now-do-for-you)
 - [DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via RL (arXiv)](https://arxiv.org/abs/2501.12948) — GRPO + Aha moment 涌现（历史脉络）
+- [OpenAI — GPT-6 Astra: A new generation of intelligence](https://openai.com/index/gpt-6-astra/) — 2026-09-03 旗舰发布，agentic / computer use 方向 SOTA，$10/$50 per MTok
+- [Anthropic — Introducing Claude Fable 5.1 and Claude Mythos 5.1](https://www.anthropic.com/claude-fable-and-mythos-5-1) — 2026-09-01，同一模型不同安全护栏，agentic 负载降价最高约 45%
 - [Sebastian Raschka — Categories of Inference-Time Scaling](https://magazine.sebastianraschka.com/p/categories-of-inference-time-scaling) — Test-Time Compute Scaling 理论框架
 - [SWE-bench 官方排行榜](https://www.swebench.com/) — 87-94% 顶部分数与信任危机实证
 - [Benchmark 信任危机分析](https://moogician.github.io/blog/2026/trustworthy-benchmarks-cont/)

@@ -398,6 +398,8 @@ Code Execution 模式：中间结果在执行环境内处理 → LLM 只看执�
 节省：99%
 ```
 
+**官方侧的补丁方向（2026-09）**：Claude Agent SDK（TypeScript）v0.3.257 新增 MCP 文件引用通道——工具结果可携带 `resourceLinks` 结构化资源引用（`task_notification.resource_links` 按 `tool_use_id` 关联），文件类产物不再以文本形式灌进 context，宿主按需取用。与 Code Execution 模式是同一问题的两条解法路线：一个把处理移出 context，一个把大结果替换成引用。
+
 #### 问题 3：工具选择混乱
 
 工具超过 10-15 个时，LLM 选对工具的概率急剧下降。解决方案：使用**语义路由**（根据意图动态注入相关工具）、**子代理分工**（每个子代理只访问特定领域工具）、以及**工具层次结构**（先选类别再选具体工具）。
@@ -451,3 +453,4 @@ MCP 的 JSON-RPC over stdio 是黑盒。可以使用 `npx @modelcontextprotocol/
 - [Claude Skills vs. MCP: Two AI Customization Philosophies (Subramanya N, 2025-10)](https://subramanya.ai/2025/10/30/claude-skills-vs-mcp-a-tale-of-two-ai-customization-philosophies/)
 - [Skills explained: How Skills compares to prompts, Projects, MCP, and subagents (Anthropic)](https://claude.com/blog/skills-explained)
 - [Progressive Disclosure Might Replace MCP (MCPJam)](https://www.mcpjam.com/blog/claude-agent-skills)
+- [Claude Agent SDK (TypeScript) Releases](https://github.com/anthropics/claude-agent-sdk-typescript/releases) — v0.3.257 MCP 文件引用通道（`tool_use_result.resourceLinks`）
