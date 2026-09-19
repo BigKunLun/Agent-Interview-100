@@ -17,6 +17,7 @@
 - **Hook vs Prompt 本质差**：Hook 确定性（regardless of model） / Prompt 概率性（model may skip）
 - **关键数据**：Cline CLI + Claude Opus 4.7 在 Terminal Bench 2.0 跑出 74.2%，超过 Claude Code 同模型 69.4%
 - **性价比维度（2026-09）**：GPT-5.6 家族进 Kiro 后 Terminal-Bench 2.1 成功任务成本降约 82%（OpenAI + AWS 联合优化）——harness 与模型协同调优的性价比实证
+- **模型-工具面耦合（2026-09）**：Claude Agent SDK（TS）v0.3.268 起 TaskCreate/TodoWrite 类工具仅在旧模型（Claude 3.x 与 4.0–4.7 系）默认提供，新模型须显式列入 tools/allowedTools——升级模型即静默丢任务工具，模型与 harness 耦合的又一面
 - **2026 三强新进展**：Claude Code（Ultrathink 深思考模式 + 语音输入，2026.3）/ Cursor 3（重建界面 + 并行 Agent 编排）/ Codex CLI（每周多 alpha 迭代）
 - **2026 工具融合趋势**：三大 harness 通过 MCP、Skill 等共享标准走向 "merge into one stack"，能力趋同
 - **自主性另一极**：Devin 2.0（2026.2，多模型，全自主异步工程师）自主完成率约 40%，$500/mo；社区共识是「组合两个工具」（如 Aider/Cline + Devin）而非单押
@@ -314,6 +315,7 @@ process.exit(0);  // allow
 - [thoughts.jock.pl — AI Coding Harness Agents 2026](https://thoughts.jock.pl/p/ai-coding-harness-agents-2026) — 行业评论与排名
 - [Artificial Analysis — Coding Agents Leaderboard](https://artificialanalysis.ai/agents/coding) — Terminal Bench / SWE-bench 实时跑分
 - [OpenAI — Advancing price-performance for developers with GPT-5.6 in Kiro](https://openai.com/index/gpt-5-6-in-kiro/) — Terminal-Bench 2.1 成功任务成本降约 82%（2026-08-24）
+- [Claude Agent SDK (TypeScript) Releases](https://github.com/anthropics/claude-agent-sdk-typescript/releases) — v0.3.268：Task/Todo 类工具默认面收窄到旧模型清单，新模型须显式声明（2026-09）
 - [htek.dev — All Agent Harnesses: The Live Comparison](https://htek.dev/articles/all-agent-harnesses-live-comparison) — 持续更新的对比表
 
 ### 2026 竞争格局与工具融合

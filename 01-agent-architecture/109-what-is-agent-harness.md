@@ -128,6 +128,8 @@ flowchart TD
 ```
 *按要造的东西选层：加 LLM 能力用 Framework，领域 Agent 加 Runtime，代码 Agent 直接套 Harness，做下一代 Harness 才自研。*
 
+**2026-09 新形态：厂商托管 Harness**。OpenAI 发布 Agents API（09-10），把驱动 Codex 的 harness 以托管云服务形式开放（编排、长会话、工具调用）。三层抽象的 Harness 层从「自己装配 / 套用现成产品」延伸出第三个选项——**直接用厂商托管的 harness 基建**；与之对照，Claude Agent SDK 走「harness 砖块 + 自装配」路线（见 #099）。选型问题从「造还是套」变成「造、套、还是托管」。
+
 ### 六、代码示例：感受 Harness 与 Framework 的"opinionated"差异
 
 ```python
@@ -245,7 +247,7 @@ graph.add_conditional_edges("reason", lambda s: s["next_step"])
 - [atalupadhyay — The Agent Harness: What It Is, Why It Matters](https://atalupadhyay.wordpress.com/2026/05/02/the-agent-harness-what-it-is-why-it-matters-and-how-to-build-one-from-scratch/) — 从零构建 harness 的工程视角
 - [Anthropic — Equipping Agents for the Real World with Agent Skills](https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills) — Progressive Disclosure 与 Harness 中 Skill 抽象的关系
 - [Artificial Analysis — Coding Agents Leaderboard](https://artificialanalysis.ai/agents/coding) — Terminal Bench 实时排行，「Harness > 模型」杠杆的持续证据
-- [arXiv 2609.01437 — HarnessDev: Can LLMs Create and Evolve Their Own Agent Harness?](https://arxiv.org/abs/2609.01437) — 学术侧把 harness 当作可自动优化对象的系统研究（HF Daily Papers 238 upvotes，2026-09；更多同向工作见 docs/pending/118 立题草稿）
+- [arXiv 2609.01437 — HarnessDev: Can LLMs Create and Evolve Their Own Agent Harness?](https://arxiv.org/abs/2609.01437) — 学术侧把 harness 当作可自动优化对象的系统研究（HF Daily Papers 238 upvotes，2026-09）
 
 **前沿动向（2026-08，社区单次实验、未经独立复现）**：
 
@@ -255,6 +257,7 @@ graph.add_conditional_edges("reason", lambda s: s["next_step"])
 - [EnvHarness: Awakening Static Worlds for Agent Learning（arXiv 2608.19880，2026-08-20）](https://arxiv.org/abs/2608.19880) — 把 harness 思路从"包住模型"扩到"包住环境"
 - [Zetta ζ: An Efficient Closed-Loop Embodied Harness（arXiv 2608.16590）](https://arxiv.org/abs/2608.16590) — 冻结基座策略，在线演化运行时 critic 与恢复技能，三重时间尺度分离
 - [Demystifying Agent Skills: Why They Work—Until They Don't（arXiv 2608.14036）](https://arxiv.org/abs/2608.14036) — Skill 收益的四因素归因：表示形式 / 结果标注 / 检索难度 / 跨框架鲁棒性
+- [OpenAI — Introducing the Agents API](https://openai.com/index/introducing-the-agents-api) — Codex harness 产品化为托管云服务（2026-09-10），Harness 层的托管形态
 
 ## 相关阅读
 

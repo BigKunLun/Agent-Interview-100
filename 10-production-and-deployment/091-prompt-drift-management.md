@@ -128,6 +128,8 @@ class PromptDriftManager:
     }
 ```
 
+**SDK 侧的官方实现（2026-09）**：Claude Agent SDK 把「prompt 版本控制」做进了运行时——python v0.2.153 引入 `SystemPromptPreset.snapshot` 与 `SystemPromptCustom`，TypeScript v0.3.267 起 `systemPrompt` 快照记录默认开启，中途修改 system prompt 要到**下次 compaction 才生效**（快照与 compaction 绑定，同时改变了 prompt cache 语义）。策略 1 的 Git 流程管「发布前的版本演进」，SDK 快照管「运行中会话的一致性」，两层互补。
+
 ### 预防性 Prompt 工程
 
 ```python
@@ -191,3 +193,4 @@ flowchart TD
 - [LLM Drift, Prompt Drift & Cascading (Kore.ai)](https://www.kore.ai/blog/llm-drift-prompt-drift-cascading)
 - [Understanding Model Drift and Data Drift in LLMs (Orq.ai)](https://orq.ai/blog/model-vs-data-drift)
 - [Top 5 AI Prompt Management Tools of 2025 (Arize AI)](https://arize.com/blog/top-5-ai-prompt-management-tools-of-2025/)
+- [Claude Agent SDK (Python/TypeScript) Releases](https://github.com/anthropics/claude-agent-sdk-typescript/releases) — 2026-09：SystemPromptPreset.snapshot（py v0.2.153）与 systemPrompt 快照记录默认开启（TS v0.3.267），运行时 prompt 版本控制的官方实现
