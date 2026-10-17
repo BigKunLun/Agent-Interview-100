@@ -5,7 +5,7 @@
 
 ## 简短回答
 
-Agent 系统的高并发扩展面临独特挑战：每个请求**执行时间长**（秒到分钟级）、**资源消耗不确定**（Token 数量变化大）、**有状态**（多步执行需要维护上下文）。核心扩展策略：(1) **无状态设计+外部状态存储**——将 Agent 会话状态存储到 Redis/PostgreSQL，使服务实例可以自由水平扩展；(2) **任务队列解耦**——用 Celery/RabbitMQ 将请求接收和 LLM 处理解耦，Worker 独立扩缩容；(3) **智能自动扩缩容**——基于队列深度、并发数（而非 CPU）触发扩容，LLM 服务有其独特的并发限制；(4) **模型路由+故障转移**——多提供商分散流量，避免单一 API 限流成为瓶颈；(5) **多层缓存**——语义缓存+Prompt 缓存减少实际 LLM 调用量。ByteDance 的 **HeteroScale** 已在数万 GPU 上验证，通过网络感知调度和协调式扩缩容策略显著提升资源利用率。MIT 研究提出 **LLM Archetypes** 方法可将 Agent 模拟从千级扩展到百万级。关键指标：TTFT、TPS、QPS 在并发增加时的变化趋势，以及达到"饱和点"后的降级策略。
+Agent 系统的高并发扩展面临独特挑战：每个请求**执行时间长**（秒到分钟级）、**资源消耗不确定**（Token 数量变化大）、**有状态**（多步执行需要维护上下文）。核心扩展策略：(1) **无状态设计+外部状态存储**——将 Agent 会话状态存储到 Redis/PostgreSQL，使服务实例可以自由水平扩展；(2) **任务队列解耦**——用 Celery/RabbitMQ 将请求接收和 LLM 处理解耦，Worker 独立扩缩容；(3) **智能自动扩缩容**——基于队列深度、并发数（而非 CPU）触发扩容，LLM 服务有其独特的并发限制；(4) **模型路由+故障转移**——多提供商分散流量，避免单一 API 限流成为瓶颈；(5) **多层缓存**——语义缓存+Prompt 缓存减少实际 LLM 调用量。ByteDance 的 **HeteroScale** 已在数万 GPU 上验证，通过网络感知调度和协调式扩缩容策略显著提升资源利用率。MIT 研究提出 **LLM Archetypes** 方法可将 Agent 模拟从千级扩展到百万级。生产实证（2026-10）：Third Moment Research 常态运行 10,000 个 agent 持续 36 小时以上（GPT-6 Astra/Sol + Codex + Daybreak，OpenAI 10-14 工程复盘）——万级并发 × 小时级时长的组合已是真实负载形态。关键指标：TTFT、TPS、QPS 在并发增加时的变化趋势，以及达到"饱和点"后的降级策略。
 
 ## 详细解析
 
@@ -258,3 +258,4 @@ Level 5: 限流拒绝
 - [Practical Guide to LLM Inference in Production 2025 (Hivenet)](https://compute.hivenet.com/post/llm-inference-production-guide)
 - [Taming the Chaos: Coordinated Autoscaling for LLM Inference (arXiv)](https://arxiv.org/html/2508.19559v1)
 - [Scaling LLM-Guided Agent Simulations to Millions (MIT Media Lab)](https://www.media.mit.edu/posts/new-paper-on-limits-of-agency-at-aamas-2025/)
+- [OpenAI — How Third Moment Research runs 10,000 agents for 36+ hours](https://openai.com/index/third-moment-research) — 万级智能体小时级长跑的生产工程复盘（2026-10-14）

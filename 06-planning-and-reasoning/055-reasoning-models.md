@@ -11,6 +11,8 @@
 
 2026-09 快照更新：**GPT-6 Astra**（09-03 发布，computer use / 浏览 / 软工 / 网安 / 科学方向 SOTA，FrontierMath Tier 4 98%、ARC-AGI-3 99.9%，$10/$50 per MTok，经 Azure / Bedrock 提供）；Anthropic 发布 **Claude Fable / Mythos 5.1**（09-01，同一模型配不同安全护栏，典型负载降价约 25%、agentic 任务最高约 45%）。代际更替在加速，「推理能力是旗舰内置模式」的合流判断进一步坐实。
 
+2026-10 快照更新：**Claude 5.5 全梯队三连发**——Opus 5.5（09-22，多数任务达 Fable 5.1 水平、运行成本比 Opus 5 低 40%）、Sonnet 5.5（09-28，较 Sonnet 5 提速 30%、多数场景成本最多降 30%）、Haiku 5.5（10-07，最快最便宜的小模型）；OpenAI 侧 GPT-6 家族成型并发布官方选型指南（model guide：选型、reasoning effort 调节、技能与生产工作流，10-02）。agentic 能力与成本的双线竞争仍在加速。
+
 **Cheat sheet**：
 - **核心趋势**：推理能力从「独立品类」扩散为「旗舰通用模型的内置模式」，三家都在合流
 - **选型三维**：agentic 能力（工具交错 / 长任务稳定性）× 成本 × harness 耦合度，不再只看推理分
@@ -286,8 +288,10 @@ DeepSeek-R1 的训练流程（GRPO + Cold Start SFT + Rejection Sampling + 二�
 - [Forbes — Google I/O 2026 turned Gemini into an Agent Platform](https://www.forbes.com/sites/janakirammsv/2026/05/21/google-io-2026-turned-gemini-into-an-agent-platform/)
 - [Tom's Guide — Gemini 3.1 Agent Mode](https://www.tomsguide.com/ai/google-just-unlocked-agent-mode-for-gemini-3-1-here-are-7-things-it-can-now-do-for-you)
 - [DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via RL (arXiv)](https://arxiv.org/abs/2501.12948) — GRPO + Aha moment 涌现（历史脉络）
-- [OpenAI — GPT-6 Astra: A new generation of intelligence](https://openai.com/index/gpt-6-astra/) — 2026-09-03 旗舰发布，agentic / computer use 方向 SOTA，$10/$50 per MTok
 - [Anthropic — Introducing Claude Fable 5.1 and Claude Mythos 5.1](https://www.anthropic.com/claude-fable-and-mythos-5-1) — 2026-09-01，同一模型不同安全护栏，agentic 负载降价最高约 45%
+- [OpenAI — GPT-6 Astra: A new generation of intelligence](https://openai.com/index/gpt-6-astra/) — 2026-09-03 旗舰发布，agentic / computer use 方向 SOTA，$10/$50 per MTok
+- [Anthropic — Introducing Claude Opus 5.5](https://www.anthropic.com/claude-opus-5-5) / [Sonnet 5.5](https://www.anthropic.com/claude-sonnet-5-5) / [Haiku 5.5](https://www.anthropic.com/claude-haiku-5-5) — 2026-09/10 全梯队三连发，agentic 能力与成本双线推进
+- [OpenAI — A model guide for the GPT-6 family](https://openai.com/index/practical-guide-building-gpt-6) — GPT-6 家族官方选型指南：reasoning effort 调节、技能与生产工作流（2026-10-02）
 - [Sebastian Raschka — Categories of Inference-Time Scaling](https://magazine.sebastianraschka.com/p/categories-of-inference-time-scaling) — Test-Time Compute Scaling 理论框架
 - [SWE-bench 官方排行榜](https://www.swebench.com/) — 87-94% 顶部分数与信任危机实证
 - [Benchmark 信任危机分析](https://moogician.github.io/blog/2026/trustworthy-benchmarks-cont/)

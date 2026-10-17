@@ -73,7 +73,7 @@ class PromptCaching:
         },
         "OpenAI": {
             "正常输入": "标准价格",
-            "缓存命中": "50% 折扣",  # 自动缓存
+            "缓存命中": "50% 折扣",  # 自动缓存；GPT-6 起提供显式断点/命中率诊断（2026-09-22 官方工程博客）
         },
     }
 
@@ -222,3 +222,4 @@ class CostMonitor:
 - [Optimize LLM Response Costs and Latency with Effective Caching (AWS)](https://aws.amazon.com/blogs/database/optimize-llm-response-costs-and-latency-with-effective-caching/)
 - [LLM Token Optimization: Cut Costs & Latency in 2026 (Redis)](https://redis.io/blog/llm-token-optimization-speed-up-apps/)
 - [How to Save 90% on LLM API Costs Without Losing Performance (Prem AI)](https://blog.premai.io/how-to-save-90-on-llm-api-costs-without-losing-performance/)
+- [OpenAI — Better prompt caching for GPT-6](https://openai.com/index/better-prompt-caching-for-gpt-6) — 更高缓存命中率、诊断工具、显式断点与控制项（2026-09-22）

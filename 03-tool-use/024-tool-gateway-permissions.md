@@ -274,6 +274,8 @@ options = ClaudeAgentOptions(
 
 5. **追问："Claude Agent SDK 的 `classifierContext` 让宿主给权限决策注入上下文，这会不会削弱『Agent 不可信』的假设？"** — 恰恰相反，它强化了这个假设。要点是区分**谁在断言**：`classifierContext` 由 `PostToolUse` hook 返回，hook 运行在宿主进程里，Agent 无法伪造其内容；分类器读到的是宿主基于自身事实做出的断言，而不是 Agent 对自己行为的自述。信任根仍然锚在宿主侧，Agent 只是被评估的对象。同期 v0.3.233 把 Todo/任务追踪工具移出默认工具面（需显式列入 `allowedTools` 或设 `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`），走的也是同一条最小权限路线——默认工具面收窄，能力按需显式开启。**追问延伸**：既然 hook 成了安全判定的输入源，它自己就变成了新的攻击面，需要按 Gateway 同等标准做代码审计和变更管控——如果 hook 里拼接了 Agent 可控的字符串再塞进 `classifierContext`，等于给注入开了后门。
 
+6. **追问："MCP Server 场景下工具级权限怎么做？"** — Claude Agent SDK（TS）v0.3.301（2026-10）起，sdk-type MCP server 配置支持 per-tool `permission_policy`（`always_ask` / `always_deny`，initialize 与 setMcpServers 均生效）——工具级准入原则下沉为 MCP server 的原生配置面，宿主无需在调用层逐一拦截。
+
 ## 参考资料
 
 - [Building a Least-Privilege AI Agent Gateway (InfoQ)](https://www.infoq.com/articles/building-ai-agent-gateway-mcp/)
@@ -284,3 +286,4 @@ options = ClaudeAgentOptions(
 - [claude-agent-sdk-typescript v0.3.236 —— PostToolUse hook 返回 `classifierContext`（2026-08-19）](https://github.com/anthropics/claude-agent-sdk-typescript/releases/tag/v0.3.236)
 - [claude-agent-sdk-typescript v0.3.234 —— peer `origin` 声明 `fromMode` 权限等级（2026-08-17）](https://github.com/anthropics/claude-agent-sdk-typescript/releases/tag/v0.3.234)
 - [claude-agent-sdk-typescript v0.3.233 —— Todo/任务追踪工具移出默认工具面（BREAKING，2026-08-14）](https://github.com/anthropics/claude-agent-sdk-typescript/releases/tag/v0.3.233)
+- [Claude Agent SDK (TypeScript) Releases](https://github.com/anthropics/claude-agent-sdk-typescript/releases) — v0.3.301：sdk-type MCP server 支持 per-tool permission_policy（always_ask/always_deny，2026-10）
