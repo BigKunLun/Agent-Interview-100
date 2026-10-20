@@ -215,52 +215,13 @@ Agent 处理
 
 ### 新动向：权限决策的上下文外包给宿主（Agent SDK，2026-08）
 
-2026 年 8 月 Claude Agent SDK 的几次发布，把上面的两条原则——「Agent 视为不可信」和「最小权限」——直接落进了 SDK 的默认行为里。三条官方变更指向同一个方向：**权限决策所需的上下文由宿主（host，即运行 Agent 的那个应用进程）供给，默认可用的工具面同时收窄**。
+2026-08 Claude Agent SDK 的几次发布把「Agent 视为不可信」和「最小权限」直接落进了默认行为，三条官方变更指向同一方向：**权限决策所需的上下文由宿主（host，运行 Agent 的应用进程）供给，默认可用的工具面同时收窄**。
 
-**1）`classifierContext`：宿主向权限分类器注入断言（v0.3.236，2026-08-19）**
+- **`classifierContext`（v0.3.236，2026-08-19）**：`PostToolUse` hook（工具执行完成后触发的回调）可返回一段工具结果注释，auto 模式下的权限分类器（决定后续动作是否询问用户的判定组件）会连同工具结果一起读取。关键在**谁在断言**：Agent 可以被 Prompt Injection 操纵去声称「操作是安全的」，但无法伪造 hook 的返回值——hook 跑在宿主进程里，读的是宿主自己掌握的事实。信任根（整条信任链最终锚定的可信主体）仍在宿主侧，与本文 Gateway 思路同构：判定权不在 Agent 手里，判定上下文从「Gateway 自己查」扩展为「宿主主动喂」。
+- **Todo/任务追踪工具移出默认工具面（v0.3.233，2026-08-14，BREAKING）**：Opus 4.8、Sonnet 5、Fable 5、Mythos 5 及更新模型上，`TaskCreate` / `TodoWrite` 等工具不再默认可用，须显式列入 `allowedTools` 或设 `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`。方向与最小权限一致：默认工具面越小，Gateway 要防的攻击面越小——从没被授予的工具，不存在被诱导调用的可能。
+- **peer `origin` 声明权限等级（v0.3.234，2026-08-17）**：宿主注入的对端来源标识可携带 `fromMode` 字段声明发送方权限等级，同等级消息投递给免询问运行的接收方不再逐条打断——「委托授权」小节的工程化形态：权限等级显式携带并校验，而不是靠接收方猜测。
 
-`PostToolUse` hook（工具执行完成后触发的回调）现在可以返回 `hookSpecificOutput.classifierContext`——一段简短的工具结果注释。auto 模式下的权限分类器（决定后续动作是否需要询问用户的那个判定组件）会连同工具结果一起读取这段注释。
-
-```typescript
-// PostToolUse hook：宿主基于自己掌握的事实，给权限分类器补一句注释
-async function postToolUse(input) {
-  const isProdTarget = await hostSideCheck(input.tool_input);  // 宿主自己查，不问 Agent
-  return {
-    hookSpecificOutput: {
-      hookEventName: "PostToolUse",
-      // 这段注释由宿主断言，权限分类器会连同工具结果一起读
-      classifierContext: isProdTarget
-        ? "该操作命中生产环境资源，后续同类调用应视为高危"
-        : "该操作仅涉及本地临时目录",
-    },
-  };
-}
-```
-
-关键在于**这段注释是宿主断言的，不是 Agent 自述的**。Agent 可以被 Prompt Injection 操纵去声称「我这个操作是安全的」，但它无法伪造 hook 的返回值——hook 跑在宿主进程里，读的是宿主自己掌握的事实。信任根（trust root，即整条信任链最终锚定的那个可信主体）仍然留在宿主侧，Agent 依旧是不可信请求者。这与本文 Gateway 的思路是同构的：判定权不在 Agent 手里，只是判定所需的上下文从「Gateway 自己查」扩展为「宿主主动喂」。
-
-**2）Todo/任务追踪工具移出默认工具面（v0.3.233，2026-08-14，BREAKING）**
-
-在 Opus 4.8、Sonnet 5、Fable 5、Mythos 5 及更新的模型上，任务追踪类工具（`TaskCreate` / `TaskGet` / `TaskUpdate` / `TaskList`，以及 `TodoWrite`）不再默认可用。要保留必须显式声明：
-
-```python
-# 方式一：显式写进工具白名单
-options = ClaudeAgentOptions(
-    model="claude-opus-4-8",
-    allowed_tools=["Read", "Write", "TodoWrite", "TaskCreate", "TaskList"],
-)
-
-# 方式二：环境变量整体开启
-# export CLAUDE_CODE_ENABLE_TODO_TOOLS=1
-```
-
-这是一次 breaking change（破坏性变更，升级后原有行为会直接改变），依赖这些工具的现有代码升级后会静默失去能力。但从权限设计角度看，方向和最小权限完全一致：**能力按需显式开启，而不是默认全给**。默认工具面越小，Gateway 需要防守的攻击面就越小——一个从没被授予的工具，不存在被 Prompt Injection 诱导调用的可能。
-
-**3）peer `origin` 可声明发送方权限等级（v0.3.234，2026-08-17）**
-
-宿主注入的 peer `origin`（对端来源标识，用于说明一条消息是谁发来的）可以携带 `fromMode` 字段声明发送方的权限等级。同等级的消息投递给免询问运行的接收方，不再逐条打断。这正是本文「委托授权」小节的工程化形态——委托链上的权限等级需要显式携带并校验，而不是靠接收方猜测。
-
-三条变更放在一起看，趋势很清楚：Agent 运行时正在把「谁有权做什么」的决策权和上下文供给权，系统性地推给宿主应用。这对应到 Gateway 设计上意味着，宿主侧的 hook 逻辑本身成了安全边界的一部分——它和 Gateway 一样需要被审计、版本控制和影响分析，不能当成随手写的业务回调。
+三条放在一起：Agent 运行时正把「谁有权做什么」的决策权和上下文供给权系统性推给宿主。落到 Gateway 设计上，宿主侧 hook 逻辑本身成了安全边界的一部分——它和 Gateway 一样需要审计、版本控制和影响分析，不能当成随手写的业务回调。
 
 ## 常见误区 / 面试追问
 
@@ -272,7 +233,7 @@ options = ClaudeAgentOptions(
 
 4. **追问："AWS Bedrock 的 Policy 和自建 Gateway 有什么区别？"** — 云服务商的方案（如 Bedrock AgentCore Policy）在 Agent 代码外部执行安全控制，开箱即用但绑定生态。自建 Gateway 更灵活但需要维护，适合多云或自托管场景。
 
-5. **追问："Claude Agent SDK 的 `classifierContext` 让宿主给权限决策注入上下文，这会不会削弱『Agent 不可信』的假设？"** — 恰恰相反，它强化了这个假设。要点是区分**谁在断言**：`classifierContext` 由 `PostToolUse` hook 返回，hook 运行在宿主进程里，Agent 无法伪造其内容；分类器读到的是宿主基于自身事实做出的断言，而不是 Agent 对自己行为的自述。信任根仍然锚在宿主侧，Agent 只是被评估的对象。同期 v0.3.233 把 Todo/任务追踪工具移出默认工具面（需显式列入 `allowedTools` 或设 `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`），走的也是同一条最小权限路线——默认工具面收窄，能力按需显式开启。**追问延伸**：既然 hook 成了安全判定的输入源，它自己就变成了新的攻击面，需要按 Gateway 同等标准做代码审计和变更管控——如果 hook 里拼接了 Agent 可控的字符串再塞进 `classifierContext`，等于给注入开了后门。
+5. **追问："Claude Agent SDK 的 `classifierContext` 让宿主给权限决策注入上下文，这会不会削弱『Agent 不可信』的假设？"** — 恰恰相反。要点是区分**谁在断言**：`classifierContext` 由 `PostToolUse` hook 返回，hook 运行在宿主进程里，Agent 无法伪造；分类器读到的是宿主基于自身事实的断言，不是 Agent 的自述，信任根仍在宿主侧。同期 v0.3.233 把 Todo/任务追踪工具移出默认工具面，走的也是同一条最小权限路线。**追问延伸**：hook 成了安全判定的输入源，它自己就变成新攻击面，需按 Gateway 同等标准做审计和变更管控——若 hook 里拼接 Agent 可控的字符串塞进 `classifierContext`，等于给注入开后门。
 
 6. **追问："MCP Server 场景下工具级权限怎么做？"** — Claude Agent SDK（TS）v0.3.301（2026-10）起，sdk-type MCP server 配置支持 per-tool `permission_policy`（`always_ask` / `always_deny`，initialize 与 setMcpServers 均生效）——工具级准入原则下沉为 MCP server 的原生配置面，宿主无需在调用层逐一拦截。
 

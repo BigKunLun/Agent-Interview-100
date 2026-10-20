@@ -194,40 +194,17 @@ key_differences = {
 
 ### 双侧最新动向（2026-08）：编排下沉 vs 协议做深
 
-2026 年 8 月两侧各出了一批动作，正好落在本文核心论断的延长线上——**「云侧收拢 vs 开放协议」的分野没变，但各自都往前走了一步**。
+「云侧收拢 vs 开放协议」的分野没变，但两侧各自往前走了一步：
 
 | 维度 | OpenAI（GPT-5.6 时期） | Anthropic（Claude Agent SDK） |
 |------|------------------------|-------------------------------|
 | 本期主线 | 把编排能力**收进 API 层** | 把 MCP 集成**做深到协议原生** |
 | 代表变更 | Responses API 新增保留推理态 / 原生多 Agent 编排 / 程序化工具调用 | Python SDK v0.2.140 支持 MCP 2.x，进程内 server 改走官方 in-memory transport |
-| 模型策略 | 不默认用旗舰模型，按任务下沉到更省的 Luna / Terra | 按任务选 Opus / Sonnet / Fable（SDK 侧一直如此） |
 | 方向含义 | 云端承担更多 Agent 运行时职责 → 平台锁定进一步加深 | 依赖开放协议的官方实现 → 减少自研代码、提升互操作保真度 |
 
-**OpenAI 侧：编排从 SDK 层下沉到 API 层。** 官方文章 The builder's guide to GPT-5.6（2026-08-13）给出的核心建议是不要默认用旗舰模型、按任务下沉到成本更低的小模型（Luna / Terra），并推介 Responses API 的三项新能力：
+**OpenAI：编排从 SDK 层下沉到 API 层。** The builder's guide to GPT-5.6（2026-08-13）的核心建议是不默认用旗舰、按任务下沉到更省的小模型（Luna / Terra，配套定价显示 Luna 降价约 80%），并推介 Responses API 三项新能力：**保留推理态**（跨轮次保留推理过程，不必每轮重新推理）、**原生多 Agent 编排**（多 Agent 调度由 API 直接提供，不再必须由应用层 Agents SDK 承担）、**程序化工具调用**（工具调用由代码逻辑驱动组织，不必每步都走模型决策）。其中「原生多 Agent 编排」进 API 是本文核心论断的直接演进：「SDK 轻 + 云重」进一步向云侧偏移——应用代码更薄，代价是原本可以自己换掉的编排逻辑也变成平台能力，锁定加深。
 
-- **保留推理态（retained reasoning）**——跨轮次保留模型的推理过程，不必每轮重新推理，多步任务的连贯性与成本都受益；
-- **原生多 Agent 编排**——多 Agent 的调度由 API 直接提供，不再必须由应用层的 Agents SDK 承担；
-- **程序化工具调用（programmatic tool calling）**——工具调用可由代码逻辑驱动组织，而不是每一步都走模型决策。
-
-配套的定价文章（2026-07-30）显示 Luna 降价约 80%、Terra 约 20%，Sol 增加最高 2.5 倍速的 Fast mode——「按任务下沉到小模型」这条建议背后有实打实的价格结构支撑。
-
-其中**「原生多 Agent 编排」进 Responses API 是本文核心论断的直接演进**：此前 OpenAI 的分层是「Responses API 管状态、Agents SDK 管编排」，编排属于应用层的事；现在编排被收进 API。这让「SDK 轻 + 云重」的重心进一步向云侧偏移——好处是应用代码更薄，代价是原本可以自己换掉的编排逻辑也变成了平台能力，锁定加深。
-
-**Anthropic 侧：MCP 集成从自研分发换成协议原生。** `claude-agent-sdk-python` v0.2.140（2026-08-18）落地 MCP 2.x 支持：
-
-```python
-# v0.2.140 的变化：依赖放宽到 mcp>=1.23.0,<3.0.0
-# 进程内 SDK MCP server 不再手写 JSON-RPC 分发，改走 mcp 官方 in-memory transport
-from mcp.server import Server
-
-server = Server("my-tools")   # 手工构造的 mcp.server.Server 现已全保真可用
-# resources / prompts / 全部 result content type 原样透传，不再被 SDK 中间层削减
-# mcp 2.x 下还支持中断时的工具取消
-```
-
-意义在于**保真度和维护成本**：过去 SDK 自己实现 JSON-RPC（一种基于 JSON 的远程调用协议）分发，能力边界由 SDK 的实现决定，MCP 协议里的 resources、prompts 等特性会在中间层被削掉；现在直接用协议官方的进程内传输实现，手工构造的 `mcp.server.Server` 可以原样接入，全部 result content type 原样透传。这与「MCP 是开放标准」的定位是自洽的——把实现让给协议官方，而不是长期维护一份平行实现。
-
-两边合起来看：OpenAI 把 Agent 运行时的能力往自家 API 里收，Anthropic 把自家 SDK 里的自研部分往开放协议上让。分野依旧，只是各自更彻底了。
+**Anthropic：MCP 集成从自研分发换成协议原生。** Python SDK v0.2.140（2026-08-18）落地 MCP 2.x：进程内 MCP server 不再手写 JSON-RPC（基于 JSON 的远程调用协议）分发，改走 mcp 官方 in-memory transport——手工构造的 `mcp.server.Server` 可以原样接入，resources / prompts / 全部 result content type 原样透传，不再被 SDK 中间层削减。意义在保真度和维护成本，与「MCP 是开放标准」的定位自洽：把实现让给协议官方，而不是长期维护一份平行实现。
 
 > 注：OpenAI 两篇文章的发布日期取自官方列表页的单一来源（正文页经代理读取时不渲染日期），未做正文交叉验证，日期以官方页面为准。
 

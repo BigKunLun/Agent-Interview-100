@@ -7,11 +7,7 @@
 
 2026 年模型版图最大的变化是：**「推理模型」与「通用模型」的边界正在消失**。2024-2025 年那种「o1 是专用推理模型、GPT-4o 是通用模型」的泾渭分明已经过时——如今三家旗舰通用模型都把推理能力做成**内置可调的 thinking 模式**：OpenAI 用显式 `thinking` 开关、Anthropic 用 `extended thinking` + `budget_tokens`、Google 用 Deep Think 与 Thought Signatures。选型问题从「该不该上推理模型」变成了「同一模型开不开 thinking、开多大预算」。
 
-当前（2026.7）三大旗舰定位：**Claude Sonnet 5**（2026-06-30 发布，Anthropic 定位「最 agentic 的 Sonnet」，Sonnet 4.6 的 drop-in 升级，定价 $2/$10 per MTok，约为同档旗舰一半，主打 agentic coding 与自主任务执行）、**GPT-5.6**（代号旗舰 "Sol" + 均衡日常 "Terra"，已 GA，强调自然语言→前端 UI 生成与端到端自主工作流）、**Gemini 3 / 3.1**（3.1 解锁 Agent Mode，可自主编写/测试/部署桥接脚本，配合 Thought Signatures 让 agent 追踪自身推理，Google I/O 2026 把 Gemini 重新定位为「操作系统级 agent 平台」）。
-
-2026-09 快照更新：**GPT-6 Astra**（09-03 发布，computer use / 浏览 / 软工 / 网安 / 科学方向 SOTA，FrontierMath Tier 4 98%、ARC-AGI-3 99.9%，$10/$50 per MTok，经 Azure / Bedrock 提供）；Anthropic 发布 **Claude Fable / Mythos 5.1**（09-01，同一模型配不同安全护栏，典型负载降价约 25%、agentic 任务最高约 45%）。代际更替在加速，「推理能力是旗舰内置模式」的合流判断进一步坐实。
-
-2026-10 快照更新：**Claude 5.5 全梯队三连发**——Opus 5.5（09-22，多数任务达 Fable 5.1 水平、运行成本比 Opus 5 低 40%）、Sonnet 5.5（09-28，较 Sonnet 5 提速 30%、多数场景成本最多降 30%）、Haiku 5.5（10-07，最快最便宜的小模型）；OpenAI 侧 GPT-6 家族成型并发布官方选型指南（model guide：选型、reasoning effort 调节、技能与生产工作流，10-02）。agentic 能力与成本的双线竞争仍在加速。
+当前（2026.10）旗舰格局：**Anthropic** 全梯队刷新——Claude 5.5 三连发（Opus 5.5，09-22，多数任务达 Fable 5.1 水平、运行成本比 Opus 5 低 40%；Sonnet 5.5，09-28，较 Sonnet 5 提速 30%、多数场景成本最多降 30%；Haiku 5.5，10-07，最快最便宜的小模型），另有 Fable / Mythos 5.1（09-01，同一模型配不同安全护栏，agentic 负载最高降价约 45%）；**OpenAI** GPT-6 家族成型（旗舰 Astra，09-03，computer use / 软工 / 网安方向 SOTA，$10/$50 per MTok；10-02 发布官方选型指南，覆盖选型与 reasoning effort 调节）；**Google** Gemini 3 / 3.1（3.1 解锁 Agent Mode，可自主编写/测试/部署桥接脚本，配合 Thought Signatures 让 agent 追踪自身推理，Google I/O 2026 把 Gemini 重新定位为「操作系统级 agent 平台」）。代际更替在加速，「推理能力是旗舰内置模式」的合流判断持续坐实。
 
 **Cheat sheet**：
 - **核心趋势**：推理能力从「独立品类」扩散为「旗舰通用模型的内置模式」，三家都在合流

@@ -180,44 +180,21 @@ graph.add_conditional_edges("reason", lambda s: s["next_step"])
 
 ### 七、前沿动向：Harness 本身成为优化对象（2026-08）
 
-前面六节讲的都是"人怎么设计 harness"。2026-08 集中出现的一批论文把 harness 推到了另一个位置：**它不再只是人工设计的对象，而是可被搜索、演化、甚至在线训练的优化对象**。这是在原结论（harness 决定约七成实战表现）之上新增的一个维度，不是对它的推翻——恰恰相反，正因为杠杆在 harness 上，把优化力气花在这一层才划算。
+前面六节讲的都是"人怎么设计 harness"。2026-08 集中出现的一批论文把它推到了另一个位置：**不再只是人工设计的对象，而是可被搜索、演化、甚至在线训练的优化对象**。这不是对"harness 决定约七成实战表现"的推翻，恰恰相反——正因为杠杆在 harness 上，把优化力气花在这一层才划算。**以下均为社区单次实验、尚无独立复现**，引用时连出处与日期一起标注。
 
-**以下均为社区单次实验、尚无独立复现**，引用时务必连出处与日期一起标注，不要当成已确立的结论。
+最硬的量化实证是 StateM（[arXiv 2608.15089](https://arxiv.org/abs/2608.15089)，2026-08-15）提出的 **harness scaling**（不动模型权重，只把模型外面那层运行时做厚：持久状态、阶段局部上下文、受检状态转移、可恢复 runbook、带版本的过程性实践）：Terminal-Bench 2.1 上同一个 GPT-5.5 xhigh 从 **83.1% 提升到 92.1%**（论文标题最好成绩 95.3%）——模型是常量，涨的分全部来自 harness。
 
-#### 1. 量化：不动模型权重，只加厚 harness 能拿多少分
-
-*StateM: 95.3% on Terminal-Bench 2.1 via Harness Scaling*（[arXiv 2608.15089](https://arxiv.org/abs/2608.15089)，2026-08-15）提出 **harness scaling**（harness 扩展：不增参数、不改权重，只把模型外面那层运行时做厚）。该文的做法是用 agent 原生运行时把执行重新组织成五件事：持久状态、阶段局部上下文（每个阶段只看该阶段需要的那部分上下文）、受检状态转移（状态跳转前先校验前置条件）、可恢复 runbook（中断后能接着跑的操作手册）、带版本的过程性实践（沉淀下来的做法本身带版本号）。
-
-据其实验，Terminal-Bench 2.1 上同一个 GPT-5.5 xhigh 从 **83.1% 提升到 92.1%**（+9.0pp），论文标题给出的最好成绩为 **95.3%**。模型是常量，涨的分全部来自 harness——这是本节最硬的一条量化实证，也是对第三节 Terminal Bench 2.0「harness > 模型」杠杆的直接补强。
-
-#### 2. 方法：谁来改 harness
-
-- *DarwinX: Evolving Agent Harnesses Through Natural Selection*（[arXiv 2608.07545](https://arxiv.org/abs/2608.07545)）冻结模型权重，只演化 prompt / 工具 / 技能 / 控制流这四样东西。两个设计值得记：一是 **preserve-and-extend 契约**（新变体必须保住老能力才准入，凡导致回归的一律拒绝），二是适应度直接由 benchmark 自带的 **verifier**（判定通过与否的校验器）给出，**不需要标准答案**——这让演化循环可以脱离人工标注跑下去。
-- *AutoDesign: Meta-Harness Optimization for Long-Horizon Agentic Design*（[arXiv 2608.13560](https://arxiv.org/abs/2608.13560)）走的是另一条路：用一个 **meta-optimizer**（管优化器的优化器）指导 code agent 依据 **rollout**（跑完一整轮任务留下的完整轨迹）反馈，递归改写自己的 harness。据其报告，被优化的对象和执行优化的对象是同一套代码。
-
-一句话概括这条线：DarwinX 是"自然选择"，AutoDesign 是"自我改写"，共同点是**把工程师从 harness 调参循环里换了出去**。
-
-#### 3. 边界扩展：harness 这个概念在往外长
-
-- *EnvHarness: Awakening Static Worlds for Agent Learning*（[arXiv 2608.19880](https://arxiv.org/abs/2608.19880)，2026-08-20）提出**环境 harness**：用一层可插拔、可编程的组件包住静态环境，不改底层逻辑就能重塑其行为。相当于把 harness 的思路从"包住模型"搬到了"包住环境"。
-- *Zetta ζ: An Efficient Closed-Loop Embodied Harness*（[arXiv 2608.16590](https://arxiv.org/abs/2608.16590)）冻结基座策略，在线演化"代码化运行时 critic（用代码写成的实时评判器）+ 恢复技能"，并做三重时间尺度分离（执行、评判、技能沉淀各跑各的节奏）。该文报告其关键差异是**不再依赖 episode 结束后的事后反思**——问题在跑的过程中就被接住。
-
-#### 4. 失效条件：harness 组件不是加了就有用
-
-*Demystifying Agent Skills: Why They Work—Until They Don't*（[arXiv 2608.14036](https://arxiv.org/abs/2608.14036)）对 Agent Skills 做了归因拆解，分离出四个因素：表示形式、结果标注、检索难度、跨框架鲁棒性。该文据此回答"技能什么时候有用、在哪里失效"。对照第二节的 6+1 抽象读这篇的价值在于：**Skill 这一格填上了不等于收益到手**，检索不到、跨 harness 迁不动的技能等于没有。
-
-#### 分叉：两种 harness 演进路线
+方法侧两条路线：DarwinX（[arXiv 2608.07545](https://arxiv.org/abs/2608.07545)）冻结权重只演化 prompt / 工具 / 技能 / 控制流，适应度由 benchmark 自带 verifier（判定通过与否的校验器）给出、不需要标准答案，并用 preserve-and-extend 契约（新变体必须保住老能力，导致回归的一律拒绝）防退步；AutoDesign（[arXiv 2608.13560](https://arxiv.org/abs/2608.13560)）让 meta-optimizer 指导 code agent 按 rollout（完整任务轨迹）反馈递归改写自身 harness。共同点：**把工程师从 harness 调参循环里换了出去**。同期概念外延也在扩张——EnvHarness 把 harness 思路从"包住模型"搬到"包住环境"、Zetta ζ 做在线演化的运行时 critic，详见参考资料。
 
 | 维度 | 手工设计 harness（当前主流） | 自动搜索 / 演化 harness（本期方向） |
 |------|------------------------------|--------------------------------------|
 | 谁来改 | 人：读 trace、改 prompt、加工具 | 演化循环 / meta-optimizer 按 rollout 反馈自动改写 |
 | 优化信号 | 工程师判断 + 离线跑分 | benchmark 自带 verifier 的通过/失败信号，不需标准答案 |
-| 迭代周期 | 天到周 | 小时级（DarwinX / AutoDesign）到在线（Zetta 在 episode 内） |
 | 防退步机制 | 人工回归测试 + code review | preserve-and-extend 契约：导致回归的变体直接拒绝 |
 | 可解释性 | 高，改动都是人写的 | 低，搜出来的 harness 未必讲得清为什么有效 |
 | 成熟度 | 生产在跑（Claude Code / Codex / Cline） | 论文阶段，单次实验、未经复现 |
 
-**怎么看这条分叉**：短期内生产系统仍然是手工设计 harness 的天下——可解释性和可回滚性在生产环境不可让渡。但 StateM 那 9 个百分点说明 harness 这一层还有大量未被人工榨干的空间，而 DarwinX / AutoDesign 给出的是"让机器去榨"的可行路径。面试里被问到"harness 的未来"，这条线比"再加个工具"更值得讲。
+短期内生产系统仍是手工设计的天下——可解释性和可回滚性不可让渡。但 StateM 那 9 个百分点说明这层还有大量未被人工榨干的空间，DarwinX / AutoDesign 给出了"让机器去榨"的可行路径。面试里被问到"harness 的未来"，这条线比"再加个工具"更值得讲。
 
 ## 常见误区 / 面试追问
 
@@ -235,7 +212,7 @@ graph.add_conditional_edges("reason", lambda s: s["next_step"])
 
 - **追问 4：「Cline SDK 2026-05 为什么把 runtime 从 IDE 剥离？这意味着什么？」** → 答：意味着 Harness 进入"runtime 独立化"阶段。`@cline/sdk` 把 agent loop 从 VS Code 插件里彻底拆出，可在 CLI / Web / CI 任意 surface 上调用。这预示 2026-2027 行业方向：**Harness 从"单一产品形态"演化为"runtime + 多 surface 适配器"**——同一份 agent runtime 跑 IDE、跑终端、跑 CI、跑 Kanban。
 
-- **追问 5：「harness 既然决定七成表现，能不能干脆自动搜出最优 harness？」** → 答：2026-08 这个方向刚出现第一批工作，可以答"路径已经跑通，但离生产还有距离"。方法侧：DarwinX（[arXiv 2608.07545](https://arxiv.org/abs/2608.07545)）冻结权重只演化 prompt / 工具 / 技能 / 控制流，用 benchmark 自带 verifier 当适应度、用 preserve-and-extend 契约拒绝导致回归的变体；AutoDesign（[arXiv 2608.13560](https://arxiv.org/abs/2608.13560)）让 meta-optimizer 指导 code agent 按 rollout 反馈递归改写自身 harness。效果侧：StateM（[arXiv 2608.15089](https://arxiv.org/abs/2608.15089)，2026-08-15）据其实验在 Terminal-Bench 2.1 上把 GPT-5.5 xhigh 从 83.1% 推到 92.1%，证明这一层确实还有空间。**答题时务必补两句限定**：一是这些都是社区单次实验、尚无独立复现；二是自动搜出的 harness 可解释性差、难回滚，生产环境短期内仍会是手工设计为主。
+- **追问 5：「harness 既然决定七成表现，能不能干脆自动搜出最优 harness？」** → 答：2026-08 刚出现第一批工作，可以答"路径已经跑通，但离生产还有距离"。方法侧：DarwinX 冻结权重只演化 prompt / 工具 / 技能 / 控制流，用 benchmark 自带 verifier 当适应度、用 preserve-and-extend 契约拒绝回归变体；AutoDesign 让 meta-optimizer 指导 code agent 递归改写自身 harness。效果侧：StateM 在 Terminal-Bench 2.1 上把 GPT-5.5 xhigh 从 83.1% 推到 92.1%。**答题时务必补限定**：都是社区单次实验、尚无独立复现；且自动搜出的 harness 可解释性差、难回滚，生产环境短期内仍会是手工设计为主。
 
 ## 参考资料
 
