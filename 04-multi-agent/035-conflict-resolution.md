@@ -212,6 +212,137 @@ class ResourceConflictResolver:
             return True
 ```
 
+### 并发写控制：锁粒度、乐观并发与 fencing token
+
+上面的锁字典只解决"谁先拿"，没解决"拿到后怎么写"。多 Agent 共享工作区时，写冲突按代价从低到高分三层处理。
+
+| 层次 | 做法 | 代价与适用 |
+|------|------|-----------|
+| 避免冲突 | 任务拆分时文件集不重叠 | 无等待、无死锁，首选 |
+| 加锁 | 文件锁 / 版本号 / 分布式锁 | 有等待和死锁风险 |
+| 合并 | 三方合并、测试兜底 | 冲突已经发生，只能补救 |
+
+**避免为什么最好**：不需要锁服务，不会死锁，也不会有 Agent 排队等锁时白白消耗时间。任务拆分阶段就让每个 Agent 写不同的文件；需要新建文件的场景天然不冲突，各写各的文件，最后统一汇总。只有无法拆开时才退到加锁。
+
+**锁粒度**：默认文件级。目录级适合批量操作，例如整体替换一个包；行级锁实现复杂、收益低，一般不做。关键原则是**缩小临界区，而不是放大粒度**。模型调用、计算、内容生成都放在锁外，只在写盘的那一瞬间持锁。
+
+```python
+from pathlib import Path
+from filelock import FileLock, Timeout
+
+
+class FileWriter:
+    """文件级锁：模型调用在锁外，只在写入瞬间加锁"""
+
+    def __init__(self, root: str, lock_timeout: float = 5.0):
+        self.root = Path(root)
+        self.lock_timeout = lock_timeout
+
+    async def write(self, rel_path: str, producer):
+        path = self.root / rel_path
+        content = await producer(path)          # 生成内容，不持锁
+
+        lock = FileLock(str(path) + ".lock", timeout=self.lock_timeout)
+        try:
+            with lock:                          # 只包住写盘
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(content, encoding="utf-8")
+        except Timeout:
+            raise RuntimeError(f"{rel_path} 被占用，稍后重试或换文件")
+        return path
+```
+
+**乐观并发**：读的时候记下版本号，写的时候带上版本号比对。版本没变就写入并递增，变了就失败，调用方重新读取再试。适合读多写少的场景，不需要提前加锁。
+
+```python
+class VersionConflict(Exception):
+    pass
+
+
+class VersionedStore:
+    """CAS：dict 模拟，生产用 Redis WATCH 或数据库行版本号"""
+
+    def __init__(self):
+        self._data = {}                         # key -> (value, version)
+
+    def read(self, key):
+        value, version = self._data.get(key, (None, 0))
+        return value, version
+
+    def compare_and_set(self, key, expected_version, new_value) -> int:
+        _, current = self._data.get(key, (None, 0))
+        if current != expected_version:
+            raise VersionConflict(f"{key} 版本已变为 {current}")
+        self._data[key] = (new_value, current + 1)
+        return current + 1
+
+    async def update(self, key, mutate, max_retries=3):
+        for _ in range(max_retries):
+            value, version = self.read(key)
+            try:
+                return self.compare_and_set(key, version, mutate(value))
+            except VersionConflict:
+                continue                        # 重新读取后再试
+        raise VersionConflict(f"{key} 连续 {max_retries} 次冲突")
+```
+
+**死锁预防**有两条规则：需要多把锁时，全局按路径字典序获取；拿不到锁就超时释放已持有的锁，不做无限等待。顺序一致就不会形成环路，超时保证不会永久阻塞。
+
+```python
+class OrderedLocks:
+    """按字典序批量加锁，失败时释放已持有的锁"""
+
+    def __init__(self, root: str, timeout: float = 5.0):
+        self.root = Path(root)
+        self.timeout = timeout
+
+    async def acquire_all(self, rel_paths):
+        handles = []
+        try:
+            for rel in sorted(set(rel_paths)):  # 全局锁顺序：字典序
+                lock = FileLock(str(self.root / rel) + ".lock",
+                                timeout=self.timeout)
+                lock.acquire()
+                handles.append(lock)
+            return handles
+        except Timeout:
+            for handle in handles:              # 失败则回滚已持有的锁
+                handle.release()
+            raise
+```
+
+**fencing token** 解决租约过期的残留写入：锁的租约到期后，原持有者可能还以为自己持锁，继续往存储里写。做法是锁服务每次授予锁时发一个单调递增的编号，写请求必须带上编号，存储端拒绝比已记录编号更小的写入。
+
+```python
+class FencingLockService:
+    """分布式锁服务：每次授予返回单调递增 token"""
+
+    def __init__(self):
+        self._counter = 0
+
+    def grant(self, resource: str) -> int:
+        self._counter += 1
+        return self._counter
+
+
+class FencedStore:
+    """存储端拒绝旧 token，防止过期持有者覆盖新写入"""
+
+    def __init__(self):
+        self._last_token = {}
+        self._data = {}
+
+    def write(self, resource: str, token: int, value):
+        if token <= self._last_token.get(resource, 0):
+            raise PermissionError(f"token {token} 已过期，拒绝写入")
+        self._last_token[resource] = token      # 生产环境需原子完成
+        self._data[resource] = value
+```
+
+生产实现里，token 比较和写入要在同一个原子操作里完成（Redis Lua 脚本或数据库条件更新），否则检查和写入之间仍有竞态。
+
+**合并**是最后手段：不同文件直接合；同一文件用三方合并（diff3 / `git merge-file`），冲突块交模型或人工处理；语义冲突例如 A 删了函数、B 还在调用它，文本上可能毫无冲突，只能靠编译和测试发现。所以合并之后必须跑一遍构建和测试，不能只看 diff 干净。
+
 ### 安全性提升
 
 研究表明，正式的共识协议可以显著提升多 Agent 系统的安全性：
@@ -242,6 +373,8 @@ class ResourceConflictResolver:
 3. **追问："拜占庭容错在 LLM 多 Agent 中有用吗？"** — 有用。当一个 Agent 被 Prompt Injection 操控产生恶意输出时，它实际上就是一个"拜占庭节点"。BFT 共识机制可以在部分 Agent 被攻陷的情况下维持系统正确性。
 
 4. **追问："如何检测冲突而不只是解决冲突？"** — 实现冲突检测器：比较各 Agent 输出的语义相似度，当相似度低于阈值时触发冲突解决流程。对于结构化输出（如 JSON），可以做字段级别的差异比较。
+
+5. **追问："多个 Agent 写同一工作区，只加文件锁够吗？"** — 不够。文件锁只防同时写，防不了租约过期后旧持有者继续写，这时需要 fencing token，让存储层拒绝旧编号的写入。另外锁的临界区要尽量小，模型调用和计算都放在锁外。能从任务拆分上避免文件重叠，就不要用锁。
 
 ## 参考资料
 

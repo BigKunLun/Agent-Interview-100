@@ -281,6 +281,218 @@ class LoopDetector:
 
 关键原则：检测到循环后不是直接报错，而是**注入"请换一种方式"的提示**，给 LLM 一次纠正机会。
 
+### 重复检测：从参数哈希到状态指纹
+
+上一节的 `max_same_params` 直接用 `params` 相等比较，不可靠：dict 不可哈希，不能进 set；`0.1` 和 `0.10` 被判成两次调用；`./data/a.csv` 和 `data//a.csv` 指向同一文件却算不同参数。先把参数规范化——JSON key 排序、去空白、路径标准化——再对 `(tool_name, normalized_args)` 做哈希。
+
+参数哈希抓不到"参数变了但没进展"：Agent 反复改查询词、反复重读同一文件，每轮参数都不同。用**状态指纹**：`hash(已完成子目标 + 工作区文件哈希 + 最近 K 条结果摘要)`。相邻两轮指纹相同，判定无进展。
+
+**周期检测**解决 A→B→A→B：在最近 N 步的 `(tool_name, args_hash)` 序列里找 n-gram 重复。单步看都不重复，只有整段序列在绕圈。
+
+三种检测合成一个类，统一走 `observe` 记录、`verdict` 取结论：
+
+```python
+import hashlib
+import json
+from collections import deque
+from pathlib import Path
+
+
+def normalize(obj):
+    """递归规范化：路径标准化、浮点统一精度、key 排序由 json.dumps 负责"""
+    if isinstance(obj, dict):
+        return {k: normalize(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [normalize(v) for v in obj]
+    if isinstance(obj, float):
+        return round(obj, 6)
+    if isinstance(obj, str) and not obj.startswith(("http://", "https://")):
+        if "/" in obj or obj.startswith("."):
+            return str(Path(obj).resolve())
+    return obj
+
+
+def args_hash(tool_name: str, params: dict) -> str:
+    payload = json.dumps(
+        {"tool": tool_name, "args": normalize(params)},
+        sort_keys=True, ensure_ascii=False, separators=(",", ":"),
+    )
+    return hashlib.sha256(payload.encode()).hexdigest()[:16]
+
+
+class LoopGuard:
+    """参数哈希 + 状态指纹 + 周期检测，三路判定重复"""
+
+    def __init__(self, window=8, repeat_limit=3, cycle_len=2):
+        self.window = deque(maxlen=window)   # 滑动窗口内的 (tool, hash)
+        self.repeat_limit = repeat_limit     # 经验值：同一调用出现 3 次判重复
+        self.cycle_len = cycle_len
+        self.history = []                    # 最近 K 条结果摘要
+        self.last_fingerprint = None
+        self.fingerprint_hits = 0
+
+    def _fingerprint(self, done_goals: list[str], workspace_files: list[Path]) -> str:
+        file_digest = hashlib.sha256()
+        for path in sorted(workspace_files, key=str):
+            if path.exists():
+                file_digest.update(path.read_bytes())
+        parts = [
+            "|".join(sorted(done_goals)),
+            file_digest.hexdigest(),
+            "|".join(self.history[-5:]),     # 最近 5 条结果摘要
+        ]
+        return hashlib.sha256("\n".join(parts).encode()).hexdigest()[:16]
+
+    def observe(self, tool_call, result, done_goals=(), workspace_files=()):
+        key = (tool_call.name, args_hash(tool_call.name, tool_call.params))
+        self.window.append(key)
+        self.history.append(str(result)[:300])
+
+        fp = self._fingerprint(list(done_goals), list(workspace_files))
+        self.fingerprint_hits = self.fingerprint_hits + 1 if fp == self.last_fingerprint else 0
+        self.last_fingerprint = fp
+
+    def _cycle_detected(self) -> bool:
+        seq = list(self.window)
+        n = self.cycle_len
+        if len(seq) < n * 2:
+            return False
+        return any(seq[i:i + n] == seq[i + n:i + 2 * n]
+                   for i in range(len(seq) - 2 * n + 1))
+
+    def verdict(self) -> tuple[str, str]:
+        if not self.window:
+            return "ok", ""
+        key = self.window[-1]
+        if self.window.count(key) >= self.repeat_limit:
+            return "repeat", f"同一调用重复 {self.repeat_limit} 次"
+        if self._cycle_detected():
+            return "cycle", f"检测到 {'→'.join(c[0] for c in list(self.window)[-2 * self.cycle_len:])} 循环"
+        if self.fingerprint_hits >= 1:
+            return "no_progress", "相邻两轮状态指纹相同，工作区无变化"
+        return "ok", ""
+```
+
+每轮工具结果返回后调用 `observe`，下一轮请求模型前调用 `verdict`。命中后不要直接终止，先走下一节的升级流程。
+
+### 检测到重复后的分级处理
+
+检测和计数必须放在 harness（Agent 外层执行框架）里，跨轮持久化。工具函数执行完就销毁，计数器跟着没了；模型也不会记住"我已经试过三次"。每轮重置计数等于没做。
+
+处理分四级，逐次升级：
+
+| 级别 | 动作 | 目的 |
+|------|------|------|
+| 第 1 次 | 注入提示，附上上次结果 | 省一次调用，提示模型"已试过" |
+| 第 2 次 | 本轮禁用该工具，要求解释重复原因 | 强迫换路径 |
+| 第 3 次 | 终止，返回已完成部分和卡点 | 止损，交给人 |
+| 错误累积 | 回退到 checkpoint 换方案 | 通常人工决定 |
+
+第一级的关键是**把上次结果再贴一遍**。模型重复调用常因为上下文里只有"已调用"没有"结果"，它以为没拿到数据。把结果附在提示后面，往往一轮就跳出循环。第三级返回已完成部分、卡住的子目标和最后几条结果摘要，比一句"超出重试上限"有用。回退 checkpoint 只用于错误已累积污染上下文的场景，默认人工决定。
+
+```python
+class EscalationPolicy:
+    """把 LoopGuard 的检测结果映射成四级动作"""
+
+    NUDGE, DISABLE_TOOL, ABORT, ROLLBACK = "NUDGE", "DISABLE_TOOL", "ABORT", "ROLLBACK"
+
+    def __init__(self):
+        self.levels = {}          # (tool, hash) -> 已升级次数，跨轮持久化
+
+    OK = "OK"
+
+    def decide(self, verdict: str, tool_name: str, key: str,
+               errors_accumulated: bool = False):
+        if verdict == "ok":
+            self.levels.pop(key, None)          # 有进展就清零，避免误伤
+            return self.OK, ""
+
+        level = self.levels.get(key, 0) + 1
+        self.levels[key] = level
+
+        if level == 1:
+            return self.NUDGE, "该调用刚刚执行过，结果见附加上下文，请基于已有结果继续"
+        if level == 2:
+            return self.DISABLE_TOOL, f"本轮禁用 {tool_name}，请说明为何重复调用并换用其他工具"
+        if errors_accumulated:
+            return self.ROLLBACK, "错误已累积，建议回退到最近 checkpoint 重规划"
+        return self.ABORT, f"重复 {level} 次仍未推进，终止任务并上报卡点"
+```
+
+计数键用 `(tool_name, args_hash)`，不同工具的重复互不干扰。`DISABLE_TOOL` 只在本轮移除该工具，下一轮恢复；`ABORT` 时把已完成目标、最后几条结果和检测原因一起返回。
+
+### 大结果治理与重试的幂等前提
+
+大结果会挤占上下文，也让重试更贵。三条截断规则：
+
+- **头尾都保留**：错误信息和结论常在尾部，只截头会丢关键信息。中间标 `... 省略 X 行 ...`。
+- **JSON 按结构截**：长数组留前 10 项，同时给出总数，模型才知道数据不完整。
+- **日志按级别过滤**：默认只留 WARN/ERROR，需要时按关键字回查。
+
+单条结果控制在上下文窗口 15% 以内是经验值。超限的完整结果外置对象存储，回灌引用 id 加摘要，需要细节时再按 id 读取。
+
+```python
+import json
+
+
+class ResultTruncator:
+    """按上下文窗口比例截断工具结果，超大结果外置"""
+
+    def __init__(self, context_limit: int, object_store, max_ratio=0.15):
+        self.limit = int(context_limit * max_ratio)  # 经验值：15%
+        self.object_store = object_store
+
+    def truncate(self, result, head=40, tail=20) -> dict:
+        text = result if isinstance(result, str) else json.dumps(result, ensure_ascii=False)
+        if len(text) <= self.limit:
+            return {"inline": text}
+
+        if isinstance(result, list):                  # 长数组按结构截
+            return {
+                "inline": json.dumps(result[:10], ensure_ascii=False),
+                "total": len(result),
+                "note": f"共 {len(result)} 项，仅展示前 10 项",
+            }
+
+        lines = text.splitlines()
+        omitted = max(0, len(lines) - head - tail)
+        body = "\n".join(
+            lines[:head] + [f"... 省略 {omitted} 行 ..."] + lines[-tail:]
+        )
+        if len(body) <= self.limit:
+            return {"inline": body}
+        return {                                       # 仍超限则外置
+            "external_ref": self.object_store.put(text),
+            "summary": body[: self.limit],
+            "chars": len(text),
+        }
+```
+
+写操作重发会产生重复副作用。幂等键用 `run_id + tool_name + 参数哈希`，传给支持幂等的下游去重。写操作按可控程度分三类：
+
+1. **能设计成幂等的直接改造**：写文件用内容哈希做版本，创建资源先查后建。
+2. **可补偿的带幂等键并事后查询确认**：下游支持就带上，不支持就在重试前查状态。
+3. **外部接口不可控的用"先查后写"**：目标状态未达成才发写请求。
+
+**重试前先查状态**比盲目重发更通用，因为很多外部系统不支持幂等键，查询接口却几乎都有。骨架如下：
+
+```python
+async def safe_write(run_id: str, tool_name: str, params: dict):
+    key = f"{run_id}:{tool_name}:{args_hash(tool_name, params)}"
+    state = await tool_registry.execute(f"{tool_name}_get", params)
+    if state.get("done") and state.get("idem_key") == key:
+        return state["result"]                    # 上次已成功，直接复用
+
+    try:
+        return await tool_registry.execute(tool_name, {**params, "idem_key": key})
+    except TransientError:
+        # 结果未知（写入可能已生效），不盲目重发
+        return {"status": "unknown", "idem_key": key,
+                "suggestion": "重试前先查询该操作是否已完成"}
+```
+
+超时不等于没写成功。捕获 `TransientError` 后返回 unknown 让上层先查，比直接重发安全。
+
 ### 降级链（Fallback Chain）
 
 比简单的双工具降级更完善的方案：
@@ -325,6 +537,10 @@ async def execute_with_fallback(tool_name, params):
 7. **场景追问："你的工具调用成功但返回数据格式与 LLM 期望不符，导致解析错误并重试。如何解决？"** — 这是"成功但失败"的问题。解决路径：(1) 工具 Schema 必须明确定义输出格式；（2）工具内部加入输出验证，确保返回数据符合 Schema；（3）在工具返回时附带示例格式，帮助 LLM 理解；（4）LLM 端加入容错解析，处理边界情况；（5）对不稳定的外部 API 加入 Wrapper 层，标准化输出格式。
 
 8. **场景追问："你的数据库查询工具因参数注入攻击而被封禁，Agent 无法再访问数据。如何防范和恢复？"** — 这是安全故障场景。防范路径：(1) 实施严格的参数验证和转义；（2）限制工具权限，遵循最小权限原则；（3）加入查询模板机制，禁止动态构造完整 SQL；（4）实施速率限制，防止单一 Agent 过度请求；（5）监控异常查询模式，提前识别攻击行为。恢复路径：(1) 紧急启用备用数据库连接；（2) 暂时切换到只读模式；（3）与数据库厂商沟通解封；（4）事后分析攻击来源，加强防护。
+
+9. **追问："相同参数检测为什么不能直接用 dict 相等比较？"** — 三个原因：dict 不可哈希，无法进 set 或当缓存键；浮点数 `0.1` 和 `0.10` 会被判成不同值；同一路径的不同写法（`./data/a.csv` 与 `data//a.csv`）也会被当成不同参数。要先规范化（JSON key 排序、去空白、路径标准化）再哈希。另外参数哈希抓不到"参数变了但没进展"的循环，需要状态指纹补充。
+
+10. **追问："写操作重试时如何避免重复执行？"** — 优先"先查后写"：重试前查一次目标状态，已完成就直接复用结果。下游支持幂等键时，用 `run_id + tool_name + 参数哈希` 作为键交给下游去重。超时返回"结果未知"时不要盲目重发，先把状态标成 unknown 交给上层确认。
 
 ## 参考资料
 

@@ -152,6 +152,128 @@ class AgentCheckpointing:
     # 4. Worker 迁移（从一个实例转到另一个）
 ```
 
+### Checkpoint 存什么：完整状态清单
+
+上面的检查点示例只存了 plan、completed_steps、results 和 timestamp。这些字段能回答"任务做到哪一步"，但回答不了"这一步已经对外部世界做了什么"。生产环境里，恢复事故往往出在后者。
+
+| 类别 | 要存什么 | 缺失的后果 |
+| --- | --- | --- |
+| 对话状态 | messages（含 tool_calls 与工具结果）、system prompt 版本 | 恢复后接不上上下文，重复提问或重复执行 |
+| 循环状态 | turn 序号、已用 token / 耗时 / 成本 | 预算和循环保护失效，可能无限续跑 |
+| 任务状态 | 子任务 DAG、各节点状态与产出引用 | 无法判断哪些步骤该跳过、哪些该继续 |
+| 外部副作用 | 不可逆操作及状态、幂等键、外部系统返回的引用 | 重复下单、重复发邮件、重复扣款 |
+| 进行中的工具调用 | 哪个 tool_call 正在执行，或已执行但结果未回灌 | 恢复后既不敢重试，也不知道结果 |
+| 版本信息 | prompt 版本、工具 schema 版本、模型版本 | 用新逻辑续跑旧状态，行为不一致 |
+
+**外部副作用记录是最容易被漏掉的一类，也最致命。** 计划和中间结果丢了可以重算，已经发生的扣款不能靠重算撤销。凡是要调用外部写接口的步骤，必须在执行前落账，不能等成功后再补记录。进程恰好死在"请求已发出、响应没回来"的窗口里时，事后只能靠幂等键去外部系统对账。
+
+### Checkpoint 放哪：分层存储与快照频率
+
+| 存储 | 放什么 | 特点 |
+| --- | --- | --- |
+| Redis | 当前 run 的循环状态、最新 checkpoint 指针 | 读写快，适合热状态；配 AOF 和副本，允许秒级丢失 |
+| 关系库（Postgres） | 按 run_id 的完整快照、副作用账本 | 事务可靠，作为恢复的权威来源 |
+| 对象存储（S3 等） | 长工具输出、文件快照、完整消息归档 | 便宜、容量大，不适合高频小写入 |
+| 事件日志 + 定期快照 | 每步追加事件，每 N 步或每 M 分钟做一次全量快照 | 恢复 = 快照 + 重放增量，成本和 RPO 可调 |
+
+快照频率是在恢复速度和写入成本之间取平衡。每步全量快照恢复最快，但写入放大严重；事件日志加每 10 步一次快照，能把重放量控制在较小范围（经验值，实际间隔按单步耗时和可接受 RPO 实测决定）。
+
+### Checkpoint 怎么恢复：五步流程与幂等前提
+
+1. 加载最近快照，按事件日志重放到中断点。
+2. 校验版本一致。prompt、工具 schema、模型版本对不上时，不要直接续跑，先迁移状态或转人工。
+3. 核对副作用。pending 或 unknown 的操作去外部系统查真实结果，不能假设成功，也不能假设失败。
+4. 从下一个未完成步骤续跑。已完成步骤直接跳过，不要从快照点整体重放。
+5. 注入恢复提示。例如："系统刚从故障恢复，第 N 轮，已完成 A、B，未完成 C，副作用 D 已确认。不要重复执行已完成步骤。"
+
+第三步能否成立，取决于外部写接口是否支持幂等键。没有幂等键，你既不能安全重试，也无法确认一次"结果未知"的调用到底生效没有——**没有幂等键的恢复就是赌博**。正确做法是调用前生成幂等键并落账，随请求发给外部系统；外部系统对同一个键只执行一次，重复请求返回第一次的结果。查询接口还要能区分"确定不存在"和"暂时查不到"，否则最终一致性下的 not_found 会被误判成失败。
+
+```python
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Literal
+import time
+
+
+class EffectStatus(str, Enum):
+    PENDING = "pending"      # 已决定执行，结果未知
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    UNKNOWN = "unknown"      # 进程崩溃等导致结果无法确认
+
+
+@dataclass
+class SideEffect:
+    run_id: str
+    step_id: str
+    operation: str                       # 例如 "create_order"
+    idempotency_key: str                 # run_id + step_id + 操作类型，全局唯一
+    status: EffectStatus = EffectStatus.PENDING
+    external_ref: str | None = None      # 外部系统返回的订单号、消息 id
+    updated_at: float = field(default_factory=time.time)
+
+
+@dataclass
+class ProbeResult:
+    state: Literal["found", "not_found", "unknown"]
+    ref: str | None = None
+
+
+class ProbeError(Exception):
+    """外部系统暂时查不到结果，保持原状态，稍后重试"""
+
+
+class SideEffectLedger:
+    """副作用账本：先记账再执行，恢复时逐条对账"""
+
+    def __init__(self, store):
+        self.store = store  # 关系库，idempotency_key 上有唯一索引
+
+    async def begin(self, effect: SideEffect) -> SideEffect:
+        """执行前写入 PENDING；PENDING/UNKNOWN 的旧记录要先 reconcile"""
+        existing = await self.store.get(effect.idempotency_key)
+        if existing is None:
+            await self.store.insert(effect)  # 并发重复由唯一索引兜底
+            return effect
+        if existing.status == EffectStatus.FAILED:
+            # 外部确认没生效的失败可以安全重试：同键重发只生效一次
+            await self.mark(existing.idempotency_key, EffectStatus.PENDING)
+            existing.status = EffectStatus.PENDING
+        elif existing.status in (EffectStatus.PENDING, EffectStatus.UNKNOWN):
+            # 结果未知：必须先 reconcile，不能直接重试或当成已完成
+            raise RuntimeError(f"unresolved side effect: {effect.idempotency_key}")
+        return existing
+
+    async def mark(self, key: str, status: EffectStatus,
+                   external_ref: str | None = None) -> None:
+        fields = {"status": status, "updated_at": time.time()}
+        if external_ref is not None:
+            fields["external_ref"] = external_ref
+        await self.store.update(key, **fields)
+
+    async def reconcile(self, run_id: str, probe) -> list[SideEffect]:
+        """恢复时调用。probe(operation, key) 按幂等键查外部真实状态"""
+        effects = await self.store.list_by_run(run_id)
+        for effect in effects:
+            if effect.status not in (EffectStatus.PENDING, EffectStatus.UNKNOWN):
+                continue
+            try:
+                result: ProbeResult = await probe(effect.operation,
+                                                  effect.idempotency_key)
+            except ProbeError:
+                continue  # 查询失败：保持原状态，稍后重试，绝不能当成失败
+            if result.state == "found":
+                await self.mark(effect.idempotency_key,
+                                EffectStatus.SUCCEEDED, result.ref)
+                effect.status, effect.external_ref = EffectStatus.SUCCEEDED, result.ref
+            elif result.state == "not_found":
+                # 只有外部系统明确保证查询已一致时，not_found 才能判失败
+                await self.mark(effect.idempotency_key, EffectStatus.FAILED)
+                effect.status = EffectStatus.FAILED
+            # unknown：保持原状态，等下一次对账
+        return effects
+```
+
 ### 优雅降级策略
 
 ```python
@@ -220,6 +342,8 @@ Agent 系统的 RTO/RPO 目标：
 3. **追问："如何测试灾难恢复方案？"** — (1) **Chaos Engineering**——随机中断 LLM API 连接，验证故障转移；(2) **故障注入**——模拟数据库宕机、网络分区；(3) **DR 演练**——每季度进行一次完整的区域切换演练；(4) **恢复时间测量**——记录实际 RTO 并与目标对比。
 
 4. **追问："优雅降级和完全不可用之间如何选择？"** — 原则：部分功能可用 > 完全不可用。用户宁可看到"AI 助手暂时简化模式运行"也不愿看到"服务不可用"。降级策略应该预先设计和测试，而不是在事故中临时决定。
+
+5. **追问："Checkpoint 里最容易被忽略、后果最严重的是什么？"** — 外部副作用记录。计划丢了可以重算，已执行的不可逆操作（下单、发邮件、扣款）丢了就无法判断是否要重试。正确做法是执行前把操作、幂等键和状态写入账本，恢复时按幂等键去外部系统查询真实结果，再决定跳过还是重试。没有幂等键的恢复就是赌博。
 
 ## 参考资料
 

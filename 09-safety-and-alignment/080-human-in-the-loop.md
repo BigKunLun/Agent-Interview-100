@@ -198,6 +198,173 @@ final = app.invoke(
 )
 ```
 
+### 超时策略：默认行为必须预先声明
+
+审批不能无限等。发起审批时就要把超时后的默认动作写进配置并展示给审核人，不能等超时了再由系统猜。时长按风险分级：高危操作 5 分钟，低危 1 小时到 1 天（经验值，按业务响应能力调整）。
+
+超时只有三种默认动作：默认通过，仅限低危且可回滚；默认拒绝，安全默认；挂起等人工，流程保持未完成，不自动推进。多数生产场景在后两者中选，涉及资金、权限、对外发送的操作应默认拒绝。
+
+等待期间要释放资源：审批请求落库后，工作流结束当前轮次，不占连接和 worker。人工决定或超时扫描通过事件唤醒续跑。到 deadline 的 80% 发一次提醒，给审核人留出反应时间。
+
+```python
+from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from enum import Enum
+
+
+class TimeoutAction(str, Enum):
+    APPROVE = "approve"   # 仅限低危、可回滚
+    DENY = "deny"         # 安全默认
+    PENDING = "pending"   # 挂起，不自动推进
+
+
+@dataclass
+class ApprovalRequest:
+    id: str
+    action: str
+    risk: str                       # "high" / "low"
+    context: dict                   # 审批时的上下文快照，同时用于审计
+    created_at: datetime
+    deadline: datetime
+    status: str = "pending"         # pending / approved / denied
+    reminded: bool = False
+    decided_by: str | None = None
+
+
+class ApprovalGate:
+    """提交审批、到期扫描、按配置执行超时分支"""
+
+    def __init__(self, store, notifier):
+        self.store = store
+        self.notifier = notifier
+        # 经验值：高危 5 分钟，低危 1 小时
+        self.timeouts = {"high": timedelta(minutes=5), "low": timedelta(hours=1)}
+        # 超时默认动作必须显式配置；低危才允许 APPROVE
+        self.timeout_actions = {"high": TimeoutAction.DENY, "low": TimeoutAction.PENDING}
+
+    async def submit(self, action: str, risk: str, context: dict) -> ApprovalRequest:
+        now = datetime.now(timezone.utc)
+        req = ApprovalRequest(
+            id=f"apr-{now.timestamp()}",
+            action=action,
+            risk=risk,
+            context=dict(context),      # 快照，避免后续修改影响审计
+            created_at=now,
+            deadline=now + self.timeouts[risk],
+        )
+        await self.store.save(req)          # 落库后工作流即可退出，不占连接
+        await self.notifier.send(req)
+        return req
+
+    async def sweep(self) -> list[ApprovalRequest]:
+        """定时任务调用：处理提醒和超时，不阻塞工作流"""
+        handled = []
+        for req in await self.store.list_pending():
+            now = datetime.now(timezone.utc)
+            # 到 deadline 的 80% 时提醒一次
+            remind_at = req.created_at + (req.deadline - req.created_at) * 0.8
+            if not req.reminded and now >= remind_at:
+                await self.notifier.remind(req)
+                req.reminded = True
+                await self.store.save(req)
+            if now >= req.deadline:
+                action = self.timeout_actions[req.risk]
+                if action == TimeoutAction.PENDING:
+                    continue                # 挂起：保持 pending，等人回来
+                req.status = "approved" if action == TimeoutAction.APPROVE else "denied"
+                req.decided_by = "timeout"
+                await self.store.save(req)
+                await self.store.emit_resume(req)   # 唤醒续跑
+                handled.append(req)
+        return handled
+
+    async def decide(self, req_id: str, approved: bool, reviewer: str, feedback: str = ""):
+        """人工审批回调：写入决策并唤醒等待中的工作流"""
+        req = await self.store.get(req_id)
+        if req.status != "pending":
+            return                    # 已超时或已处理，忽略迟到的决定
+        req.status = "approved" if approved else "denied"
+        req.decided_by = reviewer
+        await self.store.save(req)
+        await self.store.emit_resume(req, feedback=feedback)
+```
+
+### 驳回后的续跑与补偿兜底
+
+驳回不是把错误原样抛回去。理由要收集并注入下一轮上下文：必填或至少引导填写，模型才知道哪里不对、该怎么改。回退位置取决于驳回对象：驳回单个动作，只重做该动作；驳回整体计划，退回计划生成阶段重新拆解，不要在错误计划上反复修补。
+
+同一动作被驳回 2-3 次（经验值）就终止并上报，避免无限试探。部分批准要支持：批准 A、B，拒绝 C，被拒的子任务跳过或走替代路径，不能因为一个子任务否决整个计划。
+
+高危动作配补偿事务（Saga）：正向执行成功后登记 undo，驳回、执行失败或后续步骤失败时按逆序回滚。不可回滚的操作（已发邮件、已转账）无法靠补偿兜底，只能在审批环节卡得更严，必要时双人复核。审计记录谁在何时批了什么、当时的上下文快照，这是事后追责的唯一依据。
+
+```python
+from collections import defaultdict
+from dataclasses import dataclass
+from typing import Awaitable, Callable
+
+
+@dataclass
+class CompensatingAction:
+    name: str
+    undo: Callable[[dict], Awaitable[None]]
+    irreversible: bool = False
+
+
+class Saga:
+    """正向执行时登记补偿动作，失败或驳回时按逆序回滚"""
+
+    def __init__(self):
+        self._registry: dict[str, CompensatingAction] = {}
+        self._done: list[tuple[str, dict]] = []
+
+    def register(self, action: CompensatingAction):
+        self._registry[action.name] = action
+
+    async def run(self, name: str, params: dict, execute: Callable[..., Awaitable[dict]]):
+        try:
+            result = await execute(**params)
+        except Exception:
+            await self.rollback()               # 执行失败，回滚已完成的步骤
+            raise
+        self._done.append((name, result))       # 成功后登记，供回滚使用
+        return result
+
+    async def rollback(self):
+        for name, result in reversed(self._done):
+            action = self._registry[name]
+            if action.irreversible:
+                raise RuntimeError(f"{name} 不可回滚，必须在审批阶段拦截")
+            await action.undo(result)
+        self._done.clear()
+
+
+class RejectionHandler:
+    """驳回后的续跑：收集理由、限制次数、决定回退位置"""
+
+    def __init__(self, max_rejections: int = 2):
+        self.max_rejections = max_rejections       # 经验值：2-3 次
+        self.counts: dict[str, int] = defaultdict(int)
+
+    async def handle(self, step, decision, saga, replan):
+        if not decision.feedback.strip():
+            raise ValueError("驳回必须填写理由")
+        self.counts[step.id] += 1
+        if self.counts[step.id] > self.max_rejections:
+            await saga.rollback()
+            return {"status": "escalated", "reason": "同一动作被多次驳回"}
+        if decision.scope == "plan":
+            return await replan(feedback=decision.feedback)   # 退回计划生成
+        return await replan(feedback=decision.feedback, step_id=step.id)  # 只重做该动作
+
+    async def apply_partial(self, decisions, execute, fallback):
+        """部分批准：批准的继续，被拒的跳过或走替代路径"""
+        for d in decisions:
+            if d.approved:
+                await execute(d.step)
+            else:
+                await fallback(d.step, reason=d.feedback)
+```
+
 ### 决策框架
 
 ```mermaid

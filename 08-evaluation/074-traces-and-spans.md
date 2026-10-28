@@ -156,6 +156,98 @@ observability_pillars = {
 }
 ```
 
+### 线上指标口径：每个数怎么算出来
+
+指标名一样、口径不一样，两个团队的数字就没法比。每个指标都要写死三件事：分子、分母、数据从哪来。
+
+| 指标 | 分子 | 分母 | 数据来源 | 已知偏差 |
+| --- | --- | --- | --- | --- |
+| 任务成功率 | 判定为成功的 run 数 | 进入执行的 run 数（用户主动中止单列） | 规则判定 + 隐式成功 + 抽样复核 | 不校准会虚高 |
+| 工具选错率 | 命中代理信号的调用数 | 工具调用总数 | Trace 事件序列 | 代理信号会误报，只能看趋势 |
+| 参数错误率 | JSON Schema 校验失败次数 | 工具调用总数 | 工具入口埋点 | 只覆盖结构错误，语义错误漏掉 |
+| 单 run 成本 | token × 模型单价 + 外部 API 费用 | 进入执行的 run 数（另看 P50/P95 和长尾） | usage 字段 + 外部账单 | 缓存命中和折扣未计 |
+| 耗时分解 | 模型 / 工具 / 排队 / 审批各段耗时 | 端到端耗时 | Span 起止时间 | 并发 Span 重叠，不能直接相加 |
+
+成功率最容易算错。判定方式有三种：有明确成功标记的走规则判定；没有的用 LLM-as-judge，但必须先写 rubric；再叠加用户反馈。线上常用组合是：用户没重试、没报错，先记为隐式成功，再按固定比例抽样，用人工或 judge 复核校准。不校准，隐式成功会把数字抬高。分母按 run 算，不按请求算；超时算失败，用户主动中止不计入分母但单独报中止率。口径写进文档，不能指标难看就改。
+
+工具选错率线上拿不到真值，只能用代理信号：同一意图连续重试、工具返回空结果后换工具、模型输出里出现自我纠正。代理信号误报多，线上只看趋势，准确值靠离线标注集。
+
+耗时按 Span 分段记账，不分解就不知道该优化模型、工具还是等待。
+
+```python
+from dataclasses import dataclass
+from enum import Enum
+
+
+class Outcome(Enum):
+    SUCCESS = "success"            # 规则判定成功
+    FAILURE = "failure"            # 规则判定失败
+    IMPLICIT_SUCCESS = "implicit"  # 无报错、无重试，待抽样复核
+    TIMEOUT = "timeout"
+    ABORTED = "aborted"            # 用户主动中止
+
+
+@dataclass
+class RunMetrics:
+    run_id: str
+    outcome: Outcome
+    model_ms: float = 0.0
+    tool_ms: float = 0.0
+    queue_ms: float = 0.0          # 排队
+    approval_ms: float = 0.0       # 人工审批等待
+    token_cost_usd: float = 0.0    # 按各模型单价分别计算后汇总
+    external_cost_usd: float = 0.0
+    tool_calls: int = 0
+    schema_failures: int = 0
+
+    @property
+    def cost_usd(self) -> float:
+        return self.token_cost_usd + self.external_cost_usd
+
+    @property
+    def latency_ms(self) -> float:
+        # 串行执行可以直接相加；并发 Span 应改用墙钟起止区间
+        return self.model_ms + self.tool_ms + self.queue_ms + self.approval_ms
+
+
+class RunMetricsAggregator:
+    """成功率：分母按 run；超时算失败；中止单独报，不进分母"""
+
+    def __init__(self) -> None:
+        self._reviewed: dict[str, bool] = {}  # run_id -> 复核是否成功
+
+    def review(self, run_id: str, is_success: bool) -> None:
+        """按比例抽样人工或 LLM judge 复核，用来校准隐式成功"""
+        self._reviewed[run_id] = is_success
+
+    def success_rate(self, runs: list[RunMetrics]) -> float:
+        denominator = [r for r in runs if r.outcome is not Outcome.ABORTED]
+        if not denominator:
+            return 0.0
+
+        numerator = 0
+        for run in denominator:
+            if run.outcome is Outcome.SUCCESS:
+                numerator += 1
+            elif run.outcome is Outcome.IMPLICIT_SUCCESS:
+                # 未复核先按成功计；复核为失败的扣回来
+                numerator += int(self._reviewed.get(run.run_id, True))
+        # TIMEOUT 和 FAILURE 留在分母里但不加分，等价于算失败
+        return numerator / len(denominator)
+
+    def abort_rate(self, runs: list[RunMetrics]) -> float:
+        """中止率单独报，避免失败被藏进中止"""
+        if not runs:
+            return 0.0
+        return sum(r.outcome is Outcome.ABORTED for r in runs) / len(runs)
+
+    def param_error_rate(self, runs: list[RunMetrics]) -> float:
+        total_calls = sum(r.tool_calls for r in runs)
+        if total_calls == 0:
+            return 0.0
+        return sum(r.schema_failures for r in runs) / total_calls
+```
+
 ### 实际调试场景
 
 ```python

@@ -327,6 +327,226 @@ insights = {
 }
 ```
 
+### 五、锚点保留：哪些信息永远不压缩
+
+摘要是有损压缩。丢一句寒暄没关系，丢掉"用户要求不能删除线上数据"就可能让整个任务跑偏。更麻烦的是，模型通常不会主动问"你最初的需求是什么"——它默认当前上下文就是全部事实。
+
+以下内容应视为锚点，永远不进入摘要器：
+
+- 用户最初的需求原文，不是转述
+- 明确的约束和禁止项，例如"不要改数据库 schema""输出必须是 JSON"
+- 已经确认的决策，例如"用方案 B，不用方案 A"
+- 当前子目标（随进度更新，但始终显式存在）
+- 关键标识：文件路径、订单号、变量名、接口名
+
+实现上，锚点用独立的结构化字段保存，不混进摘要文本。拼上下文时把它渲染成单独的 system 区块，放在历史摘要之后、最近消息之前。这个位置不会被摘要改写，也比混在历史摘要里更容易被模型注意到。锚点要小，只放不可丢的事实；长文档仍走摘要或检索。
+
+```python
+from dataclasses import dataclass, field
+
+
+@dataclass
+class AnchorState:
+    """任务锚点：独立持久化，任何压缩策略都不得修改它"""
+
+    original_request: str
+    constraints: list[str] = field(default_factory=list)   # 约束与禁止项
+    decisions: list[str] = field(default_factory=list)      # 已确认决策
+    current_subgoal: str = ""
+    identifiers: dict[str, str] = field(default_factory=dict)  # 路径、单号、变量名
+
+    def render(self) -> str:
+        parts = [
+            f"原始需求：{self.original_request}",
+            f"当前子目标：{self.current_subgoal}",
+        ]
+        if self.constraints:
+            parts.append("约束与禁止项：\n" + "\n".join(f"- {c}" for c in self.constraints))
+        if self.decisions:
+            parts.append("已确认决策：\n" + "\n".join(f"- {d}" for d in self.decisions))
+        if self.identifiers:
+            pairs = "；".join(f"{k}={v}" for k, v in self.identifiers.items())
+            parts.append(f"关键标识：{pairs}")
+        return "\n".join(parts)
+
+
+class ContextAssembler:
+    """拼上下文：锚点单独成块，放在历史摘要之后、最近消息之前"""
+
+    def __init__(self, max_tokens: int):
+        self.max_tokens = max_tokens
+
+    def build(self, system_prompt: str, anchors: AnchorState,
+              history_summary: str, recent_messages: list[dict]) -> list[dict]:
+        head = [{"role": "system", "content": system_prompt}]
+        if history_summary:
+            head.append({"role": "system", "content": f"历史摘要：\n{history_summary}"})
+        head.append({
+            "role": "system",
+            "content": f"任务锚点（不可违背）：\n{anchors.render()}",
+        })
+
+        # 预算不够时从最旧的最近消息开始丢；锚点区块永不裁剪
+        recent = list(recent_messages)
+        while count_tokens(head + recent) > self.max_tokens and recent:
+            recent.pop(0)
+        return head + recent
+```
+
+### 六、摘要丢失关键信息怎么补
+
+自由文本摘要是黑盒：模型写什么你就得到什么，漏了关键决策也看不出来。补救从三处下手。
+
+第一，强制结构化输出。摘要必须回答固定字段：目标、已完成、未完成、关键决策、关键数据、待确认。字段缺失比文字啰嗦更容易被发现。
+
+第二，摘要里留指针。提到文件、工具调用、外部单据时保留归档 id。原文不删除，只是移出上下文；模型需要细节时按 id 回查。压缩的是对话，不是知识。
+
+第三，压缩后做一致性检查。只给模型看压缩后的上下文，让它复述当前目标和约束，再和锚点比对。对不上说明这次压缩压坏了关键信息，应回退或重新压缩；对得上也不能证明一点没丢，但能拦住大部分硬伤。
+
+```python
+from pydantic import BaseModel, Field
+
+
+class StructuredSummary(BaseModel):
+    """摘要必须覆盖的字段，缺字段会直接暴露，而不是藏在段落里"""
+
+    goal: str
+    done: list[str] = Field(default_factory=list)
+    pending: list[str] = Field(default_factory=list)
+    decisions: list[str] = Field(default_factory=list)
+    key_data: list[str] = Field(default_factory=list)
+    open_questions: list[str] = Field(default_factory=list)
+    refs: list[str] = Field(default_factory=list)  # 原文归档 id，可回查
+
+
+class SummaryCompressor:
+    def __init__(self, llm, archive):
+        self.llm = llm
+        self.archive = archive  # put(messages) -> id, get(id) -> messages
+
+    async def compress(self, messages: list[dict]) -> StructuredSummary:
+        archive_id = await self.archive.put(messages)  # 原文先归档，永不删除
+        prompt = f"""把以下对话压缩为 JSON 摘要。
+只能使用对话中出现的信息；拿不准的内容放进 open_questions。
+字段：goal, done, pending, decisions, key_data, open_questions。
+对话：
+{messages}
+"""
+        raw = await self.llm.invoke(prompt, response_format="json")
+        summary = StructuredSummary.model_validate_json(raw)
+        summary.refs.append(archive_id)
+        return summary
+
+    async def check(self, summary: StructuredSummary, anchors) -> bool:
+        """压缩后复述目标与约束，对不上说明压坏了"""
+        answer = await self.llm.invoke(f"""只根据下面的摘要回答，不要补充：
+1. 当前任务目标是什么？
+2. 有哪些不能违反的约束和已确认的决策？
+摘要：
+{summary.model_dump_json()}
+""")
+        verdict = await self.llm.invoke(f"""锚点：
+{anchors.render()}
+
+复述：
+{answer}
+
+复述与锚点是否一致？只回答 yes 或 no。
+""")
+        return verdict.strip().lower().startswith("yes")
+```
+
+### 七、跨块关联：靠结构不靠记忆
+
+按时间切摘要，会把同一个子任务的信息切散：第 3 轮定下的接口约定，第 40 轮才用到，中间隔着几十条无关消息。等模型需要它时，摘要里早没有位置了。
+
+解法是给结构，不给模型增加记忆负担。
+
+- 每条消息带 `turn_id` 和 `subtask_id`，摘要按子任务聚合，而不是按固定时间窗切。
+- 维护任务状态表：子任务 → 状态 → 产出 → 依赖。这张表全量保留、永不压缩，跨块的因果关系都挂在它上面。
+- 需要历史细节时，用当前 query 检索历史消息：关键词和向量混合召回，取 top-k 拼回上下文。
+
+纯向量检索对编号类信息不敏感：订单号 `A123` 和 `A124` 在向量空间里往往非常接近，通常要靠关键词精确匹配才能可靠区分。所以混合检索里两路都要留。
+
+```python
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Optional
+
+
+class TaskStatus(str, Enum):
+    TODO = "todo"
+    RUNNING = "running"
+    DONE = "done"
+    BLOCKED = "blocked"
+
+
+@dataclass
+class SubtaskNode:
+    subtask_id: str
+    title: str
+    status: TaskStatus = TaskStatus.TODO
+    output_ref: Optional[str] = None          # 产出归档 id，不存正文
+    depends_on: list[str] = field(default_factory=list)
+
+
+class TaskStateTable:
+    """任务状态表：全量注入、永不压缩，跨块因果都挂在这里"""
+
+    def __init__(self):
+        self.nodes: dict[str, SubtaskNode] = {}
+
+    def add(self, node: SubtaskNode) -> None:
+        self.nodes[node.subtask_id] = node
+
+    def ready(self) -> list[SubtaskNode]:
+        """依赖已全部完成、自己还没开始的子任务"""
+        return [
+            n for n in self.nodes.values()
+            if n.status == TaskStatus.TODO
+            and all(d in self.nodes and self.nodes[d].status == TaskStatus.DONE
+                    for d in n.depends_on)
+        ]
+
+    def render(self) -> str:
+        lines = []
+        for n in self.nodes.values():
+            deps = ",".join(n.depends_on) or "-"
+            lines.append(
+                f"[{n.subtask_id}] {n.title} | {n.status.value} "
+                f"| 依赖:{deps} | 产出:{n.output_ref or '-'}"
+            )
+        return "\n".join(lines)
+
+    def messages_of(self, subtask_id: str, history: list[dict]) -> list[dict]:
+        """按子任务聚合消息，摘要器以它为输入，而不是按时间窗切"""
+        return [m for m in history if m.get("subtask_id") == subtask_id]
+
+
+class HybridHistorySearch:
+    """关键词 + 向量混合召回：编号靠关键词，语义靠向量"""
+
+    def __init__(self, keyword_index, vector_index):
+        self.keyword_index = keyword_index
+        self.vector_index = vector_index
+
+    def search(self, query: str, top_k: int = 5) -> list[dict]:
+        kw = self.keyword_index.search(query, top_k)
+        vec = self.vector_index.search(query, top_k)
+        return self._rrf_merge(kw, vec)[:top_k]
+
+    def _rrf_merge(self, *ranked_lists: list[dict]) -> list[dict]:
+        """Reciprocal Rank Fusion：按名次融合，不要求两路分数量纲一致"""
+        scores: dict[str, float] = {}
+        docs: dict[str, dict] = {}
+        for ranked in ranked_lists:
+            for rank, doc in enumerate(ranked, start=1):
+                doc_id = doc["id"]
+                scores[doc_id] = scores.get(doc_id, 0.0) + 1.0 / (60 + rank)
+                docs[doc_id] = doc
+        return [docs[i] for i in sorted(scores, key=lambda i: scores[i], reverse=True)]
+```
+
 ## 常见误区 / 面试追问
 
 1. **误区："上下文窗口越大越好 / 越大就不需要压缩"** — 更大的窗口意味着更高的成本（按 token 计费）、更大的延迟、以及更严重的"中间丢失"效应。即使 200K 窗口，长对话仍会导致成本线性增长和注意力质量下降。压缩不仅省钱，还能提高模型注意力的质量。最佳实践是精心管理上下文内容，而非依赖大窗口。
@@ -342,6 +562,8 @@ insights = {
 6. **追问："增量摘要 vs 全量重新摘要？"** — 增量摘要（每次只处理新消息）更快更便宜，但可能累积误差。全量重新摘要更准确但成本高。实践中用增量摘要 + 定期全量校正的混合方式。
 
 7. **追问："Claude 的 Server-Side Compaction 是什么？"** — Anthropic 在 Claude **Sonnet 4.6+ / Opus 4.6+** 上提供服务端自动压缩（context editing / compaction）能力——当对话接近上限时，由服务端策略性删除/折叠旧的 tool_result 与思考块，让长对话可以"无限延续"。早期 Sonnet 4 / Opus 4 不带这套原语，需要客户端自己实现。此外它和 Memory Tool（memory_20250818）配合使用尤其强大：被压缩掉的内容可以通过 Memory Tool 显式落盘后再被检索回来，相当于 Anthropic 把"长寿命 Agent 的上下文虚拟内存"做成了官方原语组合。
+
+8. **追问："锚点保留和摘要是什么关系？"** — 互补，不是替代。摘要压缩历史对话，锚点保存不可丢的事实，单独存储、不经过摘要器。每次拼上下文时锚点作为独立 system 区块全量注入。锚点要小，只放需求、约束、决策、子目标和关键标识；长文档仍走摘要或检索。
 
 ## 参考资料
 

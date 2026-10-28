@@ -149,7 +149,153 @@ def graceful_degradation(self):
 - **模型降级**：切换到更便宜的模型完成剩余工作
 - **人工升级**：通知人类介入处理
 
-### 六、根因分析：为什么反复达到上限？
+### 六、预算分层与无进展检测
+
+五种终止策略里的预算和重复检测，落到 harness 上是同一个循环位置：每轮结束检查一次。四类预算（轮数、token、金额、墙钟时间）统一放进一个对象，重复检测升级成"看状态有没有变"。
+
+四类预算统一落地。`RunBudget` 初始化时记录 `started_at`，每轮结束调用 `check()`，返回已用比例、剩余额度，以及是否进入软停区（已用 ≥ 80%）。时间预算用单调时钟，并扣掉人工审批的等待时间——用户思考 10 分钟不该算 Agent 超时。
+
+```python
+import time
+from dataclasses import dataclass
+
+
+@dataclass
+class BudgetStatus:
+    exhausted: bool          # 任一预算用完：硬停
+    soft_stop: bool          # 任一预算到 80%：软停
+    used_ratio: float
+    remaining_turns: int
+    remaining_tokens: int
+    remaining_cost_usd: float
+    remaining_seconds: float
+
+
+class RunBudget:
+    def __init__(self, max_turns: int, max_tokens: int,
+                 max_cost_usd: float, max_wall_seconds: float,
+                 soft_ratio: float = 0.8):
+        self.max_turns = max_turns
+        self.max_tokens = max_tokens
+        self.max_cost_usd = max_cost_usd
+        self.max_wall_seconds = max_wall_seconds
+        self.soft_ratio = soft_ratio
+
+        self.turns = 0
+        self.tokens = 0
+        self.cost_usd = 0.0
+        self.approval_wait = 0.0
+        self.started_at = time.monotonic()
+
+    def add_turn(self, tokens: int, cost_usd: float) -> None:
+        self.turns += 1
+        self.tokens += tokens
+        self.cost_usd += cost_usd
+
+    def add_approval_wait(self, seconds: float) -> None:
+        """人工审批的等待时间不计入墙钟预算"""
+        self.approval_wait += seconds
+
+    def check(self) -> BudgetStatus:
+        elapsed = time.monotonic() - self.started_at - self.approval_wait
+        used = max(
+            self.turns / self.max_turns,
+            self.tokens / self.max_tokens,
+            self.cost_usd / self.max_cost_usd,
+            elapsed / self.max_wall_seconds,
+        )
+        return BudgetStatus(
+            exhausted=used >= 1.0,
+            soft_stop=used >= self.soft_ratio,
+            used_ratio=used,
+            remaining_turns=max(0, self.max_turns - self.turns),
+            remaining_tokens=max(0, self.max_tokens - self.tokens),
+            remaining_cost_usd=max(0.0, self.max_cost_usd - self.cost_usd),
+            remaining_seconds=max(0.0, self.max_wall_seconds - elapsed),
+        )
+```
+
+无进展检测。只看参数是否相同挡不住参数微调：模型给查询词加个引号、把 offset 从 10 改成 11，调用序列看起来不同，状态其实没动。更可靠的做法是对状态取指纹：已完成子目标集合、工作区关键文件哈希、最近 K 条工具结果摘要，三样拼起来做 SHA-256。相邻两轮指纹相同，就说明这一轮没有产生任何可观测变化。连续 2-3 轮（经验值）无进展就该介入，不要等预算耗尽。
+
+```python
+import hashlib
+import json
+
+
+class ProgressTracker:
+    def __init__(self, key_files: list[str], recent_k: int = 5,
+                 max_stale_turns: int = 2):  # 2-3 是经验值
+        self.key_files = key_files
+        self.recent_k = recent_k
+        self.max_stale_turns = max_stale_turns
+        self.last_fingerprint: str | None = None
+        self.stale_turns = 0
+
+    @staticmethod
+    def _file_digest(path: str) -> str:
+        try:
+            with open(path, "rb") as f:
+                return hashlib.sha256(f.read()).hexdigest()
+        except FileNotFoundError:
+            return "missing"
+
+    def fingerprint(self, completed_goals: set[str],
+                    recent_results: list[str]) -> str:
+        payload = {
+            "goals": sorted(completed_goals),
+            "files": {p: self._file_digest(p) for p in self.key_files},
+            "results": [r[:200] for r in recent_results[-self.recent_k:]],
+        }
+        return hashlib.sha256(
+            json.dumps(payload, sort_keys=True, ensure_ascii=False).encode()
+        ).hexdigest()
+
+    def observe(self, completed_goals: set[str],
+                recent_results: list[str]) -> bool:
+        """返回 True 表示连续多轮状态没变，需要介入"""
+        current = self.fingerprint(completed_goals, recent_results)
+        if current == self.last_fingerprint:
+            self.stale_turns += 1
+        else:
+            self.last_fingerprint = current
+            self.stale_turns = 0
+        return self.stale_turns >= self.max_stale_turns
+```
+
+软停与硬停分层。硬停到 100% 由 harness 直接终止，不再调用模型，保证预算不超支。软停只注入一条系统提示，要求模型收尾：写明剩余轮数和时间、已完成的子目标，先给结论再列未完成项。模型因此有机会把已有成果整理成可交付的答案，而不是被突然截断。软停只注入一次，避免每轮重复占上下文。
+
+```python
+SOFT_STOP_NOTICE = (
+    "预算即将用尽：剩余 {turns} 轮、约 {seconds:.0f} 秒。"
+    "已完成的子目标：{done}。"
+    "请立即停止探索：先给出现有条件下的结论，再列出未完成项。"
+)
+
+
+async def step(self, messages):
+    status = self.budget.check()
+    if status.exhausted:
+        return self.finalize_by_harness()      # 硬停：不再调用模型
+
+    if status.soft_stop and not self.soft_stop_sent:
+        self.soft_stop_sent = True             # 只注入一次
+        messages.append({"role": "system", "content": SOFT_STOP_NOTICE.format(
+            turns=status.remaining_turns,
+            seconds=status.remaining_seconds,
+            done="、".join(sorted(self.state.completed_goals)),
+        )})
+
+    turn = await self.llm.step(messages)
+    self.budget.add_turn(turn.usage.total_tokens, turn.usage.cost_usd)
+
+    if self.progress.observe(self.state.completed_goals,
+                             self.state.recent_results):
+        self.escalate_stall()                  # 无进展：总结、换策略或转人工
+
+    return turn
+```
+
+### 七、根因分析：为什么反复达到上限？
 
 迭代上限是**症状检测器，不是疾病本身**。如果 Agent 反复触及上限，真正的问题通常是：
 
@@ -158,7 +304,7 @@ def graceful_degradation(self):
 3. **停止条件弱**：没有教会 LLM 识别"已完成"
 4. **Prompt 设计差**：没有在 System Prompt 中定义终止规则
 
-### 七、完成判定也要外部化：verification-gated（2026-08）
+### 八、完成判定也要外部化：verification-gated（2026-08）
 
 终止控制回答"什么时候该停"，但外部强制还有第二个落点常被忽略：Agent 停下来之后声称"做完了"，这个"做完了"本身由谁裁定？多数实现默认 Agent 自评——输出 `FINAL_ANSWER` 就算任务完成，等于把终止权外部化了，**验收权**却还留在 Agent 手里。而语义错误（代码能编译、能跑、却干错事）恰恰在这一步无法自查。
 
@@ -174,7 +320,7 @@ SemaPLC（2026-08）在工业 PLC 代码生成（可编程逻辑控制器，改�
 
 中间这一格空着的系统，前后两格做得再好也只是"按时停下来了"，不代表"做对了"。任务风险越高（改生产代码、控制物理设备、动钱），越该把这一格补成硬门禁。
 
-### 八、Agent 错误的特殊性
+### 九、Agent 错误的特殊性
 
 Agent 的错误比传统应用更难处理，因为：
 - **级联放大**：一次工具调用失败会影响后续所有决策
@@ -182,7 +328,7 @@ Agent 的错误比传统应用更难处理，因为：
 - **状态失同步**：Agent 对环境的内部认知与实际状态不一致
 - **概率性**：同样的输入可能产生不同的错误
 
-### 九、四层容错模型
+### 十、四层容错模型
 
 ```mermaid
 flowchart TD
@@ -320,7 +466,7 @@ class CheckpointManager:
         return AgentState.from_checkpoint(checkpoint)
 ```
 
-### 十、级联失败预防
+### 十一、级联失败预防
 
 Agent 系统中的单点故障不只影响一个功能——它会在每次工具调用、每次重试、每个 token 中放大。防止级联失败的核心原则：**假设 LLM、Agent 组件和外部数据源都可能不可用。**
 
@@ -361,7 +507,7 @@ class CircuitBreaker:
         self.state = "CLOSED"
 ```
 
-### 十一、容错机制的推荐实施顺序
+### 十二、容错机制的推荐实施顺序
 
 1. **重试策略先行**：用最少代码处理最常见的故障
 2. **模型降级其次**：定义备选模型和跨供应商回退
@@ -401,6 +547,8 @@ class CircuitBreaker:
 12. **"你的 Agent 在生产环境突然开始频繁产生幻觉，输出中包含不存在的引用和数据。如何快速定位和修复？"** — 这是 prompt 漂移或模型更新的典型症状。修复路径：(1) 立即检查是否有模型/ prompt 版本最近更新 → 如有，紧急回滚；(2) 对比最近 24 小时和正常时期的 Trace，找出变化的模式（如新增了某类查询导致 prompt 触发不同分支）；(3) 检查检索系统的输出质量，可能是检索失效导致 Agent 只能依赖自身知识；(4) 加入幻觉检测护栏，对引用来源进行验证；(5) 启用人工审核通道，高风险输出转人工确认。
 
 13. **"你的 RAG 系统检索结果与用户查询完全无关，检索指标显示 Recall 接近 0。如何修复？"** — 这是检索系统失效的典型场景。修复路径：(1) 检查 embedding 模型是否匹配语料语言（如用英文模型检索中文文档）→ 重新选择/训练适配的 embedding 模型；(2) 检查分块策略是否破坏了语义完整性（如按固定字符切分导致上下文丢失）→ 调整为语义分块或重叠分块；(3) 检查向量数据库索引是否损坏 → 重建索引；(4) 检查查询是否包含领域术语未在语料中出现 → 加入查询扩展或同义词映射；(5) 加入混合检索（BM25 + 向量）兜底。
+
+14. **追问："软停和硬停为什么不能合并成一个？"** — 硬停保证预算不超支，但模型在循环中途被切断，用户只拿到一个错误。软停提前到 80% 注入提示，让模型用剩余预算把已有结果整理成结论，并说明哪些子目标没完成。两者职责不同：软停管体验，硬停管兜底。只做软停，模型可能无视提示继续跑；只做硬停，结果无法交付。
 
 ## 参考资料
 

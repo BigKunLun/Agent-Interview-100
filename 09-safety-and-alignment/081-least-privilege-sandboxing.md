@@ -183,6 +183,116 @@ class EgressControl:
         return {"blocked": False, "payload": payload}
 ```
 
+### 可逆脱敏：占位符映射与格式保留
+
+DLP 常见的 `[REDACTED]` 是不可逆的，适合日志，不适合 Agent 工作流。模型可能在下一次工具调用里引用这个值，比如把手机号填进表单，抹掉后任务直接断掉；两个不同手机号都变成同一个 `[REDACTED]`，模型也无法区分。
+
+可逆脱敏把真值换成占位符 `<PHONE_1>`，映射表只存在执行侧。进模型前替换，模型输出和工具参数里的占位符在执行前还原。模型看到的是符号，功能链路不受影响。
+
+需要校验格式的场景（手机号位数、银行卡 Luhn 校验）用格式保留脱敏：保留前后几位，或生成同格式假值。前者不可逆，只用于展示；后者要登记回真值，校验通过后再换回来。
+
+数据分级决定处理方式：公开和内部可以原文进模型；敏感级别先脱敏；机密级别既不进模型也不出网。
+
+边界要讲清楚：脱敏降低泄露面，不替代权限控制。有权限的人误用数据，脱敏拦不住。
+
+```python
+import re
+from enum import Enum
+
+
+class SensitivityLevel(str, Enum):
+    PUBLIC = "public"
+    INTERNAL = "internal"
+    SENSITIVE = "sensitive"
+    CONFIDENTIAL = "confidential"
+
+
+# 分级策略：决定数据能否进模型、能否出网
+POLICY = {
+    SensitivityLevel.PUBLIC:       {"to_model": "raw",    "egress": "allow"},
+    SensitivityLevel.INTERNAL:     {"to_model": "raw",    "egress": "allowlist"},
+    SensitivityLevel.SENSITIVE:    {"to_model": "redact", "egress": "redact"},
+    SensitivityLevel.CONFIDENTIAL: {"to_model": "block",  "egress": "block"},
+}
+
+
+class ReversibleRedactor:
+    """识别敏感值，替换成占位符；执行前按映射还原"""
+
+    PATTERNS = {
+        "PHONE": re.compile(r"(?<!\d)1[3-9]\d{9}(?!\d)"),
+        "EMAIL": re.compile(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+"),
+        "CARD": re.compile(r"(?<!\d)\d{16,19}(?!\d)"),
+    }
+
+    def __init__(self):
+        # 映射表只存在执行侧，按会话隔离
+        self._vault: dict[str, dict[str, str]] = {}      # 占位符 -> 真值
+        self._aliases: dict[str, dict[str, str]] = {}    # 格式保留假值 -> 真值
+        self._counters: dict[tuple[str, str], int] = {}
+
+    def redact(self, text: str, session_id: str) -> str:
+        vault = self._vault.setdefault(session_id, {})
+        for kind, pattern in self.PATTERNS.items():
+            def replace(match):
+                value = match.group(0)
+                # 同一真值复用同一占位符，两个不同值才能被模型区分
+                for placeholder, real in vault.items():
+                    if real == value:
+                        return placeholder
+                key = (session_id, kind)
+                self._counters[key] = self._counters.get(key, 0) + 1
+                placeholder = f"<{kind}_{self._counters[key]}>"
+                vault[placeholder] = value
+                return placeholder
+            text = pattern.sub(replace, text)
+        return text
+
+    def redact_card(self, value: str, session_id: str) -> str:
+        """银行卡换成 Luhn 合法的假卡号，并登记回真值"""
+        fake = self.fake_card(value)
+        self._aliases.setdefault(session_id, {})[fake] = value
+        return fake
+
+    def restore(self, text: str, session_id: str) -> str:
+        for placeholder, real in self._vault.get(session_id, {}).items():
+            text = text.replace(placeholder, real)
+        for fake, real in self._aliases.get(session_id, {}).items():
+            text = text.replace(fake, real)
+        return text
+
+    @staticmethod
+    def mask_keep_ends(value: str, head: int = 3, tail: int = 4) -> str:
+        """格式保留：长度不变，保留前后几位，适合位数校验"""
+        if len(value) <= head + tail:
+            return "*" * len(value)
+        return value[:head] + "*" * (len(value) - head - tail) + value[-tail:]
+
+    @staticmethod
+    def fake_card(value: str) -> str:
+        """生成同长度、能过 Luhn 校验的假卡号"""
+        digits = list(value[:6] + "0" * (len(value) - 7) + "0")
+        digits[-1] = str(ReversibleRedactor._luhn_check(digits[:-1]))
+        return "".join(digits)
+
+    @staticmethod
+    def _luhn_check(digits: list[str]) -> int:
+        total = 0
+        for i, ch in enumerate(reversed(digits)):
+            n = int(ch) * (2 if i % 2 == 0 else 1)
+            total += n - 9 if n > 9 else n
+        return (10 - total % 10) % 10
+
+
+redactor = ReversibleRedactor()
+prompt = "联系 13812345678，邮箱 alice@example.com"
+safe = redactor.redact(prompt, "session-1")
+# safe: "联系 <PHONE_1>，邮箱 <EMAIL_1>"
+fake_card = redactor.redact_card("6222021234567890", "session-1")
+# fake_card 能过 Luhn 校验，restore 时换回真卡号
+args = redactor.restore("send_sms(to='<PHONE_1>')", "session-1")
+```
+
 ### 完整的安全架构
 
 ```mermaid

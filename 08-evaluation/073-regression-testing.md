@@ -143,6 +143,97 @@ class GoldenDataset:
     }
 ```
 
+### 从 badcase 到回归集：归因与沉淀
+
+badcase 要先归因，再沉淀成用例。否则越堆越假。
+
+**复现**：固定当时的模型和 prompt 版本，用 trace 里的输入重放。复现不了先查环境差异；不可复现的 case 归因无意义，先标记待观察。
+
+**分层排除，从后往前**：工具层（选对了吗、参数对吗、工具返回本身对吗）→ 检索层（相关文档进 top-k 了吗、rerank 排对了吗）→ 上下文层（该有的信息在吗、被压缩丢了吗）→ prompt 层（指令有歧义吗、few-shot 有错误示范吗）→ 最后才是模型能力。
+
+**消融实验**：换更强的模型重跑，变好了是模型问题；把人工构造的正确上下文直接喂进去重跑，变好了是前序链路问题。关键判据是：正确信息直接给模型，它能答对吗？能，问题在链路；不能，问题在模型或 prompt。
+
+确认的 badcase 记四样：输入、期望输出或判定标准、归因标签、来源 trace id。按归因分三个集：检索集、工具集（选择加参数）、端到端集。改哪层跑哪个集，反馈最快；端到端集兜底，防止层间交互漏掉。
+
+回归集不能拿来把 prompt 调到 100% 通过。留一部分 holdout 平时不看、不针对性修改；按 badcase 类型分层抽样，每类都留出样本；每轮按种子轮换，避免 holdout 被间接拟合。失效用例定期清理或标记停用，不删历史。
+
+接进 CI：改 prompt、换模型、动工具都触发对应集，核心指标不降才允许上线。
+
+```python
+import random
+from dataclasses import dataclass
+from enum import Enum
+from typing import Optional
+
+
+class Layer(Enum):
+    RETRIEVAL = "retrieval"  # 检索集
+    TOOL = "tool"            # 工具集：选择 + 参数
+    CONTEXT = "context"      # 以下三类归入端到端集
+    PROMPT = "prompt"
+    MODEL = "model"
+
+
+@dataclass
+class BadCase:
+    case_id: str
+    input: str
+    expected: Optional[str]     # 有标准答案就填
+    rubric: Optional[str]       # 没有标准答案就填判定标准
+    layer: Layer                # 归因标签
+    source_trace_id: str        # 来源 trace，可重放
+    split: str = "train"        # train / holdout
+    active: bool = True         # 失效用例标记停用，不删历史
+
+    def selectable(self) -> bool:
+        return self.active and self.split == "train"
+
+
+class RegressionSuite:
+    """按归因分层组织回归集，holdout 平时不看"""
+
+    # 目录落地：tests/regression/{retrieval,tool,end_to_end}/
+    END_TO_END_LAYERS = {Layer.CONTEXT, Layer.PROMPT, Layer.MODEL}
+
+    def __init__(self, cases: list[BadCase]) -> None:
+        self.cases = cases
+
+    def retrieval_suite(self) -> list[BadCase]:
+        return self._trainable(Layer.RETRIEVAL)
+
+    def tool_suite(self) -> list[BadCase]:
+        return self._trainable(Layer.TOOL)
+
+    def end_to_end_suite(self) -> list[BadCase]:
+        # 上下文、prompt、模型的问题都落在端到端集
+        return [
+            c for c in self.cases
+            if c.selectable() and c.layer in self.END_TO_END_LAYERS
+        ]
+
+    def holdout(self) -> list[BadCase]:
+        return [c for c in self.cases if c.active and c.split == "holdout"]
+
+    def rotate_holdout(self, ratio: float = 0.2, seed: int = 0) -> None:
+        """按归因类型分层抽样轮换 holdout，避免被反复拟合"""
+        rng = random.Random(seed)
+        active = [c for c in self.cases if c.active]
+        for case in active:
+            case.split = "train"
+
+        groups: dict[Layer, list[BadCase]] = {}
+        for case in active:
+            groups.setdefault(case.layer, []).append(case)
+
+        for group in groups.values():
+            quota = max(1, int(len(group) * ratio))
+            for case in rng.sample(group, min(quota, len(group))):
+                case.split = "holdout"
+
+    def _trainable(self, layer: Layer) -> list[BadCase]:
+        return [c for c in self.cases if c.selectable() and c.layer is layer]
+```
+
 ### CI/CD 集成
 
 ```python

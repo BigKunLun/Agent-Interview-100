@@ -83,6 +83,202 @@ class ToolGateway:
         return self.filter_sensitive(result, agent.permission_level)
 ```
 
+### 参数校验的两级实现
+
+流水线第 3 步 `validate_input` 要挡两类问题：结构不对（缺字段、类型错、多出未声明的字段）和语义不对（结构合法但值危险）。JSON Schema 只管第一类，第二类要单独写规则。
+
+第一级 schema 校验。tool_call 的 `arguments` 是 JSON 字符串，不是对象，先 `json.loads`。解析失败本身就是一类错误，要和校验失败一样回灌给模型，不能抛异常打断循环。用 `jsonschema` 按工具声明的 schema 逐字段检查，错误写清哪个字段、期望什么、实际是什么。模型拿到这种错误能直接改对；只回一句 "argument validation failed" 等于让它猜。schema 里加 `additionalProperties: false`，把模型编造出来的字段也拦下。
+
+```python
+import json
+
+import jsonschema
+
+
+def validate_arguments(tool_schema: dict, raw_args: str) -> list[dict]:
+    """返回字段级错误列表，空列表表示通过"""
+    try:
+        args = json.loads(raw_args)      # arguments 是 JSON 字符串
+    except json.JSONDecodeError as e:
+        return [{
+            "field": "<arguments>",
+            "expected": "合法的 JSON 对象",
+            "actual": raw_args[:80],
+            "message": f"arguments 解析失败：{e.msg}（第 {e.pos} 个字符）",
+        }]
+
+    validator = jsonschema.Draft202012Validator(tool_schema)
+    errors = []
+    for err in validator.iter_errors(args):
+        if err.validator == "required":
+            missing = [k for k in err.validator_value if k not in err.instance]
+            field, expected = ",".join(missing), "必填字段"
+        else:
+            field = ".".join(map(str, err.absolute_path)) or "<root>"
+            expected = f"{err.validator} 约束: {err.validator_value!r}"
+        errors.append({
+            "field": field,
+            "expected": expected,
+            "actual": repr(err.instance)[:120],
+            "message": err.message,
+        })
+    return errors
+```
+
+第二级语义校验。schema 表达不了"这个路径在不在允许目录内""这个 URL 指向哪里"。三类高频规则：路径先 `os.path.realpath` 解析，再用 `os.path.commonpath` 判断是否落在允许根目录内，`../` 和符号链接都会被展开；URL 解析出主机名再解析成 IP，拒绝内网、回环、链路本地和云元数据地址 `169.254.169.254`；SQL 只放行单条只读语句。校验和实际连接是两次解析，中间存在 DNS rebinding 空窗；重定向后的目标要重新走同一套校验。真正的出口控制要放在网络代理层，这一层负责快速拒绝。SQL 关键字匹配会误伤字符串字面量，生产上再配只读数据库账号兜底。
+
+```python
+import ipaddress
+import os
+import re
+import socket
+from urllib.parse import urlparse
+
+
+class SemanticError(Exception):
+    """语义校验失败，回灌时映射为 INVALID_ARGUMENT"""
+
+
+class SemanticValidator:
+    """schema 管结构，这里管 schema 表达不了的语义规则"""
+
+    WRITE_SQL = re.compile(
+        r"\b(INSERT|UPDATE|DELETE|REPLACE|DROP|ALTER|CREATE|TRUNCATE"
+        r"|GRANT|REVOKE|ATTACH|PRAGMA|VACUUM)\b",
+        re.IGNORECASE,
+    )
+
+    def __init__(self, allowed_roots: list[str]):
+        self.allowed_roots = [os.path.realpath(r) for r in allowed_roots]
+
+    def check_path(self, path: str) -> str:
+        resolved = os.path.realpath(path)   # 展开 ../ 和符号链接
+        for root in self.allowed_roots:
+            try:
+                if os.path.commonpath([root, resolved]) == root:
+                    return resolved
+            except ValueError:              # Windows 上不同盘符
+                continue
+        raise SemanticError(f"路径越界：{resolved}")
+
+    def check_url(self, url: str) -> str:
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            raise SemanticError(f"协议不允许：{parsed.scheme}")
+        if not parsed.hostname:
+            raise SemanticError("URL 缺少主机名")
+        try:
+            infos = socket.getaddrinfo(parsed.hostname, None)
+        except socket.gaierror as e:
+            raise SemanticError(f"域名解析失败：{parsed.hostname}") from e
+        for *_, sockaddr in infos:
+            ip = ipaddress.ip_address(sockaddr[0].split("%")[0])
+            if (ip.is_private or ip.is_loopback or ip.is_link_local
+                    or ip.is_reserved or ip.is_multicast):
+                raise SemanticError(f"目标地址不允许：{parsed.hostname} -> {ip}")
+        return url
+
+    def check_sql(self, sql: str) -> str:
+        body = sql.strip().rstrip(";")
+        if ";" in body:
+            raise SemanticError("只允许单条 SQL 语句")
+        if not re.match(r"^(SELECT|WITH|EXPLAIN)\b", body, re.IGNORECASE):
+            raise SemanticError("只允许只读查询（SELECT / WITH / EXPLAIN）")
+        if self.WRITE_SQL.search(body):
+            raise SemanticError("检测到写操作关键字，拒绝执行")
+        return body
+```
+
+### 结果回灌协议
+
+工具结果以 `role="tool"` 的消息回到模型上下文。这条消息的结构决定模型能不能看懂失败原因、会不会做无效重试。
+
+统一六个字段：`status` 标记成功或失败；`data` 放成功结果；`error_code` 是稳定的机器可读码；`message` 是给人看的一句话；`hint` 是给模型的下一步建议；`retryable` 告诉 harness 重试有没有意义。模型主要读 `hint` 决定下一步怎么改，harness 主要读 `retryable` 决定要不要自动重试。
+
+`tool_call_id` 必须原样回填。并行调用时结果按 id 对齐，不能按返回顺序：顺序错位会让模型把 A 的结果当成 B 的，后续推理全错。
+
+| 错误类型 | 典型 error_code | 模型该做什么 | retryable |
+|---------|----------------|-------------|-----------|
+| 参数错误 | INVALID_ARGUMENT | 按 hint 改参数后重试 | true |
+| 权限错误 | PERMISSION_DENIED | 换路径或上报，不要原样重试 | false |
+| 执行错误 | TOOL_TIMEOUT / INTERNAL | 瞬态错误可重试，否则换方法 | 视情况 |
+
+```python
+import json
+from dataclasses import dataclass
+
+
+@dataclass
+class ToolResult:
+    tool_call_id: str
+    status: str                      # "ok" | "error"
+    data: dict | None = None
+    error_code: str | None = None
+    message: str | None = None
+    hint: str | None = None
+    retryable: bool = False
+
+    def to_message(self) -> dict:
+        """构造回灌给模型的 tool 消息"""
+        payload = {"status": self.status, "data": self.data}
+        if self.status == "error":
+            payload.update({
+                "error_code": self.error_code,
+                "message": self.message,
+                "hint": self.hint,
+                "retryable": self.retryable,
+            })
+        return {
+            "role": "tool",
+            "tool_call_id": self.tool_call_id,   # 与请求一一对应
+            "content": json.dumps(payload, ensure_ascii=False),
+        }
+
+
+# 参数错误：模型读 hint 后改参数重试
+ToolResult(
+    tool_call_id="call_abc",
+    status="error",
+    error_code="INVALID_ARGUMENT",
+    message="字段 start_date 格式不合法",
+    hint="start_date 需要 YYYY-MM-DD，例如 2026-10-01",
+    retryable=True,
+)
+
+# 权限错误：重试没有意义，换路径或上报
+ToolResult(
+    tool_call_id="call_def",
+    status="error",
+    error_code="PERMISSION_DENIED",
+    message="agent 无权读取 /etc/secrets",
+    hint="改用允许目录内的路径；确需该文件请联系管理员",
+    retryable=False,
+)
+```
+
+大结果不要直接塞回上下文。超过阈值（经验值几千字符，按模型上下文预算调整）就存到外部，只回引用 id 加一句话摘要；模型需要细节时再调 `fetch_result` 取。这样单次工具输出不会把窗口挤爆。
+
+```python
+MAX_INLINE_CHARS = 8_000  # 经验值，按模型上下文预算调整
+
+
+class ResultPacker:
+    def __init__(self, store):
+        self.store = store
+
+    async def pack(self, tool_call_id: str, raw: str) -> ToolResult:
+        if len(raw) <= MAX_INLINE_CHARS:
+            return ToolResult(tool_call_id, "ok", data={"content": raw})
+
+        ref_id = await self.store.put(raw)
+        return ToolResult(
+            tool_call_id,
+            "ok",
+            data={"ref_id": ref_id, "preview": raw[:500]},
+            hint=f"结果过长已存为 {ref_id}，需要细节时调用 fetch_result(ref_id)",
+        )
+```
+
 ### 权限模型
 
 #### RBAC（基于角色的访问控制）
@@ -236,6 +432,8 @@ Agent 处理
 5. **追问："Claude Agent SDK 的 `classifierContext` 让宿主给权限决策注入上下文，这会不会削弱『Agent 不可信』的假设？"** — 恰恰相反。要点是区分**谁在断言**：`classifierContext` 由 `PostToolUse` hook 返回，hook 运行在宿主进程里，Agent 无法伪造；分类器读到的是宿主基于自身事实的断言，不是 Agent 的自述，信任根仍在宿主侧。同期 v0.3.233 把 Todo/任务追踪工具移出默认工具面，走的也是同一条最小权限路线。**追问延伸**：hook 成了安全判定的输入源，它自己就变成新攻击面，需按 Gateway 同等标准做审计和变更管控——若 hook 里拼接 Agent 可控的字符串塞进 `classifierContext`，等于给注入开后门。
 
 6. **追问："MCP Server 场景下工具级权限怎么做？"** — Claude Agent SDK（TS）v0.3.301（2026-10）起，sdk-type MCP server 配置支持 per-tool `permission_policy`（`always_ask` / `always_deny`，initialize 与 setMcpServers 均生效）——工具级准入原则下沉为 MCP server 的原生配置面，宿主无需在调用层逐一拦截。
+
+7. **追问："JSON Schema 校验通过，参数就一定安全吗？"** — 不一定。schema 只约束结构和类型，管不了值的语义：`/data/../etc/passwd` 满足 `type: string`，`http://169.254.169.254/latest/meta-data/` 满足 `format: uri`。路径、URL、SQL 这类规则必须单独写语义校验，schema 通过只是第一级。
 
 ## 参考资料
 

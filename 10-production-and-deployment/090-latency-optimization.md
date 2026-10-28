@@ -102,6 +102,145 @@ async def chat_stream(request: ChatRequest):
 
 **与 MCP 的关系：** MCP 的传输层使用 **Streamable HTTP**（HTTP POST + 可选 SSE 流式响应），而非 WebSocket。原因：MCP 通信以请求-响应为主，不需要全双工；HTTP+SSE 更简单、更容易穿透企业防火墙。
 
+### 断线重连：事件缓冲与 run 生命周期解耦
+
+SSE 的 `Last-Event-ID` 只解决协议层重连。服务端不留事件、连接一断 run 就停，重连也接不上。恢复需要两个前提：事件有稳定序号，run 不依赖连接存活。
+
+**事件协议。** 每个事件带 `run_id`、单调递增的 `seq` 和时间戳，类型固定为 `run.started`、`text.delta`、`tool_call.started`、`args.delta`、`tool_call.ended`、`tool.result`、`run.finished`、`run.error`。SSE 的 `id` 字段携带 `seq`。`seq` 是恢复的基础，服务端按它补发。
+
+```python
+import asyncio
+import json
+import time
+from collections import defaultdict, deque
+from dataclasses import dataclass, field
+
+
+@dataclass
+class RunEvent:
+    run_id: str
+    seq: int
+    type: str
+    data: dict
+    ts: float = field(default_factory=time.time)
+
+    def to_sse(self) -> str:
+        # id 会被浏览器记住，重连时作为 Last-Event-ID 带回
+        payload = json.dumps(
+            {"type": self.type, "data": self.data, "ts": self.ts},
+            ensure_ascii=False,
+        )
+        return f"id: {self.seq}\nevent: {self.type}\ndata: {payload}\n\n"
+
+
+class RunEventBuffer:
+    """单 run 的事件缓冲：分配 seq、按 seq 补发、订阅新事件"""
+
+    def __init__(self, retain: int = 2000):
+        self._events: dict[str, deque[RunEvent]] = defaultdict(
+            lambda: deque(maxlen=retain)
+        )
+        self._seq: dict[str, int] = defaultdict(int)
+        self._subs: dict[str, set[asyncio.Queue]] = defaultdict(set)
+
+    async def append(self, run_id: str, type_: str, data: dict) -> RunEvent:
+        # 生产版换成 await redis.incr(...) + await redis.xadd(...)
+        self._seq[run_id] += 1                      # 同一 run 内单调递增
+        event = RunEvent(run_id, self._seq[run_id], type_, data)
+        self._events[run_id].append(event)          # 环形缓冲，满了丢最旧
+        for q in list(self._subs[run_id]):
+            q.put_nowait(event)
+        return event
+
+    def replay(self, run_id: str, last_seq: int) -> list[RunEvent] | None:
+        """补发 seq > last_seq 的事件；缓冲不连续时返回 None"""
+        buf = self._events.get(run_id)
+        if not buf or buf[0].seq > last_seq + 1:
+            return None
+        return [e for e in buf if e.seq > last_seq]
+
+    def subscribe(self, run_id: str) -> asyncio.Queue:
+        q: asyncio.Queue[RunEvent] = asyncio.Queue()
+        self._subs[run_id].add(q)
+        return q
+
+    def unsubscribe(self, run_id: str, q: asyncio.Queue) -> None:
+        self._subs[run_id].discard(q)
+
+    def snapshot(self, run_id: str, state: dict, seq: int) -> RunEvent:
+        """补不齐时的兜底事件：带上状态和它包含到的 seq，后续只推更新的事件"""
+        return RunEvent(run_id, seq, "run.snapshot", state)
+```
+
+**run 与连接解耦。** LLM 调用和工具执行在服务端后台跑，连接只是订阅者。断网、刷新不影响 run 继续。断线不能重跑：重跑再付一次 token 成本，还会重复副作用，比如邮件发两次。重连是接着收，不是重新做。
+
+**事件缓冲。** 每个 run 的事件按 `run_id` 写入 Redis Stream 或带持久化的环形缓冲。客户端带 `run_id`、`last_seq` 重连，服务端补发 `seq > last_seq` 的事件；run 没结束就继续推新的。先订阅再补发，避免中间丢事件。下面用进程内环形缓冲演示，生产换 Redis Stream + TTL。
+
+**缓冲过期兜底。** 事件淘汰时，返回 run 状态快照（当前步骤、已生成文本、工具状态），从快照 `seq` 往后推。宁可丢中间过程，也不能卡死。
+
+**客户端去重。** 按 `seq` 丢弃重复或更旧的事件，渲染保持幂等。
+
+**工具执行中重连。** 前端只显示工具状态，不重放中间输出。重连后查状态：`running` 继续等，`done` 补结果。工具长输出同样按 `seq` 进缓冲。
+
+**三个坑。** 一是 `args.delta` 是 JSON 片段，前端自己拼会在半个 JSON 上解析失败，后端拼完整再推结构化事件。二是长连接会被中间设备掐断，每 30 秒发一次注释心跳（经验值）。三是同一 run 必须由一处分配 `seq`，否则多实例序号乱；用 sticky 路由固定实例，或收敛到统一事件服务。
+
+```python
+import asyncio
+from fastapi import Header
+from fastapi.responses import StreamingResponse
+
+# app、buffer、run_store 为服务端已有对象；buffer 即上文的 RunEventBuffer
+# run_store 保存 run 主状态，load 返回 (状态, 状态包含到的 seq)
+TERMINAL = {"run.finished", "run.error"}
+
+
+@app.get("/runs/{run_id}/events")
+async def stream_run_events(
+    run_id: str,
+    last_event_id: str | None = Header(None, alias="Last-Event-ID"),
+):
+    last_seq = int(last_event_id or 0)
+    q = buffer.subscribe(run_id)        # 先订阅，再补发，避免中间空窗
+
+    async def gen():
+        try:
+            history = buffer.replay(run_id, last_seq)
+            if history is None:
+                # 缓冲已过期：发状态快照，从快照包含到的 seq 继续
+                state, snap_seq = await run_store.load(run_id)
+                snap = buffer.snapshot(run_id, state, snap_seq)
+                yield snap.to_sse()
+                if state.get("status") in ("finished", "failed"):
+                    return
+                sent = snap.seq
+            else:
+                for event in history:
+                    yield event.to_sse()
+                    if event.type in TERMINAL:
+                        return
+                sent = history[-1].seq if history else last_seq
+
+            while True:
+                try:
+                    event = await asyncio.wait_for(q.get(), timeout=30)
+                except asyncio.TimeoutError:
+                    yield ": keep-alive\n\n"      # 30s 心跳，经验值
+                    continue
+                if event.seq > sent:              # 补发与订阅可能重叠
+                    yield event.to_sse()
+                    sent = event.seq
+                if event.type in TERMINAL:
+                    return
+        finally:
+            buffer.unsubscribe(run_id, q)
+
+    return StreamingResponse(
+        gen(),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+```
+
 ### 多层缓存策略
 
 ```mermaid
@@ -276,6 +415,8 @@ class ParallelOptimizer:
 8. **追问："SSE 和 WebSocket 在 AI 应用中如何选型？"** — 核心看通信方向：LLM 流式输出是单向的（服务器→客户端），用 SSE 就够了，且更简单、原生支持重连。需要双向通信（语音对话、协作编辑）或二进制传输（音频/视频流）时才用 WebSocket。ChatGPT、Claude 等都使用 SSE。
 
 9. **追问："MCP 为什么用 SSE 而不用 WebSocket？"** — MCP 通信模型是 JSON-RPC 请求-响应式，不需要全双工。HTTP+SSE 更简单、更容易部署、更容易穿透企业防火墙。但社区已有讨论考虑增加 WebSocket 传输支持。
+
+10. **追问："SSE 不是原生支持断线重连吗？为什么还要自己做事件缓冲？"** — 原生支持的只是协议层：浏览器会自动重连，并把最后收到的 `id` 通过 `Last-Event-ID` 带上。服务端要认这个 id、保留对应事件、按序补发，重连才有内容可接。如果 run 随连接结束、事件不落缓冲，重连只能重新开始或拿到空白流。重连也不等于重跑：LLM 和工具在服务端继续执行，客户端只是重新订阅。
 
 ## 参考资料
 
