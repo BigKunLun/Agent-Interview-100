@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Agentic-RL 是什么？如何用 GRPO 训练 Agent 的决策能力？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  /* 103 Agentic-RL / GRPO */
+  .g-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .g-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+  .g-caption > p:not(.figure-index) { margin-top: var(--s-2); font-size: var(--t-small); color: var(--text-dim); max-width: 66em; }
+  .g-formula { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-3); align-items: center; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px 12px; }
+  .g-formula-label { display: block; font: 10px/1.5 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .g-formula code { display: block; margin-top: 2px; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+  .g-stats { display: flex; gap: 6px; }
+  .g-stat { min-width: 72px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: 5px 8px; text-align: center; }
+  .g-stat span { display: block; font: 9px/1.4 var(--mono); color: var(--text-dim); }
+  .g-stat b { display: block; margin-top: 1px; font: 600 14px/1.2 var(--mono); }
+  .g-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .g-roll { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 11px 12px; min-width: 0; transition: border-color var(--fast) var(--ease); }
+  .g-roll-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .g-roll-head b { font-size: 13px; line-height: 1.45; }
+  .g-verdict { font: 10px/1.5 var(--mono); padding: 1px 6px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-soft); color: var(--text-dim); white-space: nowrap; }
+  .g-traj { margin-top: 5px; font-size: 11px; line-height: 1.55; color: var(--text-dim); }
+  .g-dims { list-style: none; margin: 8px 0 0; padding: 0; border-top: 1px dashed var(--border); }
+  .g-dims li { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; padding: 3px 0; font: 10px/1.45 var(--mono); color: var(--text-dim); border-bottom: 1px dashed var(--border); }
+  .g-dims li:last-child { border-bottom: 0; }
+  .g-dims b { color: var(--ink); font-weight: 600; white-space: nowrap; }
+  .g-total { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--border); }
+  .g-total span { font-size: 10px; color: var(--text-dim); }
+  .g-total b { font: 600 20px/1.1 var(--serif); }
+  .g-adv { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-top: 6px; font-size: 10px; color: var(--text-dim); }
+  .g-adv b { font: 600 14px/1.2 var(--mono); color: var(--text-dim); }
+  .g-adv.is-pos b { color: #1b5e20; }
+  .g-adv.is-neg b { color: #b71c1c; }
+  .g-action { display: inline-block; margin-top: 7px; padding: 1px 7px; border: 1px solid var(--border); border-radius: 999px; font: 10px/1.5 var(--mono); color: var(--text-dim); background: var(--surface-soft); }
+  .g-roll.is-high { border-color: #2e7d32; background: #f7fbf7; }
+  .g-roll.is-high .g-action { color: #1b5e20; border-color: #9aa89a; background: #f1f8f1; }
+  .g-roll.is-low { border-color: #c62828; background: #fffafa; }
+  .g-roll.is-low .g-action { color: #b71c1c; border-color: #c62828; background: #fff3f3; }
+  .g-roll.is-flat { border-color: #9aa29a; }
+  .g-roll.is-flat .g-action { color: #5d625d; }
+  .g-pipe { display: grid; grid-template-columns: minmax(0, 1fr) 22px minmax(0, 1fr) 22px minmax(0, 1fr) 22px minmax(0, 1fr); gap: 6px; align-items: stretch; margin-top: var(--s-4); }
+  .g-pipe-step { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px 11px; min-width: 0; }
+  .g-pipe-step span { font: 10px/1.4 var(--mono); color: var(--text-dim); }
+  .g-pipe-step b { display: block; margin-top: 2px; font-size: 12px; line-height: 1.45; }
+  .g-pipe-step p { margin-top: 3px; font-size: 10px; line-height: 1.5; color: var(--text-dim); }
+  .g-pipe-arrow { display: grid; place-items: center; color: var(--text-dim); font-size: 14px; }
+  .g-compare { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); margin-top: var(--s-4); }
+  .g-compare-col { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .g-compare-col h3 { margin-top: 0; font-size: 15px; }
+  .g-compare-steps { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 5px; }
+  .g-compare-steps li { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: 6px 8px; font-size: 11px; line-height: 1.45; }
+  .g-compare-col p:last-child { margin-top: var(--s-3); font-size: 11px; line-height: 1.6; color: var(--text-dim); }
+  .g-evolution { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: var(--s-4); }
+  .g-evo-step { flex: 1 1 160px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 9px 10px; min-width: 0; }
+  .g-evo-step b { display: block; font-size: 12px; }
+  .g-evo-step span { display: block; margin-top: 3px; font-size: 10px; line-height: 1.5; color: var(--text-dim); }
+  .g-evo-arrow { color: var(--text-dim); }
+  @media (max-width: 1000px) {
+    .g-formula { grid-template-columns: 1fr; }
+    .g-pipe { grid-template-columns: 1fr; }
+    .g-pipe-arrow { transform: rotate(90deg); }
+    .g-compare { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .g-stage { padding: var(--s-4); }
+    .g-caption h2 { font-size: 22px; }
+    .g-grid { grid-template-columns: 1fr; }
+    .g-stats { justify-content: stretch; }
+    .g-stat { flex: 1 1 0; }
+    .g-formula code { font-size: 10px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">103 / Agentic-RL / GRPO</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 6 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="056-mcts-in-agent-planning.html">← 上一页 · Monte Carlo Tree S…</a><a href="../07-prompt-engineering/059-system-prompt-principles.html">下一页 → · System Prompt 设计的核…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">高级 · Planning &amp; Reasoning · 可交互讲解</p>
+      <h1>奖励看任务完成，<br>不看回答讨不讨喜。</h1>
+    </div>
+    <div>
+      <p class="lead">Agentic-RL 用任务环境的可验证反馈训练工具调用和规划；GRPO 不训练 Critic，而是对同一 prompt 采样一组轨迹，用组内相对排名算 advantage。</p>
+      <p class="definition">边界：GRPO 适合可验证奖励的任务；奖励函数设计是核心难点。原文字段（R1 配置 group_size=64、DAPO 效果、Terminal-Universe 等）按原文标注，属<strong>原文版本、未联网核实</strong>。</p>
+      <div class="hero-meta"><span class="pill">高级</span><span class="pill">Planning &amp; Reasoning</span><span class="pill">强化学习</span><span class="pill">固定教学数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="g-step-title">
+    <div class="player-top">
+      <div class="player-label">GRPO 一步 <small>固定 4 条轨迹 · 不算真实训练</small></div>
+      <div class="controls" role="group" aria-label="GRPO 演示控制">
+        <button type="button" class="button button-quiet" id="g-reset">重置</button>
+        <button type="button" class="button" id="g-prev" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="g-next">下一步 →</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="GRPO 四步演示">
+      <ol style="--stages: 4">
+        <li><button type="button" class="stage-button" data-step="1" aria-current="step" aria-controls="g-scene" aria-label="第 1 步：同一 prompt 采样四条轨迹"><span class="stage-number">1</span><span>采样</span></button></li>
+        <li><button type="button" class="stage-button" data-step="2" aria-controls="g-scene" aria-label="第 2 步：按四维奖励函数打分"><span class="stage-number">2</span><span>打分</span></button></li>
+        <li><button type="button" class="stage-button" data-step="3" aria-controls="g-scene" aria-label="第 3 步：组内标准化计算 advantage"><span class="stage-number">3</span><span>优势</span></button></li>
+        <li><button type="button" class="stage-button" data-step="4" aria-controls="g-scene" aria-label="第 4 步：按 advantage 方向更新策略"><span class="stage-number">4</span><span>更新</span></button></li>
+      </ol>
+    </nav>
+    <div class="g-stage scene" id="g-scene" data-scene="grpo">
+      <div class="g-caption">
+        <p class="figure-index" id="g-position">图 1 · 第 1 / 4 步</p>
+        <h2 id="g-step-title">同一 prompt，先采样 4 条完整轨迹。</h2>
+        <p id="g-step-description">GRPO 的关键是组内比较：同一个任务采样 G 条轨迹，每条得到自己的奖励。此时还没有打分。</p>
+      </div>
+
+      <div class="g-formula">
+        <div>
+          <span class="g-formula-label">四维奖励函数 · 原文权重</span>
+          <code>R = 0.50 × 完成度 + 0.20 × 工具准确 + 0.15 × 效率 + 0.15 × 格式</code>
+        </div>
+        <div class="g-stats" aria-label="组统计">
+          <div class="g-stat"><span>G</span><b>4</b></div>
+          <div class="g-stat"><span>mean</span><b id="g-mean">—</b></div>
+          <div class="g-stat"><span>std</span><b id="g-std">—</b></div>
+        </div>
+      </div>
+
+      <div class="g-grid" id="g-grid"></div>
+
+      <p class="demo-note">固定教学数据：任务、4 条轨迹、四维分数、奖励与 advantage 都为演示而设；数值由页面按固定公式计算，不是真实训练或模型输出。本页不加载模型、不执行工具、不更新任何参数。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 组内统计由页面脚本计算</span><span id="g-state-summary">第 1 / 4 步 · 没有连接模型</span></div>
+  </section>
+  <p id="g-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="g-paradigm-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">一 · Agentic-RL vs RLHF</p><h2 id="g-paradigm-title">奖励来自任务，<br>不是来自偏好。</h2></div>
+      <p class="reading-intro">两者都用强化学习优化 LLM，但目标不同：RLHF 优化“回答讨不讨喜”，Agentic-RL 优化“任务有没有完成”。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">传统 RLHF 与 Agentic-RL 在目标、奖励来源和场景上的对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">传统 RLHF</th><th scope="col">Agentic-RL</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">目标</th><td>对齐人类偏好（helpful、harmless、honest）。</td><td>提升任务执行能力（工具调用、规划、推理）。</td></tr>
+            <tr><th scope="row">奖励来源</th><td>人类标注 → Reward Model 打分。</td><td>任务环境自动评估（可验证奖励）。</td></tr>
+            <tr><th scope="row">训练信号</th><td>回答 A 比回答 B 更好。</td><td>任务是否完成、执行效率、步骤正确性。</td></tr>
+            <tr><th scope="row">典型场景</th><td>聊天、创意写作、安全对齐。</td><td>Agent 工具调用、代码生成、多步推理。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>RLHF 需要人类标注偏好，训练信号受标注瓶颈限制；Agentic-RL 的奖励可以由环境自动计算，例如代码是否通过测试、答案是否匹配 ground truth，因此可以大规模生成训练信号。</p>
+
+      <h3>完整训练流程</h3>
+      <div class="g-pipe" role="group" aria-label="Agentic-RL 四段流水线：SFT 冷启动、奖励函数定义、GRPO 策略优化、可选的拒绝采样与二次 SFT">
+        <div class="g-pipe-step"><span>阶段 1</span><b>SFT 冷启动</b><p>少量高质量轨迹，先学会工具调用。</p></div>
+        <div class="g-pipe-arrow" aria-hidden="true">→</div>
+        <div class="g-pipe-step"><span>阶段 2</span><b>奖励函数定义</b><p>完成度、工具准确、简洁、格式。</p></div>
+        <div class="g-pipe-arrow" aria-hidden="true">→</div>
+        <div class="g-pipe-step"><span>阶段 3</span><b>GRPO 策略优化</b><p>同一 prompt 的 G 条轨迹做组内相对更新。</p></div>
+        <div class="g-pipe-arrow" aria-hidden="true">→</div>
+        <div class="g-pipe-step"><span>阶段 4（可选）</span><b>拒绝采样 + 二次 SFT</b><p>筛高奖励轨迹回灌蒸馏。</p></div>
+      </div>
+      <p>原文把这条流程概括为四段：SFT 冷启动 → 奖励定义（四维）→ GRPO 组内优化 → 拒绝采样回灌二次 SFT。第四段是可选项。</p>
+
+      <details>
+        <summary>查看原文训练流程 Mermaid 源码</summary>
+        <pre><code>flowchart TD
+    A["阶段 1：SFT 冷启动&lt;br/&gt;少量高质量轨迹学工具调用"] --&gt; B["阶段 2：奖励函数定义&lt;br/&gt;完成度/工具准确/简洁/格式"]
+    B --&gt; C["阶段 3：GRPO 策略优化&lt;br/&gt;同 prompt G 条轨迹组内相对更新"]
+    C --&gt; D["阶段 4（可选）：拒绝采样+二次 SFT&lt;br/&gt;筛高奖励轨迹回灌蒸馏"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class A,B,D proc
+    class C agent</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="g-grpo-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">二 · GRPO vs PPO</p><h2 id="g-grpo-title">不用 Critic，<br>用组内排名。</h2></div>
+      <p class="reading-intro">PPO 要额外训练 Critic 估计状态价值；GRPO 直接对同一 prompt 采样一组响应，用组内相对排名替代 Critic。</p>
+    </div>
+    <div class="prose">
+      <div class="g-compare">
+        <div class="g-compare-col">
+          <h3>PPO · 需要 Critic</h3>
+          <ol class="g-compare-steps">
+            <li>Actor 策略网络生成响应。</li>
+            <li>Critic Model 估计 V(s)。</li>
+            <li>Advantage = R − V(s)。</li>
+            <li>PPO Clipping 更新 Actor。</li>
+          </ol>
+          <p>Critic 要单独训练，显存和训练开销都更高；优势估计依赖 Critic 的质量。</p>
+        </div>
+        <div class="g-compare-col">
+          <h3>GRPO · 无需 Critic</h3>
+          <ol class="g-compare-steps">
+            <li>同一 prompt 采样 G 个响应。</li>
+            <li>逐条计算奖励 r1 … rG。</li>
+            <li>组内标准化 A = (r − mean) / std。</li>
+            <li>带 KL 惩罚更新 Policy。</li>
+          </ol>
+          <p>不需要 Critic；组大小 G 决定相对排名的稳定性，也决定采样成本。</p>
+        </div>
+      </div>
+
+      <h3>核心公式</h3>
+      <p class="code-label">组内标准化 · 原文代码</p>
+      <pre><code>mean = rewards.mean()
+std = rewards.std() + 1e-8          # 避免除零
+advantages = (rewards - mean) / std # 组内标准化</code></pre>
+      <p>奖励高于组均值的轨迹得到正 advantage，低于均值的得到负 advantage，接近均值的几乎不动。这样不需要 Critic 也能判断“这条轨迹比同组其他人好多少”。</p>
+
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">PPO 与 GRPO 在 Critic、优势计算、采样方式和显存上的对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">PPO</th><th scope="col">GRPO</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Critic Model</th><td>需要，额外训练开销大。</td><td>不需要，原文称节省约 50% 显存。</td></tr>
+            <tr><th scope="row">Advantage 计算</th><td>A = R − V(s)，依赖 Value Function。</td><td>A = (r − mean) / std，依赖组内相对排名。</td></tr>
+            <tr><th scope="row">采样方式</th><td>每个 prompt 1 个响应。</td><td>每个 prompt G 个响应。</td></tr>
+            <tr><th scope="row">训练稳定性</th><td>依赖 Critic 质量。</td><td>依赖组大小 G。</td></tr>
+            <tr><th scope="row">显存占用</th><td>Actor + Critic。</td><td>仅 Policy + Ref。</td></tr>
+            <tr><th scope="row">代表应用</th><td>ChatGPT / InstructGPT。</td><td>DeepSeek-R1。</td></tr>
+            <tr><th scope="row">适合场景</th><td>通用 RLHF。</td><td>可验证奖励的任务。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="source-footnote">“节省约 50% 显存”等为原文口径、未联网核实；实际占用随模型、框架和并行策略变化。</p>
+
+      <details>
+        <summary>展开原文 GRPOTrainer 完整代码</summary>
+        <pre><code>import torch
+import torch.nn.functional as F
+
+class GRPOTrainer:
+    """简化版 GRPO 训练循环"""
+
+    def __init__(self, policy_model, ref_model, reward_fn,
+                 group_size=8, kl_coeff=0.05, clip_eps=0.2, lr=1e-6):
+        self.policy = policy_model       # 当前策略（要训练的 Agent）
+        self.ref = ref_model             # 参考策略（SFT 后冻结的模型）
+        self.reward_fn = reward_fn       # 奖励函数
+        self.G = group_size              # 每组采样数量
+        self.kl_coeff = kl_coeff         # KL 散度惩罚系数
+        self.clip_eps = clip_eps         # PPO-style 裁剪范围
+        self.optimizer = torch.optim.Adam(self.policy.parameters(), lr=lr)
+
+    def compute_group_advantage(self, rewards: torch.Tensor) -&gt; torch.Tensor:
+        """
+        GRPO 的核心：组内相对排名计算 advantage
+        不需要 Critic Model，直接用组内统计量归一化
+        """
+        # rewards: shape (G,)，G 个响应的奖励值
+        mean = rewards.mean()
+        std = rewards.std() + 1e-8   # 避免除零
+        advantages = (rewards - mean) / std  # 组内标准化
+        return advantages
+
+    def grpo_loss(self, prompt_tokens, response_tokens_group,
+                  advantages, old_logprobs):
+        """
+        计算 GRPO 策略梯度损失
+        """
+        total_loss = 0.0
+        for i in range(self.G):
+            # 计算当前策略下的 log 概率
+            new_logprob = self.policy.log_prob(
+                prompt_tokens, response_tokens_group[i]
+            )
+            # 计算参考策略下的 log 概率（用于 KL 惩罚）
+            with torch.no_grad():
+                ref_logprob = self.ref.log_prob(
+                    prompt_tokens, response_tokens_group[i]
+                )
+
+            # 重要性采样比率
+            ratio = torch.exp(new_logprob - old_logprobs[i])
+
+            # PPO-style 裁剪
+            clipped_ratio = torch.clamp(ratio, 1 - self.clip_eps, 1 + self.clip_eps)
+            policy_loss = -torch.min(
+                ratio * advantages[i],
+                clipped_ratio * advantages[i]
+            )
+
+            # KL 散度惩罚（K3 unbiased estimator）：防止策略偏离参考模型太远
+            # 原论文 DeepSeekMath (arXiv:2402.03300) 使用的是 K3 无偏估计：
+            #   KL ≈ exp(r-n) - (r-n) - 1，其中 r = ref_logprob, n = new_logprob
+            # 这个估计始终 ≥ 0，期望值等于真 KL 散度，方差低于线性差分。
+            log_ratio = ref_logprob - new_logprob
+            kl_penalty = self.kl_coeff * (torch.exp(log_ratio) - log_ratio - 1)
+
+            total_loss += (policy_loss + kl_penalty).mean()
+
+        return total_loss / self.G
+
+    def train_step(self, prompts_batch):
+        """单步 GRPO 训练"""
+        batch_loss = 0.0
+
+        for prompt in prompts_batch:
+            # Step 1: 对同一 prompt 采样 G 个完整轨迹
+            responses = []
+            old_logprobs = []
+            for _ in range(self.G):
+                with torch.no_grad():
+                    response, logprob = self.policy.sample(prompt)
+                    responses.append(response)
+                    old_logprobs.append(logprob)
+
+            # Step 2: 计算每个响应的奖励
+            rewards = torch.tensor([
+                self.reward_fn(prompt, resp) for resp in responses
+            ])
+
+            # Step 3: 组内相对排名 → advantage（GRPO 核心）
+            advantages = self.compute_group_advantage(rewards)
+
+            # Step 4: 计算 GRPO 损失并更新
+            loss = self.grpo_loss(prompt, responses, advantages, old_logprobs)
+            batch_loss += loss
+
+        # 反向传播与参数更新
+        self.optimizer.zero_grad()
+        batch_loss.backward()
+        self.optimizer.step()
+
+        return batch_loss.item()</code></pre>
+      </details>
+
+      <details>
+        <summary>查看原文 PPO 与 GRPO 对比 Mermaid 源码</summary>
+        <pre><code>flowchart TD
+    subgraph PPOL["PPO —— 需要额外 Critic"]
+        A1["Actor&lt;br/&gt;策略网络"] --&gt; A2["生成响应"]
+        A2 --&gt; A3["Critic Model&lt;br/&gt;估计 V(s)"]
+        A3 --&gt; A4["Advantage&lt;br/&gt;= R - V(s)"]
+        A4 --&gt; A5["PPO Clipping&lt;br/&gt;更新 Actor"]
+    end
+    subgraph GRPOL["GRPO —— 无需 Critic"]
+        B1["Policy&lt;br/&gt;策略网络"] --&gt; B2["同一 prompt&lt;br/&gt;采样 G 个响应"]
+        B2 --&gt; B3["逐条计算奖励&lt;br/&gt;r1 … rG"]
+        B3 --&gt; B4["组内标准化&lt;br/&gt;A = (r - mean) / std"]
+        B4 --&gt; B5["带 KL 惩罚&lt;br/&gt;更新 Policy"]
+    end
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class A2,A4,A5,B2,B3,B4,B5 proc
+    class A1,B1 agent
+    class A3 neutral</code></pre>
+      </details>
+    </div>
+  </section>
+  <section class="reading" aria-labelledby="g-reward-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三 · 奖励函数与 R1</p><h2 id="g-reward-title">奖励写错，<br>模型就学歪。</h2></div>
+      <p class="reading-intro">Agentic-RL 的核心难点不是算法，是奖励函数。原文把它拆成四个维度，并强调任务完成度必须占主导。</p>
+    </div>
+    <div class="prose">
+      <h3>四维奖励函数</h3>
+      <p class="code-label">原文 compute_agent_reward 代码</p>
+      <pre><code>def compute_agent_reward(prompt, trajectory, max_steps=20):
+    # 维度 1：任务完成度（权重最高，可验证任务直接判正误）
+    completion = 1.0 if trajectory.final_answer == get_ground_truth(prompt) \
+                 else partial_match_score(trajectory.final_answer, prompt)
+
+    # 维度 2：工具使用准确率（调用了正确的工具和参数）
+    tool_calls = trajectory.get_tool_calls()
+    tool_acc = sum(tc.is_valid() for tc in tool_calls) / max(len(tool_calls), 1)
+
+    # 维度 3：步骤简洁性（用更少步骤完成 → 更高奖励）
+    efficiency = max(0, 1.0 - len(trajectory.steps) / max_steps)
+
+    # 维度 4：格式遵循度（输出符合 JSON / 函数调用格式等）
+    format_score = max(0, 1.0 - 0.2 * trajectory.count_format_violations())
+
+    # 加权求和——任务完成度占主导，避免 reward hacking
+    return 0.50 * completion + 0.20 * tool_acc + 0.15 * efficiency + 0.15 * format_score</code></pre>
+      <p>原文的权重是 50% / 20% / 15% / 15%。任务完成度占一半以上，是为了避免模型学会“格式正确但不解决问题”的 reward hacking。</p>
+      <div class="callout">
+        <p class="callout-label">设计陷阱</p>
+        <p>效率分只看步骤数：<code>1 − 步数 / 20</code>。一条什么都没做的轨迹，步数为 0，效率反而拿满分。所以完成度和工具准确必须占足够权重，否则模型会学会“少做事、拿格式分”。</p>
+      </div>
+
+      <h3>DeepSeek-R1 的训练范式</h3>
+      <p>原文把 R1 的训练拆成五步：基座 DeepSeek-V3（671B MoE）→ Cold Start SFT（数千条高质量长 CoT，教模型开始思考）→ 大规模 GRPO（核心）→ Rejection Sampling + SFT（蒸馏 RL 策略）→ 第二轮 RL（加入 helpfulness / safety 奖励）。</p>
+      <p class="code-label">原文 R1 GRPO 配置</p>
+      <pre><code>r1_grpo_config = {
+    "group_size": 64,              # 每个 prompt 采样 64 个响应
+    "sampling_temperature": 1.0,
+    "kl_coefficient": 0.05,
+    "clip_range": 0.2,
+    "max_response_length": 32768,  # 支持超长推理链
+    "reward_design": {
+        "数学": "答案与 ground truth 精确匹配",
+        "代码": "通过编译器 / 测试用例验证",
+        "格式": "正则匹配 &lt;think&gt;...&lt;/think&gt; 标签",
+    },
+}</code></pre>
+      <p class="source-footnote">以上配置、模型规模与训练步骤按原文 2026-10 口径保留，未联网核实。</p>
+
+      <h3>RL 中涌现的行为</h3>
+      <ul>
+        <li>自发长思考链：模型自主生成数千 token 的推理过程。</li>
+        <li>Aha moment：模型学会说 “Wait, let me reconsider...” 并自我纠错。</li>
+        <li>多角度验证：用不同方法交叉检验同一结论。</li>
+        <li>思考时间自适应：简单题想得少，难题想得多。</li>
+      </ul>
+      <p>原文强调这些行为没有人工逐步示范，是 RL 训练中自发出现的。</p>
+
+      <h3>环境供给：Agentic-RL 的现实瓶颈</h3>
+      <div class="callout">
+        <p class="callout-label">原文 2026-09 口径、未联网核实</p>
+        <p>Terminal-Universe（arXiv 2609.04148，原文称 224 upvotes）代表“环境生成”路线：把已经积累的终端 agent 轨迹反向转化为可反复执行、自带可验证任务的环境，缓解后训练环境稀缺。这是原文对 2026 年趋势的判断，本页未核验论文。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="g-post-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四 · GRPO 之后</p><h2 id="g-post-title">论文版 GRPO，<br>只是起点。</h2></div>
+      <p class="reading-intro">2025 年起出现一批 GRPO 改良算法，主要解决长轨迹、稀疏奖励和训练稳定性。原文的判断是：2026 工业界很少直接跑 paper-version GRPO。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">DAPO、GSPO、REINFORCE++/RLOO 和其他 GRPO 改良方向的对比</caption>
+          <thead><tr><th scope="col">算法 / 方向</th><th scope="col">改进点</th><th scope="col">原文备注</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">DAPO（ByteDance，2025）</th><td>Clip-Higher 放宽正向 ratio 上界；Dynamic Sampling 剔除全对/全错样本；Token-level loss；Overlong-shaping 软惩罚长输出。</td><td>原文称 AIME 2024 用 Qwen2.5-32B 在 50% steps 内超过 R1-Zero；公开了完整训练栈。</td></tr>
+            <tr><th scope="row">GSPO（Qwen Team，2025）</th><td>把 ratio / clipping 从 token 级别上升到 sequence 级别，解决长 CoT 训练不稳。</td><td>用于 Qwen3 系列推理模型训练。</td></tr>
+            <tr><th scope="row">REINFORCE++ / RLOO 改进</th><td>把 GRPO 退化为更简单的 REINFORCE + baseline 估计。</td><td>RLOO 用 Removed-One-Out baseline；Reinforce++ 来自 NousResearch。</td></tr>
+            <tr><th scope="row">VAPO / Loop-GRPO / DR-GRPO</th><td>Value-augmented、loop-aware、debiased GRPO 等支线。</td><td>原文共识：GRPO 是 2025 后训练的事实基线，但要针对任务大量改良。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="source-footnote">算法名、年份、效果均为原文 2026-10 口径，未联网核实；本页不比较当前榜单。</p>
+      <p>面试里如果只能说“GRPO = DeepSeek-R1”，知识就停在 2025-01。更完整的回答要能说出：GRPO 解决了 Critic 成本，但长轨迹和稀疏奖励仍需 DAPO/GSPO 这类改良。</p>
+
+      <h3>从 RLHF 到 Agentic-RL</h3>
+      <div class="g-evolution" role="group" aria-label="RLHF 到 RLAIF 到 Agentic-RL 的演进">
+        <div class="g-evo-step"><b>RLHF（2022–2023）</b><span>人类偏好对齐，关注对话质量；代表：ChatGPT；算法：PPO。</span></div>
+        <div class="g-evo-arrow" aria-hidden="true">→</div>
+        <div class="g-evo-step"><b>RLAIF（2023–2024）</b><span>AI 反馈对齐，规模化标注；代表：Claude；算法：PPO / DPO。</span></div>
+        <div class="g-evo-arrow" aria-hidden="true">→</div>
+        <div class="g-evo-step"><b>Agentic-RL（2024–2025+）</b><span>任务环境反馈，训练工具调用和规划；代表：DeepSeek-R1；算法：GRPO / REINFORCE。</span></div>
+      </div>
+      <p>目标从“回答让人满意”转向“任务真的完成”，奖励从人类标注转向环境验证，算法从 PPO 转向更适合可验证奖励的 GRPO 系列。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="g-mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="g-mis-title">两个误区，<br>两个追问。</h2></div>
+      <p class="reading-intro">前两条是误区，后两条是面试追问；答案都来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“RLHF 和 Agentic-RL 是一回事。”</h3><p>两者都用强化学习优化 LLM，但目标不同。RLHF 优化人类偏好，依赖人类标注训练 Reward Model；Agentic-RL 优化任务执行能力，奖励来自环境的可验证反馈，例如代码是否通过测试、答案是否正确。后者可以大规模自动化生成训练信号。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“RL 训练 Agent 不需要 SFT 冷启动。”</h3><p>DeepSeek 的 R1-Zero 表明，纯 RL 虽能涌现推理能力，但有两个问题：输出可读性差，常混合多种语言；训练初期探索效率极低，模型可能长时间在无意义行为里徘徊。Cold Start SFT 用少量高质量数据给模型一个起跑点，显著提升训练效率和最终输出质量。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>“如何设计 Agent 任务的奖励函数？”</h3><p>核心原则是可验证加多维度。可验证任务直接用答案正确性作主奖励；不可验证任务用 LLM-as-Judge 或人类评估。除了完成度，还应奖励工具使用准确性、执行效率和格式规范性。权重上任务完成度应占 50% 以上，避免模型学会“格式正确但不解决问题”的 reward hacking。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>“Agentic-RL 的训练数据如何采集？”</h3><p>分阶段。SFT 阶段需要少量高质量 Agent 轨迹，通常几千到几万条，来自专家标注或强模型生成。RL 阶段的数据可以自动生成：设定任务 prompt，Agent 自由探索，环境自动打分。关键挑战是任务分布多样性，否则模型只在训练分布内表现好；实践中常用课程学习，从简单任务逐步增加难度。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="g-source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="g-source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《Agentic-RL 是什么？如何用 GRPO 训练 Agent 的决策能力？》。原文用来说明本题，不代表其论文结论或外部链接已通过本页复核。</p>
+    <details>
+      <summary>展开原文列出的六条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://arxiv.org/abs/2501.12948" target="_blank" rel="noopener noreferrer">DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via RL · arXiv</a></li>
+          <li><a href="https://arxiv.org/abs/2402.03300" target="_blank" rel="noopener noreferrer">DeepSeekMath: Pushing the Limits of Mathematical Reasoning（GRPO 原始论文） · arXiv</a></li>
+          <li><a href="https://cameronrwolfe.substack.com/p/demystifying-reasoning-models" target="_blank" rel="noopener noreferrer">Demystifying Reasoning Models · Cameron R. Wolfe</a></li>
+          <li><a href="https://arxiv.org/abs/2411.11504" target="_blank" rel="noopener noreferrer">Search, Verify, and Feedback: Towards Next Generation Post-training Paradigm · arXiv</a></li>
+          <li><a href="https://arxiv.org/abs/2408.07199" target="_blank" rel="noopener noreferrer">Agent Q: Advanced Reasoning and Learning for Autonomous AI Agents · arXiv</a></li>
+          <li><a href="https://arxiv.org/abs/2609.04148" target="_blank" rel="noopener noreferrer">Terminal-Universe: Turning Agent Trajectories into Scalable Terminal Environments · arXiv</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>06-planning-and-reasoning/103-agentic-rl-grpo.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 5 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const GRPO_ROLLOUTS = Object.freeze([
+    {
+      id: "a",
+      name: "A · 直接回答",
+      traj: "无工具调用，直接回答“已订票”。",
+      dims: [["完成度", 0, 0.5], ["工具准确", 0, 0.2], ["效率", 1, 0.15], ["格式", 1, 0.15]],
+      reward: 0.3,
+      adv: -1.4,
+      action: "被抑制",
+      cls: "is-low"
+    },
+    {
+      id: "b",
+      name: "B · 查车次，漏了时间",
+      traj: "调用 search_train 查到车次，但没给出发时间。",
+      dims: [["完成度", 0.5, 0.5], ["工具准确", 1, 0.2], ["效率", 0.85, 0.15], ["格式", 1, 0.15]],
+      reward: 0.7275,
+      adv: -0.034,
+      action: "几乎不变",
+      cls: "is-flat"
+    },
+    {
+      id: "c",
+      name: "C · 查到但格式违规",
+      traj: "查到车次和时间，回答夹带多余说明，违反 JSON 格式。",
+      dims: [["完成度", 1, 0.5], ["工具准确", 1, 0.2], ["效率", 0.8, 0.15], ["格式", 0.8, 0.15]],
+      reward: 0.94,
+      adv: 0.645,
+      action: "被强化",
+      cls: "is-high"
+    },
+    {
+      id: "d",
+      name: "D · 两步完成",
+      traj: "search_train → filter_time，直接给出车次和出发时间。",
+      dims: [["完成度", 1, 0.5], ["工具准确", 1, 0.2], ["效率", 0.9, 0.15], ["格式", 1, 0.15]],
+      reward: 0.985,
+      adv: 0.789,
+      action: "被强化最多",
+      cls: "is-high"
+    }
+  ]);
+
+  const GRPO_STAGES = Object.freeze([
+    {
+      title: "同一 prompt，先采样 4 条完整轨迹。",
+      desc: "GRPO 的关键是组内比较：同一个任务采样 G 条轨迹，每条得到自己的奖励。此时还没有打分。",
+      showDims: false,
+      showTotal: false,
+      showAdv: false,
+      showAction: false,
+      stats: false,
+      verdict: "待打分"
+    },
+    {
+      title: "按四维奖励函数逐条打分。",
+      desc: "完成度权重 0.50，工具 0.20，效率 0.15，格式 0.15。A 没做事，却拿到效率 1.00 与格式 1.00，所以总分仍有 0.300。",
+      showDims: true,
+      showTotal: true,
+      showAdv: false,
+      showAction: false,
+      stats: false,
+      verdict: "已打分"
+    },
+    {
+      title: "减去组均值，再除以标准差。",
+      desc: "mean=0.738，样本 std=0.313。D 的 advantage 最高 0.789；A 最低 −1.400；B 几乎等于均值，只有 −0.034。",
+      showDims: true,
+      showTotal: true,
+      showAdv: true,
+      showAction: false,
+      stats: true,
+      verdict: "已算优势"
+    },
+    {
+      title: "正 advantage 被强化，负的被抑制。",
+      desc: "D 和 C 会被推高，A 被压低，B 几乎不动。真实训练还要乘学习率、做 PPO 裁剪和 KL 惩罚，本页只演示相对优势的方向。",
+      showDims: true,
+      showTotal: true,
+      showAdv: true,
+      showAction: true,
+      stats: true,
+      verdict: "更新方向"
+    }
+  ]);
+
+  const GRPO_MEAN = 0.738;
+  const GRPO_STD = 0.313;
+  const grpoState = { step: 1 };
+  const gById = (id) => document.getElementById(id);
+
+  function fmt(value, digits = 3) {
+    return Number(value).toFixed(digits);
+  }
+
+  function signed(value) {
+    const fixed = fmt(value);
+    return value > 0 ? `+${fixed}` : fixed;
+  }
+
+  function buildGrpoCards() {
+    gById("g-grid").innerHTML = GRPO_ROLLOUTS.map((roll) => {
+      const dims = roll.dims.map(([label, value, weight]) =>
+        `<li><span>${label} ${fmt(value, 2)} × ${fmt(weight, 2)}</span><b>${fmt(value * weight)}</b></li>`
+      ).join("");
+      return `<article class="g-roll" data-roll="${roll.id}">
+        <div class="g-roll-head"><b>${roll.name}</b><span class="g-verdict" data-verdict>待打分</span></div>
+        <p class="g-traj">${roll.traj}</p>
+        <ul class="g-dims" data-dims hidden>${dims}</ul>
+        <div class="g-total"><span>奖励 R</span><b data-total>—</b></div>
+        <div class="g-adv" data-adv>advantage <b data-adv-value>—</b></div>
+        <div class="g-action" data-action hidden>${roll.action}</div>
+      </article>`;
+    }).join("");
+  }
+
+  function renderGrpo(announce = true) {
+    const stage = GRPO_STAGES[grpoState.step - 1];
+
+    GRPO_ROLLOUTS.forEach((roll) => {
+      const card = document.querySelector(`[data-roll="${roll.id}"]`);
+      if (!card) return;
+      card.className = `g-roll${grpoState.step >= 3 ? " " + roll.cls : ""}`;
+      const advLabel = roll.adv > 0.05 ? "正优势" : (roll.adv < -0.05 ? "负优势" : "近均值");
+      card.querySelector("[data-verdict]").textContent =
+        grpoState.step >= 3 ? advLabel : stage.verdict;
+      card.querySelector("[data-dims]").hidden = !stage.showDims;
+      card.querySelector("[data-total]").textContent = stage.showTotal ? fmt(roll.reward) : "—";
+      const advEl = card.querySelector("[data-adv]");
+      advEl.hidden = false;
+      const advValue = card.querySelector("[data-adv-value]");
+      advValue.textContent = stage.showAdv ? signed(roll.adv) : "—";
+      advEl.className = "g-adv" + (stage.showAdv ? (roll.adv > 0.05 ? " is-pos" : (roll.adv < -0.05 ? " is-neg" : "")) : "");
+      card.querySelector("[data-action]").hidden = !stage.showAction;
+    });
+
+    gById("g-mean").textContent = stage.stats ? fmt(GRPO_MEAN) : "—";
+    gById("g-std").textContent = stage.stats ? fmt(GRPO_STD) : "—";
+
+    gById("g-position").textContent = `图 1 · 第 ${grpoState.step} / ${GRPO_STAGES.length} 步`;
+    gById("g-step-title").textContent = stage.title;
+    gById("g-step-description").textContent = stage.desc;
+    gById("g-state-summary").textContent = `第 ${grpoState.step} / ${GRPO_STAGES.length} 步 · 没有连接模型`;
+
+    document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+      if (Number(button.dataset.step) === grpoState.step) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    gById("g-prev").disabled = grpoState.step === 1;
+    gById("g-next").disabled = grpoState.step === GRPO_STAGES.length;
+
+    if (announce) {
+      gById("g-announcement").textContent = `第 ${grpoState.step} 步，共 ${GRPO_STAGES.length} 步。${stage.title}${stage.desc}`;
+    }
+  }
+
+  function setGrpoStep(step, announce = true) {
+    grpoState.step = Math.max(1, Math.min(GRPO_STAGES.length, step));
+    renderGrpo(announce);
+  }
+
+  buildGrpoCards();
+  document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+    button.addEventListener("click", () => setGrpoStep(Number(button.dataset.step)));
+  });
+  gById("g-prev").addEventListener("click", () => setGrpoStep(grpoState.step - 1));
+  gById("g-next").addEventListener("click", () => setGrpoStep(grpoState.step + 1));
+  gById("g-reset").addEventListener("click", () => {
+    setGrpoStep(1);
+    gById("g-announcement").textContent = "已重置，回到第 1 步。";
+  });
+
+  renderGrpo(false);
+</script>
+</body>
+</html>

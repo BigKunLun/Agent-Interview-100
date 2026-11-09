@@ -1,0 +1,1042 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>LangGraph 的核心概念：节点、边、状态 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .lg-tag { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border: 1px solid #d9b47a; border-radius: 999px; background: #fdf3e3; color: #6b4300; font: 11px/1.6 var(--mono); letter-spacing: .02em; }
+  .lg-tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #b45309; }
+  .button:disabled, .button-primary:disabled { color: #4b514b; background: #e4e6df; border-color: #b9beb6; }
+  .lg-stage { padding: var(--s-4) var(--s-6) var(--s-5); }
+  .lg-layout { display: grid; grid-template-columns: minmax(0, 1.18fr) minmax(0, .82fr); gap: var(--s-6); align-items: start; }
+  .lg-graph { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: var(--s-4); }
+  .lg-rail { display: grid; justify-items: center; gap: 3px; }
+  .lg-node { width: min(100%, 310px); padding: 9px 12px; border: 1px solid #b9beb6; border-radius: var(--r-1); background: var(--surface); color: var(--ink); text-align: left; transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease), color var(--fast) var(--ease); }
+  .lg-node-name { display: block; font: 600 13px/1.5 var(--mono); }
+  .lg-node-sub { display: block; margin-top: 1px; font-size: 11px; line-height: 1.55; color: var(--text-dim); }
+  .lg-node-state { display: inline-flex; align-items: center; gap: 4px; margin-top: 5px; padding: 1px 7px; border: 1px solid #c9cec9; border-radius: 999px; background: #eef1ee; color: #3f463f; font: 11px/1.6 var(--mono); }
+  .lg-node[data-state="current"] { border-color: #194f87; background: #194f87; color: #fff; }
+  .lg-node[data-state="current"] .lg-node-sub { color: #dbe9f7; }
+  .lg-node[data-state="current"] .lg-node-state { border-color: #fff; background: #fff; color: #123f6c; }
+  .lg-node[data-state="done"] { border-color: #9cc39e; background: #eef7ee; color: #14532d; }
+  .lg-node[data-state="done"] .lg-node-sub { color: #2f5c38; }
+  .lg-node[data-state="done"] .lg-node-state { border-color: #9cc39e; background: #e6f2e6; color: #14532d; }
+  .lg-node[data-state="future"] { border-style: dashed; color: #3f463f; }
+  .lg-node[data-state="future"] .lg-node-state { color: #3f463f; }
+  .lg-node[data-state="suspended"] { border-color: #d9a3a3; background: #fbecec; color: #7a1f1f; }
+  .lg-node[data-state="suspended"] .lg-node-sub { color: #7a1f1f; }
+  .lg-node[data-state="suspended"] .lg-node-state { border-color: #d9a3a3; background: #fff; color: #7a1f1f; }
+  .lg-edge { display: flex; align-items: center; gap: 7px; min-height: 27px; color: #4b514b; font: 11px/1.5 var(--mono); }
+  .lg-edge .lg-arrow { display: inline-grid; place-items: center; width: 22px; height: 22px; border: 1px solid #b9beb6; border-radius: 50%; background: var(--surface); }
+  .lg-edge[data-state="active"] { color: #123f6c; font-weight: 600; }
+  .lg-edge[data-state="active"] .lg-arrow { border-color: #194f87; background: #eaf1f8; color: #123f6c; }
+  .lg-edge[data-state="done"] { color: #2f5c38; }
+  .lg-edge[data-state="done"] .lg-arrow { border-color: #9cc39e; background: #eef7ee; color: #14532d; }
+  .lg-edge[data-state="future"] { color: #4b514b; }
+  .lg-branches { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; margin-top: 5px; }
+  .lg-branch { display: grid; justify-items: center; gap: 3px; padding: 8px 6px 6px; border: 1px dashed #b9beb6; border-radius: var(--r-1); background: var(--surface); }
+  .lg-branch[data-state="active"] { border-color: #194f87; background: #eaf1f8; }
+  .lg-branch[data-state="done"] { border-color: #9cc39e; background: #eef7ee; }
+  .lg-branch-label { font: 600 11px/1.5 var(--mono); color: #3f463f; }
+  .lg-branch[data-state="active"] .lg-branch-label { color: #123f6c; }
+  .lg-branch[data-state="done"] .lg-branch-label { color: #14532d; }
+  .lg-branch .lg-node { width: 100%; padding: 7px 9px; text-align: center; }
+  .lg-branch .lg-node-state { margin-top: 3px; }
+  .lg-loop { margin: var(--s-3) 0 0; padding: 7px 10px; border: 1px dashed #9eb4c9; border-radius: var(--r-1); background: #fff; color: #123f6c; font-size: 11px; line-height: 1.65; transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease); }
+  .lg-loop strong { font-weight: 600; }
+  .lg-loop[data-state="future"] { border-color: #b9beb6; background: #fbfcfb; color: #3f463f; }
+  .lg-loop[data-state="active"] { border-color: #194f87; background: #eaf1f8; color: #123f6c; }
+  .lg-loop[data-state="done"] { border-color: #9cc39e; background: #eef7ee; color: #14532d; }
+  .badge { display: inline-flex; align-items: center; margin-top: 4px; padding: 1px 8px; border: 1px solid transparent; border-radius: 999px; font: 11px/1.7 var(--mono); white-space: nowrap; }
+  .badge-info { border-color: #9eb4c9; background: #eaf1f8; color: #194f87; }
+  .badge-warn { border-color: #d9b47a; background: #fdf3e3; color: #6b4300; }
+  .badge-ok { border-color: #9cc39e; background: #e6f2e6; color: #14532d; }
+  .lg-store { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: var(--s-3); }
+  .lg-store-card { padding: 8px 10px; border: 1px solid #b9beb6; border-radius: var(--r-1); background: var(--surface); font-size: 11px; line-height: 1.6; color: #3f463f; }
+  .lg-store-card b { display: block; font: 600 12px/1.5 var(--mono); color: var(--ink); }
+  .lg-panel { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .lg-panel-label { font: 11px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .state-list { display: grid; gap: 5px; margin: var(--s-2) 0 0; }
+  .state-row { display: grid; grid-template-columns: 116px minmax(0, 1fr); gap: 8px; align-items: baseline; padding: 5px 0; border-bottom: 1px solid var(--border); }
+  .state-row:last-child { border-bottom: 0; }
+  .state-row dt { margin: 0; font: 11px/1.6 var(--mono); color: var(--text-dim); }
+  .state-row dd { margin: 0; font: 600 12px/1.6 var(--mono); overflow-wrap: anywhere; }
+  .ckpt-list { list-style: none; margin: var(--s-2) 0 0; padding: 0; display: grid; gap: 6px; }
+  .ckpt-item { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 8px; align-items: start; padding: 7px 8px; border: 1px solid #c9cec9; border-radius: var(--r-1); background: #f7f8f5; }
+  .ckpt-num { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid #194f87; border-radius: 50%; background: #eaf1f8; color: #123f6c; font: 600 11px/1 var(--mono); }
+  .ckpt-body { min-width: 0; }
+  .ckpt-body b { display: block; font-size: 11px; line-height: 1.55; }
+  .ckpt-body small { display: block; margin-top: 2px; font-size: 11px; line-height: 1.55; color: var(--text-dim); }
+  .ckpt-empty { margin-top: var(--s-2); padding: 8px 10px; border: 1px dashed #b9beb6; border-radius: var(--r-1); color: #3f463f; font-size: 11px; line-height: 1.6; }
+  .lg-crash { margin-top: var(--s-3); padding: 9px 11px; border: 1px solid #d9a3a3; border-radius: var(--r-1); background: #fbecec; color: #7a1f1f; font-size: 12px; line-height: 1.7; }
+  .lg-crash strong { color: #5c1414; }
+  .lg-restore { border-color: #9cc39e; background: #eef7ee; color: #14532d; }
+  .lg-restore strong { color: #0f3d20; }
+  .lg-log { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px dashed var(--border); }
+  .lg-log-label { font: 10px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .lg-log-value { margin-top: 2px; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+  .lg-code-note { margin-top: var(--s-2); font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .lg-graph-note { margin-top: var(--s-3); font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  @media (max-width: 1000px) {
+    .lg-stage { padding-inline: var(--s-5); }
+    .lg-layout { grid-template-columns: 1fr; }
+    .lg-panel { display: grid; grid-template-columns: 1fr; gap: 0; align-items: start; }
+  }
+  @media (max-width: 720px) {
+    .lg-stage { padding: var(--s-4); }
+    .lg-graph { padding: var(--s-3); }
+    .lg-panel { padding: var(--s-3); }
+    .lg-branches { grid-template-columns: 1fr; }
+    .lg-store { grid-template-columns: 1fr; }
+    .lg-log { grid-template-columns: 1fr; gap: 6px; }
+    .state-row { grid-template-columns: 104px minmax(0, 1fr); }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">097 / LangGraph 核心概念</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 4 / 9 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="096-framework-overview.html">← 上一页 · 主流 Agent 框架概览</a><a href="099-assistants-api-vs-claude-sdk.html">下一页 → · OpenAI Responses A…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">基础 · Frameworks · 可交互讲解</p>
+      <h1>把 Agent 画成图，<br>让状态可恢复。</h1>
+    </div>
+    <div>
+      <p class="lead">LangGraph 把多步骤 Agent 建模为有向图：State 是共享记忆，Node 是工作单元，Edge 决定下一步，Checkpointer 把每个超步骤后的状态存档。条件边形成循环，检查点让暂停、恢复和时间旅行成为可能。</p>
+      <p class="definition"><strong>关键边界：</strong>State 不是可变的全局变量；节点只能返回更新字典，由框架按 Reducer 合并。1.0 GA 日期、下载量与 2026 Q2 特性按<strong>原文 2026 时点</strong>保留，标“原文版本、未联网核实”；本页不运行 LangGraph，也不调用任何模型。</p>
+      <div class="hero-meta"><span class="pill">基础</span><span class="pill">Frameworks</span><span class="pill">图状态机</span><span class="pill">Checkpointer</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="demo-title">
+    <div class="player-top">
+      <div class="player-label">LangGraph 图状态机 <small>固定 ReAct 图 · 7 个阶段</small></div>
+      <div class="controls" role="group" aria-label="图状态机演示控制">
+        <button type="button" class="button button-quiet" id="reset-button">重置</button>
+        <button type="button" class="button" id="back-button" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="next-button">下一步 →</button>
+      </div>
+    </div>
+
+    <nav class="stage-nav" aria-label="状态机阶段">
+      <ol id="stage-list" style="--stages: 7"></ol>
+    </nav>
+
+    <div class="scene-caption">
+      <p class="figure-index"><span id="step-index">超步骤演练 · 第 1 / 7 阶段</span></p>
+      <h2 id="demo-title">START 把初始消息交给 llm。</h2>
+      <p id="scene-subtitle">固定图：START → llm → should_continue → tools → 回到 llm → END。第 1 阶段只看入口和初始 State。</p>
+    </div>
+
+    <div class="scene-host">
+      <div class="lg-stage">
+        <div class="lg-layout">
+          <div class="lg-graph">
+            <div class="lg-rail">
+              <div class="lg-node" data-node="start">
+                <span class="lg-node-name">START</span>
+                <span class="lg-node-sub">虚拟入口节点</span>
+                <span class="lg-node-state">待命</span>
+              </div>
+              <div class="lg-edge" data-edge="start-llm"><span class="lg-arrow" aria-hidden="true">↓</span><span>普通边 add_edge(START, "llm")</span></div>
+              <div class="lg-node" data-node="llm">
+                <span class="lg-node-name">llm</span>
+                <span class="lg-node-sub">Python 函数 · 调用模型并读写 State</span>
+                <span class="lg-node-state">待命</span>
+              </div>
+              <div class="lg-edge" data-edge="llm-cond"><span class="lg-arrow" aria-hidden="true">↓</span><span>普通边 · 进入路由函数</span></div>
+              <div class="lg-node" data-node="cond">
+                <span class="lg-node-name">should_continue</span>
+                <span class="lg-node-sub">条件边：最后一条消息有 tool_calls 吗？</span>
+                <span class="lg-node-state">待命</span>
+              </div>
+              <div class="lg-branches">
+                <div class="lg-branch" data-edge="cond-tools">
+                  <span class="lg-branch-label">是 → tools</span>
+                  <div class="lg-node" data-node="tools">
+                    <span class="lg-node-name">tools</span>
+                    <span class="lg-node-sub">执行工具，结果写回 State</span>
+                    <span class="lg-node-state">待命</span>
+                  </div>
+                </div>
+                <div class="lg-branch" data-edge="cond-end">
+                  <span class="lg-branch-label">否 → END</span>
+                  <div class="lg-node" data-node="end">
+                    <span class="lg-node-name">END</span>
+                    <span class="lg-node-sub">虚拟终止节点</span>
+                    <span class="lg-node-state">待命</span>
+                  </div>
+                </div>
+              </div>
+              <p class="lg-loop" data-edge="tools-llm"><strong>↺ 循环边：</strong>tools 执行完走普通边回到 llm。只要条件边还返回 “tools”，图就继续转；返回 END 才终止。</p>
+            </div>
+            <div class="lg-store">
+              <div class="lg-store-card">
+                <b>State · 共享记忆</b>
+                messages 经 Reducer（add_messages）追加合并；普通字段默认覆盖。
+              </div>
+              <div class="lg-store-card">
+                <b>Checkpointer · 持久化</b>
+                每个超步骤完成后存档；同一 thread_id 可恢复、暂停和时间旅行。
+              </div>
+            </div>
+            <p class="lg-graph-note">静态图按原文 Mermaid 的关系重画：START 进 llm，条件边分“是/否”，tools 经普通边回到 llm。节点状态由本页脚本按阶段计算。</p>
+          </div>
+
+          <aside class="lg-panel" aria-label="State 与检查点面板">
+            <p class="lg-panel-label">State 快照 · 固定教学数据</p>
+            <dl class="state-list">
+              <div class="state-row"><dt>thread_id</dt><dd>trip-1</dd></div>
+              <div class="state-row"><dt>messages</dt><dd id="state-messages">1</dd></div>
+              <div class="state-row"><dt>step_count</dt><dd id="state-step">0</dd></div>
+              <div class="state-row"><dt>has_tool_calls</dt><dd id="state-tool">false</dd></div>
+              <div class="state-row"><dt>最后一条消息</dt><dd id="state-last">human</dd></div>
+            </dl>
+            <p class="lg-panel-label" style="margin-top: var(--s-4);">Checkpointer 时间线</p>
+            <ol class="ckpt-list" id="ckpt-list"></ol>
+            <p class="ckpt-empty" id="ckpt-empty">尚无检查点：图还没有完成任何超步骤。</p>
+            <div class="lg-crash" id="crash-note" hidden></div>
+          </aside>
+        </div>
+
+        <div class="lg-log">
+          <div><p class="lg-log-label">当前阶段</p><p class="lg-log-value" id="log-stage">入口</p></div>
+          <div><p class="lg-log-label">触发的边</p><p class="lg-log-value" id="log-edge">START → llm（普通边）</p></div>
+          <div><p class="lg-log-label">持久化</p><p class="lg-log-value" id="log-ckpt">未写入检查点</p></div>
+        </div>
+        <p class="demo-note">固定教学图：State 计数、检查点编号和崩溃/恢复过程都写死在页面里。本页不运行 LangGraph、不调用模型，也不访问网络。“原文版本、未联网核实”只约束版本与下载量，不改变图的语义。</p>
+      </div>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学轨迹 · 不运行 LangGraph · 不调用模型</span><span id="state-summary">入口 · messages=1 · 检查点 0 个</span></div>
+  </section>
+  <p id="lg-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="overview-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">一、总览</p><h2 id="overview-title">四块积木，<br>一张有向图。</h2></div>
+      <p class="reading-intro">State 存共享数据，Node 做工作，Edge 决定走向，Checkpointer 负责持久化。执行按“超步骤”推进：同一超步骤里所有就绪节点并行执行，结束后同步 State，直到 END。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">LangGraph 四个核心概念的定义与作用</caption>
+          <thead><tr><th scope="col">概念</th><th scope="col">是什么</th><th scope="col">在本页图里对应</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">State</th><td>图的共享记忆，通常是 TypedDict；所有节点读写它。字段可配 Reducer 自定义合并，例如消息列表追加而非覆盖。</td><td>右侧 State 快照里的 messages、step_count</td></tr>
+            <tr><th scope="row">Node</th><td>图中的工作单元，一个普通 Python 函数：接收当前 State，返回 State 更新字典。</td><td>llm 和 tools 两个节点</td></tr>
+            <tr><th scope="row">Edge</th><td>连接节点的路由器。普通边固定路由；条件边根据 State 动态路由，实现分支和循环。</td><td>START→llm、tools→llm 是普通边；should_continue 是条件边</td></tr>
+            <tr><th scope="row">Checkpointer</th><td>状态持久化机制。每个超步骤后存档，支持 Human-in-the-Loop（interrupt() 暂停）、错误恢复和长时间任务。</td><td>右侧 Checkpointer 时间线</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>执行模型是“超步骤（Super-step）”：每个超步骤里，所有没有未满足依赖的节点并行执行；执行完同步 State，再进入下一个超步骤。这类似 Pregel 图计算模型。图中可以出现环，终止由条件边和 END 决定。</p>
+      <div class="callout">
+        <p class="callout-label">原文版本、未联网核实</p>
+        <p>原文给出：LangGraph 于 2025-10-22 发布 1.0 GA，是 durable agent（持久化 Agent）框架领域首个稳定版本；2026 年月 PyPI 下载量超 3800 万。这些日期和数字按原文 2026 时点保留，本页没有联网核对，也不更新。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="state-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">二、State</p><h2 id="state-title">共享记忆，<br>但不可直接修改。</h2></div>
+      <p class="reading-intro">State 是跨节点传递的数据结构。节点不修改原对象，只返回更新字典；框架用 Reducer 决定每个字段怎么合并。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">State 定义与 Reducer · 原文代码，仅转义展示</p>
+      <pre><code>from typing import Annotated, TypedDict
+from langgraph.graph import StateGraph, START, END
+from langgraph.graph.message import add_messages
+from langchain_core.messages import BaseMessage
+
+# 定义 State：所有节点共享的数据结构
+class AgentState(TypedDict):
+    # Annotated + add_messages = Reducer 模式
+    # 新消息追加到列表，而非覆盖
+    messages: Annotated[list[BaseMessage], add_messages]
+
+    # 普通字段：新值直接覆盖旧值
+    current_task: str
+    step_count: int
+    final_answer: str
+
+# State 设计原则：
+# 1. 只放需要跨节点共享的数据
+# 2. 用 Reducer 处理需要“累加”的字段（如消息历史）
+# 3. 默认行为是覆盖（最后写入的值生效）
+# 4. State 是不可变的——节点返回更新字典，由框架合并
+
+# Reducer 示例：自定义合并逻辑
+def merge_tool_results(existing: dict, new: dict) -> dict:
+    """工具结果合并：新结果追加到已有结果"""
+    merged = {**existing, **new}
+    return merged
+
+class AdvancedState(TypedDict):
+    messages: Annotated[list[BaseMessage], add_messages]
+    tool_results: Annotated[dict, merge_tool_results]</code></pre>
+      <p><strong>设计原则：</strong>只放需要跨节点共享的数据；需要累加的字段配 Reducer；普通字段默认覆盖；State 本身不可变。这就是“State 不是全局变量”的含义：变更必须经过节点返回值和框架合并。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="node-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三、Node</p><h2 id="node-title">工作单元，<br>就是普通函数。</h2></div>
+      <p class="reading-intro">节点接收 State，返回更新字典。它可以是 LLM 调用、工具执行、条件判断，或任何数据处理逻辑。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">节点函数与路由函数 · 原文代码，仅转义展示</p>
+      <pre><code>from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, AIMessage
+
+llm = ChatOpenAI(model="gpt-4o")
+
+# 节点 1：调用 LLM
+def call_llm(state: AgentState) -&gt; dict:
+    """每个节点接收 State，返回 State 更新"""
+    response = llm.invoke(state["messages"])
+    # 返回的字典会与当前 State 合并
+    return {"messages": [response]}
+
+# 节点 2：执行工具
+def execute_tools(state: AgentState) -&gt; dict:
+    """执行 LLM 请求的工具调用"""
+    last_message = state["messages"][-1]
+    results = []
+    for tool_call in last_message.tool_calls:
+        result = run_tool(tool_call)
+        results.append(result)
+    return {"messages": results}
+
+# 节点 3：检查是否完成
+def should_continue(state: AgentState) -&gt; str:
+    """条件边的路由函数——返回下一个节点的名称"""
+    last_message = state["messages"][-1]
+    if last_message.tool_calls:
+        return "tools"      # 有工具调用 → 去执行工具
+    else:
+        return END           # 无工具调用 → 结束
+
+# 节点的本质：
+# - 就是普通的 Python 函数
+# - 输入：当前 State
+# - 输出：State 更新字典（不是完整 State）
+# - 可以包含任何逻辑：LLM 调用、API 请求、数据处理</code></pre>
+      <p>注意 <code>should_continue</code> 在这个例子里被用作条件边的路由函数，不是图里的普通节点；它读取 State，返回下一个节点的名称或 END。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="edge-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四、Edge</p><h2 id="edge-title">固定路由，<br>或按状态动态分流。</h2></div>
+      <p class="reading-intro">普通边是 A 执行后一定去 B；条件边由路由函数的返回值决定去哪。START 和 END 都是虚拟节点。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">构建图：节点与两类边 · 原文代码，仅转义展示</p>
+      <pre><code># 构建完整的 Graph
+graph = StateGraph(AgentState)
+
+# 添加节点
+graph.add_node("llm", call_llm)
+graph.add_node("tools", execute_tools)
+
+# 普通边：固定路由（A → B）
+graph.add_edge(START, "llm")        # 入口 → LLM
+graph.add_edge("tools", "llm")      # 工具执行后 → 回到 LLM
+
+# 条件边：动态路由（基于 State 决定去哪）
+graph.add_conditional_edges(
+    "llm",                           # 从 LLM 节点出发
+    should_continue,                  # 路由函数
+    {
+        "tools": "tools",            # 返回 "tools" → 去 tools 节点
+        END: END,                     # 返回 END → 结束
+    }
+)
+
+# 编译图
+app = graph.compile()
+
+# 边的类型：
+# 1. 普通边 add_edge(A, B)：A 执行后一定去 B
+# 2. 条件边 add_conditional_edges(A, func, mapping)：
+#    A 执行后，由 func(state) 返回值决定去哪
+# 3. START：虚拟入口节点
+# 4. END：虚拟终止节点</code></pre>
+      <p><strong>循环来自普通边：</strong><code>tools → llm</code> 让图回到模型节点；是否继续循环由条件边控制。这也是 ReAct 图的基本形状。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="checkpoint-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">五、Checkpointer</p><h2 id="checkpoint-title">每一步落盘，<br>才能暂停和恢复。</h2></div>
+      <p class="reading-intro">开发用内存检查点，生产用 PostgreSQL 等持久化存储。注入 Checkpointer 后，用 thread_id 管理同一段对话；interrupt() 可以在敏感操作前暂停等待人工。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">Checkpointer 与 Human-in-the-Loop · 原文代码，仅转义展示</p>
+      <pre><code>from langgraph.checkpoint.memory import MemorySaver
+from langgraph.checkpoint.postgres import PostgresSaver
+
+# 开发环境：内存检查点
+checkpointer = MemorySaver()
+
+# 生产环境：PostgreSQL 检查点
+# checkpointer = PostgresSaver(conn_string="postgresql://...")
+
+# 编译时注入 Checkpointer
+app = graph.compile(checkpointer=checkpointer)
+
+# 使用 thread_id 管理对话
+config = {"configurable": {"thread_id": "user-123"}}
+result = app.invoke(
+    {"messages": [HumanMessage(content="帮我查一下订单")]},
+    config=config,
+)
+
+# 同一个 thread_id 的后续调用会自动加载历史 State
+result2 = app.invoke(
+    {"messages": [HumanMessage(content="退款怎么操作？")]},
+    config=config,  # 自动携带之前的对话历史
+)
+
+# Human-in-the-Loop：interrupt() 暂停等待人工
+from langgraph.types import interrupt
+
+def sensitive_action(state: AgentState) -&gt; dict:
+    """执行敏感操作前暂停，等待人工确认"""
+    approval = interrupt(
+        {"question": "是否批准执行此操作？", "details": state["current_task"]}
+    )
+    if approval == "yes":
+        return {"messages": [AIMessage(content="操作已执行")]}
+    else:
+        return {"messages": [AIMessage(content="操作已取消")]}
+
+# Checkpointer 使能的能力：
+# 1. 对话持久化——跨请求保持状态
+# 2. 错误恢复——从最后一个检查点重试
+# 3. Human-in-the-Loop——暂停/恢复执行
+# 4. 时间旅行——回滚到任意历史状态</code></pre>
+      <p>注意 <code>MemorySaver</code> 只适合开发：进程退出后内存状态就没了。生产环境的“崩溃后恢复”依赖持久化 Checkpointer；这也是 durable agent 与纯内存 ReAct 循环的关键差别。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="ga-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">六、1.0 GA 与 2026 Q2</p><h2 id="ga-title">从实验概念，<br>到生产标准。</h2></div>
+      <p class="reading-intro">1.0 GA 把 durable agent 确立为生产标准：Checkpointer 持久化加超步骤执行模型，进程崩溃后可从最近检查点恢复，长时任务不再依赖进程常驻。2026 Q2 又补齐三块生产可控能力。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">2026 Q2 补充的生产化特性</caption>
+          <thead><tr><th scope="col">特性</th><th scope="col">解决的问题</th><th scope="col">要点</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">per-node 超时</th><td>单个节点（一次外部 API 调用、一段 LLM 推理）卡死会拖垮整图</td><td>在节点粒度声明执行时限，超时自动中断并触发重试或错误分支，与 retry_policy、interrupt() 组合形成分级容错</td></tr>
+            <tr><th scope="row">v2 streaming</th><td>旧版 streaming 只能拿到最终结果或粗粒度 token 流，难以按结构化事件增量消费</td><td>按节点输出粒度增量推送，配合 DeltaChannel 只下发状态变更部分（delta），降低流式场景的带宽和延迟</td></tr>
+            <tr><th scope="row">middleware（中间件）</th><td>横切逻辑（日志、鉴权、改写请求/响应）散落在各节点难以维护</td><td>LangChain 侧引入 middleware 概念，统一拦截 agent loop 的请求与响应，便于插拔可观测、限流、审计等横切关注点</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <p class="callout-label">选型提示 · 原文</p>
+        <p>1.0 GA 之前，“超时”“流式增量”“横切拦截”这些生产刚需大多要手写 wrapper 绕行；1.0 GA + 2026 Q2 后已转为框架一等能力。自研编排层前应先核对 LangGraph 是否已覆盖，避免重复造轮子。</p>
+      </div>
+      <p class="lg-code-note">以上日期、版本与能力按原文 2026 时点保留，标“原文版本、未联网核实”；本页未联网核对，也不保证这些能力在当前版本中的具体 API 形态。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="react-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">七、完整示例</p><h2 id="react-title">一行 create_agent，<br>底层仍是图。</h2></div>
+      <p class="reading-intro">LangChain 1.0 GA 推荐用 langchain.agents.create_agent 创建完整 ReAct Agent；底层仍是 LangGraph 图。旧版 create_react_agent 在 v1.x 仍可用，但官方建议新代码改用 create_agent。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">完整 ReAct Agent · 原文代码，仅转义展示</p>
+      <pre><code># LangChain 1.0 GA（2025-10）：推荐 langchain.agents.create_agent
+# langgraph.prebuilt.create_react_agent 已 deprecated
+from langchain.agents import create_agent
+from langgraph.checkpoint.memory import MemorySaver
+from langchain_openai import ChatOpenAI
+from langchain_core.tools import tool
+
+@tool
+def get_weather(city: str) -&gt; str:
+    """获取城市天气"""
+    return f"{city}：晴天，25°C"
+
+@tool
+def search_flights(origin: str, destination: str) -&gt; str:
+    """搜索航班"""
+    return f"{origin}→{destination}：找到 3 个航班"
+
+# 一行创建完整的 ReAct Agent（v1.0 GA 推荐方式）
+agent = create_agent(
+    model=ChatOpenAI(model="gpt-4o"),
+    tools=[get_weather, search_flights],
+    checkpointer=MemorySaver(),
+)
+
+# 执行
+result = agent.invoke(
+    {"messages": [("human", "我想去北京，先查天气再搜航班")]},
+    config={"configurable": {"thread_id": "trip-1"}},
+)
+
+# 注：create_agent 底层仍是 LangGraph 图；旧版 create_react_agent 在 v1.x 仍可用
+# 但官方明确建议新代码使用 langchain.agents.create_agent
+# 1.0 GA 后可通过 middleware 参数挂载日志/鉴权/改写等横切逻辑，无需侵入节点函数</code></pre>
+      <p>本页交互里的 7 个阶段，就是这张图的最小轨迹：入口、LLM 推理、条件路由、工具执行、崩溃、恢复、终止。真实代码还会涉及模型调用和工具实现，本页不执行。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="misconception-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="misconception-title">五条，<br>按原文顺序。</h2></div>
+      <p class="reading-intro">前两条是误区，后三条是追问；答案都来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“LangGraph 就是 LangChain 的升级版。”</h3><p>LangGraph 不是 LangChain 的替代品，而是补充。LangChain 处理单步链式调用（Prompt → LLM → Parser），LangGraph 处理多步有状态工作流（循环、分支、人工审核）。简单任务用 LangChain，复杂 Agent 用 LangGraph。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“State 就是全局变量。”</h3><p>State 不是可变的全局变量。节点不能直接修改 State，只能返回更新字典，由框架通过 Reducer 合并。这种设计保证了状态变更的可追踪性和一致性。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>LangGraph 的执行模型是什么？</h3><p>“超步骤（Super-step）”模型：每个超步骤中，所有没有未满足依赖的节点并行执行，执行完毕后同步 State，然后进入下一个超步骤。这类似于 Pregel 图计算模型。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>LangGraph 如何处理错误？</h3><p>三层错误处理：节点内 try/catch 处理预期错误；Checkpointer 支持从失败点重试，不丢失已完成步骤；Graph 级别的 retry_policy 配置自动重试策略。结合 interrupt() 还可以在错误时暂停并请求人工介入。1.0 GA 后还可按节点配 per-node 超时，单步卡死时自动中断并走重试/错误分支。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 3</p>
+      <div><h3>什么是 durable agent？LangGraph 为什么适合生产部署？</h3><p>Durable agent 指 Agent 执行状态可持久化、崩溃后可从检查点恢复、长时任务不依赖进程常驻。LangGraph 靠 Checkpointer（每完成一个超步骤就落盘状态）实现这一点，2026 Q2 又补齐 per-node 超时和 v2 streaming / DeltaChannel。对比：纯内存编排（如裸 ReAct 循环）一旦进程退出则全部状态丢失，生产场景必须上 durable 化方案。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《LangGraph 的核心概念：节点、边、状态》。原文用于解释本题，不代表其版本与下载量已通过本页独立核验。</p>
+    <details>
+      <summary>展开原文列出的六条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.langchain.com/blog/langchain-langgraph-1dot0" target="_blank" rel="noopener noreferrer">LangChain &amp; LangGraph 1.0 (Official Announcement)</a></li>
+          <li><a href="https://docs.langchain.com/oss/python/langgraph/overview" target="_blank" rel="noopener noreferrer">LangGraph Overview (Official Docs)</a></li>
+          <li><a href="https://medium.com/@ajaykumargajula7/a-beginners-guide-to-langgraph-understanding-the-core-concepts-bc2b1011d675" target="_blank" rel="noopener noreferrer">A Beginner's Guide to LangGraph: Core Concepts (Medium)</a></li>
+          <li><a href="https://pub.towardsai.net/from-single-brains-to-team-intelligence-mastering-ai-agent-systems-with-langgraph-in-2025-3520af4fc758" target="_blank" rel="noopener noreferrer">Mastering AI Agent Systems with LangGraph in 2025 (Towards AI)</a></li>
+          <li><a href="https://dev.to/raunaklallala/understanding-core-concepts-of-langgraph-deep-dive-1d7h" target="_blank" rel="noopener noreferrer">Understanding Core Concepts of LangGraph Deep Dive (Dev.to)</a></li>
+          <li><a href="https://medium.com/@vivekvjnk/langgraph-basics-understanding-state-schema-nodes-and-edges-77f2fd17cae5" target="_blank" rel="noopener noreferrer">LangGraph Basics: Understanding State, Schema, Nodes, and Edges (Medium)</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+    <details>
+      <summary>查看原文 Mermaid 图源码</summary>
+      <div class="source-content">
+        <pre><code>flowchart TD
+    S["START"] --&gt;|"普通边"| L["llm 节点&lt;br/&gt;Python 函数，读写 State"]
+    L --&gt; Q{"条件边&lt;br/&gt;should_continue:&lt;br/&gt;有 tool_calls？"}
+    Q -- "是" --&gt; T["tools 节点&lt;br/&gt;执行工具，结果写回 State"]
+    T --&gt;|"普通边"| L
+    Q -- "否" --&gt; E["END"]
+    L -. "读写" .- ST["State 共享记忆&lt;br/&gt;messages 经 Reducer 追加合并"]
+    T -. "写回" .- ST
+    L -. "每个超步骤存档" .- CK["Checkpointer 持久化&lt;br/&gt;interrupt() 暂停 / 恢复 / 时间旅行"]
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    class L agent
+    class Q decision
+    class ST,CK store</code></pre>
+        <p class="source-footnote">源码按原文保留，仅做 HTML 转义；上方静态图按同一节点、边和循环关系呈现。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>11-frameworks/097-langgraph-concepts.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 7 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const STAGES = [
+    {
+      nav: "入口",
+      title: "START 把初始消息交给 llm。",
+      subtitle: "thread_id 为 trip-1，State 里只有一条 human 消息。还没有执行超步骤，检查点也没写入。",
+      nodes: { start: "done", llm: "current", cond: "future", tools: "future", end: "future" },
+      edges: { "start-llm": "active", "llm-cond": "future", "cond-tools": "future", "tools-llm": "future", "cond-end": "future" },
+      state: { messages: "1", step: "0", tool: "false", last: "human" },
+      ckpt: [],
+      crash: "",
+      logEdge: "START → llm（普通边）",
+      logCkpt: "未写入检查点",
+      summary: "入口 · messages=1 · 检查点 0 个"
+    },
+    {
+      nav: "推理",
+      title: "第 1 个超步骤：llm 节点运行。",
+      subtitle: "llm 读取 State 的 messages，返回一条带 tool_calls 的 AIMessage。Reducer 把新消息追加到列表，不是覆盖；超步骤完成后写入 checkpoint #1。",
+      nodes: { start: "done", llm: "done", cond: "current", tools: "future", end: "future" },
+      edges: { "start-llm": "done", "llm-cond": "active", "cond-tools": "future", "tools-llm": "future", "cond-end": "future" },
+      state: { messages: "2", step: "1", tool: "true", last: "ai · tool_calls" },
+      ckpt: [{ n: 1, label: "超步骤 1 完成 · messages=2", status: "已写入" }],
+      crash: "",
+      logEdge: "llm 完成 → 进入 should_continue",
+      logCkpt: "checkpoint #1 已写入",
+      summary: "推理 · messages=2 · 检查点 1 个 · tool_calls=true"
+    },
+    {
+      nav: "路由",
+      title: "条件边读到 tool_calls，选择 tools。",
+      subtitle: "should_continue 读取最后一条消息，返回 “tools”。这只是路由决定，下个超步骤才执行 tools；检查点仍是最新的 #1。",
+      nodes: { start: "done", llm: "done", cond: "done", tools: "current", end: "future" },
+      edges: { "start-llm": "done", "llm-cond": "done", "cond-tools": "active", "tools-llm": "future", "cond-end": "future" },
+      state: { messages: "2", step: "1", tool: "true", last: "ai · tool_calls" },
+      ckpt: [{ n: 1, label: "超步骤 1 完成 · messages=2", status: "已写入" }],
+      crash: "",
+      logEdge: "should_continue → tools（条件边，是）",
+      logCkpt: "checkpoint #1 仍是最新",
+      summary: "路由 · 条件边选择 tools · 检查点 1 个"
+    },
+    {
+      nav: "工具",
+      title: "第 2 个超步骤：tools 执行并写回结果。",
+      subtitle: "tools 节点执行 LLM 请求的工具调用，把 ToolMessage 追加进 State；普通边再把控制权交回 llm。超步骤完成后写入 checkpoint #2。",
+      nodes: { start: "done", llm: "current", cond: "done", tools: "done", end: "future" },
+      edges: { "start-llm": "done", "llm-cond": "done", "cond-tools": "done", "tools-llm": "active", "cond-end": "future" },
+      state: { messages: "3", step: "2", tool: "false", last: "tool" },
+      ckpt: [
+        { n: 1, label: "超步骤 1 完成 · messages=2", status: "已写入" },
+        { n: 2, label: "超步骤 2 完成 · messages=3", status: "已写入" }
+      ],
+      crash: "",
+      logEdge: "tools → llm（普通边，循环回到模型）",
+      logCkpt: "checkpoint #2 已写入",
+      summary: "工具 · messages=3 · 检查点 2 个 · 回到 llm"
+    },
+    {
+      nav: "崩溃",
+      title: "进程崩溃：内存里的图状态没了。",
+      subtitle: "模拟 llm 进程退出。内存中的执行状态、待执行队列全部丢失；因为 Checkpointer 已落盘 #1 和 #2，历史 State 仍然保留。",
+      nodes: { start: "suspended", llm: "suspended", cond: "suspended", tools: "suspended", end: "future" },
+      edges: { "start-llm": "done", "llm-cond": "done", "cond-tools": "done", "tools-llm": "done", "cond-end": "future" },
+      state: { messages: "丢失", step: "—", tool: "—", last: "内存已清空" },
+      ckpt: [
+        { n: 1, label: "超步骤 1 完成 · messages=2", status: "已落盘" },
+        { n: 2, label: "超步骤 2 完成 · messages=3", status: "最新 · 可恢复" }
+      ],
+      crash: "进程崩溃：内存中的图状态丢失。Checkpointer 里的 #1、#2 还在，同一个 thread_id 可以从 #2 恢复。",
+      logEdge: "无：执行已中断",
+      logCkpt: "checkpoint #1、#2 仍在持久化存储",
+      summary: "崩溃 · 内存状态丢失 · 持久化检查点仍保留"
+    },
+    {
+      nav: "恢复",
+      title: "同一 thread_id 从 #2 恢复。",
+      subtitle: "新的进程用 thread_id=trip-1 调用，Checkpointer 读出 checkpoint #2，重建 messages=3 的 State。已完成步骤不重放，图直接回到 llm。",
+      nodes: { start: "done", llm: "current", cond: "done", tools: "done", end: "future" },
+      edges: { "start-llm": "done", "llm-cond": "done", "cond-tools": "done", "tools-llm": "done", "cond-end": "future" },
+      state: { messages: "3", step: "2", tool: "false", last: "tool" },
+      ckpt: [
+        { n: 1, label: "超步骤 1 完成 · messages=2", status: "已写入" },
+        { n: 2, label: "超步骤 2 完成 · messages=3", status: "用于恢复" }
+      ],
+      crash: "已从 checkpoint #2 恢复：messages=3，tools 的结果还在，不需要重新执行工具。",
+      crashClass: "restore",
+      logEdge: "恢复后回到 llm 入口",
+      logCkpt: "读取 checkpoint #2",
+      summary: "恢复 · 从 #2 重建 State · messages=3"
+    },
+    {
+      nav: "终止",
+      title: "第 3 个超步骤：无 tool_calls，走到 END。",
+      subtitle: "llm 返回最终回答，should_continue 走“否”到 END。超步骤完成后写入 checkpoint #3，这次运行结束。",
+      nodes: { start: "done", llm: "done", cond: "done", tools: "done", end: "done" },
+      edges: { "start-llm": "done", "llm-cond": "done", "cond-tools": "done", "tools-llm": "done", "cond-end": "done" },
+      state: { messages: "4", step: "3", tool: "false", last: "ai · final" },
+      ckpt: [
+        { n: 1, label: "超步骤 1 完成 · messages=2", status: "已写入" },
+        { n: 2, label: "超步骤 2 完成 · messages=3", status: "已写入" },
+        { n: 3, label: "超步骤 3 完成 · messages=4", status: "最终" }
+      ],
+      crash: "",
+      logEdge: "should_continue → END（条件边，否）",
+      logCkpt: "checkpoint #3 已写入 · 运行结束",
+      summary: "终止 · messages=4 · 检查点 3 个 · 已到 END"
+    }
+  ];
+
+  const DONE_TEXT = { start: "已触发", llm: "已完成", cond: "已判断", tools: "已完成", end: "已到达" };
+  const CURRENT_TEXT = { start: "运行中", llm: "运行中", cond: "判断中", tools: "运行中", end: "到达中" };
+  const state = { step: 0 };
+  const byId = (id) => document.getElementById(id);
+
+  function buildStageNav() {
+    const list = byId("stage-list");
+    list.style.setProperty("--stages", String(STAGES.length));
+    list.textContent = "";
+    STAGES.forEach((stage, index) => {
+      const li = document.createElement("li");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "stage-button";
+      button.dataset.step = String(index);
+      button.setAttribute("aria-controls", "explainer");
+      button.setAttribute("aria-label", `第 ${index + 1} 阶段：${stage.nav}`);
+      button.innerHTML = `<span class="stage-number">${index + 1}</span><span>${stage.nav}</span>`;
+      if (index === state.step) button.setAttribute("aria-current", "step");
+      button.addEventListener("click", () => goTo(index));
+      li.append(button);
+      list.append(li);
+    });
+  }
+
+  function updateStageNav() {
+    document.querySelectorAll("#stage-list .stage-button").forEach((button) => {
+      if (Number(button.dataset.step) === state.step) {
+        button.setAttribute("aria-current", "step");
+      } else {
+        button.removeAttribute("aria-current");
+      }
+    });
+  }
+
+  function nodeText(id, nodeState) {
+    if (nodeState === "done") return DONE_TEXT[id] || "已完成";
+    if (nodeState === "current") return CURRENT_TEXT[id] || "运行中";
+    if (nodeState === "suspended") return id === "tools" ? "已挂起" : "已挂起";
+    return "待命";
+  }
+
+  function renderGraph(stage) {
+    document.querySelectorAll("[data-node]").forEach((node) => {
+      const id = node.dataset.node;
+      const nodeState = stage.nodes[id] || "future";
+      node.dataset.state = nodeState;
+      const label = node.querySelector(".lg-node-state");
+      if (label) label.textContent = nodeText(id, nodeState);
+    });
+    document.querySelectorAll("[data-edge]").forEach((edge) => {
+      const edgeState = stage.edges[edge.dataset.edge] || "future";
+      edge.dataset.state = edgeState;
+    });
+  }
+
+  function renderCheckpoints(stage) {
+    const list = byId("ckpt-list");
+    list.textContent = "";
+    if (stage.ckpt.length === 0) {
+      byId("ckpt-empty").hidden = false;
+    } else {
+      byId("ckpt-empty").hidden = true;
+      stage.ckpt.forEach((item) => {
+        const li = document.createElement("li");
+        li.className = "ckpt-item";
+        const statusClass = item.status === "最新 · 可恢复" || item.status === "用于恢复"
+          ? "badge-warn"
+          : item.status === "最终" ? "badge-ok" : "badge-info";
+        li.innerHTML = `<span class="ckpt-num">${item.n}</span><span class="ckpt-body"><b>checkpoint #${item.n}</b><small>${item.label}</small><span class="badge ${statusClass}">${item.status}</span></span>`;
+        list.append(li);
+      });
+    }
+    const crash = byId("crash-note");
+    if (stage.crash) {
+      crash.hidden = false;
+      crash.className = "lg-crash" + (stage.crashClass ? " lg-restore" : "");
+      crash.innerHTML = stage.crash.replace("崩溃", "<strong>崩溃</strong>").replace("已从", "<strong>已从</strong>");
+    } else {
+      crash.hidden = true;
+      crash.textContent = "";
+    }
+  }
+
+  function render() {
+    const stage = STAGES[state.step];
+    byId("step-index").textContent = `超步骤演练 · 第 ${state.step + 1} / ${STAGES.length} 阶段`;
+    byId("demo-title").textContent = stage.title;
+    byId("scene-subtitle").textContent = stage.subtitle;
+    byId("state-messages").textContent = stage.state.messages;
+    byId("state-step").textContent = stage.state.step;
+    byId("state-tool").textContent = stage.state.tool;
+    byId("state-last").textContent = stage.state.last;
+    byId("log-stage").textContent = stage.nav;
+    byId("log-edge").textContent = stage.logEdge;
+    byId("log-ckpt").textContent = stage.logCkpt;
+    byId("state-summary").textContent = stage.summary;
+    renderGraph(stage);
+    renderCheckpoints(stage);
+    updateStageNav();
+    byId("back-button").disabled = state.step === 0;
+    byId("next-button").disabled = state.step === STAGES.length - 1;
+  }
+
+  function announce(text) {
+    byId("lg-announcement").textContent = text;
+  }
+
+  function goTo(index) {
+    state.step = Math.max(0, Math.min(index, STAGES.length - 1));
+    render();
+    announce(`第 ${state.step + 1} 阶段：${STAGES[state.step].title} ${STAGES[state.step].summary}`);
+  }
+
+  function next() {
+    if (state.step < STAGES.length - 1) goTo(state.step + 1);
+  }
+
+  function back() {
+    if (state.step > 0) goTo(state.step - 1);
+  }
+
+  function reset() {
+    goTo(0);
+    announce("已重置为入口阶段。");
+  }
+
+  byId("next-button").addEventListener("click", next);
+  byId("back-button").addEventListener("click", back);
+  byId("reset-button").addEventListener("click", reset);
+
+  buildStageNav();
+  render();
+</script>
+</body>
+</html>

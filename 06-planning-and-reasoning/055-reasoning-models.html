@@ -1,0 +1,767 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>2026 推理 / Agent 模型版图：Claude / GPT / Gemini 三家旗舰对比与选型 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  /* 055 2026 模型版图 */
+  .lm-stage { padding: var(--s-4) var(--s-6) var(--s-5); }
+  .lm-path { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; margin-bottom: var(--s-4); }
+  .lm-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: 12px; }
+  .lm-chip b { color: var(--accent); font-weight: 600; }
+  .lm-card { border: 1px solid var(--border); border-radius: var(--r-1); padding: var(--s-5); background: var(--surface-soft); }
+  .lm-card h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+  .lm-note { margin-top: var(--s-3); font-size: var(--t-small); color: var(--text-dim); max-width: 48em; }
+  .lm-actions { display: flex; gap: var(--s-2); margin-top: var(--s-5); flex-wrap: wrap; }
+  .lm-actions .button { min-width: 108px; }
+  .lm-result { border: 1px solid var(--border-bright); border-left: 4px solid var(--accent); border-radius: var(--r-1); padding: var(--s-5); background: var(--surface); animation: arrive var(--med) var(--ease); }
+  .lm-result-level { font: 12px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .lm-result h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; margin-top: 4px; }
+  .lm-result-summary { margin-top: var(--s-3); font-size: var(--t-small); max-width: 48em; }
+  .lm-result-points { margin: var(--s-4) 0 0; padding-left: 1.25em; font-size: var(--t-small); max-width: 50em; }
+  .lm-result-points li { margin-block: 6px; padding-left: 3px; }
+  .lm-result-foot { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px solid var(--border); font-size: 11px; color: var(--text-dim); }
+  .lm-vendors { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .lm-vendor { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .lm-vendor h3 { margin-top: 0; font-size: 15px; }
+  .lm-vendor p { margin-top: var(--s-2); font-size: 12px; line-height: 1.6; color: var(--text-dim); }
+  .lm-vendor .lm-tag { display: inline-block; font: 10px/1.5 var(--mono); color: var(--accent); }
+  .lm-model-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .lm-model { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .lm-model h3 { margin-top: 0; font-size: 15px; }
+  .lm-model p { margin-top: var(--s-2); font-size: 12px; line-height: 1.6; color: var(--text-dim); }
+  .lm-model .lm-price { display: block; margin-top: var(--s-2); font: 11px/1.6 var(--mono); color: var(--accent); }
+  .lm-compare td, .lm-compare th { vertical-align: top; }
+  .lm-compare td:first-child { min-width: 8em; }
+  .lm-cost td, .lm-cost th { vertical-align: top; }
+  .lm-warn { border: 1px solid #c62828; border-radius: var(--r-1); background: #fff3f3; padding: 10px 12px; margin-top: var(--s-4); }
+  .lm-warn-label { font: 600 11px/1.5 var(--mono); color: #b71c1c; letter-spacing: .04em; }
+  .lm-warn p:last-child { margin-top: 4px; font-size: 12px; line-height: 1.6; color: #6b1a1a; }
+  .lm-timeline { margin-top: var(--s-4); border-left: 2px solid var(--border-bright); padding-left: var(--s-4); display: grid; gap: var(--s-3); }
+  .lm-timeline-item { position: relative; }
+  .lm-timeline-item::before { content: ""; position: absolute; left: calc(-1 * var(--s-4) - 6px); top: 6px; width: 9px; height: 9px; border-radius: 50%; background: var(--surface); border: 2px solid var(--accent); }
+  .lm-timeline-item b { display: block; font-size: 13px; line-height: 1.5; }
+  .lm-timeline-item span { display: block; margin-top: 2px; font-size: 11px; line-height: 1.6; color: var(--text-dim); }
+  .lm-related { list-style: none; margin: 0; padding: 0; }
+  .lm-related li { padding: 7px 0; border-bottom: 1px solid var(--border); font-size: var(--t-small); }
+  .lm-related li:last-child { border-bottom: 0; }
+  .lm-related .pending { color: var(--text-dim); }
+  .lm-related .pending::after { content: "（待生成）"; font-size: 11px; }
+  @media (max-width: 1000px) {
+    .lm-vendors, .lm-model-cards { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 900px) {
+    .lm-compare { min-width: 720px; }
+    .lm-cost { min-width: 520px; }
+  }
+  @media (max-width: 720px) {
+    .lm-stage { padding: var(--s-4); }
+    .lm-card, .lm-result { padding: var(--s-4); }
+    .lm-card h2, .lm-result h2 { font-size: 22px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">055 / 2026 模型版图</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 4 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="053-llm-planning-limitations.html">← 上一页 · LLM 作为规划器的局限性与缓解方案</a><a href="056-mcts-in-agent-planning.html">下一页 → · Monte Carlo Tree S…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Planning &amp; Reasoning · 可交互讲解</p>
+      <h1>推理能力，<br>成了旗舰的开关。</h1>
+    </div>
+    <div>
+      <p class="lead">2026 年的变化不是又出了一个推理模型，而是三家旗舰都把 thinking 做成了内置可调模式。选型问题从“用不用推理模型”变成“这个任务开不开 thinking、给多大预算”。</p>
+      <p class="definition">本页所有模型名、日期、价格、榜单分数均按<strong>原文 2026-10 口径</strong>保留，标为“原文版本、未联网核实”；不更新排名，也不构成当前选型建议。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Planning &amp; Reasoning</span><span class="pill">模型版图</span><span class="pill">原文 2026-10 快照</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="lm-q-title">
+    <div class="player-top">
+      <div class="player-label">选型决策树 <small>三个问题，走到一档</small></div>
+      <div class="controls" role="group" aria-label="选型决策演示控制">
+        <button type="button" class="button button-quiet" id="lm-reset">重新开始</button>
+        <button type="button" class="button" id="lm-back" disabled>返回上一步</button>
+      </div>
+    </div>
+    <div class="lm-stage scene" data-scene="model-choice">
+      <div class="lm-path" id="lm-path" aria-label="已经过的判断"></div>
+      <div class="lm-card" id="lm-question">
+        <p class="figure-index" id="lm-index">问题 1 / 3</p>
+        <h2 id="lm-q-title">这是规划、关键判断或复杂决策吗？</h2>
+        <p class="lm-note" id="lm-q-note">数学、算法、科学证明、复杂多步推理都算。关键判断值得把思考预算花在这里。</p>
+        <div class="lm-actions" role="group" aria-labelledby="lm-q-title">
+          <button type="button" class="button" data-answer="no">否</button>
+          <button type="button" class="button button-primary" data-answer="yes">是</button>
+        </div>
+      </div>
+      <div class="lm-result" id="lm-result" hidden>
+        <p class="lm-result-level" id="lm-result-level"></p>
+        <h2 id="lm-result-title"></h2>
+        <p class="lm-result-summary" id="lm-result-summary"></p>
+        <ul class="lm-result-points" id="lm-result-points"></ul>
+        <p class="lm-result-foot">固定路径来自原文 Model Routing 图；型号、价格、延迟均为原文 2026-10 口径，未联网核实。</p>
+      </div>
+    </div>
+    <div class="walkthrough-foot"><span>固定决策逻辑 · 本页不调用模型</span><span id="lm-state-summary">尚未作答 · 共 3 个判断问题</span></div>
+  </section>
+  <p id="lm-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="lm-merge-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">一 · 推理与通用合流</p><h2 id="lm-merge-title">专用推理模型，<br>边界正在消失。</h2></div>
+      <p class="reading-intro">2024–2025 年，o1/o3、DeepSeek-R1 是独立推理品类，GPT-4o、Claude Sonnet 3.5 是通用模型。到 2026，三家旗舰都把推理做成内置可调模式。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">2024-2025 旧版图与 2026 新图景的对比</caption>
+          <thead><tr><th scope="col">阶段</th><th scope="col">形态</th><th scope="col">选型问题</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">2024–2025</th><td>专用推理模型与通用模型分开：推理模型贵、慢、难题强；通用模型快、便宜、难题弱。</td><td>该不该用推理模型？</td></tr>
+            <tr><th scope="row">2026</th><td>旗舰通用模型 = 通用能力 + 可调 thinking 模式；简单任务关，复杂推理开。</td><td>这个任务该不该开 thinking、开多大 budget？</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="lm-vendors">
+        <div class="lm-vendor"><span class="lm-tag">OpenAI</span><h3>thinking 显式开关</h3><p>用户在请求里决定开或关，按任务调节 reasoning effort。</p></div>
+        <div class="lm-vendor"><span class="lm-tag">Anthropic</span><h3>extended thinking</h3><p>用 <code>budget_tokens</code> 控制思考深度；interleaved thinking 让思考与工具调用交错。</p></div>
+        <div class="lm-vendor"><span class="lm-tag">Google</span><h3>Deep Think + Thought Signatures</h3><p>Deep Think 负责深度推理，Thought Signatures 让 agent 追踪自身推理过程。</p></div>
+      </div>
+      <p>驱动合流的力量有两个。第一，Test-Time Compute Scaling 被验证有效：让模型多想一会儿的收益，比单纯堆参数更划算。第二，Agent 场景要求“会推理也会调工具”：纯推理模型不擅工具交错，而 agent 需要思考、调工具、再思考的循环。</p>
+      <p>所以旧问题被替换了：从“该不该用推理模型”，变成“这个任务该不该开 thinking、开多大 budget”。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="lm-flagship-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">二 · 三家旗舰横评</p><h2 id="lm-flagship-title">同一张表，<br>三种定位。</h2></div>
+      <p class="reading-intro">原文用一张横评表对比 Claude Sonnet 5、GPT-5.6 和 Gemini 3 / 3.1，再从四个 agent 维度看差异。</p>
+    </div>
+    <div class="prose">
+      <div class="callout">
+        <p class="callout-label">原文快照说明</p>
+        <p>以下模型名、版本、日期、价格和代号<strong>全部来自原文 2026-10 口径</strong>。本页未联网核实，不保证这些型号、价格或发布日期真实存在或仍然有效；请以官方公告为准。原文同一节还提到 Claude Opus 5.5 / Sonnet 5.5 / Haiku 5.5、Fable / Mythos 5.1、GPT-6 Astra 等条目，本页按原文保留，不合并、不更新。</p>
+      </div>
+
+      <h3>三家旗舰对比</h3>
+      <div class="table-wrap">
+        <table class="data lm-compare">
+          <caption class="sr-only">Claude Sonnet 5、GPT-5.6 与 Gemini 3 / 3.1 的七维对比，原文 2026-10 口径</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">Claude Sonnet 5</th><th scope="col">GPT-5.6</th><th scope="col">Gemini 3 / 3.1</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">发布方</th><td>Anthropic</td><td>OpenAI</td><td>Google</td></tr>
+            <tr><th scope="row">发布时间</th><td>2026-06-30</td><td>2026（GA）</td><td>2026（3.1 解锁 Agent Mode）</td></tr>
+            <tr><th scope="row">定位</th><td>“最 agentic 的 Sonnet”</td><td>旗舰 “Sol” + 均衡 “Terra”</td><td>“操作系统级 agent 平台”</td></tr>
+            <tr><th scope="row">思考机制</th><td>extended thinking + interleaved thinking（思考与工具交错）</td><td>显式 <code>thinking</code> 开关</td><td>Deep Think + Thought Signatures（自追踪推理）</td></tr>
+            <tr><th scope="row">agentic 特性</th><td>agentic coding、自主任务执行、drop-in 替换 Sonnet 4.6</td><td>NL→前端 UI 生成、交互式可视化、端到端工作流</td><td>Agent Mode 自主编写/测试/部署桥接脚本；3.5 Flash 专为复杂 agentic workflow 设计</td></tr>
+            <tr><th scope="row">定价</th><td>$2 / $10 per MTok（输入/输出，约为同档旗舰一半）</td><td>见 OpenAI 官方价目</td><td>见 Google 官方价目</td></tr>
+            <tr><th scope="row">上游谱系</th><td>Sonnet 4.6（1M context + server-side compaction）</td><td>GPT-5（2025.07）→ GPT-5.1（2025.11，2026.3 从 ChatGPT 退役）</td><td>Gemini 2.5 Deep Think（2025.08，Google 首个公开多 agent 模型）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="source-footnote">原文 2026-10 口径、未联网核实；表中“见官方价目”按原文保留，不补数字。</p>
+
+      <div class="lm-model-cards">
+        <div class="lm-model"><h3>Claude Sonnet 5</h3><p>“便宜的 agentic 工兵”：把 agent 场景的性价比拉下来，coding 与自主执行是主战场。</p><span class="lm-price">原文定价：$2 / $10 per MTok</span></div>
+        <div class="lm-model"><h3>GPT-5.6</h3><p>“能生成可交互前端的通用旗舰”：差异化在 NL→UI 与端到端工作流自动化。</p><span class="lm-price">Sol / Terra 两个代号均按原文保留</span></div>
+        <div class="lm-model"><h3>Gemini 3.1</h3><p>“想做操作系统的 agent 平台”：靠 Agent Mode + Thought Signatures 把“agent 追踪自己推理”做成一等公民。</p><span class="lm-price">Agent Mode 于 3.1 解锁（原文）</span></div>
+      </div>
+
+      <h3>Agent 能力四维</h3>
+      <div class="table-wrap">
+        <table class="data lm-compare">
+          <caption class="sr-only">工具交错、长上下文、长任务自主性和 harness 耦合度四维对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">Claude Sonnet 5</th><th scope="col">GPT-5.6</th><th scope="col">Gemini 3.1</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">工具交错</th><td>原生支持（interleaved thinking）</td><td>支持</td><td>支持 + Agent Mode 主动写脚本</td></tr>
+            <tr><th scope="row">长上下文</th><td>1M token（承自 Sonnet 4.6）</td><td>1M token</td><td>1M token（3.1 Pro）</td></tr>
+            <tr><th scope="row">长任务自主性</th><td>强（Anthropic 同期发布长时科学计算 Agent）</td><td>强（端到端工作流）</td><td>强（Agent Mode 自主部署）</td></tr>
+            <tr><th scope="row">harness 耦合</th><td>与 Claude Code 深度协同，权重倾向 Claude Code 工具签名</td><td>Codex 系模型权重绑 <code>apply_patch</code> 签名</td><td>与 Google ADK / Agent Engine 深度绑定</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>第 4 维是 2026 新增的选型维度。模型在 post-training 阶段会把对特定工具签名的偏好冻进权重，脱离配套 harness 性能会掉。所以选模型其实是在选“模型 + harness”的组合。</p>
+    </div>
+  </section>
+  <section class="reading" aria-labelledby="lm-choice-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三 · 选型、预算与成本</p><h2 id="lm-choice-title">先问任务，<br>再问开不开 thinking。</h2></div>
+      <p class="reading-intro">合流之后，决策不再是选模型品类，而是选“档位 + thinking 开关 + 预算”。原文给了四条判断规则和一张路由图。</p>
+    </div>
+    <div class="prose">
+      <h3>四条选型规则</h3>
+      <p class="code-label">原文 choose_model_and_thinking 伪代码节选</p>
+      <pre><code># 规则 1：实时对话、翻译、简单 QA → 关 thinking，用通用档
+if complexity == "simple" or latency_sensitive:
+    return {"thinking": False, "tier": "standard"}
+
+# 规则 2：数学/算法/科学证明/复杂多步推理 → 开 thinking，给足 budget
+if complexity == "complex_reasoning":
+    return {"thinking": True, "budget_tokens": 8000}
+
+# 规则 3：Agent 长任务 → 开 interleaved thinking + 工具交错
+if needs_tools and task.long_horizon:
+    return {"thinking": True, "interleaved": True, "budget_tokens": "per_step"}
+
+# 规则 4：成本敏感的批量 → 关 thinking，用 Sonnet/Flash 档兜底
+if cost_sensitive:
+    return {"thinking": False, "tier": "mid"}</code></pre>
+      <p>这四条不是互斥的硬规则，更像优先级：先看是否实时和简单，再看是否复杂推理，再看是否长任务工具循环，最后用成本约束兜底。原文的 <code>budget_tokens: 8000</code> 是示例值，不是通用推荐。</p>
+
+      <details>
+        <summary>查看原文 Model Routing 流程图源码</summary>
+        <pre><code>flowchart TD
+    R["Agent Router&lt;br/&gt;按任务类型路由"] --&gt; Q1{"规划 / 关键判断&lt;br/&gt;复杂决策?"}
+    Q1 -- "是" --&gt; A["旗舰档&lt;br/&gt;thinking on"]
+    Q1 -- "否" --&gt; Q2{"常规工具执行&lt;br/&gt;信息检索?"}
+    Q2 -- "是" --&gt; B["旗舰档&lt;br/&gt;thinking off"]
+    Q2 -- "否" --&gt; Q3{"格式化 / 摘要&lt;br/&gt;翻译?"}
+    Q3 -- "是" --&gt; C["中端档&lt;br/&gt;Sonnet 5 / Flash"]
+    Q3 -- "否" --&gt; D["轻量档&lt;br/&gt;实时 / 高并发"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    class R,A,B,C,D proc
+    class Q1,Q2,Q3 decision</code></pre>
+        <p class="source-footnote">源码按原文保留，仅做 HTML 转义；上方互动按同一分支顺序出结论，结论文案按原文改写。</p>
+      </details>
+
+      <h3>Test-Time Compute Scaling</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">训练时扩展与测试时扩展的对比</caption>
+          <thead><tr><th scope="col">范式</th><th scope="col">方法</th><th scope="col">代表</th><th scope="col">局限 / 优势</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Train-Time Scaling（旧）</th><td>加大参数量、堆训练数据。</td><td>GPT-3 → GPT-4</td><td>边际收益递减，Scaling Law 放缓。</td></tr>
+            <tr><th scope="row">Test-Time Scaling（2026 主流）</th><td>允许模型思考更久，生成更长的推理 token。</td><td>o1 → o3 → 旗舰通用模型内置 thinking</td><td>按需分配：简单题少想，难题多想；从固定开关演化为 budget_tokens 可控。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>RL 训练信号方面，可验证奖励（数学、代码可自动判对错）已成共识，偏好和 Judge 奖励作补充；thinking 与工具调用交错，三家都已支持。</p>
+
+      <h3>成本与延迟</h3>
+      <div class="table-wrap">
+        <table class="data lm-cost">
+          <caption class="sr-only">原文 2026 口径的旗舰通用模型定价</caption>
+          <thead><tr><th scope="col">模型</th><th scope="col" class="num">输入</th><th scope="col" class="num">输出</th><th scope="col">备注</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Claude Sonnet 5</th><td class="num">$2</td><td class="num">$10</td><td>约同档旗舰一半。</td></tr>
+            <tr><th scope="row">Claude Opus 4.7</th><td class="num">见官方</td><td class="num">见官方</td><td>顶级档，含 thinking。</td></tr>
+            <tr><th scope="row">GPT-5.6 Sol</th><td class="num">见官方</td><td class="num">见官方</td><td>旗舰档。</td></tr>
+            <tr><th scope="row">Gemini 3.1 Pro</th><td class="num">见官方</td><td class="num">见官方</td><td>旗舰档。</td></tr>
+            <tr><th scope="row">Gemini 3.5 Flash</th><td class="num">见官方</td><td class="num">见官方</td><td>专为 agentic workflow。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="source-footnote">价格单位：per MTok（输入/输出），原文 2026 口径、未联网核实。原文明确提醒：未标具体数字的请查官方价目，不要照抄过期数字。</p>
+      <ul>
+        <li>thinking token 单独计费，计入输出；开 thinking 会显著拉高单次成本。</li>
+        <li>一道复杂数学或 agent 规划题，可能产生 5k–20k 思考 token。</li>
+        <li>延迟：thinking off 约 1–5 秒；thinking on 约 10–120 秒，随复杂度变化。</li>
+      </ul>
+      <div class="callout">
+        <p class="callout-label">原文示例，未更新现价</p>
+        <p>上面的 $2 / $10 和 5k–20k token、1–5s / 10–120s 都是原文示例口径。它们只用来说明“thinking 按输出计费、会同时推高成本和延迟”，不是本页实测，也不代表当前价格。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="lm-trust-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四 · 信任危机与历史脉络</p><h2 id="lm-trust-title">高分不等于<br>生产可靠。</h2></div>
+      <p class="reading-intro">原文提醒：SWE-bench Verified 顶部分数已经很高，但出现 gaming 信任危机。理解历史脉络，才知道这些能力是怎么来的。</p>
+    </div>
+    <div class="prose">
+      <h3>SWE-bench 的信任危机</h3>
+      <div class="lm-warn">
+        <p class="lm-warn-label">原文数据、未联网核实</p>
+        <p>SWE-bench Verified 顶部分数已达 <strong>87–94%</strong>，原文称 Claude 系列领先；但同时出现“benchmark 可被 gaming”的信任危机。harness 配置、retry 策略、reasoning effort 都会显著影响分数，同一模型换个 harness 排名能差出几十位。</p>
+      </div>
+      <p>新基准 SWE-EVO 转向长周期软件演化任务，弥补 SWE-bench 只测单点 bug 修复的局限。对选型的含义：不能只看 SWE-bench 或推理分，要看你自己的 harness 和真实任务分布。</p>
+
+      <h3>历史脉络：概念仍然有效，载体变了</h3>
+      <div class="lm-timeline">
+        <div class="lm-timeline-item"><b>OpenAI o 系列（开启者）</b><span>o1 / o1-pro：2024-09 / 12，闭源 RL CoT，首次提出 test-time compute scaling。o3 / o3-mini：2025-01，推理加工具调用，ARC-AGI 高计算配置下 87.5%。后续 o3-pro / o4 / GPT-5 系列逐步把推理做成通用模型的可开关模式。</span></div>
+        <div class="lm-timeline-item"><b>DeepSeek-R1（开源里程碑）</b><span>R1-Zero 用纯 GRPO 强化学习，不用 SFT，涌现 “Aha moment”：模型自学会说“等一下，让我重新检查”。R1 用 Cold Start SFT + 大规模 RL，AIME 2024 达 79.8%（满血 671B）。蒸馏到 7B/14B/32B/70B，证明推理能力可以迁移到小模型。</span></div>
+        <div class="lm-timeline-item"><b>Anthropic extended thinking</b><span>起点是 Sonnet 3.7（2025-02），用 budget_tokens 控制思考深度；Sonnet 4/4.5 引入 interleaved thinking；原文称 Sonnet 5 / Opus 4.7 系列继承，长思考链稳定性大幅提升。</span></div>
+        <div class="lm-timeline-item"><b>Google Deep Think</b><span>Gemini 2.5 Deep Think（2025-08）是 Google 首个公开多 agent 模型，IMO 2025 拿到 Bronze；Gemini 3.x 演化为 Thought Signatures + Agent Mode。</span></div>
+      </div>
+      <p>仍然有效、值得记住的概念：Test-Time Compute Scaling；RL 训练推理能力（GRPO 等可验证奖励算法）；Aha moment、自我纠正、回溯；蒸馏把大模型推理能力迁移到小模型；budget_tokens 从固定开关演化为可控预算；interleaved thinking 让思考与工具调用交错。</p>
+      <p class="source-footnote">以上日期、分数、排名均为原文 2026-10 口径，未联网核实；本页不更新排名，也不把这些历史结论当作当前生产事实。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="lm-mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="lm-mis-title">两个误区，<br>五个追问。</h2></div>
+      <p class="reading-intro">前两条是误区，后五条是面试追问；答案都来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“2026 年还该不该选专用推理模型？”</h3><p>这个问题本身已经过时。推理能力已合流进通用旗舰，成为可开关的 thinking 模式。正确的问法是：这个任务该不该开 thinking、开多大 budget。o1/o3 那种“独立推理品类”的边界已经模糊，纯专用推理模型的份额在收缩。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“Agent 选型看 SWE-bench / 推理分就够了。”</h3><p>SWE-bench Verified 顶部已达 87–94%，但出现 gaming 信任危机：harness 配置、retry 策略都能显著刷分。选型要看“agentic 能力 × 成本 × harness 耦合度”三维，并在自己的真实任务上验证。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>“Sonnet 5 为什么敢叫‘最 agentic 的 Sonnet’？”</h3><p>三条依据：drop-in 替换 Sonnet 4.6，API 兼容；主提升集中在 agentic coding 与自主任务执行；定价 $2 / $10 per MTok，把 agentic 能力做到中端价位，让原本要跑顶级旗舰的工作流可以下放。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>“post-training coupling 对选型意味着什么？”</h3><p>模型在 post-training 阶段会把对特定工具签名（apply_patch、某套 MCP 工具）的偏好冻进权重，脱离配套 harness 性能会掉。所以选模型其实在选“模型 + harness”组合：Claude 配 Claude Code、Codex 配 apply_patch、Gemini 配 ADK。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 3</p>
+      <div><h3>“Gemini 的 Thought Signatures 和 Claude 的 extended thinking 有什么区别？”</h3><p>两者都把推理做成可见、可控的一等公民，但侧重不同。Claude 的 extended thinking 是可配预算的思考链，用 budget_tokens 控制深度，interleaved 与工具交错；Gemini 的 Thought Signatures 强调 agent 对自身推理过程的追踪与可观测，配合 Agent Mode 让 agent 主动写脚本改环境。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 4</p>
+      <div><h3>“1M 上下文了，Agent 还需要 RAG 吗？”</h3><p>单针检索在 1M token 下对顶级模型已基本解决，但多跳推理超过 256K 后性能显著下降。所以长任务、大知识库仍需 RAG；1M 上下文解决的是“短期工作记忆”，不是“长期知识”。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 5</p>
+      <div><h3>“未来 Agent 会全面开 thinking 吗？”</h3><p>更可能是混合架构加模型路由：规划和关键判断开 thinking，常规执行关 thinking。thinking token 单独计费，且显著拉高成本与延迟，无脑全开不划算。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="lm-related-title">
+    <p class="eyebrow">相关阅读与参考</p>
+    <h2 class="source-heading" id="lm-related-title">继续深入</h2>
+    <p class="source-summary">本页只按原文 2026-10 口径整理。相关页面按当前仓库进度列出，均已生成并链接。</p>
+    <details>
+      <summary>展开相关阅读（12 条）</summary>
+      <div class="source-content">
+        <ul class="lm-related">
+          <li><a href="049-cot-and-tot.html">049 推理策略：Chain-of-Thought 与 Tree-of-Thought</a>：thinking 模式背后的 CoT 思想源头。</li>
+          <li><a href="052-plan-and-solve-replanning.html">052 Plan-and-Solve 与动态重规划</a>：thinking 开启后规划能力的落地。</li>
+          <li><a href="056-mcts-in-agent-planning.html">056 MCTS 在 Agent 规划中的应用</a>：搜索式推理与 test-time compute 的另一条路径。</li>
+          <li><a href="103-agentic-rl-grpo.html">103 Agentic-RL 与 GRPO</a>：DeepSeek-R1 的训练算法详解。</li>
+          <li><a href="../08-evaluation/069-evaluation-methodology.html">069 评估方法论</a>：如何科学评估 thinking on/off 的收益。</li>
+          <li><a href="../08-evaluation/076-static-benchmark-trap.html">076 静态 Benchmark 陷阱：SWE-bench 信任危机详解</a></li>
+          <li><a href="../10-production-and-deployment/088-cost-optimization.html">088 成本优化</a>：thinking token 计费与预算控制。</li>
+          <li><a href="../10-production-and-deployment/089-model-routing.html">089 模型路由：按任务复杂度路由 thinking on/off</a></li>
+          <li><a href="../10-production-and-deployment/090-latency-optimization.html">090 延迟优化：开 thinking 后的延迟治理</a></li>
+          <li><a href="../07-prompt-engineering/102-context-engineering.html">102 Context Engineering</a>：1M 上下文与 thinking 的协同。</li>
+          <li><a href="../01-agent-architecture/109-what-is-agent-harness.html">109 Agent Harness 三层抽象</a>：post-training coupling 与模型 + harness 组合选型。</li>
+          <li><a href="../11-frameworks/110-coding-agent-harness-comparison.html">110 Coding Agent Harness 横评</a></li>
+        </ul>
+        <p class="source-footnote">相对链接只指向本仓库已生成页面。只有主动点击外链或相对链接才会离开本页。</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>展开原文列出的参考链接（原文 17 条；Opus / Sonnet / Haiku 三个链接原属同一条）</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.anthropic.com/news/claude-sonnet-5" target="_blank" rel="noopener noreferrer">Anthropic · Claude Sonnet 5 发布公告</a></li>
+          <li><a href="https://www.anthropic.com/claude-sonnet-5-system-card" target="_blank" rel="noopener noreferrer">Anthropic · Claude Sonnet 5 System Card</a></li>
+          <li><a href="https://techcrunch.com/2026/06/30/anthropic-launches-claude-sonnet-5-as-a-cheaper-way-to-run-agents/" target="_blank" rel="noopener noreferrer">TechCrunch · Anthropic launches Claude Sonnet 5</a></li>
+          <li><a href="https://openai.com/index/gpt-5-6/" target="_blank" rel="noopener noreferrer">OpenAI · GPT-5.6 发布说明</a></li>
+          <li><a href="https://help.openai.com/en/articles/9624314-model-release-notes" target="_blank" rel="noopener noreferrer">OpenAI · Model Release Notes</a></li>
+          <li><a href="https://blog.google/products-and-platforms/products/gemini/gemini-3/" target="_blank" rel="noopener noreferrer">Google · Gemini 3 官方博客</a></li>
+          <li><a href="https://blog.google/products-and-platforms/products/gemini/gemini-2-5-deep-think/" target="_blank" rel="noopener noreferrer">Google · Gemini 2.5 Deep Think</a></li>
+          <li><a href="https://www.forbes.com/sites/janakirammsv/2026/05/21/google-io-2026-turned-gemini-into-an-agent-platform/" target="_blank" rel="noopener noreferrer">Forbes · Google I/O 2026 turned Gemini into an Agent Platform</a></li>
+          <li><a href="https://www.tomsguide.com/ai/google-just-unlocked-agent-mode-for-gemini-3-1-here-are-7-things-it-can-now-do-for-you" target="_blank" rel="noopener noreferrer">Tom's Guide · Gemini 3.1 Agent Mode</a></li>
+          <li><a href="https://arxiv.org/abs/2501.12948" target="_blank" rel="noopener noreferrer">DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via RL · arXiv</a></li>
+          <li><a href="https://www.anthropic.com/claude-fable-and-mythos-5-1" target="_blank" rel="noopener noreferrer">Anthropic · Claude Fable 5.1 and Claude Mythos 5.1</a></li>
+          <li><a href="https://openai.com/index/gpt-6-astra/" target="_blank" rel="noopener noreferrer">OpenAI · GPT-6 Astra</a></li>
+          <li><a href="https://www.anthropic.com/claude-opus-5-5" target="_blank" rel="noopener noreferrer">Anthropic · Claude Opus 5.5</a></li>
+          <li><a href="https://www.anthropic.com/claude-sonnet-5-5" target="_blank" rel="noopener noreferrer">Anthropic · Claude Sonnet 5.5</a></li>
+          <li><a href="https://www.anthropic.com/claude-haiku-5-5" target="_blank" rel="noopener noreferrer">Anthropic · Claude Haiku 5.5</a></li>
+          <li><a href="https://openai.com/index/practical-guide-building-gpt-6" target="_blank" rel="noopener noreferrer">OpenAI · A model guide for the GPT-6 family</a></li>
+          <li><a href="https://magazine.sebastianraschka.com/p/categories-of-inference-time-scaling" target="_blank" rel="noopener noreferrer">Sebastian Raschka · Categories of Inference-Time Scaling</a></li>
+          <li><a href="https://www.swebench.com/" target="_blank" rel="noopener noreferrer">SWE-bench 官方排行榜</a></li>
+          <li><a href="https://moogician.github.io/blog/2026/trustworthy-benchmarks-cont/" target="_blank" rel="noopener noreferrer">Benchmark 信任危机分析</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>06-planning-and-reasoning/055-reasoning-models.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 5 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const LM_QUESTIONS = Object.freeze([
+    {
+      title: "这是规划、关键判断或复杂决策吗？",
+      note: "数学、算法、科学证明、复杂多步推理都算。关键判断值得把思考预算花在这里。"
+    },
+    {
+      title: "这是常规工具执行或信息检索吗？",
+      note: "需要工具循环，但不需要复杂规划。比如按既定步骤查资料、调接口。"
+    },
+    {
+      title: "这是格式化、摘要或翻译吗？",
+      note: "成本敏感的批量任务也归到中端档（原文规则 4）。"
+    }
+  ]);
+
+  const LM_RESULTS = Object.freeze({
+    on: {
+      level: "旗舰档 · thinking on",
+      title: "开 thinking，给关键判断留足预算",
+      summary: "这类任务值得把思考预算花在关键判断上。",
+      points: [
+        "原文伪代码示例：复杂推理给 budget_tokens=8000。",
+        "thinking token 计入输出，单次成本会明显上升。",
+        "延迟约 10–120 秒（原文口径，随复杂度变化）。"
+      ]
+    },
+    off: {
+      level: "旗舰档 · thinking off",
+      title: "同一旗舰，关掉 thinking",
+      summary: "工具循环需要低延迟，暂不需要长思考。",
+      points: [
+        "常规工具执行、信息检索走这一档。",
+        "thinking off 延迟约 1–5 秒（原文口径）。",
+        "需要复杂规划时再切回 thinking on。"
+      ]
+    },
+    mid: {
+      level: "中端档",
+      title: "格式化、摘要、翻译：中端档够用",
+      summary: "这类任务不需要复杂推理，中端档足够。",
+      points: [
+        "原文点名 Sonnet 5 / Gemini 3.5 Flash。",
+        "Sonnet 5 定价 $2 / $10 per MTok（原文 2026-10 口径）。",
+        "成本敏感的批量任务也走这一档（原文规则 4）。"
+      ]
+    },
+    light: {
+      level: "轻量档",
+      title: "实时、高并发：优先保延迟",
+      summary: "实时优先，档位让位于延迟。",
+      points: [
+        "原文路由图没有点名具体型号。",
+        "按延迟和成本优先选择，不为简单任务开 thinking。",
+        "如果任务后来变复杂，再回到问题 1 重新判断。"
+      ]
+    }
+  });
+
+  const lmState = { index: 0, answers: [], result: null };
+  const lmById = (id) => document.getElementById(id);
+
+  function lmFinish(key) {
+    lmState.result = key;
+    renderLM();
+  }
+
+  function renderLM(announce = true) {
+    const pathEl = lmById("lm-path");
+    pathEl.innerHTML = lmState.answers.map((answer) =>
+      `<span class="lm-chip">问题 ${answer.q + 1} <b>${answer.yes ? "是" : "否"}</b></span>`
+    ).join("");
+
+    const questionEl = lmById("lm-question");
+    const resultEl = lmById("lm-result");
+
+    if (lmState.result) {
+      questionEl.hidden = true;
+      resultEl.hidden = false;
+      const data = LM_RESULTS[lmState.result];
+      lmById("lm-result-level").textContent = data.level;
+      lmById("lm-result-title").textContent = data.title;
+      lmById("lm-result-summary").textContent = data.summary;
+      lmById("lm-result-points").innerHTML = data.points.map((point) => `<li>${point}</li>`).join("");
+      lmById("lm-state-summary").textContent = `已得出档位 · 答了 ${lmState.answers.length} / 3 题`;
+      if (announce) {
+        lmById("lm-announcement").textContent = `结论：${data.level}。${data.title}${data.summary}`;
+      }
+    } else {
+      questionEl.hidden = false;
+      resultEl.hidden = true;
+      const question = LM_QUESTIONS[lmState.index];
+      lmById("lm-index").textContent = `问题 ${lmState.index + 1} / 3`;
+      lmById("lm-q-title").textContent = question.title;
+      lmById("lm-q-note").textContent = question.note;
+      lmById("lm-state-summary").textContent = `已答 ${lmState.answers.length} / 3 题 · 本页不调用模型`;
+      if (announce) {
+        lmById("lm-announcement").textContent = `问题 ${lmState.index + 1}，共 3 题。${question.title}${question.note}`;
+      }
+    }
+
+    lmById("lm-back").disabled = lmState.answers.length === 0;
+  }
+
+  function answerLM(yes) {
+    if (lmState.result) return;
+    const q = lmState.index;
+    lmState.answers.push({ q, yes });
+    if (q === 0) {
+      if (yes) lmFinish("on");
+      else { lmState.index = 1; renderLM(); }
+    } else if (q === 1) {
+      if (yes) lmFinish("off");
+      else { lmState.index = 2; renderLM(); }
+    } else {
+      lmFinish(yes ? "mid" : "light");
+    }
+  }
+
+  function backLM() {
+    if (!lmState.answers.length) return;
+    const last = lmState.answers[lmState.answers.length - 1];
+    if (lmState.result) {
+      lmState.result = null;
+      lmState.answers.pop();
+      lmState.index = last.q;
+    } else {
+      lmState.answers.pop();
+      lmState.index = last.q;
+    }
+    renderLM();
+  }
+
+  document.querySelectorAll("#explainer [data-answer]").forEach((button) => {
+    button.addEventListener("click", () => answerLM(button.dataset.answer === "yes"));
+  });
+  lmById("lm-back").addEventListener("click", backLM);
+  lmById("lm-reset").addEventListener("click", () => {
+    lmState.index = 0;
+    lmState.answers = [];
+    lmState.result = null;
+    renderLM(false);
+    lmById("lm-announcement").textContent = "已重新开始，回到问题 1。";
+  });
+
+  renderLM(false);
+</script>
+</body>
+</html>

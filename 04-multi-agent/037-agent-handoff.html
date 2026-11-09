@@ -1,0 +1,972 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>如何实现 Agent 间的 Handoff（任务交接）？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .ho-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .ho-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+  .ho-board, .ho-panel { min-width: 0; }
+  .ho-control { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; padding: 7px 10px; border: 1px dashed var(--border-bright); border-radius: var(--r-1); background: var(--surface-soft); font: 10px/1.55 var(--mono); color: var(--text-dim); }
+  .ho-control b { color: var(--ink); }
+  .ho-control .ho-holder { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--accent); background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+  .ho-roles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-3); }
+  .ho-role { min-width: 0; padding: 7px 8px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .ho-role.is-now { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(25,79,135,.12); }
+  .ho-role-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px; }
+  .ho-role-name { font-size: 11px; font-weight: 600; line-height: 1.4; }
+  .ho-role-name span { display: block; font: 8px/1.4 var(--mono); color: var(--text-dim); font-weight: 400; }
+  .ho-role-state { padding: 1px 5px; border-radius: 999px; border: 1px solid var(--border-bright); background: var(--surface-soft); color: #4b514b; font: 8px/1.5 var(--mono); white-space: nowrap; }
+  .ho-role-state.now { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+  .ho-role-state.done { border-color: #2e7d32; background: #eef7ee; color: #1b5e20; }
+  .ho-role-state.idle { border-color: var(--border-bright); background: var(--surface-soft); color: #5f645f; }
+  .ho-log { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 4px; }
+  .ho-msg { display: grid; grid-template-columns: 40px minmax(0, 1fr); gap: 6px; padding: 5px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); }
+  .ho-msg.is-now { border-color: var(--accent); background: #f4f8fc; }
+  .ho-msg-time { font: 8px/1.5 var(--mono); color: var(--text-dim); padding-top: 2px; }
+  .ho-msg-body { min-width: 0; }
+  .ho-msg-route { font: 600 10px/1.5 var(--mono); color: var(--ink); }
+  .ho-msg-route em { font-style: normal; color: var(--accent); padding-inline: 3px; }
+  .ho-msg-type { display: inline-block; margin-left: 4px; padding: 0 4px; border: 1px solid var(--border-bright); border-radius: 3px; font: 8px/1.5 var(--mono); color: #4b514b; background: var(--surface-soft); }
+  .ho-msg p { margin-top: 1px; font-size: 9px; line-height: 1.5; color: var(--text-dim); overflow-wrap: anywhere; }
+  .ho-context { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3); }
+  .ho-context-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 5px; }
+  .ho-context-head b { font: 600 11px/1.5 var(--sans); }
+  .ho-context-head span { font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .ho-compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
+  .ho-ctx { border: 1px solid var(--border); border-radius: 4px; background: var(--surface-soft); padding: 6px 7px; }
+  .ho-ctx h3 { font: 600 10px/1.45 var(--sans); }
+  .ho-ctx .ho-tokens { display: block; font: 8px/1.5 var(--mono); color: var(--text-dim); }
+  .ho-ctx ul { list-style: none; margin: 4px 0 0; padding: 0; display: grid; gap: 2px; }
+  .ho-ctx li { display: grid; grid-template-columns: 14px minmax(0, 1fr); gap: 3px; font-size: 9px; line-height: 1.5; color: var(--ink); }
+  .ho-ctx li .mark { font: 8px/1.5 var(--mono); color: #1b5e20; }
+  .ho-ctx li.removed { color: #6b716b; text-decoration: line-through; }
+  .ho-ctx li.removed .mark { color: #7d1f1f; text-decoration: none; }
+  .ho-single ul { list-style: none; margin: 5px 0 0; padding: 0; display: grid; gap: 3px; }
+  .ho-single li { font-size: 9px; line-height: 1.5; color: var(--ink); padding-left: 12px; position: relative; }
+  .ho-single li::before { content: "·"; position: absolute; left: 2px; color: var(--accent); }
+  .ho-payload { margin-top: var(--s-3); }
+  .ho-payload pre { margin-top: 2px; font-size: 9px; line-height: 1.65; padding: 8px; }
+  .ho-empty { margin-top: var(--s-3); padding: 8px; border: 1px dashed var(--border-bright); border-radius: 4px; background: var(--surface-soft); font: 9px/1.6 var(--mono); color: var(--text-dim); }
+  .ho-panel { border: 1px solid var(--border); border-radius: var(--r-1); background: #f7f6f1; padding: var(--s-4); }
+  .ho-panel h2 { font: 600 19px/1.45 var(--serif); }
+  .ho-panel > p { margin-top: var(--s-2); font-size: 12px; line-height: 1.7; }
+  .ho-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; margin-top: var(--s-3); }
+  .ho-metric { padding: 5px 7px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); }
+  .ho-metric dt { font: 8px/1.4 var(--mono); color: var(--text-dim); }
+  .ho-metric dd { margin: 0; font: 600 14px/1.3 var(--mono); color: var(--ink); }
+  .ho-boundary { margin-top: var(--s-3); padding: 7px 9px; border: 1px solid #b98a2f; border-radius: 4px; background: #fffaf0; color: #5f430f; font-size: 10px; line-height: 1.6; }
+  .ho-boundary b { color: #4a340b; }
+  .ho-chain { margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .ho-chain-row { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+  .ho-chain-node { padding: 6px 9px; border: 1px solid #9eb4c9; border-radius: 4px; background: var(--accent-dim); font: 10px/1.45 var(--mono); color: var(--accent); }
+  .ho-chain-node.alt { border-color: #b98a2f; background: #fffaf0; color: #5f430f; }
+  .ho-chain-arrow { font: 11px/1 var(--mono); color: var(--text-dim); }
+  .ho-chain figcaption { margin-top: var(--s-3); font-size: 10px; line-height: 1.6; color: var(--text-dim); }
+
+  @media (max-width: 1000px) { .ho-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 720px) {
+    .ho-stage { padding: var(--s-4); }
+    .ho-roles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ho-compare { grid-template-columns: 1fr; }
+    .ho-panel { padding: var(--s-3); }
+    .ho-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">037 / Agent Handoff</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 12 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="036-multi-agent-frameworks.html">← 上一页 · 比较主流多 Agent 框架</a><a href="038-emergent-behavior.html">下一页 → · 多 Agent 系统中的涌现行为与可…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Multi-Agent · 可交互讲解</p>
+      <h1>交接班，<br>不是借工具。</h1>
+    </div>
+    <div>
+      <p class="lead">Handoff 是一个 Agent 把控制权、任务和上下文交给另一个 Agent。最常见的实现是把交接包装成工具调用：路由 Agent 判断超纲，调用 transfer_to_XXX，之后由新 Agent 接管对话。</p>
+      <p class="definition">关键边界：<strong>工具调用后控制权回到原 Agent，Handoff 后控制权完全转移</strong>。工具是“用完就还”，Handoff 是“交接班”；交接失败大多不是触发问题，而是上下文丢失或格式错误。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Multi-Agent</span><span class="pill">Handoff</span><span class="pill">固定教学轨迹</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="ho-caption-title">
+    <div class="player-top">
+      <div class="player-label">固定交接演播室 <small>退货请求，两次 Handoff</small></div>
+      <div class="controls" role="group" aria-label="Handoff 演示控制">
+        <button type="button" class="button button-quiet" id="ho-reset">重置</button>
+        <button type="button" class="button" id="ho-prev" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="ho-next">下一步 →</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="五个固定交接步骤">
+      <ol style="--stages: 5">
+        <li><button type="button" class="stage-button" data-step="0" aria-current="step" aria-controls="ho-scene" aria-label="第 1 步：路由"><span class="stage-number">1</span><span>路由</span></button></li>
+        <li><button type="button" class="stage-button" data-step="1" aria-controls="ho-scene" aria-label="第 2 步：转退货"><span class="stage-number">2</span><span>转退货</span></button></li>
+        <li><button type="button" class="stage-button" data-step="2" aria-controls="ho-scene" aria-label="第 3 步：退货处理"><span class="stage-number">3</span><span>退货</span></button></li>
+        <li><button type="button" class="stage-button" data-step="3" aria-controls="ho-scene" aria-label="第 4 步：转财务"><span class="stage-number">4</span><span>转财务</span></button></li>
+        <li><button type="button" class="stage-button" data-step="4" aria-controls="ho-scene" aria-label="第 5 步：财务回复"><span class="stage-number">5</span><span>财务</span></button></li>
+      </ol>
+    </nav>
+    <div class="ho-stage scene" id="ho-scene" data-scene="handoff">
+      <div class="ho-grid">
+        <section class="ho-board" aria-label="交接现场">
+          <div class="ho-control" id="ho-control"></div>
+          <div class="ho-roles" id="ho-roles"></div>
+          <ol class="ho-log" id="ho-log" aria-label="交接消息记录"></ol>
+          <div class="ho-context" id="ho-context"></div>
+        </section>
+        <aside class="ho-panel" aria-labelledby="ho-caption-title">
+          <p class="figure-index" id="ho-figure">图 1 · Handoff · 第 1 / 5 步</p>
+          <h2 id="ho-caption-title">请求先到路由 Agent。</h2>
+          <p id="ho-desc">用户要退货并了解退款进度。此刻控制权在路由 Agent 手里；它还没有决定交给谁，也没有产出退货或退款结果。</p>
+          <dl class="ho-metrics">
+            <div class="ho-metric"><dt>交接次数</dt><dd id="ho-count">0</dd></div>
+            <div class="ho-metric"><dt>当前上下文</dt><dd id="ho-tokens">1.2k</dd></div>
+            <div class="ho-metric"><dt>上限</dt><dd>3 次</dd></div>
+          </dl>
+          <div class="ho-payload" id="ho-payload"></div>
+          <div class="ho-boundary" id="ho-boundary"><b>角色边界：</b>路由 Agent 只判断该交给谁，不处理退货，也不查退款进度。</div>
+        </aside>
+      </div>
+      <p class="demo-note">固定教学数据：对话内容、上下文条目、token 数、时间点和交接结果都是写死的；页面只按当前步骤显示已经发生的消息。token 数是教学估算，不是真实模型计数；本页不调用任何 Agent 或模型。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 4 个参与者 · 2 次 Handoff</span><span id="ho-state-summary">第 1 / 5 步 · 控制权：路由 Agent · 没有连接 Agent</span></div>
+  </section>
+  <p id="ho-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">为什么需要 Handoff</p><h2 id="why-title">一个 Agent 扛太多，<br>决策会变差。</h2></div>
+      <p class="reading-intro">工具太多或上下文太大，单个 Agent 的决策质量会下降。Handoff 把任务路由给专精 Agent，代价是控制权和上下文要可靠地交接。</p>
+    </div>
+    <div class="prose">
+      <figure class="ho-chain">
+        <div class="ho-chain-row">
+          <span class="ho-chain-node">用户：退货 + 查退款进度</span><span class="ho-chain-arrow">→</span>
+          <span class="ho-chain-node">路由 Agent</span><span class="ho-chain-arrow">→</span>
+          <span class="ho-chain-node alt">退货 Agent（transfer_to_refund）</span><span class="ho-chain-arrow">→</span>
+          <span class="ho-chain-node alt">财务 Agent（transfer_to_finance）</span><span class="ho-chain-arrow">→</span>
+          <span class="ho-chain-node">返回退款进度</span>
+        </div>
+        <figcaption>离线可读版：原图是 Mermaid 时序图。控制权依次从路由转到退货、再转到财务；每次交接都传递对话上下文。Mermaid 源码见下方折叠块。</figcaption>
+      </figure>
+      <details>
+        <summary>展开原文 Mermaid 源码</summary>
+        <pre><code>sequenceDiagram
+    participant U as 用户
+    participant R as 路由 Agent
+    participant F as 退货 Agent
+    participant P as 财务 Agent
+    U-&gt;&gt;R: 我想退货并了解退款进度
+    R-&gt;&gt;F: transfer_to_refund（Handoff，交接上下文）
+    F-&gt;&gt;U: 处理退货
+    U-&gt;&gt;F: 追问退款进度
+    F-&gt;&gt;P: transfer_to_finance（Handoff，交接上下文）
+    P--&gt;&gt;U: 返回退款进度</code></pre>
+      </details>
+      <p>这张图的重点不是箭头，而是<strong>控制权只在一个 Agent 手里</strong>。路由交出去之后，就不应该继续替用户处理退货；退货 Agent 也不应该自己查财务账户。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="tool-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">实现方式 1</p><h2 id="tool-title">Tool-Based：<br>把交接做成工具。</h2></div>
+      <p class="reading-intro">OpenAI Agents SDK 风格：路由 Agent 的 handoffs 列表会自动生成 transfer_to_XXX 工具，LLM 判断超纲时调用它。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">OpenAI Agents SDK 风格的 Handoff · 原文代码</p>
+      <pre><code>from agents import Agent, handoff
+
+refund_agent = Agent(
+    name="Refund Agent",
+    instructions="你负责处理退款请求...",
+    tools=[execute_refund, check_refund_status],
+)
+
+shipping_agent = Agent(
+    name="Shipping Agent",
+    instructions="你负责处理物流问题...",
+    tools=[track_package, update_address],
+)
+
+triage_agent = Agent(
+    name="Triage Agent",
+    instructions="根据用户需求将请求路由给合适的专家",
+    handoffs=[
+        refund_agent,
+        handoff(
+            agent=shipping_agent,
+            tool_name_override="route_to_shipping",
+            tool_description_override="将对话交给物流专家处理快递相关问题",
+            on_handoff=lambda ctx: log_handoff(ctx),
+            input_filter=keep_last_n_messages(5),
+            input_type=ShippingHandoffInput,
+        ),
+    ],
+    # 内部自动生成工具：transfer_to_refund_agent, route_to_shipping
+)</code></pre>
+      <p>五个核心参数各自管一件事：<code>tool_name_override</code> 改工具名，<code>tool_description_override</code> 改描述，<code>on_handoff</code> 做日志和审计，<code>input_filter</code> 过滤历史，<code>input_type</code> 用 Pydantic 约束入参。</p>
+      <p><strong>工作原理：</strong>LLM 在合适时机调用 <code>transfer_to_XXX</code>；交接发生后，新 Agent 接管对话并获得完整的对话历史——除非 <code>input_filter</code> 主动裁剪。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="supervisor-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">实现方式 2</p><h2 id="supervisor-title">Supervisor：<br>由中心节点决定下一个。</h2></div>
+      <p class="reading-intro">LangGraph 风格：Supervisor 读当前对话，决定下一个该谁处理；worker 完成后回到 Supervisor，而不是直接互相交接。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">Supervisor 路由 · 原文代码</p>
+      <pre><code>from langgraph.graph import StateGraph
+
+class SupervisorState(TypedDict):
+    messages: list
+    current_agent: str
+
+def supervisor_node(state):
+    """Supervisor 决定下一个处理的 Agent"""
+    response = supervisor_llm.invoke(
+        f"当前对话：{state['messages']}\n"
+        f"可用专家：researcher, coder, writer\n"
+        f"谁应该处理下一步？回复 agent 名称或 'FINISH'"
+    )
+    return {"current_agent": response.agent_name}
+
+def route(state):
+    if state["current_agent"] == "FINISH":
+        return END
+    return state["current_agent"]
+
+graph = StateGraph(SupervisorState)
+graph.add_node("supervisor", supervisor_node)
+graph.add_node("researcher", researcher_node)
+graph.add_node("coder", coder_node)
+graph.add_conditional_edges("supervisor", route)
+graph.add_edge("researcher", "supervisor")
+graph.add_edge("coder", "supervisor")</code></pre>
+      <p>Supervisor 模式把“谁接手”集中在中心节点，追踪更容易，但中心节点也是瓶颈；去中心化的 Handoff 更灵活，链路却更难追。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="return-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">实现方式 3</p><h2 id="return-title">函数返回 Agent 对象。</h2></div>
+      <p class="reading-intro">Swarm 风格：工具函数正常返回字符串就只是工具结果，返回 Agent 对象就触发 Handoff。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">函数返回 Agent · 原文代码</p>
+      <pre><code>def handle_refund(order_id: str):
+    """处理退款请求"""
+    status = check_order(order_id)
+    if status == "delivered":
+        # 返回 Agent 对象 = 触发 Handoff
+        return refund_agent
+    else:
+        return f"订单 {order_id} 尚未送达，无法退款"
+
+triage_agent = Agent(
+    name="Triage",
+    tools=[handle_refund],  # 函数可能返回 Agent
+)</code></pre>
+      <p>这种写法的边界最容易被忽略：工具函数有两个返回类型，调用方必须能区分“普通结果”和“Agent 对象”，否则会把交接对象当成字符串处理。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="context-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">上下文传递</p><h2 id="context-title">三种策略，<br>结构化最稳。</h2></div>
+      <p class="reading-intro">Handoff 最大的挑战不是触发，而是上下文。完整历史简单但可能超窗；摘要省 token 但可能丢细节；结构化上下文把关键信息写成字段。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">三种上下文传递策略 · 原文代码</p>
+      <pre><code># 策略 1：完整历史传递（简单但可能超出上下文窗口）
+def handoff_full_history(target_agent, conversation_history):
+    return target_agent.invoke(messages=conversation_history)
+
+# 策略 2：摘要传递（节省 token，但可能丢失细节）
+def handoff_with_summary(target_agent, conversation_history):
+    summary = summarize(conversation_history)
+    return target_agent.invoke(messages=[
+        {"role": "system", "content": f"前序对话摘要：{summary}"},
+        conversation_history[-1]
+    ])
+
+# 策略 3：结构化上下文传递（最佳实践）
+def handoff_structured(target_agent, context):
+    handoff_payload = {
+        "user_intent": "退款查询",
+        "order_id": "12345",
+        "previous_actions": ["已验证用户身份", "已确认订单已送达"],
+        "pending_issues": ["退款金额待确认"],
+        "user_messages": conversation_history[-3:]
+    }
+    return target_agent.invoke(
+        messages=[{"role": "system", "content": json.dumps(handoff_payload)}]
+    )</code></pre>
+      <p>原文把结构化上下文列为最佳实践：像对待公开 API 一样对待 Agent 间接口。字段名、必填项和类型都写清楚，接手的 Agent 不用从自由文本里猜。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="filter-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">Input Filter</p><h2 id="filter-title">不该带的话，<br>别带过去。</h2></div>
+      <p class="reading-intro">input_filter 在交接时裁剪对话历史，只把目标 Agent 需要的内容传过去，既省 token，也减少无关信息干扰。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">只传递计费相关上下文 · 原文代码</p>
+      <pre><code>from agents import handoff
+
+def filter_for_billing(handoff_input):
+    """只传递与计费相关的上下文给 Billing Agent"""
+    filtered = []
+    for msg in handoff_input.messages:
+        if is_billing_related(msg) or msg == handoff_input.messages[-1]:
+            filtered.append(msg)
+    handoff_input.messages = filtered
+    return handoff_input
+
+billing_handoff = handoff(
+    agent=billing_agent,
+    input_filter=filter_for_billing
+)</code></pre>
+      <p>OpenAI SDK 也提供 <code>handoff_filters.remove_all_tools</code> 等内置 filter，可以直接去掉工具调用记录。过滤规则要保留最后一条用户消息，否则目标 Agent 不知道该回答什么。被过滤掉的内容不是删除，它仍留在原 Agent 的历史里，只是不进入这次交接负载。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="reliable-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">可靠性设计</p><h2 id="reliable-title">先验证，再打包，<br>失败要能回退。</h2></div>
+      <p class="reading-intro">可靠 Handoff 的顺序是：验证目标可用 → 结构化打包 → 执行 → 失败回退 → 记录日志。少一步，故障时就查不清。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">可靠交接 · 原文代码</p>
+      <pre><code>class ReliableHandoff:
+    async def execute(self, from_agent, to_agent, context):
+        # 1. 验证目标 Agent 可用
+        if not to_agent.is_healthy():
+            return await self.fallback(from_agent, context)
+
+        # 2. 结构化上下文打包
+        payload = self.pack_context(context)
+
+        # 3. 执行 Handoff
+        try:
+            result = await to_agent.invoke(payload)
+        except Exception as e:
+            # 4. 失败回退
+            return await from_agent.handle_handoff_failure(e, context)
+
+        # 5. 记录 Handoff 日志
+        self.log_handoff(from_agent.id, to_agent.id, payload, result)
+        return result</code></pre>
+      <p>防止循环的两条措施：追踪 Handoff 链路，设置最大次数。A → B → A → B 反复出现时触发断路器，升级给人工处理。</p>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">四种编排模式对应的 Handoff 方式与特点</caption>
+          <thead><tr><th scope="col">编排模式</th><th scope="col">Handoff 方式</th><th scope="col">特点</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Sequential</th><td>固定顺序传递</td><td>可预测，适合简单流程</td></tr>
+            <tr><th scope="row">Supervisor</th><td>Supervisor 决定路由</td><td>集中控制，灵活但有瓶颈</td></tr>
+            <tr><th scope="row">Decentralized</th><td>Agent 自主 Handoff</td><td>去中心化，灵活但难追踪</td></tr>
+            <tr><th scope="row">Hierarchical</th><td>层级间逐级传递</td><td>结构化，适合大型系统</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">四个容易<br>答偏的点。</h2></div>
+      <p class="reading-intro">前两条是误区，后两条是面试追问；答案来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“Handoff 只是把对话历史复制过去。”</h3><p>自由文本 Handoff 是上下文丢失的主要原因。应该用结构化数据（JSON Schema）传递上下文，像对待公开 API 一样对待 Agent 间接口。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“任何 Agent 都可以 Handoff 给任何 Agent。”</h3><p>应该限制 Handoff 的路径。每个 Agent 只能 Handoff 给预定义的目标 Agent，防止意外的循环 Handoff 或权限升级。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>如何防止 Handoff 循环？</h3><p>追踪 Handoff 链路，设置最大 Handoff 次数。如果 A → B → A → B 循环出现，触发断路器并升级给人工处理。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>Handoff 和工具调用有什么区别？</h3><p>工具调用后控制权回到原 Agent；Handoff 后控制权完全转移到新 Agent。工具是“用完即还”，Handoff 是“交接班”。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《如何实现 Agent 间的 Handoff（任务交接）？》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://towardsdatascience.com/how-agent-handoffs-work-in-multi-agent-systems/" target="_blank" rel="noopener noreferrer">How Agent Handoffs Work in Multi-Agent Systems (Towards Data Science)</a></li>
+          <li><a href="https://openai.github.io/openai-agents-python/handoffs/" target="_blank" rel="noopener noreferrer">Handoffs (OpenAI Agents SDK)</a></li>
+          <li><a href="https://docs.langchain.com/oss/python/langchain/multi-agent/handoffs" target="_blank" rel="noopener noreferrer">Handoffs (LangChain Docs)</a>：原文注 LangChain 1.0（2025-10 GA）已主推“Handoff 作为 tool 在 create_agent 中实现”，逐步替代独立的 langgraph-supervisor 包（原文版本，未联网核实）</li>
+          <li><a href="https://skywork.ai/blog/ai-agent-orchestration-best-practices-handoffs/" target="_blank" rel="noopener noreferrer">Best Practices for Multi-Agent Orchestration and Reliable Handoffs (Skywork AI)</a></li>
+          <li><a href="https://developers.openai.com/cookbook/examples/orchestrating_agents/" target="_blank" rel="noopener noreferrer">Orchestrating Agents: Routines and Handoffs (OpenAI Cookbook)</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>04-multi-agent/037-agent-handoff.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 4 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const HO_PEOPLE = Object.freeze([
+    { id: "U", name: "用户", note: "发起方" },
+    { id: "R", name: "路由 Agent", note: "判断该交给谁" },
+    { id: "F", name: "退货 Agent", note: "处理退货" },
+    { id: "P", name: "财务 Agent", note: "查询退款" }
+  ]);
+
+  const HO_ITEMS_1 = Object.freeze([
+    { id: "m1", text: "用户请求：退货 + 查询退款进度", keep: true },
+    { id: "m2", text: "收货地址：北京市朝阳区…", keep: false },
+    { id: "m3", text: "身份验证：已通过", keep: true },
+    { id: "m4", text: "订单状态：已送达", keep: true },
+    { id: "m5", text: "用户追问：退款多久到账？", keep: true },
+    { id: "m6", text: "工具结果：check_order → delivered", keep: true },
+    { id: "m7", text: "闲聊：包装有轻微破损", keep: false }
+  ]);
+
+  const HO_ITEMS_2 = Object.freeze([
+    { id: "n1", text: "用户原始请求：退货 + 退款进度", keep: true },
+    { id: "n2", text: "退货单号：RMA-778", keep: true },
+    { id: "n3", text: "退货物流地址：北京市朝阳区…", keep: false },
+    { id: "n4", text: "商品状态：已签收，待入库", keep: false },
+    { id: "n5", text: "退款金额：待确认", keep: true },
+    { id: "n6", text: "用户追问：退款进度到哪了？", keep: true },
+    { id: "n7", text: "退款处理结果：3 个工作日内到账", keep: true },
+    { id: "n8", text: "身份验证记录：已通过", keep: true }
+  ]);
+
+  const HO_STEPS = Object.freeze([
+    {
+      actor: "R", holder: "路由 Agent",
+      title: "请求先到路由 Agent。",
+      desc: "用户要退货并了解退款进度。此刻控制权在路由 Agent 手里；它还没有决定交给谁，也没有产出退货或退款结果。",
+      boundary: "路由 Agent 只判断该交给谁，不处理退货，也不查退款进度。",
+      context: { mode: "single", tokens: "1.2k", label: "路由 Agent 当前上下文", items: ["用户：我想退货，订单 12345", "用户：顺便问下退款多久到账？"] },
+      payload: null,
+      messages: [{ from: "U", to: "R", type: "user_request", text: "我想退货，订单 12345；顺便问下退款进度", time: "+0s" }]
+    },
+    {
+      actor: "F", holder: "退货 Agent",
+      title: "路由判断超纲，交接给退货。",
+      desc: "路由 Agent 调用 transfer_to_refund，把退货意图、订单号、已验证身份和待确认事项打包给退货 Agent。控制权随交接完全转移。",
+      boundary: "交接完成后，路由 Agent 不再处理后续对话；用户下一句话直接由退货 Agent 接。",
+      context: { mode: "compare", beforeTokens: "5.4k", afterTokens: "2.9k", items: HO_ITEMS_1 },
+      payload: {
+        user_intent: "退货并查询退款进度",
+        order_id: "12345",
+        previous_actions: ["已验证用户身份", "已确认订单已送达"],
+        pending_issues: ["退款金额待确认"],
+        user_messages: ["我想退货，订单 12345", "退款多久到账？"]
+      },
+      messages: [{ from: "R", to: "F", type: "transfer_to_refund", text: "交接 5 条上下文 / 2.9k token（教学估算）", time: "+3s" }]
+    },
+    {
+      actor: "F", holder: "退货 Agent",
+      title: "退货 Agent 处理，用户追问。",
+      desc: "退货 Agent 创建退货单 RMA-778，告知 3 个工作日内到账。用户随即追问退款进度；退货 Agent 没有财务权限，准备转给财务。",
+      boundary: "退货 Agent 可以处理退货，但不能查财务账户；退款进度必须转给财务 Agent。",
+      context: { mode: "single", tokens: "3.4k", label: "退货 Agent 当前上下文", items: ["用户请求：退货 + 退款进度", "订单 12345：已送达", "退货单 RMA-778：已创建", "用户追问：退款进度到哪了？"] },
+      payload: null,
+      messages: [
+        { from: "F", to: "U", type: "refund_created", text: "退货单 RMA-778 已创建，退款 3 个工作日内到账", time: "+8s" },
+        { from: "U", to: "F", type: "user_request", text: "退款进度到哪了？", time: "+12s" }
+      ]
+    },
+    {
+      actor: "P", holder: "财务 Agent",
+      title: "退货转财务，再次过滤上下文。",
+      desc: "退货 Agent 调用 transfer_to_finance，只把订单号、退货状态、退款金额和用户问题交给财务。物流地址和商品状态被过滤掉。",
+      boundary: "控制权转给财务 Agent；退货 Agent 不再直接回复用户，除非财务把控制权交回。",
+      context: { mode: "compare", beforeTokens: "6.1k", afterTokens: "2.2k", items: HO_ITEMS_2 },
+      payload: {
+        user_intent: "查询退款进度",
+        order_id: "12345",
+        refund_status: "退货单已创建，退款处理中",
+        pending_issues: ["到账时间待财务确认"],
+        user_messages: ["我想退货并了解退款进度", "退款多久到账？"]
+      },
+      messages: [{ from: "F", to: "P", type: "transfer_to_finance", text: "交接 6 条上下文 / 2.2k token（教学估算）", time: "+15s" }]
+    },
+    {
+      actor: "P", holder: "财务 Agent",
+      title: "财务回复，控制权留在财务。",
+      desc: "财务 Agent 查到退款已提交，预计 2 个工作日到账，直接回复用户。整个链路共 2 次 Handoff，没有超过 3 次上限。",
+      boundary: "财务 Agent 持有控制权直到结束；如果用户又提退货问题，需要显式转回退货 Agent。",
+      context: { mode: "single", tokens: "2.4k", label: "财务 Agent 当前上下文", items: ["订单 12345：退款处理中", "退款金额：待确认", "用户问题：退款进度到哪了？", "财务查询结果：预计 2 个工作日"] },
+      payload: null,
+      messages: [{ from: "P", to: "U", type: "refund_status", text: "退款已提交，预计 2 个工作日到账", time: "+19s" }]
+    }
+  ]);
+
+  const hoState = { step: 0 };
+  const hoById = (id) => document.getElementById(id);
+  const HO_NAMES = { U: "用户", R: "路由 Agent", F: "退货 Agent", P: "财务 Agent" };
+
+  function hoRoleStatus(roleId) {
+    const step = HO_STEPS[hoState.step];
+    if (roleId === "U") {
+      return hoState.step === 4 ? { text: "已收到结果", cls: "done" } : { text: "发起方", cls: "idle" };
+    }
+    if (roleId === step.actor) return { text: "持有控制权", cls: "now" };
+    const actedBefore = HO_STEPS.slice(0, hoState.step).some((item) => item.actor === roleId);
+    if (actedBefore) return { text: "已交接", cls: "done" };
+    return { text: "未参与", cls: "idle" };
+  }
+
+  function hoRenderRoles() {
+    const host = hoById("ho-roles");
+    host.textContent = "";
+    HO_PEOPLE.forEach((person) => {
+      const status = hoRoleStatus(person.id);
+      const card = document.createElement("div");
+      card.className = "ho-role" + (status.cls === "now" ? " is-now" : "");
+      const head = document.createElement("div");
+      head.className = "ho-role-head";
+      const name = document.createElement("div");
+      name.className = "ho-role-name";
+      name.textContent = person.name;
+      const note = document.createElement("span");
+      note.textContent = person.id + " · " + person.note;
+      name.append(note);
+      const badge = document.createElement("span");
+      badge.className = "ho-role-state " + status.cls;
+      badge.textContent = status.text;
+      head.append(name, badge);
+      card.append(head);
+      host.append(card);
+    });
+  }
+
+  function hoRenderMessages() {
+    const host = hoById("ho-log");
+    host.textContent = "";
+    const messages = HO_STEPS.slice(0, hoState.step + 1).flatMap((step) => step.messages);
+    messages.forEach((msg, index) => {
+      const item = document.createElement("li");
+      item.className = "ho-msg" + (index === messages.length - 1 ? " is-now" : "");
+      const time = document.createElement("span");
+      time.className = "ho-msg-time";
+      time.textContent = msg.time;
+      const body = document.createElement("div");
+      body.className = "ho-msg-body";
+      const route = document.createElement("div");
+      route.className = "ho-msg-route";
+      route.append(document.createTextNode(`${HO_NAMES[msg.from]} ${msg.from}`));
+      const arrow = document.createElement("em");
+      arrow.textContent = "→";
+      route.append(arrow, document.createTextNode(`${HO_NAMES[msg.to]} ${msg.to}`));
+      const type = document.createElement("span");
+      type.className = "ho-msg-type";
+      type.textContent = msg.type;
+      route.append(type);
+      const text = document.createElement("p");
+      text.textContent = msg.text;
+      body.append(route, text);
+      item.append(time, body);
+      host.append(item);
+    });
+  }
+
+  function hoContextList(items, showRemoved) {
+    const list = document.createElement("ul");
+    items.forEach((item) => {
+      if (!item.keep && !showRemoved) return;
+      const li = document.createElement("li");
+      if (!item.keep) li.className = "removed";
+      const mark = document.createElement("span");
+      mark.className = "mark";
+      mark.textContent = item.keep ? "✓" : "✕";
+      const text = document.createElement("span");
+      text.textContent = item.text;
+      li.append(mark, text);
+      list.append(li);
+    });
+    return list;
+  }
+
+  function hoRenderContext() {
+    const step = HO_STEPS[hoState.step];
+    const host = hoById("ho-context");
+    host.textContent = "";
+    const head = document.createElement("div");
+    head.className = "ho-context-head";
+    const title = document.createElement("b");
+    title.textContent = step.context.mode === "compare" ? "上下文过滤：交接前 vs 交接后" : step.context.label;
+    const meta = document.createElement("span");
+    meta.textContent = step.context.mode === "compare"
+      ? `${step.context.beforeTokens} → ${step.context.afterTokens}（教学估算）`
+      : `${step.context.tokens}（教学估算）`;
+    head.append(title, meta);
+    host.append(head);
+
+    if (step.context.mode === "compare") {
+      const grid = document.createElement("div");
+      grid.className = "ho-compare";
+      const before = document.createElement("div");
+      before.className = "ho-ctx";
+      const beforeTitle = document.createElement("h3");
+      beforeTitle.textContent = "过滤前";
+      const beforeTokens = document.createElement("span");
+      beforeTokens.className = "ho-tokens";
+      beforeTokens.textContent = `${step.context.items.length} 条 · ${step.context.beforeTokens}`;
+      before.append(beforeTitle, beforeTokens, hoContextList(step.context.items, true));
+      const after = document.createElement("div");
+      after.className = "ho-ctx";
+      const afterTitle = document.createElement("h3");
+      afterTitle.textContent = "过滤后（实际交接）";
+      const kept = step.context.items.filter((item) => item.keep).length;
+      const afterTokens = document.createElement("span");
+      afterTokens.className = "ho-tokens";
+      afterTokens.textContent = `${kept} 条 · ${step.context.afterTokens}`;
+      after.append(afterTitle, afterTokens, hoContextList(step.context.items, false));
+      grid.append(before, after);
+      host.append(grid);
+    } else {
+      const single = document.createElement("div");
+      single.className = "ho-single";
+      const list = document.createElement("ul");
+      step.context.items.forEach((text) => {
+        const li = document.createElement("li");
+        li.textContent = text;
+        list.append(li);
+      });
+      single.append(list);
+      host.append(single);
+    }
+  }
+
+  function hoRenderPayload() {
+    const step = HO_STEPS[hoState.step];
+    const host = hoById("ho-payload");
+    host.textContent = "";
+    if (!step.payload) {
+      const empty = document.createElement("div");
+      empty.className = "ho-empty";
+      empty.textContent = "本步没有 Handoff 负载；控制权仍在当前 Agent 手里。";
+      host.append(empty);
+      return;
+    }
+    const label = document.createElement("p");
+    label.className = "code-label";
+    label.textContent = "结构化 Handoff 负载 · 固定教学数据";
+    const pre = document.createElement("pre");
+    const code = document.createElement("code");
+    code.textContent = JSON.stringify(step.payload, null, 2);
+    pre.append(code);
+    host.append(label, pre);
+  }
+
+  function hoRender() {
+    const step = HO_STEPS[hoState.step];
+    hoById("ho-control").textContent = "";
+    const controlLabel = document.createElement("span");
+    controlLabel.textContent = "控制权";
+    const holder = document.createElement("span");
+    holder.className = "ho-holder";
+    holder.textContent = step.holder;
+    const note = document.createElement("span");
+    note.textContent = "· 同一时刻只有一个 Agent 持有控制权";
+    hoById("ho-control").append(controlLabel, holder, note);
+
+    hoRenderRoles();
+    hoRenderMessages();
+    hoRenderContext();
+    hoRenderPayload();
+
+    hoById("ho-figure").textContent = `图 1 · Handoff · 第 ${hoState.step + 1} / 5 步`;
+    hoById("ho-caption-title").textContent = step.title;
+    hoById("ho-desc").textContent = step.desc;
+    hoById("ho-boundary").textContent = "";
+    const boundaryLabel = document.createElement("b");
+    boundaryLabel.textContent = "角色边界：";
+    hoById("ho-boundary").append(boundaryLabel, document.createTextNode(step.boundary));
+    hoById("ho-count").textContent = String(hoState.step === 0 ? 0 : hoState.step <= 2 ? 1 : 2);
+    hoById("ho-tokens").textContent = step.context.mode === "compare" ? step.context.afterTokens : step.context.tokens;
+
+    document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+      if (Number(button.dataset.step) === hoState.step) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    hoById("ho-prev").disabled = hoState.step === 0;
+    hoById("ho-next").disabled = hoState.step === 4;
+    hoById("ho-state-summary").textContent = `第 ${hoState.step + 1} / 5 步 · 控制权：${step.holder} · 没有连接 Agent`;
+  }
+
+  function hoAnnounce(prefix) {
+    const step = HO_STEPS[hoState.step];
+    hoById("ho-announcement").textContent = `${prefix}第 ${hoState.step + 1} 步，共 5 步。${step.title} 当前控制权：${step.holder}。`;
+  }
+
+  document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+    button.addEventListener("click", () => {
+      hoState.step = Number(button.dataset.step);
+      hoRender();
+      hoAnnounce("");
+    });
+  });
+  hoById("ho-prev").addEventListener("click", () => {
+    hoState.step = Math.max(0, hoState.step - 1);
+    hoRender();
+    hoAnnounce("");
+  });
+  hoById("ho-next").addEventListener("click", () => {
+    hoState.step = Math.min(4, hoState.step + 1);
+    hoRender();
+    hoAnnounce("");
+  });
+  hoById("ho-reset").addEventListener("click", () => {
+    hoState.step = 0;
+    hoRender();
+    hoAnnounce("已重置。");
+  });
+  hoRender();
+</script>
+</body>
+</html>

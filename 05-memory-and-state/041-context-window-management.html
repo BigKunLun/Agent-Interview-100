@@ -1,0 +1,1149 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>对话上下文窗口管理与压缩策略 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .sim-banner { display: flex; align-items: flex-start; gap: 9px; margin: var(--s-4) var(--s-6) 0; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .sim-banner strong { color: #4d3000; }
+  .sim-banner::before { content: "教学"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .badge-neutral { background: #eef1ee; color: #3f463f; border-color: #c9cec9; }
+  .badge-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .badge-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .badge-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .badge-bad { background: #fbecec; color: #8a1f1f; border-color: #d9a3a3; }
+  .badge-solid { background: #194f87; color: #fff; border-color: #194f87; }
+  .budget { position: relative; margin-top: var(--s-5); padding-top: 24px; }
+  .budget-track { display: flex; width: 100%; height: 42px; border: 1px solid var(--border-bright); border-radius: 5px; overflow: hidden; background: var(--surface-soft); }
+  .seg { display: flex; align-items: center; justify-content: center; min-width: 0; border-right: 1px solid rgba(32,36,33,.28); font: 600 10px/1.2 var(--mono); overflow: hidden; white-space: nowrap; }
+  .seg:last-child { border-right: 0; }
+  .seg-sys { background: #dbe7f3; color: #194f87; }
+  .seg-history { background: #f6e3c3; color: #6b4300; }
+  .seg-tools { background: #eadcf5; color: #5b2178; }
+  .seg-recent { background: #dcefdc; color: #14532d; }
+  .seg-rag { background: #d9e8f5; color: #0d47a1; }
+  .seg-current { background: #d7efec; color: #0f4c46; }
+  .seg-anchor { background: #fee9a8; color: #5c4300; }
+  .seg-empty { background: repeating-linear-gradient(45deg, #f1f0eb, #f1f0eb 5px, #e7e5df 5px, #e7e5df 10px); }
+  .budget-line { position: absolute; top: 22px; bottom: 0; border-left: 1px dashed #8a1f1f; pointer-events: none; }
+  .budget-line span { position: absolute; top: 0; transform: translateX(-50%); padding: 1px 5px; border-radius: 3px; background: #fbecec; color: #8a1f1f; font: 10px/1.5 var(--mono); white-space: nowrap; }
+  .budget-line.window { border-left-style: solid; border-left-color: #202421; }
+  .budget-line.window span { background: #202421; color: #fff; transform: translateX(-100%); }
+  .budget-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: var(--s-3); font-size: 11px; color: var(--text-dim); }
+  .budget-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 5px; vertical-align: -1px; }
+  .budget-total { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s-2); margin-top: var(--s-3); padding: 8px 11px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .budget-total strong { font: 600 12px/1.6 var(--mono); }
+  .over-note { margin-top: var(--s-3); padding: 8px 11px; border: 1px solid #d9a3a3; border-radius: var(--r-1); background: #fbecec; color: #8a1f1f; font-size: 12px; }
+  .strategy-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .strategy-card { text-align: left; padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); min-height: 88px; }
+  .strategy-card:hover { border-color: var(--border-bright); }
+  .strategy-card[aria-pressed="true"] { border-color: #194f87; background: #eaf1f8; box-shadow: inset 0 0 0 1px #194f87; }
+  .strategy-card b { display: block; font-size: 14px; font-weight: 600; }
+  .strategy-card span { display: block; margin-top: 3px; font-size: 11px; color: var(--text-dim); line-height: 1.6; }
+  .strategy-card .tag { display: inline-block; margin-top: 6px; padding: 1px 6px; border: 1px solid var(--border); border-radius: 3px; font: 10px/1.5 var(--mono); color: var(--text-dim); background: var(--surface-soft); }
+  .strategy-card.recommended .tag { border-color: #9cc39e; background: #e6f2e6; color: #14532d; }
+  .chosen-note { margin-top: var(--s-3); padding: 9px 11px; border-left: 3px solid #194f87; background: #eaf1f8; font-size: 12px; }
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); margin-top: var(--s-4); }
+  .result-cell { padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .result-cell b { display: block; font: 600 11px/1.6 var(--mono); color: var(--text-dim); margin-bottom: 3px; }
+  .result-cell ul { margin: 0; padding-left: 1.1em; }
+  .result-cell li { margin-block: 3px; }
+  .anchor-list { display: grid; gap: 6px; margin-top: var(--s-4); }
+  .anchor-item { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: var(--s-2); align-items: center; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .anchor-item .mark { font: 600 12px/1 var(--mono); color: var(--text-dim); }
+  .anchor-item.kept { border-color: #9cc39e; background: #eef7ee; }
+  .anchor-item.kept .mark { color: #14532d; }
+  .anchor-item.lost { border-color: #d9a3a3; background: #fbecec; }
+  .anchor-item.lost .mark { color: #8a1f1f; }
+  .anchor-item.added { border-color: #d9b47a; background: #fdf3e3; }
+  .anchor-item.added .mark { color: #6b4300; }
+  .anchor-ops { margin-top: var(--s-3); padding: 9px 11px; border-left: 3px solid #194f87; background: #eaf1f8; font-size: 12px; line-height: 1.75; }
+  .block-table td:first-child { min-width: 8em; }
+  .fixed-note { display: inline-block; margin-top: var(--s-3); padding: 3px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  .attention { margin-top: var(--s-4); padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .attention-row { display: grid; grid-template-columns: repeat(15, minmax(0, 1fr)); gap: 2px; align-items: end; height: 76px; }
+  .attention-row i { display: block; background: #194f87; border-radius: 2px 2px 0 0; }
+  .attention-row i.mid { background: #c9cec9; }
+  .attention-labels { display: flex; justify-content: space-between; margin-top: 6px; font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .layer-table td:first-child { min-width: 7em; }
+  @media (max-width: 720px) {
+    .sim-banner { margin-inline: var(--s-4); }
+    .table-wrap table.data.wide { min-width: 720px; }
+    .budget-line.window span { display: none; }
+    .seg { font-size: 0; }
+    .budget-line span { font-size: 9px; }
+    .strategy-grid, .result-grid { grid-template-columns: 1fr; }
+    .anchor-item { grid-template-columns: 18px minmax(0, 1fr); }
+    .anchor-item .badge { grid-column: 1 / -1; justify-self: start; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">041 / 上下文窗口管理</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 16 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="../04-multi-agent/101-a2a-protocol.html">← 上一页 · A2A（Agent-to-Agent…</a><a href="043-persistent-memory.html">下一页 → · 如何实现 Agent 的持久化记忆（…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">基础 · Memory &amp; State · 可交互讲解</p>
+      <h1>窗口是固定的，<br>对话不是。</h1>
+    </div>
+    <div>
+      <p class="lead">上下文窗口是 LLM 的工作记忆：System Prompt、对话历史、检索内容和工具结果都要挤进同一个固定 token 空间。对话越长，越需要主动管理，否则成本、延迟和“中间丢失”会一起找上门。</p>
+      <p class="definition"><strong>关键边界：</strong>生产实践通常把输入控制在窗口的 75% 以内，给输出留 25%。压缩之外还要保留锚点：原始需求、约束、已确认决策和关键标识永远不进入摘要器。</p>
+      <div class="hero-meta"><span class="pill">基础</span><span class="pill">Memory &amp; State</span><span class="pill">预算算术</span><span class="pill">锚点保留</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="budget-title">
+    <div class="player-top">
+      <div class="player-label">上下文预算压缩台 <small>固定教学算术 · 不读取真实对话</small></div>
+      <div class="controls" role="group" aria-label="上下文预算演示控制">
+        <button type="button" class="button button-quiet" id="reset-button">重置</button>
+        <button type="button" class="button" id="back-button" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="next-button">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="上下文管理阶段">
+      <ol style="--stages: 5">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>盘点</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>超限</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>选策略</button></li>
+        <li><button type="button" class="stage-button" data-stage="3"><span class="stage-number">4</span>结果</button></li>
+        <li><button type="button" class="stage-button" data-stage="4"><span class="stage-number">5</span>锚点</button></li>
+      </ol>
+    </nav>
+    <p class="sim-banner"><span><strong>本页是固定教学算术，不读取任何真实用户对话。</strong>窗口 32,000 tokens、输入预算 24,000、输出预留 8,000 都是本页假设；六块内容的 token 数和压缩结果均为预设，用于演示计算过程。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="scene-index">阶段 1 / 5 · 固定教学算术</p>
+      <h2 id="budget-title">先算清楚：窗口、预算和六类内容</h2>
+      <p id="scene-subtitle">固定场景：32K 窗口里已经装了 28K 输入。先看清每一块占多少，再决定压缩谁。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="budget-scene"></div>
+      <p class="demo-note" id="scene-note">固定教学数据：所有 token 数、压缩比例和保留结果均为本页预设，不代表任何真实模型或用户数据。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学算术 · 不读写真实用户数据 · 不访问网络</span><span id="state-summary">阶段 1 / 5 · 输入 28,000 / 预算 24,000</span></div>
+  </section>
+  <p id="budget-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">为什么管理</p><h2 id="why-title">窗口再大，<br>也装不下无限对话。</h2></div>
+      <p class="reading-intro">原文用 128K 窗口举例：System Prompt、对话历史、RAG 检索结果、工具结果四类内容争抢同一空间，输出只能用剩下的部分。</p>
+    </div>
+    <div class="prose">
+      <div class="budget" role="img" aria-label="128K 窗口构成示例：System Prompt 约 2K、对话历史 50 轮约 30K、RAG 结果约 5K、工具调用结果约 3K、剩余给输出约 88K">
+        <div class="budget-track">
+          <span class="seg seg-sys" style="width:1.6%"><b>System 2K</b></span>
+          <span class="seg seg-history" style="width:23.4%"><b>对话历史 30K</b></span>
+          <span class="seg seg-rag" style="width:3.9%"><b>RAG 5K</b></span>
+          <span class="seg seg-tools" style="width:2.3%"><b>工具 3K</b></span>
+          <span class="seg seg-empty" style="width:68.8%"><b style="color:var(--text-dim)">剩余给输出 88K</b></span>
+        </div>
+      </div>
+      <p class="fixed-note">原文示例：128K 窗口 · 固定教学数据</p>
+      <p class="fixed-note">原文版本：窗口从 4K 到百万级 tokens；Claude 标准 200K，Sonnet 4.6+ / Opus 4.6+ / Mythos 支持 1M；Gemini 2.5 Pro 支持 1M+。未联网核实。</p>
+      <p>对话增长会同时带来四个问题：总有一天超出窗口限制；上下文越长，按 token 计费的成本越高；注意力分散，出现“中间丢失”；延迟也随之增大。</p>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">原文给出的对话增长示例</caption>
+          <thead><tr><th scope="col">轮次</th><th scope="col" class="num">累计 tokens</th><th scope="col">状态</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">第 1 轮</th><td class="num">500</td><td>轻松</td></tr>
+            <tr><th scope="row">第 10 轮</th><td class="num">5,000</td><td>正常</td></tr>
+            <tr><th scope="row">第 50 轮</th><td class="num">25,000</td><td>开始吃力</td></tr>
+            <tr><th scope="row">第 100 轮</th><td class="num">50,000</td><td>超窗口 / 成本过高 / 注意力下降（原文示例结论）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fixed-note">以上为原文示例数字，本页未按某一具体模型重算</p>
+      <details>
+        <summary>查看原文 Mermaid 源码（上下文窗口构成）</summary>
+        <pre><code>flowchart TD
+    subgraph CW["上下文窗口（128K tokens）"]
+        SP["System Prompt&lt;br/&gt;~2K"]
+        CH["对话历史（50 轮）&lt;br/&gt;~30K"]
+        RG["RAG 检索结果&lt;br/&gt;~5K"]
+        TR["工具调用结果&lt;br/&gt;~3K"]
+        OUT["剩余给输出&lt;br/&gt;~88K"]
+    end</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="basic-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">基础策略</p><h2 id="basic-title">先试零成本的，<br>再考虑调模型。</h2></div>
+      <p class="reading-intro">截断、滑动窗口、观察掩码都不需要额外 LLM 调用。原文特别指出：掩码在总效率上往往不逊于摘要。</p>
+    </div>
+    <div class="prose">
+      <h3>截断与滑动窗口</h3>
+      <p>截断从最旧的消息开始丢，直到装进预算；改进版会区分必须保留和可选内容。滑动窗口只保留最近 N 轮，零成本、token 用量可预测，但会丢掉所有旧上下文。</p>
+      <details>
+        <summary>查看截断与滑动窗口的原文代码</summary>
+        <pre><code>def truncate_messages(messages, max_tokens):
+    """保留最新消息，截断最旧的"""
+    total = 0
+    kept = []
+    for msg in reversed(messages):
+        msg_tokens = count_tokens(msg)
+        if total + msg_tokens &gt; max_tokens:
+            break
+        kept.insert(0, msg)
+        total += msg_tokens
+    return kept
+
+
+def sliding_window(messages, window_size=10):
+    """只保留最近 N 轮对话"""
+    system_messages = [m for m in messages if m["role"] == "system"]
+    conversation = [m for m in messages if m["role"] != "system"]
+    # 每轮 = user + assistant
+    return system_messages + conversation[-window_size * 2:]</code></pre>
+      </details>
+
+      <h3>观察掩码（Observation Masking）</h3>
+      <p>旧工具结果和长回复不再保留原文，而是替换成占位符。模型知道“这里曾经有内容”，需要时再重新查询。原文的研究结论是：掩码在总效率（性能 / 成本比）上与 LLM 摘要相当，甚至更优。</p>
+      <details>
+        <summary>查看观察掩码的原文代码</summary>
+        <pre><code>def observation_masking(messages, window=5):
+    """用占位符替代旧的工具结果和长回复"""
+    result = []
+    for i, msg in enumerate(messages):
+        if i &lt; len(messages) - window:
+            if msg["role"] == "tool" or len(msg["content"]) &gt; 500:
+                result.append({
+                    "role": msg["role"],
+                    "content": "[内容已省略——如需详情请重新查询]"
+                })
+            else:
+                result.append(msg)
+        else:
+            result.append(msg)  # 最近 N 条保持原样
+    return result</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="advanced-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">进阶策略</p><h2 id="advanced-title">摘要不是万能，<br>结构化也不是白拿。</h2></div>
+      <p class="reading-intro">LLM 摘要保留语义，但要额外调用；分层压缩让越旧的信息越激进；结构化提取信息密度最高，却依赖模型判断。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">原文的上下文策略对比</caption>
+          <thead><tr><th scope="col">策略</th><th scope="col">成本</th><th scope="col">信息保留</th><th scope="col">实现复杂度</th><th scope="col">适用场景</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">截断</th><td>零</td><td>低</td><td>极简</td><td>短对话、快速原型</td></tr>
+            <tr><th scope="row">滑动窗口</th><td>零</td><td>低</td><td>极简</td><td>简单聊天</td></tr>
+            <tr><th scope="row">观察掩码</th><td>零</td><td>中</td><td>简单</td><td>工具密集型 Agent</td></tr>
+            <tr><th scope="row">LLM 摘要</th><td>高（原文经验估算 +7%）</td><td>高</td><td>中</td><td>长对话助手</td></tr>
+            <tr><th scope="row">分层压缩</th><td>中</td><td>高</td><td>中</td><td>长时运行的 Agent</td></tr>
+            <tr><th scope="row">结构化提取</th><td>中</td><td>最高</td><td>高</td><td>客服 / 销售场景</td></tr>
+            <tr><th scope="row">ACON（指引 + 蒸馏）</th><td>自适应</td><td>高</td><td>高</td><td>生产级长视野 Agent</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fixed-note">成本与复杂度评级来自原文，未联网核实</p>
+      <h3>三种进阶策略的取舍</h3>
+      <ul>
+        <li><strong>LLM 摘要：</strong>保留语义完整性，但每次压缩都要一次模型调用，可能丢失细节。原文建议只保留核心意图、重要决定、关键数字和待解决问题。</li>
+        <li><strong>分层压缩：</strong>最近 5 轮保留原文，5–20 轮前压缩为摘要，20 轮以前只保留关键事实。越旧越激进。</li>
+        <li><strong>结构化提取：</strong>提取 CONTEXT / ENTITIES / DECISIONS / PENDING / USER_PREFERENCES 等字段。信息密度最高，但提取质量依赖模型，可能漏掉隐式信息。</li>
+      </ul>
+      <details>
+        <summary>查看分层压缩与结构化提取的原文示意代码</summary>
+        <pre><code>class HierarchicalCompression:
+    """越旧的信息压缩越激进"""
+
+    def compress(self, messages):
+        total = len(messages)
+        result = []
+        for i, msg in enumerate(messages):
+            age = total - i
+            if age &lt;= 5:
+                result.append(msg)              # 最近 5 轮：原文
+            elif age &lt;= 20:
+                if i % 4 == 0:                  # 5-20 轮前：摘要
+                    batch = messages[i:i+4]
+                    result.append(self.summarize_batch(batch))
+            else:
+                pass  # 20 轮以前：只保留关键事实
+        return result
+
+
+class StructuredExtractor:
+    """从对话中提取结构化信息"""
+
+    def extract(self, conversation):
+        prompt = f"""
+        从以下对话中提取关键信息，以结构化格式输出：
+        {conversation}
+        输出格式：
+        CONTEXT: 当前在做什么
+        ENTITIES: 提到的关键实体
+        DECISIONS: 已做出的决定
+        PENDING: 待解决的问题
+        USER_PREFERENCES: 用户表达的偏好
+        """
+        return llm.invoke(prompt)</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="prod-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">生产实践</p><h2 id="prod-title">触发式压缩，<br>组合优于单一。</h2></div>
+      <p class="reading-intro">原文推荐把上下文控制在窗口 75% 以内，按阈值触发压缩。ACON 的两个机制常被误传成“40%/60%/95% 三阈值”，原文明确说那不是事实。</p>
+    </div>
+    <div class="prose">
+      <h3>ACON：指引优化 + 小模型蒸馏</h3>
+      <p>ACON 原论文（arXiv:2510.00615）由两个核心机制构成：第一，把“该压缩什么、保留什么”写成一段可优化的自然语言指引，通过对比成功与失败轨迹不断 refine；第二，把大模型生成的高质量压缩样本蒸馏到小模型，作为生产环境的廉价 compressor。</p>
+      <div class="callout">
+        <p class="callout-label">原文特别提醒</p>
+        <p>ACON 并不是按 40% / 60% / 95% 三阈值切换。原文称这是常见误传，不要在面试中引用。具体数字以论文为准。</p>
+      </div>
+
+      <h3>混合策略：最近原文 + 中期摘要 + 远期结构化</h3>
+      <p>生产级管理器通常按顺序拼上下文：System Prompt 必留；最近 N 轮保留原文；预算还有余量时，用向量检索补相关历史；更早的对话用摘要兜底。原文的示例把 <code>max_context</code> 设为窗口的 75%，预留 25% 给输出。</p>
+      <details>
+        <summary>查看生产级上下文管理器的原文代码</summary>
+        <pre><code>class ProductionContextManager:
+    """组合多种策略的生产级上下文管理"""
+
+    def __init__(self, config):
+        self.max_context = config.max_tokens * 0.75  # 预留 25% 给输出
+        self.buffer_size = config.buffer_turns
+        self.vector_store = config.vector_store
+
+    def build_context(self, current_query, full_history):
+        context = []
+        budget = self.max_context
+
+        # 1. System Prompt（必须保留）
+        context.append(self.system_prompt)
+        budget -= count_tokens(self.system_prompt)
+
+        # 2. 最近 N 轮原文（高保真）
+        recent = full_history[-self.buffer_size * 2:]
+        context.extend(recent)
+        budget -= count_tokens(recent)
+
+        # 3. 语义检索相关历史（按需补充）
+        if budget &gt; 1000:
+            relevant = self.vector_store.search(current_query, top_k=3)
+            for doc in relevant:
+                if count_tokens(doc) &lt; budget:
+                    context.insert(1, {"role": "system",
+                                      "content": f"相关历史：{doc}"})
+                    budget -= count_tokens(doc)
+
+        # 4. 旧对话摘要（兜底）
+        if len(full_history) &gt; self.buffer_size * 2:
+            old = full_history[:-self.buffer_size * 2]
+            summary = self.summarize(old)
+            context.insert(1, {"role": "system",
+                              "content": f"历史摘要：{summary}"})
+        return context</code></pre>
+      </details>
+
+      <h3>“中间丢失”效应</h3>
+      <div class="attention" role="img" aria-label="注意力示意：开头和结尾较高，中间较低">
+        <div class="attention-row">
+          <i style="height:88%"></i><i style="height:76%"></i><i style="height:58%"></i><i style="height:40%"></i><i style="height:26%"></i><i style="height:18%"></i><i style="height:14%" class="mid"></i><i style="height:12%" class="mid"></i><i style="height:13%" class="mid"></i><i style="height:18%"></i><i style="height:28%"></i><i style="height:46%"></i><i style="height:66%"></i><i style="height:80%"></i><i style="height:90%"></i>
+        </div>
+        <div class="attention-labels"><span>开头（高）</span><span>中间（容易被忽略）</span><span>结尾（高）</span></div>
+      </div>
+      <p>实践建议：最重要的指令放开头（System Prompt），当前用户消息放结尾，中间放参考资料和历史上下文。</p>
+      <div class="callout">
+        <p class="callout-label">原文的四条关键洞察</p>
+        <p><strong>简单未必差：</strong>掩码和截断把成本减半，可靠性往往优于摘要。<strong>摘要≠万能：</strong>通用摘要捕获“发生了什么”，但丢失“进展到哪了”。<strong>场景决定策略：</strong>工具密集型用掩码，对话密集型用摘要。<strong>组合优于单一：</strong>最佳实践是最近原文 + 中期摘要 + 远期结构化提取。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="anchor-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">锚点保留</p><h2 id="anchor-title">有些话，<br>一句都不能丢。</h2></div>
+      <p class="reading-intro">摘要是有损压缩。丢一句寒暄没关系，丢掉“不能删除线上数据”就可能让整个任务跑偏。锚点要独立存储，不进入摘要器。</p>
+    </div>
+    <div class="prose">
+      <h3>永远不压缩的五类信息</h3>
+      <ul>
+        <li>用户最初的需求原文，不是转述</li>
+        <li>明确的约束和禁止项，例如“不要改数据库 schema”“输出必须是 JSON”</li>
+        <li>已经确认的决策，例如“用方案 B，不用方案 A”</li>
+        <li>当前子目标，随进度更新，但始终显式存在</li>
+        <li>关键标识：文件路径、订单号、变量名、接口名</li>
+      </ul>
+      <p>实现上，锚点用独立的结构化字段保存，不混进摘要文本。拼上下文时把它渲染成单独的 system 区块，放在历史摘要之后、最近消息之前。锚点要小，只放不可丢的事实；长文档仍走摘要或检索。</p>
+      <details>
+        <summary>查看 AnchorState 与 ContextAssembler 的原文代码</summary>
+        <pre><code>from dataclasses import dataclass, field
+
+
+@dataclass
+class AnchorState:
+    """任务锚点：独立持久化，任何压缩策略都不得修改它"""
+
+    original_request: str
+    constraints: list[str] = field(default_factory=list)
+    decisions: list[str] = field(default_factory=list)
+    current_subgoal: str = ""
+    identifiers: dict[str, str] = field(default_factory=dict)
+
+    def render(self) -&gt; str:
+        parts = [
+            f"原始需求：{self.original_request}",
+            f"当前子目标：{self.current_subgoal}",
+        ]
+        if self.constraints:
+            parts.append("约束与禁止项：\n" + "\n".join(
+                f"- {c}" for c in self.constraints))
+        if self.decisions:
+            parts.append("已确认决策：\n" + "\n".join(
+                f"- {d}" for d in self.decisions))
+        if self.identifiers:
+            pairs = "；".join(f"{k}={v}" for k, v in self.identifiers.items())
+            parts.append(f"关键标识：{pairs}")
+        return "\n".join(parts)
+
+
+class ContextAssembler:
+    """锚点单独成块，放在历史摘要之后、最近消息之前"""
+
+    def __init__(self, max_tokens: int):
+        self.max_tokens = max_tokens
+
+    def build(self, system_prompt, anchors, history_summary,
+              recent_messages):
+        head = [{"role": "system", "content": system_prompt}]
+        if history_summary:
+            head.append({"role": "system",
+                         "content": f"历史摘要：\n{history_summary}"})
+        head.append({
+            "role": "system",
+            "content": f"任务锚点（不可违背）：\n{anchors.render()}",
+        })
+
+        # 预算不够时从最旧的最近消息开始丢；锚点区块永不裁剪
+        recent = list(recent_messages)
+        while count_tokens(head + recent) &gt; self.max_tokens and recent:
+            recent.pop(0)
+        return head + recent</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="recover-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">摘要补救</p><h2 id="recover-title">摘要压坏了，<br>怎么发现、怎么补？</h2></div>
+      <p class="reading-intro">自由文本摘要是黑盒：漏了关键决策也看不出来。原文从三处下手：强制结构化、摘要里留指针、压缩后做一致性检查。</p>
+    </div>
+    <div class="prose">
+      <h3>三个补救动作</h3>
+      <ol>
+        <li><strong>强制结构化输出：</strong>摘要必须回答固定字段——目标、已完成、未完成、关键决策、关键数据、待确认。字段缺失比文字啰嗦更容易被发现。</li>
+        <li><strong>摘要里留指针：</strong>提到文件、工具调用、外部单据时保留归档 id。原文不删除，只是移出上下文；需要细节时按 id 回查。压缩的是对话，不是知识。</li>
+        <li><strong>压缩后做一致性检查：</strong>只给模型看压缩后的上下文，让它复述当前目标和约束，再和锚点比对。对不上说明这次压缩压坏了关键信息，应回退或重新压缩。</li>
+      </ol>
+      <details>
+        <summary>查看 StructuredSummary 与一致性检查的原文代码</summary>
+        <pre><code>from pydantic import BaseModel, Field
+
+
+class StructuredSummary(BaseModel):
+    goal: str
+    done: list[str] = Field(default_factory=list)
+    pending: list[str] = Field(default_factory=list)
+    decisions: list[str] = Field(default_factory=list)
+    key_data: list[str] = Field(default_factory=list)
+    open_questions: list[str] = Field(default_factory=list)
+    refs: list[str] = Field(default_factory=list)  # 原文归档 id
+
+
+class SummaryCompressor:
+    def __init__(self, llm, archive):
+        self.llm = llm
+        self.archive = archive  # put(messages) -&gt; id, get(id) -&gt; messages
+
+    async def compress(self, messages):
+        archive_id = await self.archive.put(messages)  # 原文先归档
+        prompt = f"""把以下对话压缩为 JSON 摘要。
+只能使用对话中出现的信息；拿不准的内容放进 open_questions。
+对话：
+{messages}
+"""
+        raw = await self.llm.invoke(prompt, response_format="json")
+        summary = StructuredSummary.model_validate_json(raw)
+        summary.refs.append(archive_id)
+        return summary
+
+    async def check(self, summary, anchors) -&gt; bool:
+        """压缩后复述目标与约束，对不上说明压坏了"""
+        answer = await self.llm.invoke(f"""只根据下面的摘要回答：
+1. 当前任务目标是什么？
+2. 有哪些不能违反的约束和已确认的决策？
+摘要：
+{summary.model_dump_json()}
+""")
+        verdict = await self.llm.invoke(f"""锚点：
+{anchors.render()}
+
+复述：
+{answer}
+
+复述与锚点是否一致？只回答 yes 或 no。
+""")
+        return verdict.strip().lower().startswith("yes")</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="cross-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">跨块关联</p><h2 id="cross-title">靠结构，<br>不靠模型的记忆。</h2></div>
+      <p class="reading-intro">按时间切摘要，会把同一个子任务的信息切散。解法是给结构：消息带 turn_id 和 subtask_id，摘要按子任务聚合，任务状态表全量保留。</p>
+    </div>
+    <div class="prose">
+      <ul>
+        <li>每条消息带 <code>turn_id</code> 和 <code>subtask_id</code>，摘要按子任务聚合，而不是按固定时间窗切。</li>
+        <li>维护任务状态表：子任务 → 状态 → 产出 → 依赖。这张表全量保留、永不压缩，跨块的因果关系都挂在它上面。</li>
+        <li>需要历史细节时，用当前 query 检索历史消息：关键词和向量混合召回，取 top-k 拼回上下文。</li>
+      </ul>
+      <p>纯向量检索对编号类信息不敏感：订单号 <code>A123</code> 和 <code>A124</code> 在向量空间里往往非常接近，通常要靠关键词精确匹配才能可靠区分。所以混合检索里两路都要留。</p>
+      <details>
+        <summary>查看任务状态表与混合检索 RRF 的原文代码</summary>
+        <pre><code>class TaskStateTable:
+    """任务状态表：全量注入、永不压缩"""
+
+    def __init__(self):
+        self.nodes: dict[str, SubtaskNode] = {}
+
+    def ready(self) -&gt; list[SubtaskNode]:
+        """依赖已全部完成、自己还没开始的子任务"""
+        return [
+            n for n in self.nodes.values()
+            if n.status == TaskStatus.TODO
+            and all(d in self.nodes
+                    and self.nodes[d].status == TaskStatus.DONE
+                    for d in n.depends_on)
+        ]
+
+    def messages_of(self, subtask_id, history):
+        """按子任务聚合消息，而不是按时间窗切"""
+        return [m for m in history
+                if m.get("subtask_id") == subtask_id]
+
+
+class HybridHistorySearch:
+    """关键词 + 向量混合召回：编号靠关键词，语义靠向量"""
+
+    def search(self, query: str, top_k: int = 5):
+        kw = self.keyword_index.search(query, top_k)
+        vec = self.vector_index.search(query, top_k)
+        return self._rrf_merge(kw, vec)[:top_k]
+
+    def _rrf_merge(self, *ranked_lists):
+        """Reciprocal Rank Fusion：按名次融合"""
+        scores = {}
+        docs = {}
+        for ranked in ranked_lists:
+            for rank, doc in enumerate(ranked, start=1):
+                doc_id = doc["id"]
+                scores[doc_id] = scores.get(doc_id, 0.0) + 1.0 / (60 + rank)
+                docs[doc_id] = doc
+        return [docs[i] for i in sorted(
+            scores, key=lambda i: scores[i], reverse=True)]</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">八个问题，<br>分清成本和效果。</h2></div>
+      <p class="reading-intro">前三个是误区，后五个是追问。回答时先给结论，再讲成本和适用条件。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <div class="misconception-label">误区 01</div>
+        <div><h3>“上下文窗口越大越好 / 越大就不需要压缩”</h3><p>更大的窗口意味着更高成本、更大延迟和更严重的“中间丢失”。即使 200K 窗口，长对话仍会导致成本线性增长和注意力质量下降。压缩不仅省钱，还能提高模型注意力的质量。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 02</div>
+        <div><h3>“只要不超过上下文限制就没问题”</h3><p>即使不超限，上下文中的噪声也会降低准确率，也就是“上下文腐化”。精简、高相关性的上下文优于冗长的完整历史。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 03</div>
+        <div><h3>“LLM 摘要是最佳策略”</h3><p>研究表明简单的观察掩码在总效率上不逊于 LLM 摘要。摘要额外消耗约 7%+ 成本（原文经验估算值，实际因场景而异），且不总能保留正确信息。应按场景选择，而不是默认最复杂的方案。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 04</div>
+        <div><h3>摘要压缩的成本问题怎么解决？</h3><p>每次摘要需要一次额外 LLM 调用，可能占总成本的 7%+。优化：只在 token 超阈值时触发摘要；用小模型做摘要；用观察掩码替代 LLM 摘要。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 05</div>
+        <div><h3>如何评估压缩策略的质量？</h3><p>两个维度：信息保留率，即压缩后 Agent 能否正确回答依赖历史信息的问题；成本效率，即总 token 消耗，包含压缩调用本身的开销。原文提到 LoCoBench-Agent 是专门评估长上下文压缩的基准。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 06</div>
+        <div><h3>增量摘要 vs 全量重新摘要？</h3><p>增量摘要每次只处理新消息，更快更便宜，但可能累积误差；全量重新摘要更准确但成本高。实践中用增量摘要 + 定期全量校正的混合方式。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 07</div>
+        <div><h3>Claude 的 Server-Side Compaction 是什么？</h3><p>原文称 Anthropic 在 Claude Sonnet 4.6+ / Opus 4.6+ 上提供服务端自动压缩（context editing / compaction）：对话接近上限时，由服务端策略性删除或折叠旧的 tool_result 与思考块。早期 Sonnet 4 / Opus 4 不带这套原语，需要客户端自己实现。它和 Memory Tool（memory_20250818）配合时，被压缩掉的内容可以先落盘再检索回来。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 08</div>
+        <div><h3>锚点保留和摘要是什么关系？</h3><p>互补，不是替代。摘要压缩历史对话，锚点保存不可丢的事实，单独存储、不经过摘要器。每次拼上下文时锚点作为独立 system 区块全量注入。锚点要小，只放需求、约束、决策、子目标和关键标识；长文档仍走摘要或检索。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="sources-title">
+    <p class="eyebrow">参考资料</p>
+    <h2 class="source-heading" id="sources-title">原文引用与延伸阅读</h2>
+    <p class="source-summary">以下链接来自原文。只有主动点击外链才会离开本页；本页不加载任何外部资源。</p>
+    <details>
+      <summary>展开 8 条参考资料</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://apxml.com/courses/langchain-production-llm/chapter-3-advanced-memory-management/context-window-management" rel="noreferrer noopener">Context Window Management Strategies (APXML)</a></li>
+          <li><a href="https://agenta.ai/blog/top-6-techniques-to-manage-context-length-in-llms" rel="noreferrer noopener">Top Techniques to Manage Context Length in LLMs (Agenta)</a></li>
+          <li><a href="https://www.getmaxim.ai/articles/context-window-management-strategies-for-long-context-ai-agents-and-chatbots/" rel="noreferrer noopener">Context Window Management for AI Agents (Maxim AI)</a></li>
+          <li><a href="https://platform.claude.com/docs/en/build-with-claude/context-windows" rel="noreferrer noopener">Context Windows (Claude API Docs)</a></li>
+          <li><a href="https://redis.io/blog/llm-context-windows/" rel="noreferrer noopener">LLM Context Windows: What They Are &amp; How They Work (Redis)</a></li>
+          <li><a href="https://mem0.ai/blog/llm-chat-history-summarization-guide-2025" rel="noreferrer noopener">LLM Chat History Summarization Guide (Mem0)</a></li>
+          <li><a href="https://blog.jetbrains.com/research/2025/12/efficient-context-management/" rel="noreferrer noopener">Smarter Context Management for LLM-Powered Agents (JetBrains Research)</a></li>
+          <li><a href="https://arxiv.org/html/2510.00615v1" rel="noreferrer noopener">ACON: Optimizing Context Compression for Long-Horizon LLM Agents (arXiv)</a></li>
+        </ul>
+        <p class="source-footnote">模型版本、成本估算和论文数字均按原文表述呈现，本页未联网核实。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>05-memory-and-state/041-context-window-management.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 4 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const WINDOW = 32000;
+  const INPUT_BUDGET = 24000;
+  const OUTPUT_RESERVE = 8000;
+
+  const BLOCKS = Object.freeze([
+    { key: "system", name: "System Prompt", tokens: 2000, cls: "seg-sys" },
+    { key: "history", name: "早期历史（第 1–20 轮）", tokens: 10000, cls: "seg-history" },
+    { key: "tools", name: "中期工具结果（第 21–30 轮）", tokens: 4000, cls: "seg-tools" },
+    { key: "recent", name: "最近 4 轮原文", tokens: 6000, cls: "seg-recent" },
+    { key: "rag", name: "RAG 检索片段", tokens: 2000, cls: "seg-rag" },
+    { key: "current", name: "当前工具结果", tokens: 4000, cls: "seg-current" }
+  ]);
+
+  const STRATEGIES = Object.freeze({
+    truncate: {
+      name: "截断",
+      brief: "从最旧的消息开始丢，直到装进预算。零额外调用。",
+      tag: "成本 零",
+      total: 24000,
+      saved: 4000,
+      segments: { system: 2000, history: 6000, tools: 4000, recent: 6000, rag: 2000, current: 4000 },
+      kept: ["System Prompt 2,000", "早期历史后 6,000（第 6–20 轮）", "中期工具结果 4,000", "最近 4 轮 6,000", "RAG 2,000", "当前工具 4,000"],
+      dropped: ["早期历史最前 4,000（第 1–5 轮，含原始需求与约束）"],
+      anchorsBefore: { request: false, constraint: false, decision: true, order: true },
+      verdict: "刚好压到 24,000。代价是原始需求和约束被截掉，模型可能不知道“不能改 schema”。"
+    },
+    sliding: {
+      name: "滑动窗口",
+      brief: "只保留最近 N 轮和当前检索、工具结果，旧历史全部丢弃。",
+      tag: "成本 零",
+      total: 14000,
+      saved: 14000,
+      segments: { system: 2000, history: 0, tools: 0, recent: 6000, rag: 2000, current: 4000 },
+      kept: ["System Prompt 2,000", "最近 4 轮 6,000", "RAG 2,000", "当前工具 4,000"],
+      dropped: ["早期历史 10,000", "中期工具结果 4,000"],
+      anchorsBefore: { request: false, constraint: false, decision: false, order: false },
+      verdict: "零成本、token 用量可预测，但旧上下文全丢。适合简单聊天，不适合长任务。"
+    },
+    masking: {
+      name: "观察掩码",
+      brief: "旧工具结果和长回复替换成占位符，用户短消息保留。",
+      tag: "成本 零",
+      total: 17510,
+      saved: 10490,
+      segments: { system: 2000, history: 3350, tools: 160, recent: 6000, rag: 2000, current: 4000 },
+      kept: ["System Prompt 2,000", "早期用户消息 3,000", "长回复占位 350（原文 7,000）", "工具结果占位 160（原文 4,000）", "最近 4 轮 6,000", "RAG 2,000", "当前工具 4,000"],
+      dropped: ["早期长回复正文 7,000 → 350", "中期工具结果正文 4,000 → 160"],
+      anchorsBefore: { request: true, constraint: true, decision: false, order: false },
+      verdict: "总效率常常不逊于摘要；但“用方案 B”这类决策藏在长回复里，会被一起掩码。"
+    },
+    summary: {
+      name: "LLM 摘要",
+      brief: "旧历史和旧工具结果各压成一段摘要，需要额外一次模型调用。",
+      tag: "成本 高（原文估算 +7%）",
+      total: 15200,
+      saved: 12800,
+      segments: { system: 2000, history: 800, tools: 400, recent: 6000, rag: 2000, current: 4000 },
+      kept: ["System Prompt 2,000", "早期历史摘要 800（原文 10,000）", "工具阶段摘要 400（原文 4,000）", "最近 4 轮 6,000", "RAG 2,000", "当前工具 4,000"],
+      dropped: ["早期历史原文 10,000 → 摘要 800", "中期工具结果 4,000 → 摘要 400"],
+      anchorsBefore: { request: false, constraint: true, decision: true, order: false },
+      verdict: "压缩率高，但摘要可能改写原始需求、丢掉精确订单号；每次还要一次模型调用。"
+    },
+    anchor: {
+      name: "锚点 + 摘要",
+      brief: "摘要压缩历史，另加 500 token 独立锚点块，保存不可丢事实。",
+      tag: "推荐组合",
+      total: 15700,
+      saved: 12300,
+      segments: { system: 2000, history: 800, tools: 400, recent: 6000, rag: 2000, current: 4000, anchor: 500 },
+      kept: ["System Prompt 2,000", "历史摘要 800", "工具摘要 400", "最近 4 轮 6,000", "RAG 2,000", "当前工具 4,000", "锚点块 500"],
+      dropped: ["早期历史原文 10,000 → 摘要 800", "中期工具结果 4,000 → 摘要 400"],
+      anchorsBefore: { request: true, constraint: true, decision: true, order: true },
+      verdict: "推荐：摘要负责历史，锚点负责不可丢事实。所有锚点都不经过摘要器。"
+    }
+  });
+
+  const ANCHORS = Object.freeze([
+    { key: "request", name: "原始需求原文", detail: "“分析特斯拉 2023–2024 营收趋势，输出 Markdown 报告”" },
+    { key: "constraint", name: "约束与禁止项", detail: "“不要改数据库 schema；输出必须是 JSON”" },
+    { key: "decision", name: "已确认决策", detail: "“用方案 B，不用方案 A”" },
+    { key: "order", name: "关键标识", detail: "订单号 A-1234；文件路径 reports/tsla.md" }
+  ]);
+
+  const STAGES = Object.freeze([
+    { nav: "盘点", title: "先算清楚：窗口、预算和六类内容", subtitle: "固定场景：32K 窗口里已经装了 28K 输入。先看清每一块占多少，再决定压缩谁。", summary: "阶段 1 / 5 · 输入 28,000 / 预算 24,000" },
+    { nav: "超限", title: "28,000 已经超过 24,000 的输入预算", subtitle: "超 4,000。按 75% 规则，输入应不超过 24,000；现在输出只剩 4,000，比预留的 8,000 少一半。", summary: "阶段 2 / 5 · 超预算 4,000 · 输出空间少 4,000" },
+    { nav: "选策略", title: "五种压缩方式，代价不同", subtitle: "先选一种，再点“下一步”看压缩后的预算和丢失内容。选择只改变本页状态。", summary: "阶段 3 / 5 · 等待选择策略" },
+    { nav: "结果", title: "同一份对话，压缩后剩下什么", subtitle: "预算条只统计输入。压缩后输入越少，留给输出的空间越大。", summary: "阶段 4 / 5 · 查看压缩结果" },
+    { nav: "锚点", title: "哪些信息永远不压缩", subtitle: "锚点独立成块，不经过摘要器。补上 500 token 后重新核对预算。", summary: "阶段 5 / 5 · 锚点校验" }
+  ]);
+
+  const state = { stage: 0, strategy: null };
+  const byId = (id) => document.getElementById(id);
+
+  function fmt(n) { return n.toLocaleString("en-US"); }
+
+  const SEG_META = Object.freeze({
+    system: { name: "System", cls: "seg-sys" },
+    history: { name: "早期历史", cls: "seg-history" },
+    tools: { name: "旧工具", cls: "seg-tools" },
+    recent: { name: "最近 4 轮", cls: "seg-recent" },
+    rag: { name: "RAG", cls: "seg-rag" },
+    current: { name: "当前工具", cls: "seg-current" },
+    anchor: { name: "锚点", cls: "seg-anchor" }
+  });
+
+  function budgetBar(segments, opts) {
+    const total = Object.values(segments).reduce((sum, n) => sum + n, 0);
+    const max = opts && opts.max ? opts.max : WINDOW;
+    const parts = Object.keys(segments).filter((key) => segments[key] > 0).map((key) => {
+      const meta = SEG_META[key];
+      const pct = (segments[key] / max) * 100;
+      const label = pct >= 8 ? `${meta.name} ${Math.round(segments[key] / 100) / 10}K` : "";
+      return `<span class="seg ${meta.cls}" style="width:${pct.toFixed(3)}%" title="${meta.name} ${fmt(segments[key])} tokens">${label}</span>`;
+    }).join("");
+    const budgetPct = (INPUT_BUDGET / max) * 100;
+    const windowPct = (WINDOW / max) * 100;
+    const free = Math.max(0, max - total);
+    const freeLabel = free >= 800 ? `未占用 ${Math.round(free / 100) / 10}K` : "";
+    const freePart = free > 0 ? `<span class="seg seg-empty" style="width:${((free / max) * 100).toFixed(3)}%"><b style="color:var(--text-dim)">${freeLabel}</b></span>` : "";
+    return `
+      <div class="budget" role="img" aria-label="输入预算条：共 ${fmt(total)} tokens，窗口 ${fmt(WINDOW)}，输入预算 ${fmt(INPUT_BUDGET)}">
+        <div class="budget-track">${parts || '<span class="seg seg-empty" style="width:100%">无输入</span>'}${freePart}</div>
+        ${budgetPct <= 100 ? `<span class="budget-line" style="left:${budgetPct}%"><span>输入预算 24K</span></span>` : ""}
+        ${windowPct <= 100 ? `<span class="budget-line window" style="left:${windowPct}%"><span>窗口 32K</span></span>` : ""}
+      </div>
+      <div class="budget-legend">
+        ${Object.keys(segments).filter((key) => segments[key] > 0).map((key) => `<span><i class="${SEG_META[key].cls}" style="background:${segColor(key)}"></i>${SEG_META[key].name} ${fmt(segments[key])}</span>`).join("")}
+      </div>`;
+  }
+
+  function segColor(key) {
+    return {
+      system: "#dbe7f3", history: "#f6e3c3", tools: "#eadcf5",
+      recent: "#dcefdc", rag: "#d9e8f5", current: "#d7efec", anchor: "#fee9a8"
+    }[key];
+  }
+
+  function inventoryScene() {
+    const total = BLOCKS.reduce((sum, block) => sum + block.tokens, 0);
+    const segments = Object.fromEntries(BLOCKS.map((block) => [block.key, block.tokens]));
+    return `
+      <div class="table-wrap">
+        <table class="data block-table">
+          <caption class="sr-only">固定教学场景的六块输入内容及 token 数</caption>
+          <thead><tr><th scope="col">内容块</th><th scope="col" class="num">tokens</th><th scope="col">说明</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">System Prompt</th><td class="num">2,000</td><td>角色、输出格式、基本约束</td></tr>
+            <tr><th scope="row">早期历史（第 1–20 轮）</th><td class="num">10,000</td><td>含原始需求、约束、决策、订单号</td></tr>
+            <tr><th scope="row">中期工具结果（第 21–30 轮）</th><td class="num">4,000</td><td>旧工具输出，可重新查询</td></tr>
+            <tr><th scope="row">最近 4 轮原文</th><td class="num">6,000</td><td>当前任务的直接上下文</td></tr>
+            <tr><th scope="row">RAG 检索片段</th><td class="num">2,000</td><td>本轮召回的参考资料</td></tr>
+            <tr><th scope="row">当前工具结果</th><td class="num">4,000</td><td>上一轮工具调用的结果</td></tr>
+            <tr><th scope="row">合计输入</th><td class="num">28,000</td><td>超出输入预算 4,000</td></tr>
+          </tbody>
+        </table>
+      </div>
+      ${budgetBar(segments)}
+      <div class="budget-total"><span>窗口 <strong>32,000</strong></span><span>输入预算 75% <strong>24,000</strong></span><span>输出预留 25% <strong>8,000</strong></span></div>
+      <p class="demo-note">固定教学假设：窗口 32K，输入 28K，超出输入预算 4K。真实系统的窗口和内容结构各不相同，请按同一方法替换数字。</p>`;
+  }
+
+  function overflowScene() {
+    const segments = Object.fromEntries(BLOCKS.map((block) => [block.key, block.tokens]));
+    return `
+      ${budgetBar(segments)}
+      <div class="over-note"><strong>28,000 − 24,000 = 4,000</strong>，输入超预算 4,000；<strong>32,000 − 28,000 = 4,000</strong>，输出只剩 4,000，比预留的 8,000 少 4,000。</div>
+      <div class="result-grid">
+        <div class="result-cell"><b>预算规则</b>输入控制在窗口的 75% 以内，给输出留 25%。这是原文推荐的生产实践阈值，不是模型硬限制。</div>
+        <div class="result-cell"><b>不处理的后果</b>超出输入预算后，输出空间被挤压；对话再增长就会直接超出窗口并报错。</div>
+      </div>
+      <p class="demo-note">本阶段只做算术，不调用任何压缩模型。下一步选择具体策略。</p>`;
+  }
+
+  function strategyScene() {
+    const cards = Object.keys(STRATEGIES).map((key) => {
+      const s = STRATEGIES[key];
+      const pressed = state.strategy === key ? "true" : "false";
+      const recommended = key === "anchor" ? " recommended" : "";
+      return `<button type="button" class="strategy-card${recommended}" data-strategy="${key}" aria-pressed="${pressed}">
+        <b>${s.name}</b><span>${s.brief}</span><span class="tag">${s.tag}</span>
+      </button>`;
+    }).join("");
+    const chosen = state.strategy ? `<p class="chosen-note">已选择：<strong>${STRATEGIES[state.strategy].name}</strong>。点“下一步”查看压缩后的预算和丢失内容。</p>` : `<p class="chosen-note">还没有选择。五种策略都可以选，但代价不同。</p>`;
+    return `
+      <div class="strategy-grid" role="group" aria-label="选择压缩策略">${cards}</div>
+      ${chosen}
+      <p class="demo-note">这些按钮只改变本页状态，不会读写任何真实对话，也不会调用模型。</p>`;
+  }
+
+  function resultScene() {
+    if (!state.strategy) {
+      return `<div class="result-cell"><b>还没有选择策略</b>请回到“选策略”阶段选择一种，或者直接点上方第 3 步。</div>`;
+    }
+    const s = STRATEGIES[state.strategy];
+    const outputSpace = WINDOW - s.total;
+    const anchorKept = Object.values(s.anchorsBefore).filter(Boolean).length;
+    return `
+      ${budgetBar(s.segments)}
+      <div class="budget-total"><span>压缩后输入 <strong>${fmt(s.total)}</strong></span><span>省下 <strong>${fmt(s.saved)}</strong></span><span>输出空间 <strong>${fmt(outputSpace)}</strong></span><span>锚点保留 <strong>${anchorKept} / 4</strong></span></div>
+      <div class="result-grid">
+        <div class="result-cell"><b>保留</b><ul>${s.kept.map((item) => `<li>${item}</li>`).join("")}</ul></div>
+        <div class="result-cell"><b>丢弃 / 压缩</b><ul>${s.dropped.map((item) => `<li>${item}</li>`).join("")}</ul></div>
+      </div>
+      <p class="chosen-note">${s.verdict}</p>
+      <p class="demo-note">固定教学结果：${s.name} 的压缩后 token 数为预设值；真实系统需要按模型分词器和实际内容重新计算。</p>`;
+  }
+
+  function anchorScene() {
+    if (!state.strategy) {
+      return `<div class="result-cell"><b>还没有选择策略</b>请先回到“选策略”阶段。锚点校验需要知道当前用的是哪种压缩方式。</div>`;
+    }
+    const s = STRATEGIES[state.strategy];
+    const isAnchor = state.strategy === "anchor";
+    const preTotal = s.total;
+    const trim = isAnchor ? 0 : (preTotal + 500 > INPUT_BUDGET ? preTotal + 500 - INPUT_BUDGET : 0);
+    const finalTotal = isAnchor ? preTotal : preTotal + 500 - trim;
+    const finalSegments = Object.assign({}, s.segments);
+    if (!isAnchor) {
+      finalSegments.anchor = 500;
+      if (trim > 0) {
+        // 从最早保留的历史里扣，固定规则：先扣早期历史
+        finalSegments.history = Math.max(0, finalSegments.history - trim);
+      }
+    }
+    const items = ANCHORS.map((anchor) => {
+      const keptBefore = s.anchorsBefore[anchor.key];
+      const cls = isAnchor || keptBefore ? "kept" : "added";
+      const status = isAnchor ? "锚点块直接保留" : (keptBefore ? "策略已保留" : "锚点块补齐");
+      return `<div class="anchor-item ${cls}"><span class="mark">${isAnchor || keptBefore ? "✓" : "+"}</span><span><strong>${anchor.name}</strong>：${anchor.detail}</span><span class="badge ${isAnchor || keptBefore ? "badge-ok" : "badge-warn"}">${status}</span></div>`;
+    }).join("");
+    const ops = isAnchor
+      ? `该策略本身已包含 500 token 锚点块，压缩后输入 <strong>${fmt(preTotal)}</strong>，无需再补。`
+      : trim > 0
+        ? `补上 500 token 锚点块：${fmt(preTotal)} + 500 = ${fmt(preTotal + 500)}，超出预算 ${fmt(trim)}。按固定规则从最早保留的历史里再扣 ${fmt(trim)}，最终 <strong>${fmt(finalTotal)}</strong>。`
+        : `补上 500 token 锚点块：${fmt(preTotal)} + 500 = <strong>${fmt(finalTotal)}</strong>，仍在 24,000 预算内。`;
+    return `
+      <div class="anchor-list">${items}</div>
+      <div class="anchor-ops">${ops}</div>
+      ${budgetBar(finalSegments)}
+      <div class="budget-total"><span>最终输入 <strong>${fmt(finalTotal)}</strong></span><span>输入预算 <strong>24,000</strong></span><span>输出空间 <strong>${fmt(WINDOW - finalTotal)}</strong></span><span>锚点 <strong>4 / 4</strong></span></div>
+      <p class="demo-note">固定教学数据：锚点块大小 500 tokens、四条锚点内容与补齐规则均为本页预设。锚点块永远不进入摘要器。</p>`;
+  }
+
+  const SCENES = [inventoryScene, overflowScene, strategyScene, resultScene, anchorScene];
+
+  function renderStage(stage) {
+    state.stage = stage;
+    const meta = STAGES[stage];
+    byId("budget-scene").innerHTML = SCENES[stage]();
+    byId("scene-index").textContent = `阶段 ${stage + 1} / 5 · 固定教学算术`;
+    byId("budget-title").textContent = meta.title;
+    byId("scene-subtitle").textContent = meta.subtitle;
+    byId("state-summary").textContent = meta.summary;
+    byId("back-button").disabled = stage === 0;
+    byId("next-button").disabled = stage === STAGES.length - 1 || (stage === 2 && !state.strategy);
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      const active = Number(button.dataset.stage) === stage;
+      if (active) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    document.querySelectorAll("[data-strategy]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.strategy = button.dataset.strategy;
+        renderStage(2);
+        byId("budget-announcement").textContent = `已选择策略：${STRATEGIES[state.strategy].name}`;
+      });
+    });
+    byId("budget-announcement").textContent = `${meta.title}。${meta.subtitle}`;
+  }
+
+  byId("reset-button").addEventListener("click", () => { state.strategy = null; renderStage(0); });
+  byId("back-button").addEventListener("click", () => renderStage(Math.max(0, state.stage - 1)));
+  byId("next-button").addEventListener("click", () => {
+    if (state.stage === 2 && !state.strategy) return;
+    renderStage(Math.min(STAGES.length - 1, state.stage + 1));
+  });
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+
+  renderStage(0);
+</script>
+</body>
+</html>

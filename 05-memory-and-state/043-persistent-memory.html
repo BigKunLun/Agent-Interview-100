@@ -1,0 +1,919 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>如何实现 Agent 的持久化记忆（Persistent Memory）？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .sim-banner { display: flex; align-items: flex-start; gap: 9px; margin: var(--s-4) var(--s-6) 0; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .sim-banner strong { color: #4d3000; }
+  .sim-banner::before { content: "模拟"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .badge-neutral { background: #eef1ee; color: #3f463f; border-color: #c9cec9; }
+  .badge-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .badge-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .badge-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .badge-bad { background: #fbecec; color: #8a1f1f; border-color: #d9a3a3; }
+  .badge-solid { background: #194f87; color: #fff; border-color: #194f87; }
+  .conv { margin-top: var(--s-4); padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .conv-line { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: var(--s-2); padding: 7px 0; border-bottom: 1px dashed var(--border); font-size: 12px; }
+  .conv-line:last-child { border-bottom: 0; }
+  .conv-line b { font: 600 10px/1.8 var(--mono); color: var(--text-dim); letter-spacing: .05em; }
+  .fact-list { display: grid; gap: 6px; margin-top: var(--s-3); }
+  .fact { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto; gap: var(--s-2); align-items: center; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .fact .n { font: 600 11px/1 var(--mono); color: #194f87; }
+  .memory-table td, .memory-table th { vertical-align: top; }
+  .memory-table .content { min-width: 15em; }
+  .memory-table th[scope="row"] { white-space: nowrap; }
+  .memory-table del { color: #8a1f1f; text-decoration-thickness: 1.5px; }
+  .decision-list { display: grid; gap: 7px; margin-top: var(--s-4); }
+  .decision { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: var(--s-2); align-items: center; padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .decision .n { font: 600 11px/1 var(--mono); color: var(--text-dim); }
+  .decay-table td.num, .decay-table th.num { font-family: var(--mono); }
+  .decay-table th[scope="row"] code { white-space: nowrap; overflow-wrap: normal; }
+  .removed { margin-top: var(--s-3); padding: 9px 11px; border: 1px solid #d9a3a3; border-radius: var(--r-1); background: #fbecec; color: #8a1f1f; font-size: 12px; }
+  .score-table td.num, .score-table th.num { font-family: var(--mono); }
+  .top-memory { margin-top: var(--s-3); padding: 10px 12px; border-left: 3px solid #2e7d32; background: #eef7ee; font-size: 12px; }
+  .top-memory b { color: #14532d; }
+  .event-log { margin: var(--s-4) 0 0; padding: 0; list-style: none; border-top: 1px solid var(--border); }
+  .event-log li { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: var(--s-2); align-items: start; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .event-log li:last-child { border-bottom: 0; }
+  .event-log .n { font: 11px/1.7 var(--mono); color: var(--text-dim); }
+  .final-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); margin-top: var(--s-4); }
+  .final-cell { padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .final-cell b { display: block; font: 600 11px/1.6 var(--mono); color: var(--text-dim); margin-bottom: 3px; }
+  .arch { margin-top: var(--s-4); padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .arch-row { display: grid; grid-template-columns: minmax(0, 1fr) 90px minmax(0, 1.4fr); gap: var(--s-2); align-items: center; margin-top: var(--s-2); }
+  .arch-row:first-child { margin-top: 0; }
+  .arch-box { padding: 9px 11px; border: 1px solid #9eb4c9; border-radius: var(--r-1); background: var(--surface); text-align: center; font-size: 12px; }
+  .arch-box.accent { border-color: #194f87; color: #194f87; font-weight: 600; }
+  .arch-stores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+  .arch-stores span { padding: 9px 5px; border: 1px solid #9cc39e; border-radius: var(--r-1); background: #eef7ee; color: #14532d; text-align: center; font-size: 11px; }
+  .arch-arrow { text-align: center; font: 11px/1.6 var(--mono); color: var(--text-dim); }
+  .lifecycle-strip { display: flex; flex-wrap: wrap; gap: 5px; margin-top: var(--s-4); }
+  .lifecycle-strip span { padding: 4px 9px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font: 11px/1.6 var(--mono); color: var(--text-dim); }
+  .lifecycle-strip span.on { border-color: #194f87; background: #194f87; color: #fff; }
+  .fixed-note { display: inline-block; margin-top: var(--s-3); padding: 3px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  .pending-note { display: inline-block; padding: 2px 7px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font-size: 11px; white-space: nowrap; }
+  .numeric-note { margin-top: var(--s-3); padding: 8px 11px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; }
+  @media (max-width: 720px) {
+    .sim-banner { margin-inline: var(--s-4); }
+    .table-wrap table.memory-table { min-width: 640px; }
+    .table-wrap table.data.wide { min-width: 720px; }
+    .fact, .decision { grid-template-columns: 20px minmax(0, 1fr); }
+    .fact .badge, .decision .badge { grid-column: 1 / -1; justify-self: start; }
+    .final-grid { grid-template-columns: 1fr; }
+    .arch-row { grid-template-columns: 1fr; }
+    .arch-arrow { text-align: left; padding-left: 4px; }
+    .event-log li { grid-template-columns: 24px minmax(0, 1fr); }
+    .event-log li .badge { grid-column: 1 / -1; justify-self: start; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">043 / 持久化记忆</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 17 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="041-context-window-management.html">← 上一页 · 对话上下文窗口管理与压缩策略</a><a href="044-state-management-patterns.html">下一页 → · 状态管理在 Agent 系统中的设计…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Memory &amp; State · 可交互讲解</p>
+      <h1>下周回来，<br>它还记得你。</h1>
+    </div>
+    <div>
+      <p class="lead">持久化记忆让 Agent 跨会话保留知识。核心是双层存储：短期记忆留在上下文窗口，长期记忆落到外部存储。向量库管语义检索，结构化库管精确字段，图库管实体关系。</p>
+      <p class="definition"><strong>关键边界：</strong>LLM 本身无状态，产品里的“记忆”完全是工程实现。不是所有对话都值得记住，写入、去重、衰减、整合缺一不可。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Memory &amp; State</span><span class="pill">记忆生命周期</span><span class="pill">本地模拟</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="life-title">
+    <div class="player-top">
+      <div class="player-label">一条记忆的完整生命周期 <small>固定记忆集 · 本地模拟</small></div>
+      <div class="controls" role="group" aria-label="记忆生命周期演示控制">
+        <button type="button" class="button button-quiet" id="reset-button">重置</button>
+        <button type="button" class="button" id="back-button" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="next-button">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="记忆生命周期阶段">
+      <ol style="--stages: 5">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>写入</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>去重</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>衰减</button></li>
+        <li><button type="button" class="stage-button" data-stage="3"><span class="stage-number">4</span>检索</button></li>
+        <li><button type="button" class="stage-button" data-stage="4"><span class="stage-number">5</span>更新/删除</button></li>
+      </ol>
+    </nav>
+    <p class="sim-banner"><span><strong>本页只演示本地记忆生命周期，不连接数据库、不读写真实用户数据。</strong>下面的记忆条目、相似度、衰减值、检索分数和删除操作全部是预设的教学数据，只存在于本页脚本里。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="scene-index">阶段 1 / 5 · 固定记忆集</p>
+      <h2 id="life-title">先从一段对话里，提取值得记的事</h2>
+      <p id="scene-subtitle">固定场景：用户说了一段自我介绍。Agent 先提取事实，再和已有记忆比对。今天记为第 120 天。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="life-scene"></div>
+      <p class="demo-note" id="scene-note">固定教学数据：记忆内容、时间、相似度和分数均为本页预设，不代表任何真实用户或生产数据库。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定记忆集 · 不连接数据库 · 不访问网络</span><span id="state-summary">阶段 1 / 5 · 库中 5 条 · 待处理 3 条</span></div>
+  </section>
+  <p id="life-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">为什么需要</p><h2 id="why-title">没有记忆，<br>每次都是陌生人。</h2></div>
+      <p class="reading-intro">会话 1 用户说“我是 Python 开发者”，会话 2 问“推荐个框架”。没有持久化记忆，Agent 可能推荐 Java 框架；有了记忆，它检索到偏好后推荐 FastAPI 或 Django。</p>
+    </div>
+    <div class="prose">
+      <p>LLM 本身是无状态的。上下文窗口里的历史只在当前会话有效，会话结束就消失。持久化记忆把值得保留的信息写到外部存储，下次会话再检索回上下文。</p>
+      <div class="lifecycle-strip" aria-label="记忆生命周期四步">
+        <span class="on">提取</span><span>去重</span><span>衰减</span><span>整合</span>
+      </div>
+      <p>原文把生命周期拆成四步：从对话中提取值得记忆的事实；检查是否已有类似记忆，有则更新、无则新增；按时间衰减旧记忆的权重；定期合并碎片化的记忆。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="arch-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">架构</p><h2 id="arch-title">双引擎，<br>三套存储。</h2></div>
+      <p class="reading-intro">持久化记忆 = Agent 挂双引擎（提取落库 + 检索回灌），底层是向量、关系、图三套持久层。每套存储擅长的问题不同。</p>
+    </div>
+    <div class="prose">
+      <div class="arch" role="img" aria-label="持久化记忆架构：用户消息进入 Agent，提取引擎把事实写入向量库、关系库、图库；检索引擎查询后把相关记忆回灌 Agent 上下文">
+        <div class="arch-row"><div class="arch-box">用户消息</div><div class="arch-arrow">→</div><div class="arch-box accent">Agent（LLM）</div></div>
+        <div class="arch-row"><div class="arch-box">提取引擎（extract）</div><div class="arch-arrow">写入 →</div><div class="arch-stores"><span>向量库<br>语义检索</span><span>关系库<br>精确查询</span><span>图库<br>实体关系</span></div></div>
+        <div class="arch-row"><div class="arch-stores"><span>向量库</span><span>关系库</span><span>图库</span></div><div class="arch-arrow">查询 →</div><div class="arch-box">检索引擎（retrieve）</div></div>
+        <div class="arch-row"><div class="arch-box">相关记忆回灌上下文</div><div class="arch-arrow">→</div><div class="arch-box accent">Agent（LLM）</div></div>
+      </div>
+      <details>
+        <summary>查看原文 Mermaid 源码（持久化记忆架构）</summary>
+        <pre><code>flowchart TD
+    U["用户消息"] --&gt; A["Agent（LLM）"]
+    subgraph P["持久化存储层"]
+        V["向量库&lt;br/&gt;（语义检索）"]
+        D["关系库&lt;br/&gt;（精确查询）"]
+        G["图库&lt;br/&gt;（实体关系追踪）"]
+    end
+    A -- "提取事实" --&gt; E["提取引擎"]
+    E -- "写入" --&gt; P
+    P -- "查询" --&gt; R["检索引擎"]
+    R -- "相关记忆回灌上下文" --&gt; A</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="impl-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">实现方式</p><h2 id="impl-title">从向量库，<br>到记忆编排层。</h2></div>
+      <p class="reading-intro">原文给了三层实现：直接用向量数据库；用 LangGraph + MongoDB 的跨线程 Store；用 Mem0 这类记忆编排层，自动处理提取、存储、检索和去重。</p>
+    </div>
+    <div class="prose">
+      <h3>方式 1：向量数据库</h3>
+      <p>把每条记忆编码成向量，写入集合；检索时用 query 向量找最近邻，并按 <code>user_id</code> 过滤，保证用户间隔离。</p>
+      <details>
+        <summary>查看 VectorMemory 的原文代码</summary>
+        <pre><code>import chromadb
+from sentence_transformers import SentenceTransformer
+
+class VectorMemory:
+    def __init__(self):
+        self.client = chromadb.PersistentClient(path="./memory_db")
+        self.collection = self.client.get_or_create_collection("agent_memory")
+        self.encoder = SentenceTransformer("all-MiniLM-L6-v2")
+
+    def store(self, user_id: str, content: str, metadata: dict = None):
+        embedding = self.encoder.encode(content).tolist()
+        self.collection.add(
+            ids=[f"{user_id}_{uuid4()}"],
+            embeddings=[embedding],
+            documents=[content],
+            metadatas=[{"user_id": user_id, "timestamp": now(),
+                        **(metadata or {})}]
+        )
+
+    def retrieve(self, user_id: str, query: str, top_k: int = 5):
+        results = self.collection.query(
+            query_embeddings=[self.encoder.encode(query).tolist()],
+            n_results=top_k,
+            where={"user_id": user_id}
+        )
+        return results["documents"][0]</code></pre>
+      </details>
+
+      <h3>方式 2：LangGraph + MongoDB</h3>
+      <p>LangGraph 的跨线程 Store 以 <code>(memories, user_id)</code> 为命名空间，节点里先检索、把记忆拼进 system 上下文，再把新事实 <code>put</code> 回去。</p>
+      <details>
+        <summary>查看 LangGraph + MongoDB 的原文代码</summary>
+        <pre><code>from langgraph.store.mongodb import MongoDBStore
+from langgraph.graph import StateGraph
+
+store = MongoDBStore(
+    connection_string="mongodb+srv://...",
+    db_name="agent_memory"
+)
+
+def agent_node(state, config, store):
+    user_id = config["configurable"]["user_id"]
+
+    memories = store.search(
+        namespace=("memories", user_id),
+        query=state["messages"][-1]["content"]
+    )
+
+    context = f"用户记忆：{format_memories(memories)}"
+    response = llm.invoke([
+        {"role": "system", "content": context},
+        *state["messages"]
+    ])
+
+    new_facts = extract_facts(state["messages"][-1], response)
+    for fact in new_facts:
+        store.put(namespace=("memories", user_id),
+                  key=fact["key"], value=fact)
+
+    return {"messages": [response]}</code></pre>
+      </details>
+
+      <h3>方式 3：Mem0 记忆编排层</h3>
+      <p>Mem0 自动处理提取、存储、检索和去重。用户说“最近开始学习 Go 语言”，它会判断这是新信息还是对旧信息的更新。</p>
+      <details>
+        <summary>查看 Mem0 的原文示例</summary>
+        <pre><code>from mem0 import Memory
+
+memory = Memory()
+
+memory.add(
+    "我是 Python 开发者，主要做后端开发，偏好 FastAPI",
+    user_id="user_123"
+)
+
+results = memory.search("推荐一个 Web 框架", user_id="user_123")
+
+memory.add(
+    "最近开始学习 Go 语言",
+    user_id="user_123"
+)
+# Mem0 自动判断：新信息（添加）还是更新旧信息（修改）</code></pre>
+      </details>
+      <p class="numeric-note">原文引用 Mem0 的研究结果：91% 更低的 p95 延迟、90%+ token 成本降低。以上为原文版本数据，本页未联网核实。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="lifecycle-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">生命周期管理</p><h2 id="lifecycle-title">写入容易，<br>维护才难。</h2></div>
+      <p class="reading-intro">提取、去重、衰减、整合四步组成一个循环。原文的时间衰减规则是：每天乘 0.99；相关度低于 0.05 且访问次数少于 2 次时删除。</p>
+    </div>
+    <div class="prose">
+      <details open>
+        <summary>查看 MemoryLifecycle 的原文代码</summary>
+        <pre><code>class MemoryLifecycle:
+    """记忆的完整生命周期"""
+
+    async def process_interaction(self, user_id, conversation):
+        # 1. 提取：从对话中提取值得记忆的信息
+        facts = await self.extract(conversation)
+
+        # 2. 去重：检查是否已有类似记忆
+        for fact in facts:
+            existing = self.retrieve_similar(user_id, fact, threshold=0.9)
+            if existing:
+                await self.update(existing.id, fact)   # 更新而非重复
+            else:
+                await self.store(user_id, fact)
+
+        # 3. 衰减：降低旧记忆的权重
+        await self.decay_old_memories(user_id)
+
+        # 4. 整合：定期合并碎片化的记忆
+        if self.should_consolidate(user_id):
+            await self.consolidate(user_id)
+
+    async def decay_old_memories(self, user_id):
+        memories = self.get_all(user_id)
+        for mem in memories:
+            age_days = (now() - mem.created_at).days
+            mem.relevance *= 0.99 ** age_days  # 每天衰减 1%
+            if mem.relevance &lt; 0.05 and mem.access_count &lt; 2:
+                await self.delete(mem.id)</code></pre>
+      </details>
+      <p>注意：衰减是乘在相关度上的指数项，不是线性减法。年龄越大，衰减越快；访问次数高、相关度高的记忆能撑更久。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="pref-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">用户偏好学习</p><h2 id="pref-title">从记住事实，<br>到了解一个人。</h2></div>
+      <p class="reading-intro">偏好常常是隐式的、会随时间漂移的。原文给出三条前沿路径：PAMU 感知偏好变化、动态画像做结构化聚合、Memory-R1 用强化学习学记忆操作。</p>
+    </div>
+    <div class="prose">
+      <h3>偏好分三类</h3>
+      <ul>
+        <li><strong>显式：</strong>“请用中文回复”“代码示例用 Python”，用户直接说出，一次提取即可。</li>
+        <li><strong>隐式：</strong>“用户总追问技术细节 → 偏好深度分析”，需要从行为归纳。</li>
+        <li><strong>演化中：</strong>“三个月前用 React，最近开始学 Vue”，需要持续追踪。</li>
+      </ul>
+
+      <h3>PAMU：短期波动 + 长期趋势</h3>
+      <p>PAMU（Preference-Aware Memory Update）用滑动窗口平均捕捉短期波动，用指数移动平均（EMA）捕捉长期趋势，再融合两路信号检测偏好漂移。原文示例的融合公式是 <code>0.6 × EMA + 0.4 × 滑动窗口平均</code>，EMA 平滑因子 <code>alpha=0.3</code>。衰减只回答“要不要遗忘”（见 <a href="048-memory-forgetting-updating.html">048</a>），PAMU 还要回答“偏好是不是变了、要不要主动适配”。</p>
+
+      <h3>动态用户画像</h3>
+      <p>偏好项是零散的，动态画像把它们聚合成持续演进的结构化档案：技术水平、偏好语言、沟通风格、领域专长。字段初始为 <code>unknown</code>，随交互逐步具化。关键纪律是“有证据才更新”，不能靠模型臆测填充。</p>
+
+      <h3>Memory-R1：把记忆操作当动作空间</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">Memory-R1 的四个记忆动作</caption>
+          <thead><tr><th scope="col">动作</th><th scope="col">含义</th><th scope="col">作用</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><code>ADD</code></th><td>新增记忆</td><td>写入新事实 / 偏好</td></tr>
+            <tr><th scope="row"><code>UPDATE</code></th><td>修改已有记忆</td><td>偏好变化时覆盖旧值</td></tr>
+            <tr><th scope="row"><code>DELETE</code></th><td>删除记忆</td><td>清除过时或错误信息</td></tr>
+            <tr><th scope="row"><code>NOOP</code></th><td>不操作</td><td>当前事件不值得改动记忆库</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文称 Memory-R1 仅用 152 条训练样本，就在多个长期记忆基准上超越 Mem0 等强基线。<code>NOOP</code> 尤其关键：它避免 Agent 对无信息量的对话强行写入噪声。</p>
+      <p>这在思路上和 <a href="../06-planning-and-reasoning/103-agentic-rl-grpo.html">103 Agentic-RL / GRPO</a> 一致：记忆管理的下一站，可能不是更复杂的启发式规则，而是用 RL 让 Agent 自己学会“记什么、改什么、忘什么”。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="retrieval-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">检索优化</p><h2 id="retrieval-title">写入容易，<br>检索才是胜负手。</h2></div>
+      <p class="reading-intro">Mem0 论文和 MemMachine 的消融实验都表明：检索阶段的优化（+4.2%）远比摄入阶段（+0.8%）影响大。原文给了四个方向。</p>
+    </div>
+    <div class="prose">
+      <h3>1. 多因子打分</h3>
+      <p>Stanford 的 Generative Agents 用三因子加权：<code>score = α_recency × recency + α_importance × importance + α_relevance × relevance</code>。其中 recency = <code>0.995 ** hours_since_last_access</code>，importance 由 LLM 打 1–10 分再归一化，relevance 是余弦相似度。论文中三个 α 都取 1。</p>
+      <h3>2. 多信号融合</h3>
+      <p>Mem0 2025 的算法并行跑语义检索、BM25 关键词、实体匹配，再加权融合。原文数据：LoCoMo 92.5 / LongMemEval 94.4，平均每次检索不到 7K token；对比 full-context 方法要 25K+ tokens。</p>
+      <h3>3. 两阶段检索</h3>
+      <p>Query → Embedding → 向量 Top-50 → Reranker Top-5 → 注入上下文。向量召回宽，cross-encoder 精排准但只能跑 50–100 条候选。原文给出的生产管线延迟约 25–30ms；Mem0 实测全开 keyword + rerank + filter 约 0.41s。</p>
+      <h3>4. Query 改写 / 检索 Agent</h3>
+      <p>HyDE 让模型先生成假想答案，再用假想答案的向量检索，解决 query 太短、太抽象的问题。但 HyDE、BM25 hybrid、chunk rerank 都是单查询策略，解决不了依赖链。MemMachine 的解法是加一层 LLM 路由器，把查询分成 direct / decompose / iterative 三种策略。</p>
+      <p class="numeric-note">以上性能数字均按原文版本呈现，本页未联网核实，也不代表当前产品实测。</p>
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">原文给出的检索组合建议</caption>
+          <thead><tr><th scope="col">场景</th><th scope="col">推荐组合</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">轻量场景（&lt;10 万条记忆、单用户）</th><td>向量检索 + 三因子打分 + 时间衰减</td></tr>
+            <tr><th scope="row">生产场景（多用户、跨会话）</th><td>多信号融合（vector + BM25 + entity）+ reranker</td></tr>
+            <tr><th scope="row">复杂推理（多跳、依赖链）</th><td>上面的组合 + Retrieval Agent（query 路由 + decomposition）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="security-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">安全与选型</p><h2 id="security-title">记忆是资产，<br>也是攻击面。</h2></div>
+      <p class="reading-intro">MEXTRA 攻击可以通过 prompt injection 提取存储的记忆；恶意用户也能注入虚假信息。记忆必须被当作“可被操纵的不可信数据”。</p>
+    </div>
+    <div class="prose">
+      <ul>
+        <li><strong>数据泄露：</strong>MEXTRA 攻击可通过 prompt injection 提取存储的记忆。</li>
+        <li><strong>记忆污染：</strong>恶意用户可注入虚假信息到 Agent 记忆中。</li>
+        <li><strong>隐私合规：</strong>GDPR 要求支持记忆的完全删除。</li>
+        <li><strong>防护：</strong>PII 脱敏、输入验证、完全删除（right to be forgotten）、用户间访问隔离。</li>
+      </ul>
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">原文的持久化记忆方案选型</caption>
+          <thead><tr><th scope="col">方案</th><th scope="col">适用场景</th><th scope="col">优势</th><th scope="col">劣势</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">向量数据库</th><td>语义检索为主</td><td>灵活、通用</td><td>缺乏关系追踪</td></tr>
+            <tr><th scope="row">Redis</th><td>低延迟、会话级</td><td>极快</td><td>持久化需配置</td></tr>
+            <tr><th scope="row">MongoDB</th><td>文档型记忆</td><td>灵活 Schema</td><td>语义检索需插件</td></tr>
+            <tr><th scope="row">图数据库</th><td>实体关系密集</td><td>关系推理强</td><td>学习曲线高</td></tr>
+            <tr><th scope="row">Mem0</th><td>快速上手</td><td>全栈解决方案</td><td>框架绑定</td></tr>
+            <tr><th scope="row">SQLite</th><td>轻量级 / 本地</td><td>零依赖</td><td>不适合大规模</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">六个问题，<br>从存储问到安全。</h2></div>
+      <p class="reading-intro">前两个是误区，后四个是追问。回答时先给判断，再解释机制。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <div class="misconception-label">误区 01</div>
+        <div><h3>“向量数据库是唯一选择”</h3><p>Google 的 Always On Memory Agent 用 SQLite + LLM 驱动的整合替代了向量数据库。向量检索适合语义查找，但结构化查询和关系推理需要其他存储方案。最佳实践是混合使用。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 02</div>
+        <div><h3>“所有对话都应该存入记忆”</h3><p>选择性存储是关键。寒暄、重复提问、中间推理步骤不值得持久化。只存储影响未来交互的信息：用户偏好、关键决定、重要事实。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 03</div>
+        <div><h3>如何处理记忆冲突？</h3><p>当新信息与旧记忆矛盾时，例如用户改了偏好，应该用新信息更新旧记忆，而不是让两者并存。Mem0 通过检索相似记忆 + LLM 判断是否为更新来自动处理。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 04</div>
+        <div><h3>记忆安全的最大风险是什么？</h3><p>MEXTRA 攻击证明存储的记忆可被 prompt injection 提取。防护需要：记忆内容脱敏、访问控制、输入验证，以及把记忆视为“可被操纵的不可信数据”。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 05</div>
+        <div><h3>Memory Retrieval 怎么优化？纯向量检索为什么不够？</h3><p>纯向量有三个硬伤：没有时间维度，昨天和半年前的记忆同等对待；没有重要性维度，“刷牙”和“我离婚了”被同等检索；ANN 召回有 false positive，会污染上下文。工业界标准方案是三因子打分 + 多信号融合 + 两阶段 rerank。原文称 Mem0 用这套方案在 LongMemEval 拿到 94.4，平均每次检索约 7K token，比 full-context 省 90%+。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 06</div>
+        <div><h3>HyDE 等查询改写为什么不够用？</h3><p>HyDE、BM25 hybrid、chunk rerank 都是单查询策略，只在原查询的一次表达上做文章。很多记忆问题是依赖链：要回答“我上次提到的那个客户的预算多少”，得先定位“上次提到的客户是谁”再查预算。MemMachine 的解法是 Retrieval Agent，把查询分成 direct / decompose / iterative，复杂查询走分解或链式查询；原文称 HotpotQA hard 上能到 93.2%（原文数据，未联网核实）。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="sources-title">
+    <p class="eyebrow">参考资料</p>
+    <h2 class="source-heading" id="sources-title">原文引用与延伸阅读</h2>
+    <p class="source-summary">以下链接来自原文。只有主动点击外链才会离开本页；本页不加载任何外部资源。</p>
+    <details>
+      <summary>展开 9 条参考资料</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://redis.io/blog/ai-agent-memory-stateful-systems/" rel="noreferrer noopener">AI Agent Memory: Types, Architecture &amp; Implementation (Redis)</a></li>
+          <li><a href="https://towardsdatascience.com/ai-agent-with-multi-session-memory/" rel="noreferrer noopener">AI Agent with Multi-Session Memory (Towards Data Science)</a></li>
+          <li><a href="https://arxiv.org/pdf/2504.19413" rel="noreferrer noopener">Mem0: Building Production-Ready AI Agents with Scalable Long-Term Memory (arXiv 2504.19413)</a></li>
+          <li><a href="https://www.mongodb.com/company/blog/product-release-announcements/powering-long-term-memory-for-agents-langgraph" rel="noreferrer noopener">Powering Long-Term Memory for Agents with LangGraph and MongoDB</a></li>
+          <li><a href="https://aws.amazon.com/blogs/database/build-persistent-memory-for-agentic-ai-applications-with-mem0-open-source-amazon-elasticache-for-valkey-and-amazon-neptune-analytics/" rel="noreferrer noopener">Build Persistent Memory with Mem0, ElastiCache, and Neptune (AWS)</a></li>
+          <li><a href="https://dl.acm.org/doi/fullHtml/10.1145/3586183.3606763" rel="noreferrer noopener">Generative Agents: Interactive Simulacra of Human Behavior (Park et al., UIST'23)</a></li>
+          <li><a href="https://docs.mem0.ai/platform/features/advanced-retrieval" rel="noreferrer noopener">Mem0 Advanced Retrieval Documentation</a></li>
+          <li><a href="https://mem0.ai/research" rel="noreferrer noopener">Mem0 Token-Efficient Algorithm Benchmark</a></li>
+          <li><a href="https://arxiv.org/html/2604.04853v1" rel="noreferrer noopener">MemMachine: Ground-Truth-Preserving Memory System (arXiv 2604.04853)</a></li>
+        </ul>
+        <p class="source-footnote">研究数字、框架版本和性能数据均按原文表述呈现，本页未联网核实。同批《记忆的遗忘与更新机制》（048）见 <a href="048-memory-forgetting-updating.html">048</a>。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>05-memory-and-state/043-persistent-memory.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 4 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const THRESHOLD = 0.9;
+  const TODAY = 120;
+
+  const BASE_MEMORIES = Object.freeze([
+    { id: "mem_001", content: "用户是 Python 开发者，主要做后端", age: 120, access: 8, importance: 8, relevance: 0.95, state: "active" },
+    { id: "mem_002", content: "偏好 FastAPI", age: 120, access: 6, importance: 9, relevance: 0.92, state: "active" },
+    { id: "mem_003", content: "最近开始学习 Go 语言", age: 30, access: 2, importance: 5, relevance: 0.80, state: "active" },
+    { id: "mem_004", content: "上次用 PostgreSQL 优化了查询", age: 100, access: 3, importance: 6, relevance: 0.70, state: "active" },
+    { id: "mem_005", content: "用户不喜欢冗长解释", age: 300, access: 0, importance: 4, relevance: 0.55, state: "active" }
+  ]);
+
+  const NEW_MEMORY = Object.freeze({
+    id: "mem_006", content: "计划下季度把服务迁移到 Go 微服务", age: 0, access: 0, importance: 7, relevance: 0.85, state: "new"
+  });
+
+  const CONFLICT_MEMORY = Object.freeze({
+    id: "mem_007", content: "团队统一用 Go，不再使用 FastAPI", age: 0, access: 0, importance: 9, relevance: 0.93, state: "new"
+  });
+
+  const FACTS = Object.freeze([
+    { id: "F1", text: "用户主要做 Python 后端", match: "mem_001", similarity: 0.92, action: "更新 mem_001" },
+    { id: "F2", text: "偏好 FastAPI", match: "mem_002", similarity: 0.95, action: "更新 mem_002" },
+    { id: "F3", text: "正在学 Go，计划迁到 Go 微服务", match: "mem_003", similarity: 0.83, action: "新增 mem_006" }
+  ]);
+
+  const SCORES = Object.freeze([
+    { id: "mem_002", vector: 0.88, recency: 0.71, importance: 0.90, relevance: 0.88 },
+    { id: "mem_001", vector: 0.42, recency: 0.62, importance: 0.80, relevance: 0.42 },
+    { id: "mem_003", vector: 0.51, recency: 0.55, importance: 0.50, relevance: 0.51 },
+    { id: "mem_006", vector: 0.38, recency: 0.64, importance: 0.70, relevance: 0.38 },
+    { id: "mem_004", vector: 0.33, recency: 0.30, importance: 0.60, relevance: 0.33 }
+  ]);
+
+  const STAGES = Object.freeze([
+    { nav: "写入", title: "先从一段对话里，提取值得记的事", subtitle: "固定场景：用户说了一段自我介绍。Agent 先提取事实，再和已有记忆比对。今天记为第 120 天。", summary: "阶段 1 / 5 · 库中 5 条 · 待处理 3 条" },
+    { nav: "去重", title: "相似度超过 0.9，更新而不是重复写入", subtitle: "三条事实里两条命中已有记忆，一条是新信息。写入前先查相似记忆，避免记忆库膨胀。", summary: "阶段 2 / 5 · 更新 2 条 · 新增 1 条" },
+    { nav: "衰减", title: "每天乘 0.99，低于阈值就清理", subtitle: "固定公式 relevance × 0.99^age_days。相关度低于 0.05 且访问少于 2 次的记忆被删除。", summary: "阶段 3 / 5 · 删除 1 条 · 剩余 5 条" },
+    { nav: "检索", title: "纯向量不够，三因子一起排序", subtitle: "查询“推荐一个 Web 框架”。向量分最高的不一定最该进上下文，还要看新近性和重要性。", summary: "阶段 4 / 5 · Top-2 已选出" },
+    { nav: "更新/删除", title: "冲突就失效旧值，用户要求就彻底删除", subtitle: "新事实和旧偏好矛盾时，标记旧记忆失效并写入新值；用户行使删除权时，物理删除包括历史版本。", summary: "阶段 5 / 5 · 失效 1 条 · 删除 2 条 · 剩余 4 条" }
+  ]);
+
+  const state = { stage: 0 };
+  const byId = (id) => document.getElementById(id);
+
+  function badge(stateName) {
+    const map = {
+      active: ["badge-ok", "生效"],
+      updated: ["badge-info", "已更新"],
+      new: ["badge-solid", "新写入"],
+      invalidated: ["badge-warn", "已失效"],
+      deleted: ["badge-bad", "已删除"],
+      candidate: ["badge-neutral", "待比对"],
+      formula: ["badge-info", "公式"]
+    };
+    const [cls, label] = map[stateName] || ["badge-neutral", stateName];
+    return `<span class="badge ${cls}">${label}</span>`;
+  }
+
+  function memoryTable(memories, opts) {
+    const showDecay = opts && opts.showDecay;
+    const showScore = opts && opts.showScore;
+    const rows = memories.map((m) => {
+      const score = SCORES.find((s) => s.id === m.id);
+      return `<tr>
+        <th scope="row"><code>${m.id}</code></th>
+        <td class="content">${m.content}</td>
+        <td class="num">${m.age} 天</td>
+        <td class="num">${m.access}</td>
+        ${showDecay ? `<td class="num">${m.relevance.toFixed(3)}</td>` : ""}
+        ${showScore ? `<td class="num">${score ? score.vector.toFixed(2) : "—"}</td><td class="num">${score ? (score.recency + score.importance + score.relevance).toFixed(2) : "—"}</td>` : ""}
+        <td>${badge(m.state)}</td>
+      </tr>`;
+    }).join("");
+    const head = `<tr><th scope="col">ID</th><th scope="col">内容</th><th scope="col" class="num">年龄</th><th scope="col" class="num">访问</th>${showDecay ? '<th scope="col" class="num">衰减后相关度</th>' : ""}${showScore ? '<th scope="col" class="num">向量分</th><th scope="col" class="num">三因子总分</th>' : ""}<th scope="col">状态</th></tr>`;
+    return `<div class="table-wrap"><table class="data memory-table"><caption class="sr-only">固定记忆集：内容、年龄、访问次数与状态</caption><thead>${head}</thead><tbody>${rows}</tbody></table></div>`;
+  }
+
+  function writeScene() {
+    return `
+      <div class="conv">
+        <div class="conv-line"><b>用户</b><span>我是 Python 开发者，主要做后端，偏好 FastAPI。最近在学 Go，计划下季度把服务迁到 Go 微服务。</span></div>
+        <div class="conv-line"><b>Agent</b><span>收到。我先提取关键事实，再和你之前的记忆比对。</span></div>
+      </div>
+      <div class="fact-list">
+        ${FACTS.map((f) => `<div class="fact"><span class="n">${f.id}</span><span>${f.text}</span>${badge("candidate")}</div>`).join("")}
+      </div>
+      ${memoryTable(BASE_MEMORIES)}
+      <p class="demo-note">固定教学数据：三条事实由本页预设的“提取结果”给出，没有调用任何模型。F1、F2 与已有记忆相似，F3 是候选新记忆。</p>`;
+  }
+
+  function dedupeScene() {
+    const memories = BASE_MEMORIES.map((m) => ({ ...m }));
+    const m1 = memories.find((m) => m.id === "mem_001");
+    const m2 = memories.find((m) => m.id === "mem_002");
+    m1.state = "updated"; m1.access += 1;
+    m2.state = "updated"; m2.access += 1;
+    memories.push({ ...NEW_MEMORY });
+    return `
+      <div class="decision-list">
+        <div class="decision"><span class="n">F1</span><span>相似度 <strong>0.92</strong> ≥ 阈值 0.90，命中 <code>mem_001</code> → 更新已有记忆，访问次数 +1</span>${badge("updated")}</div>
+        <div class="decision"><span class="n">F2</span><span>相似度 <strong>0.95</strong> ≥ 阈值 0.90，命中 <code>mem_002</code> → 更新已有记忆，访问次数 +1</span>${badge("updated")}</div>
+        <div class="decision"><span class="n">F3</span><span>最高相似度 <strong>0.83</strong> &lt; 阈值 0.90 → 作为新记忆 <code>mem_006</code> 写入</span>${badge("new")}</div>
+      </div>
+      ${memoryTable(memories)}
+      <p class="demo-note">固定阈值 0.90 来自原文的生命周期示例。去重把“重复说一遍”变成更新，而不是新增一条噪声。</p>`;
+  }
+
+  function decayScene() {
+    const memories = BASE_MEMORIES.map((m) => ({ ...m }));
+    memories.find((m) => m.id === "mem_001").access += 1;
+    memories.find((m) => m.id === "mem_002").access += 1;
+    memories.push({ ...NEW_MEMORY });
+    const withDecay = memories.map((m) => ({ ...m, baseRelevance: m.relevance, relevance: m.relevance * Math.pow(0.99, m.age) }));
+    const kept = withDecay.filter((m) => !(m.relevance < 0.05 && m.access < 2));
+    const removed = withDecay.filter((m) => m.relevance < 0.05 && m.access < 2);
+    const rows = withDecay.map((m) => {
+      const deleted = m.relevance < 0.05 && m.access < 2;
+      return `<tr>
+        <th scope="row"><code>${m.id}</code></th>
+        <td class="content">${m.content}</td>
+        <td class="num">${m.age}</td>
+        <td class="num">${m.access}</td>
+        <td class="num">${m.baseRelevance.toFixed(4)}</td>
+        <td class="num">${m.relevance.toFixed(4)}</td>
+        <td>${deleted ? badge("deleted") : badge("active")}</td>
+      </tr>`;
+    }).join("");
+    return `
+      <div class="decision"><span class="n">式</span><span>relevance<sub>新</sub> = relevance<sub>旧</sub> × 0.99<sup>age_days</sup>；当结果 &lt; 0.05 且 access_count &lt; 2 时删除</span>${badge("formula")}</div>
+      <div class="table-wrap">
+        <table class="data decay-table">
+          <caption class="sr-only">固定记忆集的衰减计算</caption>
+          <thead><tr><th scope="col">ID</th><th scope="col">内容</th><th scope="col" class="num">年龄（天）</th><th scope="col" class="num">访问</th><th scope="col" class="num">衰减前</th><th scope="col" class="num">衰减后</th><th scope="col">结果</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="removed"><strong>被清理：</strong>${removed.map((m) => `${m.id}（${m.relevance.toFixed(4)}，访问 ${m.access} 次）`).join("；")}</div>
+      <p class="demo-note">固定教学算术：0.99 的幂次按本页预设年龄计算，保留 4 位小数。实际系统按自己的衰减参数和访问记录计算。</p>`;
+  }
+
+  function retrieveScene() {
+    const memories = BASE_MEMORIES.filter((m) => m.id !== "mem_005").map((m) => ({ ...m }));
+    memories.find((m) => m.id === "mem_001").access += 1;
+    memories.find((m) => m.id === "mem_002").access += 1;
+    memories.push({ ...NEW_MEMORY });
+    const ranked = SCORES.map((s) => ({ ...s, total: s.recency + s.importance + s.relevance })).sort((a, b) => b.total - a.total);
+    const top = ranked.slice(0, 2);
+    const rows = ranked.map((s) => {
+      const mem = memories.find((m) => m.id === s.id);
+      const isTop = top.some((t) => t.id === s.id);
+      return `<tr>
+        <th scope="row"><code>${s.id}</code></th>
+        <td class="content">${mem.content}</td>
+        <td class="num">${s.vector.toFixed(2)}</td>
+        <td class="num">${s.recency.toFixed(2)}</td>
+        <td class="num">${s.importance.toFixed(2)}</td>
+        <td class="num">${s.relevance.toFixed(2)}</td>
+        <td class="num"><strong>${s.total.toFixed(2)}</strong></td>
+        <td>${isTop ? '<span class="badge badge-ok">Top-2</span>' : '<span class="badge badge-neutral">未入选</span>'}</td>
+      </tr>`;
+    }).join("");
+    return `
+      <div class="conv"><div class="conv-line"><b>查询</b><span>推荐一个 Web 框架</span></div></div>
+      <div class="table-wrap">
+        <table class="data score-table wide">
+          <caption class="sr-only">固定检索分数：向量分、新近性、重要性、相关度与三因子总分</caption>
+          <thead><tr><th scope="col">ID</th><th scope="col">内容</th><th scope="col" class="num">向量分</th><th scope="col" class="num">recency</th><th scope="col" class="num">importance</th><th scope="col" class="num">relevance</th><th scope="col" class="num">总分</th><th scope="col">结果</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="top-memory"><b>回灌上下文：</b>${top.map((t) => `${t.id}（总分 ${t.total.toFixed(2)}）`).join(" + ")}。纯向量只看相似度会选 mem_002 + mem_003；三因子把重要性更高的 mem_001 提到第二。</div>
+      <p class="demo-note">固定教学数据：向量分、recency、importance、relevance 均已按原文公式 min-max 归一化，三个权重都取 1。分数为预设值，不是真实模型打分。</p>`;
+  }
+
+  function updateScene() {
+    const finalMemories = BASE_MEMORIES.filter((m) => ["mem_001", "mem_003", "mem_004"].includes(m.id)).map((m) => ({ ...m }));
+    finalMemories.find((m) => m.id === "mem_001").state = "updated";
+    finalMemories.find((m) => m.id === "mem_001").access += 1;
+    finalMemories.push({ ...NEW_MEMORY });
+    return `
+      <div class="decision-list">
+        <div class="decision"><span class="n">新</span><span>“我不再用 FastAPI，团队统一用 Go。” 与 <code>mem_002</code> 相似度 <strong>0.93</strong> ≥ 0.90，LLM 判定 <strong>CONTRADICT</strong> → 旧记忆标记失效，写入 <code>mem_007</code></span>${badge("invalidated")}</div>
+        <div class="decision"><span class="n">删</span><span>用户要求“删除我关于框架偏好的所有记忆” → 物理删除 <code>mem_002</code> 与 <code>mem_007</code>，包括失效历史与备份</span>${badge("deleted")}</div>
+      </div>
+      <div class="final-grid">
+        <div class="final-cell"><b>更新策略</b>失效不等于删除：旧事实保留 <code>valid_to</code>，历史仍可追溯；新事实 <code>valid_from</code> 从现在开始。</div>
+        <div class="final-cell"><b>删除策略</b>GDPR 的“被遗忘权”要求物理删除，向量库、图库、结构化存储和备份都要覆盖。</div>
+      </div>
+      ${memoryTable(finalMemories)}
+      <ul class="event-log">
+        <li><span class="n">01</span><span>提取 3 条事实，F1/F2 命中已有记忆，F3 新增 <code>mem_006</code></span><span class="badge badge-info">写入</span></li>
+        <li><span class="n">02</span><span>衰减计算后清理 <code>mem_005</code>（0.0270，访问 0 次）</span><span class="badge badge-bad">清理</span></li>
+        <li><span class="n">03</span><span>三因子检索选出 <code>mem_002</code> + <code>mem_001</code> 回灌上下文</span><span class="badge badge-ok">检索</span></li>
+        <li><span class="n">04</span><span>新事实与 <code>mem_002</code> 冲突，旧记忆失效，新增 <code>mem_007</code></span><span class="badge badge-warn">更新</span></li>
+        <li><span class="n">05</span><span>用户要求删除框架偏好，<code>mem_002</code> 与 <code>mem_007</code> 物理删除</span><span class="badge badge-bad">删除</span></li>
+      </ul>
+      <p class="demo-note">固定生命周期结果：最终保留 4 条（mem_001 / mem_003 / mem_004 / mem_006）。所有操作只作用于本页脚本里的数组，不连接数据库。</p>`;
+  }
+
+  const SCENES = [writeScene, dedupeScene, decayScene, retrieveScene, updateScene];
+
+  function renderStage(stage) {
+    state.stage = stage;
+    const meta = STAGES[stage];
+    byId("life-scene").innerHTML = SCENES[stage]();
+    byId("scene-index").textContent = `阶段 ${stage + 1} / 5 · 固定记忆集`;
+    byId("life-title").textContent = meta.title;
+    byId("scene-subtitle").textContent = meta.subtitle;
+    byId("state-summary").textContent = meta.summary;
+    byId("back-button").disabled = stage === 0;
+    byId("next-button").disabled = stage === STAGES.length - 1;
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      const active = Number(button.dataset.stage) === stage;
+      if (active) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    byId("life-announcement").textContent = `${meta.title}。${meta.subtitle}`;
+  }
+
+  byId("reset-button").addEventListener("click", () => renderStage(0));
+  byId("back-button").addEventListener("click", () => renderStage(Math.max(0, state.stage - 1)));
+  byId("next-button").addEventListener("click", () => renderStage(Math.min(STAGES.length - 1, state.stage + 1)));
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+
+  renderStage(0);
+</script>
+</body>
+</html>

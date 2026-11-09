@@ -1,0 +1,927 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>什么是 Agentic RAG？它与传统 RAG 有何不同？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  /* 018 Agentic RAG 循环 */
+  .ar-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .ar-grid { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.25fr); gap: var(--s-5); align-items: start; }
+  .ar-grid > *, .ar-two > * { min-width: 0; }
+  .ar-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .ar-card h2 { font-size: 16px; line-height: 1.5; font-weight: 600; }
+  .ar-card .figure-index { margin-bottom: 3px; }
+  .ar-query { padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .ar-query-label { font-size: var(--t-label); color: var(--text-dim); }
+  .ar-query-text { font: 500 17px/1.65 var(--mono); margin-top: var(--s-3); letter-spacing: -.01em; overflow-wrap: anywhere; }
+  .ar-note { margin-top: var(--s-3); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .ar-decisions { list-style: none; margin: var(--s-4) 0 0; padding: 0; display: grid; gap: 7px; }
+  .ar-decisions li { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 9px; border: 1px solid var(--border); border-radius: 5px; padding: 8px 10px; font-size: 12px; line-height: 1.6; background: var(--surface-soft); }
+  .ar-decisions b { font-weight: 600; color: var(--ink); }
+  .ar-decisions span { color: var(--text-dim); }
+  .ar-question-list { list-style: none; margin: var(--s-3) 0 0; padding: 0; counter-reset: arq; display: grid; gap: 9px; }
+  .ar-question { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 9px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px 11px; }
+  .ar-question b { display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--accent); color: white; font: 11px/1 var(--mono); }
+  .ar-question strong { display: block; font-size: 13px; line-height: 1.55; font-weight: 600; }
+  .ar-question span { display: block; margin-top: 3px; font-size: 11px; line-height: 1.6; color: var(--text-dim); }
+  .ar-two { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-3); }
+  .ar-source { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3); min-width: 0; }
+  .ar-source h3 { font-size: 12px; line-height: 1.5; font-weight: 600; }
+  .ar-source p { font-size: 12px; line-height: 1.7; color: var(--text-dim); margin-top: 5px; }
+  .ar-badge { display: inline-flex; align-items: center; min-height: 23px; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border-bright); font: 10px/1.5 var(--mono); color: var(--text-dim); margin-top: 7px; }
+  .ar-badge.ok { color: #1b5e20; border-color: #9bc59b; background: #f1f8f1; }
+  .ar-badge.partial { color: #7a4a00; border-color: #d8b36a; background: #fffaf0; }
+  .ar-badge.miss { color: #8b1a1a; border-color: #d99b9b; background: #fff6f6; }
+  .ar-src-label { font: 10px/1.5 var(--mono); color: var(--text-dim); margin-top: 7px; overflow-wrap: anywhere; }
+  .ar-loopbar { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: var(--s-3); padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .ar-loopbar span.node { padding: 3px 7px; border: 1px solid var(--border-bright); border-radius: 4px; background: var(--surface); }
+  .ar-loopbar span.node.on { border-color: var(--accent); background: var(--accent-dim); color: var(--ink); font-weight: 600; }
+  .ar-loopbar span.arrow { color: var(--text-dim); }
+  .ar-check { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: var(--s-3); }
+  .ar-check th, .ar-check td { padding: 8px 7px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  .ar-check th { font-size: 10px; color: var(--text-dim); font-weight: 500; white-space: nowrap; }
+  .ar-check td:last-child { white-space: nowrap; }
+  .ar-check tr:last-child td { border-bottom: 0; }
+  .ar-verdict { margin-top: var(--s-4); border: 1px solid #d8b36a; border-radius: var(--r-1); background: #fffaf0; padding: var(--s-3) var(--s-4); font-size: 12px; line-height: 1.7; }
+  .ar-verdict strong { color: #7a4a00; }
+  .ar-choice { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-3); }
+  .ar-choice button { min-height: 44px; padding: 8px 14px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .ar-choice button:hover { background: var(--surface-soft); }
+  .ar-choice button.primary { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+  .ar-choice button.primary:hover { background: #3a423b; }
+  .ar-round { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border: 1px solid var(--border-bright); border-radius: 999px; font: 10px/1.6 var(--mono); color: var(--text-dim); background: var(--surface); }
+  .ar-final { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); margin-top: var(--s-3); }
+  .ar-final h3 { font-size: 14px; font-weight: 600; line-height: 1.5; }
+  .ar-final p { font-size: 13px; line-height: 1.85; margin-top: var(--s-2); }
+  .ar-cites { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--s-3); }
+  .ar-cite { font: 10px/1.6 var(--mono); padding: 2px 7px; border: 1px solid var(--border-bright); border-radius: 4px; background: var(--surface-soft); color: var(--text-dim); }
+  .ar-stop { margin-top: var(--s-3); border-top: 1px solid var(--border); padding-top: var(--s-3); font-size: 11px; line-height: 1.8; color: var(--text-dim); }
+  .ar-stop strong { color: var(--ink); }
+  .ar-caption { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border); }
+  .ar-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; }
+  .ar-caption p:not(.figure-index):not(.ar-action) { margin-top: var(--s-2); font-size: var(--t-small); color: var(--text-dim); max-width: 64em; }
+  .ar-action { display: inline-block; margin-top: var(--s-3); padding: 4px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font: 11px/1.6 var(--mono); color: var(--accent); background: var(--accent-dim); }
+  .ar-loop-map { display: grid; grid-template-columns: minmax(0, 1fr) 42px minmax(0, 1.1fr); gap: var(--s-3); align-items: center; margin-top: var(--s-4); }
+  .ar-loop-col { display: grid; gap: 7px; min-width: 0; }
+  .ar-loop-node { border: 1px solid var(--border-bright); border-radius: 5px; padding: 8px 10px; font-size: 12px; line-height: 1.55; background: var(--surface); }
+  .ar-loop-node small { display: block; font-size: 10px; color: var(--text-dim); }
+  .ar-loop-arrow { text-align: center; color: var(--text-dim); font: 10px/1.4 var(--mono); }
+  .ar-loop-arrow b { display: block; font-size: 18px; line-height: 1.2; }
+  .ar-loop-back { border: 1px dashed #d8b36a; background: #fffaf0; color: #7a4a00; text-align: center; font: 10px/1.5 var(--mono); padding: 6px; border-radius: 5px; }
+  .ar-types { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }  .ar-type { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .ar-type h3 { font-size: 14px; line-height: 1.5; font-weight: 600; }
+  .ar-type p { font-size: 12px; line-height: 1.7; color: var(--text-dim); margin-top: 5px; }
+  .ar-type .ar-badge { margin-top: 8px; }
+  .ar-supplement-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: var(--s-3); margin-top: 12px; }
+  @media (max-width: 1000px) {
+    .ar-two, .ar-types, .ar-supplement-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 900px) {
+    .ar-grid { grid-template-columns: 1fr; }
+    .ar-loop-map { grid-template-columns: 1fr; }
+    .ar-loop-arrow b { transform: rotate(90deg); }
+  }
+  @media (max-width: 720px) {
+    .ar-stage { padding: var(--s-4); }
+    .ar-card { padding: var(--s-3); }
+    .ar-query-text { font-size: 15px; }
+    .ar-decisions li { grid-template-columns: 1fr; gap: 2px; }
+    .ar-caption h2 { font-size: 22px; }
+    .ar-check { font-size: 11px; }
+    .ar-check th, .ar-check td { padding: 7px 5px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">018 / Agentic RAG</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 16 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="017-reranking-strategies.html">← 上一页 · Re-ranking 的原理与实现</a><a href="019-advanced-rag-variants.html">下一页 → · 高级 RAG 变体</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · RAG · 可交互讲解</p>
+      <h1>检索不是<br>一次就完。</h1>
+    </div>
+    <div>
+      <p class="lead">Agentic RAG 在“检索→生成”的流水线上加了一个 Agent 控制循环：先判断要不要检索、从哪检索，检索后判断信息够不够，不够就补充检索或调用工具，直到满足停止条件才生成回答。</p>
+      <p class="definition">关键边界：<strong>它是架构模式，不是某个框架</strong>。核心是动态决策和控制循环；用 LangChain 实现只是其中一种写法，不用 LangChain 也可以有 Agentic RAG。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">RAG</span><span class="pill">控制循环</span><span class="pill">固定教学数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-label="Agentic RAG 控制循环演示">
+    <div class="player-top">
+      <div class="player-label">多轮检索循环 <small>固定查询，看分解、检索、判断、补充如何迭代</small></div>
+      <div class="controls" role="group" aria-label="Agentic RAG 演示控制">
+        <button type="button" class="button button-quiet" id="ar-reset">重置</button>
+        <button type="button" class="button" id="ar-prev" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="ar-next">下一步 →</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="Agentic RAG 演示六个步骤">
+      <ol style="--stages: 6">
+        <li><button type="button" class="stage-button" data-step="0" aria-current="step" aria-controls="ar-scene" aria-label="第 1 步：查询与决策"><span class="stage-number">1</span><span>查询</span></button></li>
+        <li><button type="button" class="stage-button" data-step="1" aria-controls="ar-scene" aria-label="第 2 步：查询分解"><span class="stage-number">2</span><span>分解</span></button></li>
+        <li><button type="button" class="stage-button" data-step="2" aria-controls="ar-scene" aria-label="第 3 步：第一轮检索"><span class="stage-number">3</span><span>检索</span></button></li>
+        <li><button type="button" class="stage-button" data-step="3" aria-controls="ar-scene" aria-label="第 4 步：判断信息是否足够"><span class="stage-number">4</span><span>判断</span></button></li>
+        <li><button type="button" class="stage-button" data-step="4" aria-controls="ar-scene" aria-label="第 5 步：补充检索"><span class="stage-number">5</span><span>补充</span></button></li>
+        <li><button type="button" class="stage-button" data-step="5" aria-controls="ar-scene" aria-label="第 6 步：综合生成"><span class="stage-number">6</span><span>生成</span></button></li>
+      </ol>
+    </nav>
+    <div class="ar-stage scene" id="ar-scene" data-scene="agentic-rag">
+
+      <section class="ar-panel" data-panel="0">
+        <div class="ar-grid">
+          <div>
+            <div class="ar-query">
+              <p class="ar-query-label">固定教学查询</p>
+              <p class="ar-query-text">我们的 RAG 系统延迟比竞品高，成本也更高，怎么优化？</p>
+              <p class="ar-note">这条查询来自原文示例：它同时涉及延迟、成本、竞品对比，属于多跳问题，适合触发 Agent 循环。所有检索结果和判断都是写死的。</p>
+            </div>
+          </div>
+          <div class="ar-card">
+            <p class="figure-index">第 1 步 · Agent 决策</p>
+            <h2>先判断这次查询要怎么处理。</h2>
+            <ul class="ar-decisions">
+              <li><b>需要分解？</b><span>是。问题包含“延迟优化”“成本优化”“竞品指标”三个子问题。</span></li>
+              <li><b>需要检索？</b><span>是。内部文档和外部竞品信息都不在当前上下文里。</span></li>
+              <li><b>需要工具？</b><span>暂时不需要；先走检索，若指标需要换算再调用计算器。</span></li>
+            </ul>
+            <p class="ar-note">传统 RAG 在这里直接检索一次；Agentic RAG 先做决策，再决定检索几次、从哪里检索。</p>
+          </div>
+        </div>
+        <div class="ar-caption">
+          <p class="figure-index">图 1 · 第 1 / 6 步</p>
+          <h2>循环从“要不要检索”开始，而不是从向量查询开始。</h2>
+          <p>传统 RAG 的流程是固定的：查询进来，检索一次，生成回答。Agentic RAG 多了一个控制层：它可以跳过检索、拆分查询、换数据源，也可以在结果不好时继续迭代。</p>
+          <p class="ar-action">下一步：把多跳查询拆成 3 个子问题</p>
+        </div>
+      </section>
+
+      <section class="ar-panel" data-panel="1" hidden>
+        <div class="ar-grid">
+          <div class="ar-card">
+            <p class="figure-index">第 2 步 · 查询分解</p>
+            <h2>一个复杂问题，拆成三个可检索的子问题。</h2>
+            <ol class="ar-question-list">
+              <li class="ar-question"><b aria-hidden="true">1</b><div><strong>RAG 系统延迟优化有哪些方法？</strong><span>目标数据源：内部技术文档</span></div></li>
+              <li class="ar-question"><b aria-hidden="true">2</b><div><strong>RAG 系统成本优化策略有哪些？</strong><span>目标数据源：内部技术文档</span></div></li>
+              <li class="ar-question"><b aria-hidden="true">3</b><div><strong>竞品的典型延迟和成本指标是什么？</strong><span>目标数据源：公开网页；必要时再查行业报告</span></div></li>
+            </ol>
+          </div>
+          <div class="ar-card">
+            <p class="figure-index">分解的依据</p>
+            <h2>子问题可以分别检索，再综合回答。</h2>
+            <p class="ar-note">原文的 QueryDecomposer 让 LLM 把复杂问题拆成 2–4 个独立子问题。拆分的价值是每个子问题都能匹配到更合适的检索源，而不是拿整句长查询去撞向量库。</p>
+            <p class="ar-note">拆分也有代价：子问题越多，检索次数和 token 成本越高；如果子问题之间依赖很强，还需要先拿到前一步结果再拆下一步。</p>
+            <div class="ar-loopbar" aria-label="当前循环位置">
+              <span class="node">查询</span><span class="arrow">→</span><span class="node on">分解</span><span class="arrow">→</span><span class="node">检索</span><span class="arrow">→</span><span class="node">判断</span><span class="arrow">→</span><span class="node">生成</span>
+            </div>
+          </div>
+        </div>
+        <div class="ar-caption">
+          <p class="figure-index">图 2 · 第 2 / 6 步</p>
+          <h2>分解让每个子问题都能找到更对口的来源。</h2>
+          <p>三个子问题分别指向内部文档和公开网页。下一步会并行检索，而不是把整句查询丢给一个向量库。</p>
+          <p class="ar-action">下一步：第一轮检索三个子问题</p>
+        </div>
+      </section>
+
+      <section class="ar-panel" data-panel="2" hidden>
+        <div class="ar-card">
+          <div class="ar-ce-head" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;">
+            <div><p class="figure-index">第 3 步 · 第一轮检索</p><h2>三个子问题，三个来源。</h2></div>
+            <span class="ar-round">循环第 1 轮</span>
+          </div>
+          <div class="ar-two">
+            <div class="ar-source">
+              <h3>子问题 1 → 内部文档</h3>
+              <p>检索阶段可用的延迟手段：减少召回 K、用 Cross-Encoder 只重排少量候选、缓存高频查询。</p>
+              <span class="ar-badge ok">已覆盖</span>
+              <p class="ar-src-label">来源 S1 · 内部技术文档（固定教学数据）</p>
+            </div>
+            <div class="ar-source">
+              <h3>子问题 2 → 内部文档</h3>
+              <p>成本优化：语义缓存、模型路由、压缩上下文、批处理。</p>
+              <span class="ar-badge ok">已覆盖</span>
+              <p class="ar-src-label">来源 S2 · 内部技术文档（固定教学数据）</p>
+            </div>
+            <div class="ar-source">
+              <h3>子问题 3 → 公开网页</h3>
+              <p>某竞品公开博客称其 P95 延迟约 1.2 秒，但未给出成本口径。</p>
+              <span class="ar-badge partial">部分覆盖</span>
+              <p class="ar-src-label">来源 S3 · 公开博客摘要（固定教学数据）</p>
+            </div>
+          </div>
+          <div class="ar-loopbar" aria-label="当前循环位置">
+            <span class="node">查询</span><span class="arrow">→</span><span class="node">分解</span><span class="arrow">→</span><span class="node on">检索</span><span class="arrow">→</span><span class="node">判断</span><span class="arrow">→</span><span class="node">生成</span>
+          </div>
+        </div>
+        <div class="ar-caption">
+          <p class="figure-index">图 3 · 第 3 / 6 步</p>
+          <h2>第一轮拿到了延迟和成本方法，但竞品成本还缺。</h2>
+          <p>三个子问题并行检索。前两个命中内部文档，第三个只找到竞品延迟，没有成本数据。检索完成不等于信息够了，下一步要判断覆盖度。</p>
+          <p class="ar-action">下一步：检查每个子问题是否被覆盖</p>
+        </div>
+      </section>
+
+      <section class="ar-panel" data-panel="3" hidden>
+        <div class="ar-card">
+          <div class="ar-ce-head" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;">
+            <div><p class="figure-index">第 4 步 · 判断</p><h2>信息够了吗？</h2></div>
+            <span class="ar-round">循环第 1 轮 · 判断</span>
+          </div>
+          <table class="ar-check">
+            <caption class="sr-only">第一轮检索的覆盖度检查</caption>
+            <thead><tr><th scope="col">子问题</th><th scope="col">检查结果</th><th scope="col">结论</th></tr></thead>
+            <tbody>
+              <tr><td>延迟优化方法</td><td>S1 给出 3 条可执行手段</td><td><span class="ar-badge ok">覆盖</span></td></tr>
+              <tr><td>成本优化策略</td><td>S2 给出 4 条可执行策略</td><td><span class="ar-badge ok">覆盖</span></td></tr>
+              <tr><td>竞品延迟与成本</td><td>S3 只有延迟，没有成本口径</td><td><span class="ar-badge partial">缺口</span></td></tr>
+            </tbody>
+          </table>
+          <div class="ar-verdict"><strong>判断：2 / 3 覆盖，竞品成本缺失。</strong> 可以补充检索一次，找竞品定价或行业报告；也可以直接生成，但在回答里标明对比数据不足。</div>
+          <div class="ar-choice" role="group" aria-label="选择下一步动作">
+            <button type="button" class="primary" id="ar-supplement">发现缺口，补充检索 →</button>
+            <button type="button" id="ar-stop-early">信息够了，直接生成 →</button>
+          </div>
+          <p class="ar-note">这是演示里的真实分支：选择“直接生成”会跳到第 6 步，最终回答缺少竞品成本；选择“补充检索”会进入第 5 步，多跑一轮循环。</p>
+          <div class="ar-loopbar" aria-label="当前循环位置">
+            <span class="node">查询</span><span class="arrow">→</span><span class="node">分解</span><span class="arrow">→</span><span class="node">检索</span><span class="arrow">→</span><span class="node on">判断</span><span class="arrow">→</span><span class="node">生成</span>
+          </div>
+        </div>
+        <div class="ar-caption">
+          <p class="figure-index">图 4 · 第 4 / 6 步</p>
+          <h2>判断不是“感觉够了”，而是逐项检查覆盖。</h2>
+          <p>原文的可靠性建议包括对检索结果做质量检查。这里用固定的覆盖表演示：2 项覆盖、1 项缺口，触发下一轮循环。真实系统通常由 LLM 评估器或规则共同判断。</p>
+          <p class="ar-action">在页面上选择一个分支，观察循环如何继续或提前结束</p>
+        </div>
+      </section>
+
+      <section class="ar-panel" data-panel="4" hidden>
+        <div class="ar-card">
+          <div class="ar-ce-head" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;">
+            <div><p class="figure-index">第 5 步 · 补充检索</p><h2>第二轮只补缺口，不重跑全部。</h2></div>
+            <span class="ar-round">循环第 2 轮</span>
+          </div>
+          <div class="ar-supplement-grid">
+            <div class="ar-source">
+              <h3>补充查询</h3>
+              <p>“竞品 RAG 服务的公开定价或每千次查询成本是多少？”</p>
+              <p class="ar-src-label">由 Agent 根据缺口改写 · 固定教学数据</p>
+            </div>
+            <div class="ar-source">
+              <h3>新增来源 S4 · 行业报告</h3>
+              <p>竞品 B 的公开套餐价为每千次查询约 0.8 美元；报告注明这是套餐估算，不是实际单位成本。</p>
+              <span class="ar-badge ok">已覆盖，但口径不同</span>
+              <p class="ar-src-label">来源 S4 · 行业报告摘要（固定教学数据）</p>
+            </div>
+          </div>
+          <div class="ar-verdict" style="border-color:#9bc59b;background:#f1f8f1;"><strong style="color:#1b5e20;">再次判断：3 / 3 覆盖。</strong> 竞品延迟来自 S3，成本来自 S4；两者口径不同，回答里需要标注。停止条件满足，退出循环。</div>
+          <p class="ar-note">停止条件同时检查：覆盖度达到 3/3；循环轮次 2 / 上限 2；本轮新增 token 未超过演示预算。任意一条触发都可以结束循环，但结束原因要写进最终回答。</p>
+          <div class="ar-loopbar" aria-label="当前循环位置">
+            <span class="node">查询</span><span class="arrow">→</span><span class="node">分解</span><span class="arrow">→</span><span class="node">检索</span><span class="arrow">→</span><span class="node">判断</span><span class="arrow">→</span><span class="node on">补充检索</span><span class="arrow">→</span><span class="node">生成</span>
+          </div>
+        </div>
+        <div class="ar-caption">
+          <p class="figure-index">图 5 · 第 5 / 6 步</p>
+          <h2>第二轮是补充，不是从头再来。</h2>
+          <p>Agent 只重写缺失的子问题，保留第一轮已经覆盖的结果。这样循环的成本可控，也避免重复检索同一批文档。</p>
+          <p class="ar-action">下一步：用两轮结果生成带引用的回答</p>
+        </div>
+      </section>
+
+      <section class="ar-panel" data-panel="5" hidden>
+        <div class="ar-card">
+          <div class="ar-ce-head" style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center;">
+            <div><p class="figure-index">第 6 步 · 综合生成</p><h2 id="ar-final-title">按已覆盖的信息生成回答。</h2></div>
+            <span class="ar-round" id="ar-final-round">循环第 2 轮 · 结束</span>
+          </div>
+          <div class="ar-final">
+            <h3>最终回答（固定教学文本）</h3>
+            <p id="ar-final-text"></p>
+            <div class="ar-cites" id="ar-final-cites" aria-label="回答引用的固定来源"></div>
+          </div>
+          <div class="ar-stop" id="ar-stop-reason"></div>
+          <div class="ar-loopbar" aria-label="当前循环位置">
+            <span class="node">查询</span><span class="arrow">→</span><span class="node">分解</span><span class="arrow">→</span><span class="node">检索</span><span class="arrow">→</span><span class="node">判断</span><span class="arrow">→</span><span class="node">补充检索</span><span class="arrow">→</span><span class="node on">生成</span>
+          </div>
+        </div>
+        <div class="ar-caption">
+          <p class="figure-index">图 6 · 第 6 / 6 步</p>
+          <h2>回答里要带上来源和停止原因。</h2>
+          <p>完整路径下，回答同时覆盖延迟、成本和竞品对比，并标注竞品数据口径不同。提前停止路径下，回答只覆盖前两项，并明确说明缺少竞品成本。</p>
+          <p class="ar-action" id="ar-final-action">循环结束 · 可以重新演示另一条分支</p>
+        </div>
+      </section>
+
+      <p class="demo-note">固定教学数据：查询、3 个子问题、4 条来源、覆盖判断、停止条件和两版最终回答都是写死的；循环由本页脚本切换，不调用模型、检索服务或网络。来源名称为演示虚构。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 分支由页面脚本控制</span><span id="ar-state-summary">第 1 / 6 步 · 没有连接模型</span></div>
+  </section>
+  <p id="ar-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="limits-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">传统 RAG 的局限</p><h2 id="limits-title">一条线走到底，<br>错了也没机会改。</h2></div>
+      <p class="reading-intro">传统 RAG 是“查询→检索→生成”的线性流水线。它的限制不在于某个组件不好，而在于流程里没有判断和回退的位置。</p>
+    </div>
+    <div class="prose">
+      <ol>
+        <li><strong>单数据源</strong>：只从一个向量库中检索，无法跨多个知识源。</li>
+        <li><strong>一次检索（One-shot）</strong>：只检索一次，如果结果不够好没有纠错机制。</li>
+        <li><strong>无工具使用</strong>：只能检索静态文本，无法调用 API、执行 SQL 或做计算。</li>
+        <li><strong>无推理</strong>：不会判断检索结果的质量，也不会调整检索策略。</li>
+      </ol>
+      <p>这四条限制共同指向一个问题：流水线没有“观察结果后改变下一步”的能力。Agentic RAG 加的正是这个能力。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="upgrade-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">核心升级</p><h2 id="upgrade-title">把检索收进<br>Agent 控制循环。</h2></div>
+      <p class="reading-intro">Agent 可以动态决定是否需要检索、从哪个数据源检索、是否需要多轮检索，以及是否调用外部工具。检索从固定步骤变成可被决策和重复的动作。</p>
+    </div>
+    <div class="prose">
+      <div class="ar-loop-map" aria-label="Agentic RAG 控制循环离线示意">
+        <div class="ar-loop-col">
+          <div class="ar-loop-node">Query<small>用户问题进入</small></div>
+          <div class="ar-loop-arrow" aria-hidden="true">↓</div>
+          <div class="ar-loop-node">Agent 决策<small>检索？工具？分解？</small></div>
+          <div class="ar-loop-arrow" aria-hidden="true">↓</div>
+          <div class="ar-loop-node">检索 / 工具 / 分解<small>向量库 · SQL · Web · API</small></div>
+        </div>
+        <div class="ar-loop-arrow" aria-hidden="true"><b>→</b>判断</div>
+        <div class="ar-loop-col">
+          <div class="ar-loop-node">信息够了吗？<small>覆盖度 · 矛盾 · 引用</small></div>
+          <div class="ar-loop-arrow" aria-hidden="true">↓ 够了</div>
+          <div class="ar-loop-node">生成最终回答<small>带来源 · 带停止原因</small></div>
+          <div class="ar-loop-back">不够 → 回到 Agent 决策，继续迭代</div>
+        </div>
+      </div>
+      <p class="ar-note">离线可读示意：左边是决策与执行，右边是判断与生成；虚线表示不满足条件时回到决策层。原图是 Mermaid，源码见下方折叠块。</p>
+      <details>
+        <summary>查看原文 Mermaid 源码（需在支持 Mermaid 的编辑器中渲染）</summary>
+        <pre><code>flowchart TD
+    Q["Query"] --&gt; A{"Agent 决策"}
+    A --&gt;|"需要检索？"| R["多源检索&lt;br/&gt;（向量库 / SQL / Web）"]
+    A --&gt;|"需要工具？"| T["调用工具&lt;br/&gt;（API / SQL / 计算器）"]
+    A --&gt;|"需要分解？"| D["拆成子问题&lt;br/&gt;分别处理"]
+    R --&gt; C{"信息够了吗？"}
+    T --&gt; C
+    D --&gt; C
+    C --&gt;|"不够，继续迭代"| A
+    C --&gt;|"够了"| F["生成最终回答"]
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class A,C decision
+    class Q,R,T,D proc
+    class F agent</code></pre>
+      </details>
+      <p>原文的概括是：传统 RAG 是“单次检索、一发即忘”的流水线；Agentic RAG 是“多轮迭代、自主决策”的控制循环。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="types-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三种核心 Agent 类型</p><h2 id="types-title">从选数据源，<br>到多步推理。</h2></div>
+      <p class="reading-intro">路由 Agent 解决“去哪查”，工具使用 Agent 解决“能查什么”，ReAct Agent 解决“按什么顺序查、查到什么程度”。</p>
+    </div>
+    <div class="prose">
+      <div class="ar-types">
+        <div class="ar-type"><h3>1. 路由 Agent</h3><p>分析查询后决定从哪个数据源检索。最简单的 Agentic RAG 形式。</p><span class="ar-badge">单次决策</span></div>
+        <div class="ar-type"><h3>2. 工具使用 Agent</h3><p>在标准 RAG 基础上集成外部工具，获取实时数据或执行计算。</p><span class="ar-badge">工具调用</span></div>
+        <div class="ar-type"><h3>3. ReAct Agent</h3><p>结合路由、查询规划和工具使用，处理需要多步推理的复杂查询。</p><span class="ar-badge">多步循环</span></div>
+      </div>
+
+      <h3>路由 Agent</h3>
+      <p class="code-label">原文代码 · RoutingAgent</p>
+      <pre><code>class RoutingAgent:
+    def __init__(self):
+        self.retrievers = {
+            "technical_docs": vector_store_a,
+            "customer_data": sql_database,
+            "real_time_info": web_search,
+        }
+
+    def route(self, query: str) -&gt; str:
+        # LLM 分析查询，决定最佳数据源
+        decision = llm.generate(
+            f"用户问题：{query}\n"
+            f"可用数据源：{list(self.retrievers.keys())}\n"
+            f"选择最合适的数据源。"
+        )
+        return self.retrievers[decision].search(query)</code></pre>
+      <p>适用场景：多知识源系统，例如客服系统同时有产品文档、订单数据库和 FAQ。</p>
+
+      <h3>工具使用 Agent</h3>
+      <p class="code-label">原文代码 · 工具清单</p>
+      <pre><code>tools = [
+    {"name": "vector_search", "desc": "搜索内部文档"},
+    {"name": "web_search", "desc": "搜索互联网最新信息"},
+    {"name": "sql_query", "desc": "查询数据库获取结构化数据"},
+    {"name": "calculator", "desc": "执行数学计算"},
+]
+
+# Agent 决定使用哪些工具，按什么顺序
+# 例如：先搜索文档获取定价规则，再查数据库获取客户数据，再计算折扣</code></pre>
+      <p>工具使用 Agent 的关键不是“有工具”，而是 Agent 能根据中间结果决定下一次调用哪个工具。</p>
+
+      <h3>ReAct Agent</h3>
+      <p class="code-label">原文代码 · 多步执行轨迹</p>
+      <pre><code># 复杂查询："比较我们公司和竞争对手的市场份额，预测明年趋势"
+# Agent 的执行轨迹：
+# Thought 1: 需要先获取我们公司的市场数据
+# Action 1: sql_query("SELECT market_share FROM reports WHERE year=2025")
+# Observation 1: 市场份额 23.5%
+# Thought 2: 需要获取竞争对手数据
+# Action 2: web_search("competitor X market share 2025")
+# Observation 2: 竞争对手 X 市场份额 31.2%
+# Thought 3: 需要找到行业趋势分析
+# Action 3: vector_search("AI market growth prediction 2026")
+# Observation 3: 分析师预计增长 45.8%
+# Thought 4: 现在信息够了，可以综合分析
+# Final Answer: ...</code></pre>
+      <p>ReAct 把“思考—行动—观察”串成循环，每一步的观察都可能改变下一步。这也是它比路由 Agent 更接近完整控制循环的原因。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="decompose-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">查询分解 Agent</p><h2 id="decompose-title">多跳问题，<br>拆开分别查。</h2></div>
+      <p class="reading-intro">把一个问题拆成多个独立子问题，分别检索后综合回答。它适合子问题之间没有严格先后依赖的场景。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文代码 · QueryDecomposer</p>
+      <pre><code>class QueryDecomposer:
+    def decompose(self, complex_query: str) -&gt; list[str]:
+        return llm.generate(
+            f"将以下复杂问题分解为 2-4 个独立的子问题：\n{complex_query}"
+        )
+
+# 示例：
+# 原始查询："我们的 RAG 系统延迟比竞品高，成本也更高，怎么优化？"
+# 分解为：
+# 1. "RAG 系统延迟优化有哪些方法？"
+# 2. "RAG 系统成本优化策略有哪些？"
+# 3. "竞品的典型延迟和成本指标是什么？"
+# 分别检索后综合生成优化方案</code></pre>
+      <p>演示里的循环用的就是这条查询。区别是演示把“分别检索后综合”展开成了可观察的 6 步，并补上了判断和补充检索。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="pragmatic-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">务实策略</p><h2 id="pragmatic-title">默认走经典 RAG，<br>失败再升级。</h2></div>
+      <p class="reading-intro">Agent 带来灵活性，也引入延迟、成本和不可预测性。原文推荐的务实做法是先跑经典 RAG，检测到失败信号后再触发 Agentic RAG 二次处理。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文代码 · 渐进式 Agentic RAG</p>
+      <pre><code>def smart_rag(query: str) -&gt; str:
+    # 默认使用经典 RAG（快、便宜、可预测）
+    result = classic_rag(query)
+
+    # 检测失败信号
+    if (result.confidence &lt; 0.5 or
+        result.has_contradiction or
+        result.missing_citations):
+        # 触发 Agentic RAG 二次处理
+        result = agentic_rag(query)
+
+    return result</code></pre>
+      <p>大多数查询用经典 RAG 即可高效处理，仅在检测到失败信号时启用 Agentic RAG 做二次检索和验证。这样既保留可预测的主路径，又给困难查询留了升级通道。</p>
+      <div class="callout"><p class="callout-label">原文提醒</p><p>不要因为 Agentic 听起来更先进就盲目采用。简单查询用传统 RAG 更快、更便宜、更可靠。</p></div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="compare-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">对比总结</p><h2 id="compare-title">流水线和控制循环<br>的八个差别。</h2></div>
+      <p class="reading-intro">Agentic RAG 买到的是灵活性和纠错能力，付出的是延迟、成本和可预测性。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">传统 RAG 与 Agentic RAG 在数据源、检索次数、决策方式、工具、纠错、延迟、成本和可预测性上的对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">传统 RAG</th><th scope="col">Agentic RAG</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">数据源</th><td>单个向量库</td><td>多源：向量库 + 数据库 + API + Web</td></tr>
+            <tr><th scope="row">检索次数</th><td>1 次</td><td>多次，迭代优化</td></tr>
+            <tr><th scope="row">决策</th><td>固定流程</td><td>LLM 自主决策</td></tr>
+            <tr><th scope="row">工具使用</th><td>无</td><td>支持 API、SQL、计算器等</td></tr>
+            <tr><th scope="row">纠错能力</th><td>无</td><td>有：检测 + 重试 + 验证</td></tr>
+            <tr><th scope="row">延迟</th><td>低</td><td>较高</td></tr>
+            <tr><th scope="row">成本</th><td>低</td><td>较高</td></tr>
+            <tr><th scope="row">可预测性</th><td>高</td><td>中</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">四个容易<br>被追问的点。</h2></div>
+      <p class="reading-intro">前两条是误区，后两条是面试追问；答案都来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“Agentic RAG 总是比传统 RAG 好。”</h3><p>Agent 引入了延迟、成本和不可预测性。简单查询用传统 RAG 更快更可靠。不要因为 Agentic 听起来更先进就盲目采用。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“Agentic RAG 就是 RAG + LangChain Agent。”</h3><p>Agentic RAG 是一种架构模式，不绑定特定框架。核心是在 RAG 流水线中引入动态决策和控制循环。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>Agentic RAG 的可靠性如何保证？</h3><p>第一，设置最大迭代次数防止无限循环；第二，工具调用加超时和降级；第三，对检索结果做质量检查，例如 Corrective RAG 的评估器；第四，关键场景加 Human-in-the-Loop。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>多 Agent RAG 是什么？</h3><p>多个专业化 Agent 协作：一个主 Agent 协调信息检索，多个子 Agent 各自负责不同数据源。例如一个 Agent 查内部文档，一个 Agent 查数据库，主 Agent 综合结果。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《什么是 Agentic RAG？它与传统 RAG 有何不同？》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://developer.nvidia.com/blog/traditional-rag-vs-agentic-rag-why-ai-agents-need-dynamic-knowledge-to-get-smarter/" target="_blank" rel="noopener noreferrer">Traditional RAG vs. Agentic RAG · NVIDIA</a></li>
+          <li><a href="https://www.ibm.com/think/topics/agentic-rag" target="_blank" rel="noopener noreferrer">What Is Agentic RAG? · IBM</a></li>
+          <li><a href="https://weaviate.io/blog/what-is-agentic-rag" target="_blank" rel="noopener noreferrer">What Is Agentic RAG? From LLM RAG to AI Agents · Weaviate</a></li>
+          <li><a href="https://towardsdatascience.com/agentic-rag-vs-classic-rag-from-a-pipeline-to-a-control-loop/" target="_blank" rel="noopener noreferrer">Agentic RAG vs Classic RAG: From Pipeline to Control Loop · TDS</a></li>
+          <li><a href="https://blog.n8n.io/agentic-rag/" target="_blank" rel="noopener noreferrer">Agentic RAG: A Guide to Building Autonomous AI Systems · n8n</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>02-rag/018-agentic-rag.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 3 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const AR_FINAL = Object.freeze({
+    full: {
+      title: "按两轮检索结果生成优化建议。",
+      text: "先降延迟：缩小召回 K，只把少量候选交给 Cross-Encoder 精排，并缓存高频查询；再降成本：加语义缓存、按难度做模型路由、压缩上下文、合并批处理。竞品对比方面，公开资料显示其 P95 延迟约 1.2 秒、套餐价约每千次查询 0.8 美元；两者口径不同，只能作粗略参照。",
+      cites: ["S1 内部技术文档", "S2 内部技术文档", "S3 公开博客", "S4 行业报告"],
+      round: "循环第 2 轮 · 结束",
+      reason: "<strong>停止原因：</strong>覆盖度达到 3 / 3，且已完成 2 轮循环。回答保留了两处口径提醒：竞品延迟是博客口径，成本是套餐估算，不能直接当成单位成本。",
+      action: "完整路径 · 两轮检索后生成"
+    },
+    early: {
+      title: "提前停止：只生成已覆盖的部分。",
+      text: "先降延迟：缩小召回 K，只把少量候选交给 Cross-Encoder 精排，并缓存高频查询；再降成本：加语义缓存、按难度做模型路由、压缩上下文、合并批处理。竞品的延迟与成本数据不足，无法完成对比。",
+      cites: ["S1 内部技术文档", "S2 内部技术文档"],
+      round: "循环第 1 轮 · 提前停止",
+      reason: "<strong>停止原因：</strong>你选择了直接生成。覆盖度只有 2 / 3，最终回答缺少竞品成本，也缺少延迟对比。这个分支更快，但回答不完整；生产系统应把缺口明确写进回答，而不是隐藏它。",
+      action: "提前停止 · 覆盖 2 / 3"
+    }
+  });
+
+  const AR_CAPTIONS = [
+    { index: "图 1 · 第 1 / 6 步", title: "循环从“要不要检索”开始，而不是从向量查询开始。", desc: "传统 RAG 的流程是固定的：查询进来，检索一次，生成回答。Agentic RAG 多了一个控制层：它可以跳过检索、拆分查询、换数据源，也可以在结果不好时继续迭代。", action: "下一步：把多跳查询拆成 3 个子问题" },
+    { index: "图 2 · 第 2 / 6 步", title: "分解让每个子问题都能找到更对口的来源。", desc: "三个子问题分别指向内部文档和公开网页。下一步会并行检索，而不是把整句查询丢给一个向量库。", action: "下一步：第一轮检索三个子问题" },
+    { index: "图 3 · 第 3 / 6 步", title: "第一轮拿到了延迟和成本方法，但竞品成本还缺。", desc: "三个子问题并行检索。前两个命中内部文档，第三个只找到竞品延迟，没有成本数据。检索完成不等于信息够了，下一步要判断覆盖度。", action: "下一步：检查每个子问题是否被覆盖" },
+    { index: "图 4 · 第 4 / 6 步", title: "判断不是“感觉够了”，而是逐项检查覆盖。", desc: "原文的可靠性建议包括对检索结果做质量检查。这里用固定的覆盖表演示：2 项覆盖、1 项缺口，触发下一轮循环。真实系统通常由 LLM 评估器或规则共同判断。", action: "在页面上选择一个分支，观察循环如何继续或提前结束" },
+    { index: "图 5 · 第 5 / 6 步", title: "第二轮是补充，不是从头再来。", desc: "Agent 只重写缺失的子问题，保留第一轮已经覆盖的结果。这样循环的成本可控，也避免重复检索同一批文档。", action: "下一步：用两轮结果生成带引用的回答" },
+    { index: "图 6 · 第 6 / 6 步", title: "回答里要带上来源和停止原因。", desc: "完整路径下，回答同时覆盖延迟、成本和竞品对比，并标注竞品数据口径不同。提前停止路径下，回答只覆盖前两项，并明确说明缺少竞品成本。", action: "循环结束 · 可以重新演示另一条分支" }
+  ];
+
+  const arState = { step: 0, choice: null };
+  const arById = (id) => document.getElementById(id);
+
+  function arSetChoice(choice) {
+    arState.choice = choice;
+    arState.step = choice === "early" ? 5 : 4;
+    arRender(true);
+  }
+
+  function arRenderFinal() {
+    const final = AR_FINAL[arState.choice === "early" ? "early" : "full"];
+    arById("ar-final-title").textContent = final.title;
+    arById("ar-final-text").textContent = final.text;
+    arById("ar-final-round").textContent = final.round;
+    arById("ar-stop-reason").innerHTML = final.reason;
+    arById("ar-final-action").textContent = final.action;
+    const cites = arById("ar-final-cites");
+    cites.textContent = "";
+    final.cites.forEach((cite) => {
+      const span = document.createElement("span");
+      span.className = "ar-cite";
+      span.textContent = cite;
+      cites.append(span);
+    });
+  }
+
+  function arRender(announce = true) {
+    document.querySelectorAll("#explainer [data-panel]").forEach((panel) => {
+      panel.hidden = Number(panel.dataset.panel) !== arState.step;
+    });
+    document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+      if (Number(button.dataset.step) === arState.step) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+
+    const activePanel = document.querySelector(`#explainer [data-panel="${arState.step}"]`);
+    const caption = AR_CAPTIONS[arState.step];
+    const captionHost = activePanel.querySelector(".ar-caption");
+    captionHost.querySelector(".figure-index").textContent = caption.index;
+    captionHost.querySelector("h2").textContent = caption.title;
+    captionHost.querySelector("p:not(.figure-index):not(.ar-action)").textContent = caption.desc;
+    captionHost.querySelector(".ar-action").textContent = caption.action;
+
+    if (arState.step === 5) arRenderFinal();
+
+    arById("ar-prev").disabled = arState.step === 0;
+    const next = arById("ar-next");
+    if (arState.step === 3) {
+      next.disabled = true;
+      next.textContent = "先做判断";
+    } else if (arState.step === 5) {
+      next.disabled = true;
+      next.textContent = "已完成";
+    } else {
+      next.disabled = false;
+      next.textContent = "下一步 →";
+    }
+    arById("ar-state-summary").textContent = `第 ${arState.step + 1} / 6 步 · 没有连接模型` +
+      (arState.choice ? ` · 分支：${arState.choice === "early" ? "提前停止" : "补充检索"}` : "");
+
+    if (announce) {
+      arById("ar-announcement").textContent = `第 ${arState.step + 1} 步，共 6 步。${caption.title}`;
+    }
+  }
+
+  function arGoto(step) {
+    const target = Math.max(0, Math.min(5, step));
+    if (target === 4) arState.choice = "supplement";
+    else if (target === 5 && !arState.choice) arState.choice = "supplement";
+    arState.step = target;
+    arRender(true);
+  }
+
+  arById("ar-prev").addEventListener("click", () => arGoto(arState.step - 1));
+  arById("ar-next").addEventListener("click", () => arGoto(arState.step + 1));
+  arById("ar-reset").addEventListener("click", () => {
+    arState.step = 0;
+    arState.choice = null;
+    arRender(true);
+  });
+  document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+    button.addEventListener("click", () => arGoto(Number(button.dataset.step)));
+  });
+  arById("ar-supplement").addEventListener("click", () => {
+    arState.choice = "supplement";
+    arState.step = 4;
+    arRender(true);
+    arById("ar-announcement").textContent = "已选择补充检索。进入第 5 步，第二轮只补竞品成本缺口。";
+  });
+  arById("ar-stop-early").addEventListener("click", () => {
+    arState.choice = "early";
+    arState.step = 5;
+    arRender(true);
+    arById("ar-announcement").textContent = "已选择直接生成。进入第 6 步，回答只覆盖延迟和成本方法，缺少竞品数据。";
+  });
+
+  arRender(false);
+</script>
+</body>
+</html>

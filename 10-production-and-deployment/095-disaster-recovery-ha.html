@@ -1,0 +1,1036 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Agent 系统的灾难恢复与高可用设计 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .dr-banner { display: flex; align-items: flex-start; gap: 9px; margin: var(--s-4) var(--s-6) 0; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .dr-banner::before { content: "教学"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .dr-banner strong { color: #4d3000; }
+  .dr-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid transparent; border-radius: 999px; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .dr-neutral { background: #eef1ee; color: #3f463f; border-color: #c9cec9; }
+  .dr-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .dr-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .dr-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .dr-bad { background: #fbecec; color: #8a1f1f; border-color: #d9a3a3; }
+  .dr-topbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: var(--s-3); }
+  .dr-scenarios { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-bottom: var(--s-3); }
+  .dr-scenario { min-width: 0; text-align: left; padding: 9px 10px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: 10px; line-height: 1.5; color: var(--text-dim); }
+  .dr-scenario b { display: block; font: 600 12px/1.5 var(--sans); color: var(--ink); }
+  .dr-scenario:hover { background: var(--surface-soft); }
+  .dr-scenario[aria-pressed="true"] { border-color: #194f87; background: #eaf1f8; color: #194f87; box-shadow: inset 0 0 0 1px #194f87; }
+  .dr-scenario[aria-pressed="true"] b { color: #194f87; }
+  .dr-btn { min-height: 40px; padding: 7px 13px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .dr-btn:hover:not(:disabled) { background: var(--surface-soft); }
+  .dr-btn.primary { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+  .dr-btn.primary:hover:not(:disabled) { background: #3a423b; }
+  .dr-btn:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+  .dr-timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  .dr-tl { display: grid; grid-template-columns: 62px 18px minmax(0, 1fr) 78px; gap: 7px; align-items: center; padding: 7px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); font-size: 10px; line-height: 1.6; }
+  .dr-tl.is-done { border-color: #9cc39e; background: #f4faf4; }
+  .dr-tl.is-current { border-color: #194f87; background: #eaf1f8; }
+  .dr-tl.is-bad { border-color: #d9a3a3; background: #fdf6f6; }
+  .dr-tl.is-future { opacity: .7; }
+  .dr-tl-time { font: 9px/1.4 var(--mono); color: var(--text-dim); }
+  .dr-tl-dot { display: inline-block; width: 9px; height: 9px; border: 1px solid var(--border-bright); border-radius: 50%; background: var(--surface); }
+  .dr-tl.is-done .dr-tl-dot { background: #14532d; border-color: #14532d; }
+  .dr-tl.is-current .dr-tl-dot { background: #194f87; border-color: #194f87; }
+  .dr-tl.is-bad .dr-tl-dot { background: #8a1f1f; border-color: #8a1f1f; }
+  .dr-tl b { font: 600 11px/1.5 var(--sans); }
+  .dr-tl small { display: block; color: var(--text-dim); font-size: 9px; }
+  .dr-tl-status { font: 9px/1.4 var(--mono); color: var(--text-dim); text-align: right; }
+  .dr-result { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-3); }
+  .dr-result div { padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); font-size: 10px; line-height: 1.6; }
+  .dr-result b { display: block; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .dr-result strong { display: block; margin-top: 2px; font: 600 14px/1.4 var(--mono); }
+  .dr-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: var(--s-4); align-items: start; }
+  .dr-panel { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3); }
+  .dr-panel-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 5px; margin-bottom: var(--s-2); }
+  .dr-panel-head b { font: 600 12px/1.5 var(--sans); }
+  .dr-panel-head span { font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .dr-ckpt { border-top: 1px solid var(--border); }
+  .dr-row { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 10px; line-height: 1.65; }
+  .dr-row dt { font: 9px/1.7 var(--mono); color: var(--text-dim); }
+  .dr-row dd { margin: 0; overflow-wrap: anywhere; }
+  .dr-row.is-hot { background: #fdf3e3; }
+  .dr-stores { display: grid; gap: 5px; }
+  .dr-store { padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface-soft); font-size: 10px; line-height: 1.6; }
+  .dr-store b { display: block; font: 600 11px/1.5 var(--sans); }
+  .dr-store span { display: block; color: var(--text-dim); }
+  .dr-store code { font-size: 9px; }
+  .dr-toggle { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: var(--s-3); }
+  .dr-toggle span { font: 10px/1.6 var(--mono); color: var(--text-dim); margin-right: 3px; }
+  .dr-chip { min-height: 36px; padding: 5px 11px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: 11px; color: var(--text-dim); }
+  .dr-chip:hover { border-color: #194f87; }
+  .dr-chip[aria-pressed="true"] { background: #194f87; border-color: #194f87; color: #fff; font-weight: 600; }
+  .dr-steps { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 4px; }
+  .dr-step { display: grid; grid-template-columns: 22px minmax(0, 1fr) 72px; gap: 7px; align-items: start; padding: 7px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); font-size: 10px; line-height: 1.65; }
+  .dr-step.is-done { border-color: #9cc39e; background: #f4faf4; }
+  .dr-step.is-current { border-color: #194f87; background: #eaf1f8; }
+  .dr-step.is-blocked { border-color: #d9a3a3; background: #fdf6f6; }
+  .dr-step.is-future { opacity: .72; }
+  .dr-step-num { display: inline-grid; place-items: center; width: 20px; height: 20px; border: 1px solid var(--border-bright); border-radius: 50%; font: 9px/1 var(--mono); color: var(--text-dim); }
+  .dr-step.is-done .dr-step-num { background: #14532d; border-color: #14532d; color: #fff; }
+  .dr-step.is-current .dr-step-num { background: #194f87; border-color: #194f87; color: #fff; }
+  .dr-step.is-blocked .dr-step-num { background: #8a1f1f; border-color: #8a1f1f; color: #fff; }
+  .dr-step b { font: 600 11px/1.5 var(--sans); }
+  .dr-step small { display: block; color: var(--text-dim); font-size: 9px; }
+  .dr-step-status { font: 9px/1.4 var(--mono); color: var(--text-dim); text-align: right; }
+  .dr-callout { margin-top: var(--s-3); padding: 9px 12px; border-left: 3px solid #194f87; background: #eaf1f8; font-size: 11px; line-height: 1.7; }
+  .dr-callout.bad { border-left-color: #8a1f1f; background: #fbecec; color: #6d1717; }
+  .dr-callout.warn { border-left-color: #b98a2f; background: #fdf3e3; color: #5b3a05; }
+  .dr-levels { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-3); }
+  .dr-level { min-width: 0; text-align: left; padding: 9px 10px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: 10px; line-height: 1.55; color: var(--text-dim); }
+  .dr-level b { display: block; font: 600 12px/1.5 var(--sans); color: var(--ink); }
+  .dr-level:hover { background: var(--surface-soft); }
+  .dr-level[aria-pressed="true"] { border-color: #194f87; background: #eaf1f8; color: #194f87; box-shadow: inset 0 0 0 1px #194f87; }
+  .dr-level[aria-pressed="true"] b { color: #194f87; }
+  .dr-level-detail { margin-top: var(--s-3); padding: 11px 13px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .dr-level-detail h3 { font: 600 17px/1.4 var(--serif); }
+  .dr-level-detail > p { margin-top: var(--s-2); font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .dr-level-detail ul { margin-top: var(--s-2); padding-left: 1.2em; font-size: 11px; line-height: 1.7; }
+  .dr-level-detail li { margin-block: 3px; }
+  .dr-user { margin-top: var(--s-3); padding: 8px 10px; border-left: 3px solid #194f87; background: #eaf1f8; font-size: 11px; line-height: 1.7; }
+  .dr-fixed-note { display: inline-block; margin-top: var(--s-3); padding: 3px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  .dr-ha { display: grid; gap: 7px; margin-top: var(--s-4); }
+  .dr-ha > div:not(.dr-ha-arrow) { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 8px; align-items: center; padding: 9px 11px; border: 1px solid #9eb4c9; border-radius: var(--r-1); background: #eaf1f8; }
+  .dr-ha b { font: 600 12px/1.5 var(--sans); color: #123c67; }
+  .dr-ha span { font-size: 11px; line-height: 1.65; color: #2c4a66; }
+  .dr-ha-arrow { text-align: center; font: 11px/1.4 var(--mono); color: var(--text-dim); }
+  .dr-table-wide { min-width: 760px; }
+  .dr-table td:first-child, .dr-table th:first-child { min-width: 6.5em; }
+  .dr-code-note { margin-top: var(--s-3); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .dr-cases { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-3); }
+  .dr-case { padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 10px; line-height: 1.65; }
+  .dr-case b { display: block; font: 600 11px/1.5 var(--sans); }
+  .dr-case span { display: block; color: var(--text-dim); }
+  @media (max-width: 1000px) {
+    .dr-grid { grid-template-columns: 1fr; }
+    .dr-levels { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px) {
+    .dr-banner { margin-inline: var(--s-4); }
+    .dr-scenarios, .dr-levels { grid-template-columns: 1fr; }
+    .dr-result { grid-template-columns: 1fr; }
+    .dr-tl { grid-template-columns: 52px 14px minmax(0, 1fr); }
+    .dr-tl-status { grid-column: 2 / 4; text-align: left; }
+    .dr-row { grid-template-columns: 1fr; gap: 2px; }
+    .dr-step { grid-template-columns: 22px minmax(0, 1fr); }
+    .dr-step-status { grid-column: 2; text-align: left; }
+    .dr-ha > div:not(.dr-ha-arrow) { grid-template-columns: 1fr; gap: 3px; }
+    .dr-cases { grid-template-columns: 1fr; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">095 / 灾难恢复与高可用</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 18 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="094-scaling-strategies.html">← 上一页 · 高并发场景下的 Agent 系统扩展…</a><a href="104-agent-production-troubleshooting.html">下一页 → · 场景题</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">高级 · Production &amp; Deployment · 可交互讲解</p>
+      <h1>恢复不是重跑，<br>是先对账再续跑。</h1>
+    </div>
+    <div>
+      <p class="lead">Agent 直接面对用户，LLM 或数据库一宕机就会被感知。高可用靠多提供商冗余、多区域温备和熔断；灾难恢复靠检查点、分层存储和副作用账本。恢复时先确认“已经对外做了什么”，再决定下一步。</p>
+      <p class="definition"><strong>关键边界：</strong>本页是固定教学灾备演练，不连接真实集群、LLM 或数据库。故障时间线、检查点内容、RTO / RPO 和恢复结果都是预设；RTO / RPO 目标按原文，演练耗时为教学值。</p>
+      <div class="hero-meta"><span class="pill">高级</span><span class="pill">Production</span><span class="pill">HA / DR</span><span class="pill">固定教学数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="dr-title">
+    <div class="player-top">
+      <div class="player-label">灾备演练台 <small>故障切换 · 检查点恢复 · 降级矩阵</small></div>
+      <div class="controls" role="group" aria-label="灾备演示控制">
+        <button type="button" class="button button-quiet" id="dr-reset">重置</button>
+        <button type="button" class="button" id="dr-back" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="dr-next">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="灾备演示阶段">
+      <ol style="--stages: 3">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>故障切换</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>检查点恢复</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>降级矩阵</button></li>
+      </ol>
+    </nav>
+    <p class="dr-banner"><span><strong>本页是固定教学灾备演练，不连接任何真实基础设施。</strong>三个故障场景、四步时间线、检查点内容与五步恢复都是预设；页面不注入故障、不切换流量、不调用任何模型或数据库。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="dr-index">阶段 1 / 3 · 固定教学演练</p>
+      <h2 id="dr-title">先检测，再切换；先对账，再续跑。</h2>
+      <p id="dr-subtitle">选一个故障场景，逐步推进演练。切换目标按原文：LLM 故障转移 &lt;1s，区域切换 &lt;30s，PG 故障 &lt;5min。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="dr-scene"></div>
+      <p class="demo-note" id="dr-note">固定教学数据：故障、时间线、检查点与恢复结果均为本页预设；不连接真实集群、模型或数据库。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学灾备 · 3 个故障场景 · 5 步恢复</span><span id="dr-summary">阶段 1 / 3 · LLM 限流 · 等待演练</span></div>
+  </section>
+  <p id="dr-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="ha-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">高可用架构</p><h2 id="ha-title">主区同步复制，<br>备区保持温备。</h2></div>
+      <p class="reading-intro">原文的 Active-Passive 架构：全球负载均衡把流量送到 Region A；Region A 的 Redis / PostgreSQL 同步复制到 Region B；健康检查失败就切流量，目标中断时间 &lt;30 秒。</p>
+    </div>
+    <div class="prose">
+      <div class="dr-ha" role="list" aria-label="Active-Passive 高可用架构">
+        <div role="listitem"><b>全球负载均衡</b><span>DNS / CDN；健康检查决定流量去 Region A 还是 Region B。</span></div>
+        <div class="dr-ha-arrow">↓ 正常流量</div>
+        <div role="listitem"><b>Region A（主）</b><span>API Gateway → Agent Workers → Model Gateway（多提供商）；Redis 主、PostgreSQL 主。</span></div>
+        <div class="dr-ha-arrow">↓ 同步复制</div>
+        <div role="listitem"><b>Region B（温备）</b><span>API Gateway → Agent Workers（平时缩容，切换后自动扩容）；Redis 副本、PostgreSQL 副，切换后从这里恢复会话状态。</span></div>
+        <div class="dr-ha-arrow">↺ 健康检查失败 → 切流量</div>
+      </div>
+      <p class="dr-fixed-note">架构与顺序来自原文 Mermaid；本页用结构化卡片离线呈现</p>
+      <details>
+        <summary>查看原文 Mermaid 源码（Active-Passive）</summary>
+        <pre><code>flowchart TD
+    LB["全球负载均衡&lt;br/&gt;DNS / CDN"]
+    subgraph RA["Region A（主）"]
+        A1["API Gateway → Agent Workers&lt;br/&gt;→ Model Gateway（多提供商）"]
+        A2["Redis 主 · PostgreSQL 主"]
+    end
+    subgraph RB["Region B（温备）"]
+        B1["API Gateway → Agent Workers&lt;br/&gt;（缩容，切换后自动扩容）"]
+        B2["Redis 副本 · PostgreSQL 副&lt;br/&gt;切换后从这里恢复会话状态"]
+    end
+    LB --&gt; A1
+    LB -- "健康检查检测到 Region A 不可用" --&gt; B1
+    A2 -- "同步复制" --&gt; B2
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class LB,B1 neutral
+    class A1 proc
+    class A2,B2 store</code></pre>
+      </details>
+      <p>Microsoft Foundry Agent Service 推荐 Active-Passive 配合 Gateway Routing，备用区域保持温备。LangGraph 提供内置检查点和恢复机制。两者引用按原文，本页未联网核实。</p>
+      <div class="dr-cases">
+        <div class="dr-case"><b>Wells Fargo Fargo 虚拟助理</b><span>原文称 2024 报告披露年度互动达亿级量级且无人工介入。数字按原文引用，未联网核实；引用前应回查 Wells Fargo 年报。</span></div>
+        <div class="dr-case"><b>MD Anderson × IBM Watson</b><span>原文称 2013–2017 累计投入约 6200 万美元后中止。数字按原文引用，未联网核实；引用前应回查 The Texas Tribune（2017）原文。</span></div>
+      </div>
+      <p class="dr-code-note">两个案例在原文中用于对照“正确架构的价值”和“架构决策的代价”，本页只保留引用，不扩写未给出的机制。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="failover-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">多提供商故障转移</p><h2 id="failover-title">优先级、熔断、<br>最后才降级。</h2></div>
+      <p class="reading-intro">原文的 LLMFailoverManager 按优先级依次尝试提供商；熔断器打开就跳过；限流或服务不可用就记录失败并试下一个；全部不可用才降级。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data dr-table-wide">
+          <caption class="sr-only">原文熔断器的三个状态</caption>
+          <thead><tr><th scope="col">状态</th><th scope="col">含义</th><th scope="col">行为</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">CLOSED</th><td>正常</td><td>请求放行；失败计数累加</td></tr>
+            <tr><th scope="row">OPEN</th><td>熔断</td><td>跳过该提供商；超过 recovery_timeout 后进入 HALF_OPEN</td></tr>
+            <tr><th scope="row">HALF_OPEN</th><td>试探</td><td>允许试探请求；成功回 CLOSED，失败重新 OPEN</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="dr-fixed-note">状态机与默认阈值（失败 5 次、恢复 60 秒）来自原文；本页未运行熔断器</p>
+      <details>
+        <summary>查看原文的 LLMFailoverManager 与 CircuitBreaker 代码</summary>
+        <pre><code>class LLMFailoverManager:
+    """LLM 提供商级别的故障转移"""
+
+    def __init__(self):
+        self.providers = [
+            {"name": "openai",    "priority": 1, "healthy": True},
+            {"name": "anthropic", "priority": 2, "healthy": True},
+            {"name": "google",    "priority": 3, "healthy": True},
+        ]
+        self.circuit_breakers = {}
+
+    async def call_with_failover(self, request):
+        """带故障转移的 LLM 调用"""
+        for provider in sorted(self.providers, key=lambda p: p["priority"]):
+            if not provider["healthy"]:
+                continue
+
+            breaker = self.circuit_breakers[provider["name"]]
+            if breaker.is_open:
+                continue  # 熔断器打开，跳过
+
+            try:
+                response = await self.call_provider(provider["name"], request)
+                breaker.record_success()
+                return response
+
+            except RateLimitError:
+                breaker.record_failure()
+                continue  # 限流，尝试下一个
+
+            except ServiceUnavailableError:
+                breaker.record_failure()
+                provider["healthy"] = False
+                self.schedule_health_check(provider, delay=60)
+                continue
+
+        # 所有提供商都不可用 → 降级
+        return await self.degrade(request)
+
+
+class CircuitBreaker:
+    """熔断器——防止故障级联"""
+
+    def __init__(self, failure_threshold=5, recovery_timeout=60):
+        self.failure_count = 0
+        self.threshold = failure_threshold
+        self.timeout = recovery_timeout
+        self.state = "CLOSED"  # CLOSED → OPEN → HALF_OPEN
+
+    @property
+    def is_open(self):
+        if self.state == "OPEN":
+            if time.time() - self.opened_at &gt; self.timeout:
+                self.state = "HALF_OPEN"
+                return False
+            return True
+        return False
+
+    def record_failure(self):
+        self.failure_count += 1
+        if self.failure_count &gt;= self.threshold:
+            self.state = "OPEN"
+            self.opened_at = time.time()
+
+    def record_success(self):
+        self.failure_count = 0
+        self.state = "CLOSED"</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="ckpt-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">检查点</p><h2 id="ckpt-title">存什么，放哪，<br>怎么恢复。</h2></div>
+      <p class="reading-intro">原文把检查点拆成三个问题：完整状态清单、分层存储与快照频率、五步恢复与幂等前提。044 演示的是状态机里“恢复到哪个状态”；本页不重复状态机，聚焦存储分层、副作用账本和恢复顺序。</p>
+    </div>
+    <div class="prose">
+      <p>上面的交互面板第 2 阶段把这套内容做成了固定演练：六类状态、四层存储、五步恢复。这里保留原文的完整清单，方便逐项核对。</p>
+      <h3>存什么：六类状态</h3>
+      <div class="table-wrap">
+        <table class="data dr-table-wide">
+          <caption class="sr-only">原文的检查点完整状态清单</caption>
+          <thead><tr><th scope="col">类别</th><th scope="col">要存什么</th><th scope="col">缺失的后果</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">对话状态</th><td>messages（含 tool_calls 与工具结果）、system prompt 版本</td><td>恢复后接不上上下文，重复提问或重复执行</td></tr>
+            <tr><th scope="row">循环状态</th><td>turn 序号、已用 token / 耗时 / 成本</td><td>预算和循环保护失效，可能无限续跑</td></tr>
+            <tr><th scope="row">任务状态</th><td>子任务 DAG、各节点状态与产出引用</td><td>无法判断哪些步骤该跳过、哪些该继续</td></tr>
+            <tr><th scope="row">外部副作用</th><td>不可逆操作及状态、幂等键、外部系统返回的引用</td><td>重复下单、重复发邮件、重复扣款</td></tr>
+            <tr><th scope="row">进行中的工具调用</th><td>哪个 tool_call 正在执行，或已执行但结果未回灌</td><td>恢复后既不敢重试，也不知道结果</td></tr>
+            <tr><th scope="row">版本信息</th><td>prompt 版本、工具 schema 版本、模型版本</td><td>用新逻辑续跑旧状态，行为不一致</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文强调：外部副作用记录最容易被漏掉，也最致命。计划和中间结果丢了可以重算，已经发生的扣款不能靠重算撤销。凡是要调用外部写接口的步骤，必须在执行前落账，不能等成功后再补记录。</p>
+      <h3>放哪：四层存储</h3>
+      <div class="table-wrap">
+        <table class="data dr-table-wide">
+          <caption class="sr-only">原文的检查点分层存储</caption>
+          <thead><tr><th scope="col">存储</th><th scope="col">放什么</th><th scope="col">特点</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Redis</th><td>当前 run 的循环状态、最新 checkpoint 指针</td><td>读写快，适合热状态；配 AOF 和副本，允许秒级丢失</td></tr>
+            <tr><th scope="row">关系库（Postgres）</th><td>按 run_id 的完整快照、副作用账本</td><td>事务可靠，作为恢复的权威来源</td></tr>
+            <tr><th scope="row">对象存储（S3 等）</th><td>长工具输出、文件快照、完整消息归档</td><td>便宜、容量大，不适合高频小写入</td></tr>
+            <tr><th scope="row">事件日志 + 定期快照</th><td>每步追加事件，每 N 步或每 M 分钟做全量快照</td><td>恢复 = 快照 + 重放增量，成本和 RPO 可调</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>快照频率是恢复速度和写入成本的平衡。每步全量快照恢复最快，但写入放大严重；事件日志加每 10 步一次快照，能把重放量控制在较小范围。这是原文经验值，实际间隔要按单步耗时和可接受 RPO 实测。</p>
+      <h3>怎么恢复：五步</h3>
+      <ol>
+        <li>加载最近快照，按事件日志重放到中断点。</li>
+        <li>校验版本一致。prompt、工具 schema、模型版本对不上时，不要直接续跑，先迁移状态或转人工。</li>
+        <li>核对副作用。pending 或 unknown 的操作去外部系统查真实结果，不能假设成功，也不能假设失败。</li>
+        <li>从下一个未完成步骤续跑。已完成步骤直接跳过，不要从快照点整体重放。</li>
+        <li>注入恢复提示，例如“系统刚从故障恢复，第 N 轮，已完成 A、B，未完成 C，副作用 D 已确认。不要重复执行已完成步骤”。</li>
+      </ol>
+      <div class="callout">
+        <p class="callout-label">幂等前提</p>
+        <p>第三步能否成立，取决于外部写接口是否支持幂等键。没有幂等键，你既不能安全重试，也无法确认一次“结果未知”的调用到底生效没有——原文的原话是：没有幂等键的恢复就是赌博。调用前生成幂等键并落账，随请求发给外部系统；外部系统对同一个键只执行一次。</p>
+      </div>
+      <details>
+        <summary>查看原文的副作用账本代码</summary>
+        <pre><code>class EffectStatus(str, Enum):
+    PENDING = "pending"      # 已决定执行，结果未知
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    UNKNOWN = "unknown"      # 进程崩溃等导致结果无法确认
+
+
+@dataclass
+class SideEffect:
+    run_id: str
+    step_id: str
+    operation: str                       # 例如 "create_order"
+    idempotency_key: str                 # run_id + step_id + 操作类型，全局唯一
+    status: EffectStatus = EffectStatus.PENDING
+    external_ref: str | None = None      # 外部系统返回的订单号、消息 id
+    updated_at: float = field(default_factory=time.time)
+
+
+class SideEffectLedger:
+    """副作用账本：先记账再执行，恢复时逐条对账"""
+
+    async def begin(self, effect: SideEffect) -&gt; SideEffect:
+        """执行前写入 PENDING；PENDING/UNKNOWN 的旧记录要先 reconcile"""
+        existing = await self.store.get(effect.idempotency_key)
+        if existing is None:
+            await self.store.insert(effect)  # 并发重复由唯一索引兜底
+            return effect
+        if existing.status == EffectStatus.FAILED:
+            # 外部确认没生效的失败可以安全重试：同键重发只生效一次
+            await self.mark(existing.idempotency_key, EffectStatus.PENDING)
+            existing.status = EffectStatus.PENDING
+        elif existing.status in (EffectStatus.PENDING, EffectStatus.UNKNOWN):
+            # 结果未知：必须先 reconcile，不能直接重试或当成已完成
+            raise RuntimeError(f"unresolved side effect: {effect.idempotency_key}")
+        return existing
+
+    async def reconcile(self, run_id: str, probe) -&gt; list[SideEffect]:
+        """恢复时调用。probe(operation, key) 按幂等键查外部真实状态"""
+        effects = await self.store.list_by_run(run_id)
+        for effect in effects:
+            if effect.status not in (EffectStatus.PENDING, EffectStatus.UNKNOWN):
+                continue
+            try:
+                result: ProbeResult = await probe(effect.operation,
+                                                  effect.idempotency_key)
+            except ProbeError:
+                continue  # 查询失败：保持原状态，稍后重试，绝不能当成失败
+            if result.state == "found":
+                await self.mark(effect.idempotency_key,
+                                EffectStatus.SUCCEEDED, result.ref)
+            elif result.state == "not_found":
+                # 只有外部系统明确保证查询已一致时，not_found 才能判失败
+                await self.mark(effect.idempotency_key, EffectStatus.FAILED)
+            # unknown：保持原状态，等下一次对账
+        return effects</code></pre>
+      </details>
+      <p class="dr-code-note">代码只展示，不执行；本页没有数据库、账本或外部写接口。044 的检查点演示关注状态机与恢复时序，本页关注存储分层和副作用对账，两页不重复同一组演示。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="degrade-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">优雅降级</p><h2 id="degrade-title">部分可用，<br>好过完全不可用。</h2></div>
+      <p class="reading-intro">原文把降级分成 Level 0–4：正常、LLM 部分降级、LLM 完全不可用、数据库不可用、完全降级。降级策略要预先设计并测试，不能等事故中临时决定。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data dr-table-wide">
+          <caption class="sr-only">原文的五级优雅降级</caption>
+          <thead><tr><th scope="col">级别</th><th scope="col">条件</th><th scope="col">行为</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Level 0</th><td>所有服务正常</td><td>完整 Agent 功能</td></tr>
+            <tr><th scope="row">Level 1</th><td>主 LLM 提供商限流或慢</td><td>切换备用提供商、降级到更小模型、增加缓存使用</td></tr>
+            <tr><th scope="row">Level 2</th><td>所有 LLM 提供商不可用</td><td>缓存回答高频问题、规则引擎处理简单请求、复杂请求排队、提示转人工</td></tr>
+            <tr><th scope="row">Level 3</th><td>状态存储不可用</td><td>只处理无状态单轮请求、禁用多步 Agent 和工具调用、内存临时存储</td></tr>
+            <tr><th scope="row">Level 4</th><td>核心服务全部不可用</td><td>静态降级页、联系方式和人工支持入口、自动通知运维</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="dr-fixed-note">五级条件与行为来自原文；本页未触发任何真实降级</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="rto-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">RTO / RPO</p><h2 id="rto-title">每个组件，<br>写清恢复目标。</h2></div>
+      <p class="reading-intro">RTO 是恢复时间，RPO 是允许的数据丢失。原文给五个组件定了目标；这些是设计目标，不是本页实测结果。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data dr-table-wide">
+          <caption class="sr-only">原文的组件 RTO / RPO 目标</caption>
+          <thead><tr><th scope="col">组件</th><th scope="col">RTO</th><th scope="col">RPO</th><th scope="col">策略</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">LLM API 访问</th><td>&lt; 1s</td><td>0</td><td>多提供商自动故障转移</td></tr>
+            <tr><th scope="row">Agent 服务</th><td>&lt; 30s</td><td>0</td><td>多实例 + 健康检查 + 自愈</td></tr>
+            <tr><th scope="row">会话状态（Redis）</th><td>&lt; 5s</td><td>&lt; 1s</td><td>Redis Cluster + 异步复制</td></tr>
+            <tr><th scope="row">持久存储（PG）</th><td>&lt; 5min</td><td>0</td><td>同步复制 + 自动故障转移</td></tr>
+            <tr><th scope="row">向量数据库（RAG）</th><td>&lt; 10min</td><td>可重建</td><td>定期快照 + 从源数据重建</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="dr-fixed-note">RTO / RPO 目标来自原文；本页演练时间线为固定教学值，不代表实测</p>
+      <p>测试灾备方案有四件事：Chaos Engineering 随机中断 LLM 连接，验证故障转移；故障注入模拟数据库宕机和网络分区；每季度做一次完整区域切换演练；记录实际 RTO 并与目标对比。没有演练的 RTO 只是愿望。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">两个误区，<br>三个追问。</h2></div>
+      <p class="reading-intro">LLM 云服务也会宕机；Agent 也不是无状态。灾备测试、降级选择和检查点遗漏是常见追问。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <div class="misconception-label">误区 01</div>
+        <div><h3>“LLM API 是云服务，不需要考虑可用性”</h3><p>LLM API 提供商也会宕机或限流。原文称 2024–2025 年 OpenAI 和 Anthropic 都有过多次服务中断。必须有多提供商故障转移策略，不能把鸡蛋放在一个篮子里。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 02</div>
+        <div><h3>“Agent 没有状态，不需要灾难恢复”</h3><p>多步 Agent 有大量状态：执行计划、已完成步骤的结果、对话历史、工具调用结果。丢失这些状态意味着任务从头开始，用户体验极差。检查点机制是必需的。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 03</div>
+        <div><h3>如何测试灾难恢复方案？</h3><p>Chaos Engineering 随机中断 LLM API 连接，验证故障转移；故障注入模拟数据库宕机、网络分区；每季度进行一次完整的区域切换演练；记录实际 RTO 并与目标对比。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 04</div>
+        <div><h3>优雅降级和完全不可用之间如何选择？</h3><p>原则是部分功能可用优于完全不可用。用户宁可看到“AI 助手暂时以简化模式运行”，也不愿看到“服务不可用”。降级策略应该预先设计和测试，而不是在事故中临时决定。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 05</div>
+        <div><h3>Checkpoint 里最容易被忽略、后果最严重的是什么？</h3><p>外部副作用记录。计划丢了可以重算，已执行的不可逆操作（下单、发邮件、扣款）丢了就无法判断是否要重试。正确做法是执行前把操作、幂等键和状态写入账本，恢复时按幂等键去外部系统查询真实结果，再决定跳过还是重试。没有幂等键的恢复就是赌博。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="sources-title">
+    <p class="eyebrow">参考资料</p>
+    <h2 class="source-heading" id="sources-title">原文引用与延伸阅读</h2>
+    <p class="source-summary">以下链接来自原文。只有主动点击外链才会离开本页；本页不加载任何外部资源。</p>
+    <details>
+      <summary>展开 5 条参考资料</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://learn.microsoft.com/en-us/azure/foundry/how-to/agent-service-platform-disaster-recovery" rel="noreferrer noopener">Foundry Agent Service Platform Outage Recovery (Microsoft)</a></li>
+          <li><a href="https://medium.com/@ThinkingLoop/d3-1-agentic-ai-in-production-10-patterns-that-ship-in-2025-d9c367827e58" rel="noreferrer noopener">Agentic AI in Production: 10 Patterns That Ship in 2025 (Medium)</a></li>
+          <li><a href="https://www.azilen.com/blog/agentic-ai-design-patterns/" rel="noreferrer noopener">5 Most Popular Agentic AI Design Patterns in 2025 (Azilen)</a></li>
+          <li><a href="https://skywork.ai/blog/agentic-ai-examples-workflow-patterns-2025/" rel="noreferrer noopener">20 Agentic AI Workflow Patterns That Actually Work in 2025 (Skywork AI)</a></li>
+          <li><a href="https://www.cutover.com/blog/how-ai-transforming-it-disaster-recovery" rel="noreferrer noopener">How AI is Transforming IT Disaster Recovery (Cutover)</a></li>
+        </ul>
+        <p class="source-footnote">案例数字、RTO / RPO 目标与架构建议按原文版本呈现，本页未联网核实，也未连接任何真实集群。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>10-production-and-deployment/095-disaster-recovery-ha.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 6 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const FAULTS = Object.freeze({
+    llm: {
+      nav: "LLM 限流",
+      title: "主提供商限流 → 备用提供商接管",
+      rto: "< 1s",
+      rpo: "0",
+      result: "请求在 1.0s 内由备用提供商完成；主提供商保持熔断 60s，再做健康检查。",
+      steps: [
+        { t: "0.0s", name: "429 比例升到 18%", detail: "主提供商返回 429；错误率告警触发。", status: "bad" },
+        { t: "0.4s", name: "熔断器 OPEN", detail: "连续失败 5 次，熔断器打开，跳过主提供商。", status: "warn" },
+        { t: "0.8s", name: "路由到备用提供商", detail: "按优先级切到 anthropic；请求重新发出。", status: "info" },
+        { t: "1.0s", name: "请求成功", detail: "备用提供商返回；错误率回落，用户无感。", status: "ok" }
+      ]
+    },
+    region: {
+      nav: "区域故障",
+      title: "Region A 不可用 → 切到 Region B 温备",
+      rto: "< 30s",
+      rpo: "0",
+      result: "28s 完成流量切换与备区扩容；会话状态从 Redis 副本恢复，用户感知中断 < 30s。",
+      steps: [
+        { t: "0s", name: "健康检查连续失败 3 次", detail: "Region A 的 API Gateway 无响应；全球负载均衡开始判定。", status: "bad" },
+        { t: "12s", name: "流量切到 Region B", detail: "DNS / CDN 把新流量送到备区；旧连接等待超时。", status: "warn" },
+        { t: "24s", name: "备区 Worker 扩容", detail: "Region B 从缩容状态扩到 8 个 Worker。", status: "info" },
+        { t: "28s", name: "会话恢复完成", detail: "从 Redis 副本恢复会话；100% 流量在 Region B。", status: "ok" }
+      ]
+    },
+    pg: {
+      nav: "PG 故障",
+      title: "PostgreSQL 主库故障 → 同步副本提升",
+      rto: "< 5min",
+      rpo: "0",
+      result: "4m 20s 完成副本提升和连接池重连；同步复制保证 RPO 0，但切换期间写入暂停。",
+      steps: [
+        { t: "0s", name: "主库连接失败", detail: "应用连接池报错；写入请求开始排队。", status: "bad" },
+        { t: "8s", name: "检测到主库不可用", detail: "健康检查与复制状态确认主库失联。", status: "warn" },
+        { t: "45s", name: "同步副本提升为主", detail: "PostgreSQL 副本完成 promote；开始接受写入。", status: "info" },
+        { t: "4m20s", name: "连接池重连完成", detail: "所有 Worker 重连新主库；积压写入开始消化。", status: "ok" }
+      ]
+    }
+  });
+
+  const CKPT = [
+    ["对话状态", "messages 12 条（含 tool_calls 与工具结果）；system prompt v7"],
+    ["循环状态", "turn 3；tokens 18,400 / 100,000；成本 $0.42；耗时 4m12s"],
+    ["任务状态", "DAG 5 节点：plan、search 已完成；create_order 进行中；write_report、review 未开始"],
+    ["外部副作用", "create_order PENDING；幂等键 run_9f2a:step3:create_order；外部引用未知"],
+    ["进行中的工具调用", "create_order 于 14:22:07 发出，响应未回灌"],
+    ["版本信息", "prompt v7；tool schema v3；model gpt-4o（固定教学版本）"]
+  ];
+
+  const STORES = [
+    ["Redis", "最新 checkpoint 指针 cp_3、turn 3；AOF + 副本，允许秒级丢失"],
+    ["PostgreSQL", "按 run_id 的完整快照 cp_3 + 副作用账本；恢复的权威来源"],
+    ["对象存储", "search 工具输出 12KB、完整消息归档；便宜、容量大"],
+    ["事件日志 + 快照", "事件 1–14；每 10 步一次全量快照；恢复 = 快照 + 重放增量"]
+  ];
+
+  const RECOVERY = [
+    { name: "加载快照并重放", detail: "读取 cp_3，按事件日志重放到中断点；不从头重跑。" },
+    { name: "校验版本一致", detail: "prompt v7、tool schema v3、model gpt-4o 均一致；可以续跑。" },
+    { name: "核对副作用", detail: "create_order 仍是 PENDING；用幂等键查外部系统，确认真实结果。" },
+    { name: "从下一步续跑", detail: "跳过已完成的 plan、search、create_order，从 write_report 开始。" },
+    { name: "注入恢复提示", detail: "告诉 Agent 第 3 轮、已完成 A/B、副作用 C 已确认，不要重复执行。" }
+  ];
+
+  const LEVELS = Object.freeze([
+    { level: 0, name: "完全正常", condition: "所有服务正常", behaviors: ["完整 Agent 功能"], user: "用户正常使用，无感知。", available: "全部功能" },
+    { level: 1, name: "LLM 部分降级", condition: "主 LLM 提供商限流或慢", behaviors: ["切换到备用提供商", "降级到更小的模型", "增加缓存使用"], user: "用户可能感到略慢或答案略简，但不中断。", available: "Agent 主流程可用" },
+    { level: 2, name: "LLM 完全不可用", condition: "所有 LLM 提供商不可用", behaviors: ["缓存回答高频问题", "规则引擎处理简单请求", "复杂请求排队等待恢复", "提示 AI 助手暂时不可用，已转接人工"], user: "简单问题仍能答；复杂任务排队或转人工。", available: "缓存与规则引擎" },
+    { level: 3, name: "数据库不可用", condition: "状态存储不可用", behaviors: ["只处理无状态单轮请求", "禁用多步 Agent 和工具调用", "内存中临时存储（不持久）"], user: "只能做单轮问答；多步任务暂停。", available: "无状态单轮" },
+    { level: 4, name: "完全降级", condition: "核心服务全部不可用", behaviors: ["静态降级页面", "联系方式和人工支持入口", "自动通知运维团队"], user: "看到降级页和人工入口，不再承诺 AI 能力。", available: "静态页与人工" }
+  ]);
+
+  const STAGES = Object.freeze([
+    { nav: "故障切换", title: "先检测，再切换；切换后看 RTO / RPO。", subtitle: "选一个故障场景，逐步推进演练。切换目标按原文：LLM 故障转移 <1s，区域切换 <30s，PG 故障 <5min。" },
+    { nav: "检查点恢复", title: "恢复不是重跑，是先对账再续跑。", subtitle: "固定任务在 create_order 发出后崩溃。看六类状态、四层存储，再推进五步恢复；没有幂等键就停在第三步。" },
+    { nav: "降级矩阵", title: "从完整功能，退到静态页。", subtitle: "五个降级级别对应不同故障条件；选一个级别，看行为、用户提示和仍可用的能力。" }
+  ]);
+
+  const state = { stage: 0, fault: "llm", drill: 0, idempotent: true, recovery: 0, level: 0 };
+  const byId = (id) => document.getElementById(id);
+
+  function fault() {
+    return FAULTS[state.fault];
+  }
+
+  function faultTabs() {
+    return Object.keys(FAULTS).map((key) => `<button type="button" class="dr-scenario" data-fault="${key}" aria-pressed="${key === state.fault}"><b>${FAULTS[key].nav}</b>${FAULTS[key].title}</button>`).join("");
+  }
+
+  function faultScene() {
+    const f = fault();
+    const rows = f.steps.map((step, index) => {
+      const done = index < state.drill;
+      const current = index === state.drill - 1 && done;
+      const cls = done ? (step.status === "bad" ? "is-done is-bad" : current ? "is-done is-current" : "is-done") : "is-future";
+      const statusText = done ? (step.status === "bad" ? "已发现" : "已完成") : "未执行";
+      return `<li class="dr-tl ${cls}"><span class="dr-tl-time">${step.t}</span><span class="dr-tl-dot" aria-hidden="true"></span><span><b>${step.name}</b><small>${done ? step.detail : "等待推进；不提前显示结果。"}</small></span><span class="dr-tl-status">${statusText}</span></li>`;
+    }).join("");
+    const done = state.drill >= f.steps.length;
+    return `
+      <div class="dr-topbar"><div class="dr-badge ${done ? "dr-ok" : "dr-info"}">${done ? "演练完成" : "演练中"} · ${f.nav}</div><span class="dr-badge dr-neutral">固定教学故障</span></div>
+      <div class="dr-scenarios" role="group" aria-label="选择故障场景">${faultTabs()}</div>
+      <div class="dr-topbar"><b style="font:600 12px/1.5 var(--sans)">${f.title}</b><button type="button" class="dr-btn primary" id="dr-drill-next">${done ? "重新演练" : state.drill === 0 ? "开始演练" : "推进下一步"}</button></div>
+      <ol class="dr-timeline" aria-label="故障切换时间线">${rows}</ol>
+      ${done ? `<div class="dr-result"><div><b>RTO</b><strong>${f.rto}</strong><span>目标恢复时间</span></div><div><b>RPO</b><strong>${f.rpo}</strong><span>允许丢失</span></div><div><b>演练结果</b><strong>通过</strong><span>固定教学值</span></div></div><div class="dr-callout"><strong>结论：</strong>${f.result}</div>` : ""}
+      <p class="dr-fixed-note">固定教学数据：故障、时间线与 RTO / RPO 均为本页预设；未注入真实故障</p>`;
+  }
+
+  function checkpointRows() {
+    return CKPT.map(([key, value], index) => `<div class="dr-row${index === 3 ? " is-hot" : ""}"><dt>${key}</dt><dd>${value}</dd></div>`).join("");
+  }
+
+  function storeRows() {
+    return STORES.map(([name, desc]) => `<div class="dr-store"><b>${name}</b><span>${desc}</span></div>`).join("");
+  }
+
+  function recoverySteps() {
+    const blocked = !state.idempotent && state.recovery >= 3;
+    return RECOVERY.map((step, index) => {
+      const num = index + 1;
+      let cls = "is-future";
+      let status = "待执行";
+      if (num <= state.recovery) {
+        cls = "is-done";
+        status = "已完成";
+      }
+      if (num === state.recovery + 1 && !blocked) {
+        cls = "is-current";
+        status = "下一步";
+      }
+      if (!state.idempotent && num === 3 && state.recovery >= 3) {
+        cls = "is-blocked";
+        status = "转人工";
+      }
+      let detail = step.detail;
+      if (num === 3 && !state.idempotent) detail = state.recovery >= 3 ? "没有幂等键，无法确认 create_order 是否生效；不能重试，也不能假设成功，转人工对账。" : "下一步要核对 create_order；当前接口没有幂等键，这一步会停下来。";
+      if (num === 3 && state.idempotent && state.recovery >= 3) detail = "用幂等键查询外部系统：found，订单号 #A-7721；标记为 SUCCEEDED，不重复下单。";
+      return `<li class="dr-step ${cls}"><span class="dr-step-num">${num}</span><span><b>${step.name}</b><small>${detail}</small></span><span class="dr-step-status">${status}</span></li>`;
+    }).join("");
+  }
+
+  function recoveryScene() {
+    const blocked = !state.idempotent && state.recovery >= 3;
+    const complete = state.recovery >= 5;
+    return `
+      <div class="dr-topbar"><div class="dr-badge ${blocked ? "dr-bad" : complete ? "dr-ok" : "dr-info"}">${blocked ? "恢复暂停 · 需要人工" : complete ? "恢复完成" : "恢复进行中"}</div><span class="dr-badge dr-neutral">固定任务 run_9f2a</span></div>
+      <div class="dr-grid">
+        <section class="dr-panel" aria-label="检查点内容">
+          <div class="dr-panel-head"><b>检查点存什么 · cp_3</b><span>崩溃点：create_order 已发出、响应未回</span></div>
+          <dl class="dr-ckpt">${checkpointRows()}</dl>
+        </section>
+        <section class="dr-panel" aria-label="分层存储">
+          <div class="dr-panel-head"><b>检查点放哪 · 四层存储</b><span>Redis 热、PG 权威、S3 大对象、事件日志可重放</span></div>
+          <div class="dr-stores">${storeRows()}</div>
+        </section>
+      </div>
+      <div class="dr-toggle" role="group" aria-label="选择外部接口是否支持幂等键">
+        <span>外部接口</span>
+        <button type="button" class="dr-chip" data-idem="true" aria-pressed="${state.idempotent}">有幂等键</button>
+        <button type="button" class="dr-chip" data-idem="false" aria-pressed="${!state.idempotent}">没有幂等键</button>
+      </div>
+      <ol class="dr-steps" aria-label="恢复五步">${recoverySteps()}</ol>
+      <div class="dr-topbar" style="margin-top:var(--s-3)">
+        <button type="button" class="dr-btn primary" id="dr-recovery-next" ${blocked ? "disabled" : ""}>${complete ? "重新恢复" : "推进下一步恢复"}</button>
+        <span class="dr-badge ${complete ? "dr-ok" : blocked ? "dr-bad" : "dr-neutral"}">${complete ? "已完成 5 / 5" : `已推进 ${state.recovery} / 5`}</span>
+      </div>
+      ${blocked ? '<div class="dr-callout bad"><strong>停在第 3 步：</strong>没有幂等键，无法确认 create_order 是否生效。重试可能重复下单，假设成功可能漏单；只能转人工对账。这就是“没有幂等键的恢复就是赌博”。</div>' : ""}
+      ${complete ? '<div class="dr-callout"><strong>恢复完成：</strong>从 write_report 续跑，plan / search / create_order 没有重放；恢复提示已注入。整个过程没有重复外部写操作。</div>' : ""}
+      <p class="dr-fixed-note">固定教学数据：任务、检查点、订单号与恢复结果均为本页预设；不连接数据库或外部系统</p>`;
+  }
+
+  function levelTabs() {
+    return LEVELS.map((item) => `<button type="button" class="dr-level" data-level="${item.level}" aria-pressed="${item.level === state.level}"><b>Level ${item.level}</b>${item.name}</button>`).join("");
+  }
+
+  function degradeScene() {
+    const item = LEVELS[state.level];
+    const behaviors = item.behaviors.map((text) => `<li>${text}</li>`).join("");
+    return `
+      <div class="dr-topbar"><div class="dr-badge ${state.level === 0 ? "dr-ok" : state.level >= 4 ? "dr-bad" : "dr-warn"}">当前 Level ${item.level} · ${item.name}</div><span class="dr-badge dr-neutral">固定教学降级矩阵</span></div>
+      <div class="dr-levels" role="group" aria-label="选择降级级别">${levelTabs()}</div>
+      <div class="dr-level-detail">
+        <h3>Level ${item.level} · ${item.name}</h3>
+        <p><strong>触发条件：</strong>${item.condition}</p>
+        <ul>${behaviors}</ul>
+        <div class="dr-user"><strong>用户看到：</strong>${item.user}<br><strong>仍可用：</strong>${item.available}</div>
+      </div>
+      <p class="dr-fixed-note">五级条件与行为来自原文；本页未触发任何真实降级，用户提示为教学文案</p>`;
+  }
+
+  const SCENES = [faultScene, recoveryScene, degradeScene];
+
+  function bindSceneControls() {
+    document.querySelectorAll("[data-fault]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.fault = button.dataset.fault;
+        state.drill = 0;
+        renderStage(0);
+        byId("dr-announcement").textContent = `已切换故障场景：${fault().nav}`;
+      });
+    });
+    const drillButton = byId("dr-drill-next");
+    if (drillButton) {
+      drillButton.addEventListener("click", () => {
+        if (state.drill >= fault().steps.length) state.drill = 0;
+        else state.drill += 1;
+        renderStage(0);
+        byId("dr-announcement").textContent = state.drill === 0 ? "演练已重置" : `演练步骤 ${state.drill} / ${fault().steps.length}`;
+      });
+    }
+    document.querySelectorAll("[data-idem]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.idempotent = button.dataset.idem === "true";
+        state.recovery = 0;
+        renderStage(1);
+        byId("dr-announcement").textContent = state.idempotent ? "已切换为有幂等键，恢复可继续" : "已切换为没有幂等键，恢复会停在第 3 步";
+      });
+    });
+    const recoveryButton = byId("dr-recovery-next");
+    if (recoveryButton) {
+      recoveryButton.addEventListener("click", () => {
+        if (state.recovery >= 5) {
+          state.recovery = 0;
+        } else if (state.recovery >= 3 && !state.idempotent) {
+          return;
+        } else {
+          state.recovery += 1;
+        }
+        renderStage(1);
+        byId("dr-announcement").textContent = `恢复步骤 ${state.recovery} / 5`;
+      });
+    }
+    document.querySelectorAll("[data-level]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.level = Number(button.dataset.level);
+        renderStage(2);
+        byId("dr-announcement").textContent = `已选择 Level ${state.level}：${LEVELS[state.level].name}`;
+      });
+    });
+  }
+
+  function summaryFor(stage) {
+    if (stage === 0) return `阶段 1 / 3 · ${fault().nav} · ${state.drill} / ${fault().steps.length} 步`;
+    if (stage === 1) return `阶段 2 / 3 · ${state.idempotent ? "有幂等键" : "无幂等键"} · 恢复 ${state.recovery} / 5`;
+    return `阶段 3 / 3 · Level ${state.level} · ${LEVELS[state.level].name}`;
+  }
+
+  function renderStage(stage) {
+    state.stage = stage;
+    const meta = STAGES[stage];
+    byId("dr-scene").innerHTML = SCENES[stage]();
+    byId("dr-index").textContent = `阶段 ${stage + 1} / 3 · 固定教学演练`;
+    byId("dr-title").textContent = meta.title;
+    byId("dr-subtitle").textContent = meta.subtitle;
+    byId("dr-note").textContent = "固定教学数据：故障、时间线、检查点与恢复结果均为本页预设；不连接真实集群、模型或数据库。";
+    byId("dr-summary").textContent = summaryFor(stage);
+    byId("dr-back").disabled = stage === 0;
+    byId("dr-next").disabled = stage === STAGES.length - 1;
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      if (Number(button.dataset.stage) === stage) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    bindSceneControls();
+    byId("dr-announcement").textContent = `${meta.title}。${meta.subtitle}`;
+  }
+
+  byId("dr-reset").addEventListener("click", () => {
+    state.fault = "llm";
+    state.drill = 0;
+    state.idempotent = true;
+    state.recovery = 0;
+    state.level = 0;
+    renderStage(0);
+  });
+  byId("dr-back").addEventListener("click", () => renderStage(Math.max(0, state.stage - 1)));
+  byId("dr-next").addEventListener("click", () => renderStage(Math.min(STAGES.length - 1, state.stage + 1)));
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+
+  renderStage(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,897 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>高并发场景下的 Agent 系统扩展策略 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .sc-banner { display: flex; align-items: flex-start; gap: 9px; margin: var(--s-4) var(--s-6) 0; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .sc-banner::before { content: "教学"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .sc-banner strong { color: #4d3000; }
+  .sc-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid transparent; border-radius: 999px; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .sc-neutral { background: #eef1ee; color: #3f463f; border-color: #c9cec9; }
+  .sc-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .sc-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .sc-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .sc-bad { background: #fbecec; color: #8a1f1f; border-color: #d9a3a3; }
+  .sc-topbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: var(--s-3); }
+  .sc-tiers { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .sc-tier { min-width: 0; text-align: left; padding: 8px 9px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: 10px; line-height: 1.5; color: var(--text-dim); }
+  .sc-tier b { display: block; font: 600 12px/1.5 var(--sans); color: var(--ink); }
+  .sc-tier:hover { background: var(--surface-soft); }
+  .sc-tier[aria-pressed="true"] { border-color: #194f87; background: #eaf1f8; color: #194f87; box-shadow: inset 0 0 0 1px #194f87; }
+  .sc-tier[aria-pressed="true"] b { color: #194f87; }
+  .sc-btn { min-height: 40px; padding: 7px 13px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .sc-btn:hover:not(:disabled) { background: var(--surface-soft); }
+  .sc-btn.primary { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+  .sc-btn.primary:hover:not(:disabled) { background: #3a423b; }
+  .sc-btn:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+  .sc-metrics { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-3); }
+  .sc-metric { min-width: 0; padding: 8px 9px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); }
+  .sc-metric b { display: block; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .sc-metric strong { display: block; margin-top: 2px; font: 600 16px/1.3 var(--mono); }
+  .sc-metric span { display: block; margin-top: 2px; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .sc-metric.bad { border-color: #d9a3a3; background: #fdf6f6; }
+  .sc-metric.bad strong { color: #8a1f1f; }
+  .sc-metric.warn { border-color: #d9b47a; background: #fdf3e3; }
+  .sc-metric.warn strong { color: #6b4300; }
+  .sc-queue { margin-top: var(--s-3); padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .sc-queue-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; font-size: 11px; }
+  .sc-queue-head b { font: 600 12px/1.5 var(--sans); }
+  .sc-queue-head span { font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .sc-queue-track { height: 22px; margin-top: 6px; border: 1px solid var(--border-bright); border-radius: 4px; background: var(--surface-soft); overflow: hidden; }
+  .sc-queue-fill { height: 100%; background: #194f87; transition: width var(--med) var(--ease); }
+  .sc-queue-fill.warn { background: #b98a2f; }
+  .sc-queue-fill.bad { background: #a33a3a; }
+  .sc-scale { display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 4px; margin-top: var(--s-2); }
+  .sc-worker { display: grid; place-items: center; height: 35px; border: 1px solid var(--border-bright); border-radius: 4px; background: var(--surface-soft); font: 9px/1 var(--mono); color: var(--text-dim); }
+  .sc-worker.on { background: #e6f2e6; border-color: #9cc39e; color: #14532d; }
+  .sc-worker.idle { background: transparent; border-style: dashed; }
+  .sc-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 5px; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .sc-legend i { display: inline-block; width: 9px; height: 9px; margin-right: 3px; border: 1px solid #9cc39e; background: #e6f2e6; vertical-align: -1px; }
+  .sc-legend i.off { border-color: var(--border-bright); background: transparent; border-style: dashed; }
+  .sc-formula { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-3); }
+  .sc-formula div { padding: 9px 11px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); font-size: 10px; line-height: 1.6; }
+  .sc-formula b { display: block; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .sc-formula strong { display: block; margin-top: 2px; font: 600 16px/1.3 var(--mono); }
+  .sc-formula span { display: block; margin-top: 2px; color: var(--text-dim); }
+  .sc-callout { margin-top: var(--s-3); padding: 9px 12px; border-left: 3px solid #194f87; background: #eaf1f8; font-size: 11px; line-height: 1.7; }
+  .sc-callout.bad { border-left-color: #8a1f1f; background: #fbecec; color: #6d1717; }
+  .sc-callout.warn { border-left-color: #b98a2f; background: #fdf3e3; color: #5b3a05; }
+  .sc-weights { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .sc-weights span { font: 10px/1.6 var(--mono); color: var(--text-dim); margin-right: 3px; }
+  .sc-chip { min-height: 36px; padding: 5px 11px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: 11px; color: var(--text-dim); }
+  .sc-chip:hover { border-color: #194f87; }
+  .sc-chip[aria-pressed="true"] { background: #194f87; border-color: #194f87; color: #fff; font-weight: 600; }
+  .sc-levels { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-3); }
+  .sc-level { min-width: 0; padding: 9px 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 10px; line-height: 1.6; }
+  .sc-level b { display: block; font: 600 12px/1.5 var(--sans); }
+  .sc-level span { display: block; margin-top: 2px; color: var(--text-dim); }
+  .sc-level.is-past { border-color: #9cc39e; background: #f4faf4; }
+  .sc-level.is-current { border-color: #194f87; background: #eaf1f8; box-shadow: inset 0 0 0 1px #194f87; }
+  .sc-level.is-current b { color: #194f87; }
+  .sc-level.is-future { opacity: .72; }
+  .sc-level .sc-badge { margin-top: 5px; }
+  .sc-fixed-note { display: inline-block; margin-top: var(--s-3); padding: 3px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  .sc-arch { display: grid; gap: 7px; margin-top: var(--s-4); }
+  .sc-arch > div:not(.sc-arch-arrow) { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 8px; align-items: center; padding: 9px 11px; border: 1px solid #9eb4c9; border-radius: var(--r-1); background: #eaf1f8; }
+  .sc-arch b { font: 600 12px/1.5 var(--sans); color: #123c67; }
+  .sc-arch span { font-size: 11px; line-height: 1.65; color: #2c4a66; }
+  .sc-arch-arrow { text-align: center; font: 11px/1.4 var(--mono); color: var(--text-dim); }
+  .sc-table-wide { min-width: 740px; }
+  .sc-table td:first-child, .sc-table th:first-child { min-width: 6.5em; }
+  .sc-code-note { margin-top: var(--s-3); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .sc-degrade-steps { display: grid; gap: 5px; margin-top: var(--s-3); }
+  .sc-degrade-step { display: grid; grid-template-columns: 58px minmax(0, 1fr) 80px; gap: 8px; align-items: center; padding: 7px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); font-size: 10px; line-height: 1.6; }
+  .sc-degrade-step b { font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .sc-degrade-step strong { font: 600 11px/1.5 var(--sans); }
+  .sc-degrade-step span { color: var(--text-dim); }
+  @media (max-width: 1000px) {
+    .sc-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .sc-levels { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sc-formula { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .sc-banner { margin-inline: var(--s-4); }
+    .sc-tiers { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sc-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .sc-levels { grid-template-columns: 1fr; }
+    .sc-scale { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .sc-degrade-step { grid-template-columns: 48px minmax(0, 1fr); }
+    .sc-degrade-step span:last-child { grid-column: 2; }
+    .sc-arch > div:not(.sc-arch-arrow) { grid-template-columns: 1fr; gap: 3px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">094 / 高并发扩展</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 17 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="093-canary-ab-testing.html">← 上一页 · 如何实现 Agent 的灰度发布和 …</a><a href="095-disaster-recovery-ha.html">下一页 → · Agent 系统的灾难恢复与高可用设…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">高级 · Production &amp; Deployment · 可交互讲解</p>
+      <h1>加机器之前，<br>先看队列有多深。</h1>
+    </div>
+    <div>
+      <p class="lead">Agent 请求要跑几秒到几分钟，Token 消耗不确定，还有会话状态。高并发扩展靠的是无状态 Worker、任务队列、外部状态存储，再用队列深度和并发数扩缩容；瓶颈通常不在 CPU，而在上游 LLM API 的限流。</p>
+      <p class="definition"><strong>关键边界：</strong>本页是固定教学扩容面板，不连接真实网关、队列、Worker 或云服务。流量、队列深度、Worker 数量和 API 配额都是预设值；扩容公式按原文，配额上限是本页教学假设。</p>
+      <div class="hero-meta"><span class="pill">高级</span><span class="pill">Production</span><span class="pill">Scaling</span><span class="pill">固定教学数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="sc-title">
+    <div class="player-top">
+      <div class="player-label">扩容控制台 <small>流量 · 队列 · 扩缩容 · 降级</small></div>
+      <div class="controls" role="group" aria-label="扩容演示控制">
+        <button type="button" class="button button-quiet" id="sc-reset">重置</button>
+        <button type="button" class="button" id="sc-back" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="sc-next">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="扩容演示阶段">
+      <ol style="--stages: 3">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>流量与队列</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>扩缩容</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>降级</button></li>
+      </ol>
+    </nav>
+    <p class="sc-banner"><span><strong>本页是固定教学扩容演示，不连接任何真实基础设施。</strong>四档流量、队列深度、Worker 数、CPU 和 API 配额均为预设；页面不创建队列、不启动 Worker、不调用任何模型 API。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="sc-index">阶段 1 / 3 · 固定教学扩容</p>
+      <h2 id="sc-title">流量翻倍，队列先涨，CPU 几乎不动。</h2>
+      <p id="sc-subtitle">固定四档流量：20 / 60 / 120 / 200 RPS。看队列深度、P95 和 API 配额怎么变；CPU 一直在 11–14%。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="sc-scene"></div>
+      <p class="demo-note" id="sc-note">固定教学数据：流量、队列、Worker、CPU、配额与延迟均为本页预设；不连接真实基础设施。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学扩容 · 4 档流量 · 3 个阶段</span><span id="sc-summary">阶段 1 / 3 · 20 RPS · 队列 0</span></div>
+  </section>
+  <p id="sc-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">独特挑战</p><h2 id="why-title">长请求、不确定消耗、<br>还有状态。</h2></div>
+      <p class="reading-intro">传统 Web 服务请求 10–100ms、无状态、看 CPU；Agent 请求 1–60s 甚至更长、Token 消耗波动可达 10 倍、多步执行有状态，扩展指标要换成并发数和队列深度。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data sc-table-wide">
+          <caption class="sr-only">原文的传统 Web 服务与 Agent 系统扩展对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">传统 Web 服务</th><th scope="col">Agent 系统</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">请求处理时间</th><td>10–100ms</td><td>1–60s（甚至更长）</td></tr>
+            <tr><th scope="row">资源消耗</th><td>可预测</td><td>Token 消耗不确定（变化 10 倍）</td></tr>
+            <tr><th scope="row">状态</th><td>无状态（通常）</td><td>多步执行有状态</td></tr>
+            <tr><th scope="row">扩展指标</th><td>CPU / 内存</td><td>并发数 / 队列深度</td></tr>
+            <tr><th scope="row">失败模式</th><td>超时 / 500</td><td>API 限流 / 成本爆炸</td></tr>
+            <tr><th scope="row">连接</th><td>短连接</td><td>长连接 / SSE 流式</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>核心矛盾有三个：Agent 占用连接时间长，同等并发需要更多实例；API 有限流，不能无限扩展实例；成本与流量成正比，流量翻倍成本也翻倍。三者叠加，决定了扩容不能只靠“加机器”。</p>
+      <div class="callout">
+        <p class="callout-label">原文的生产实例</p>
+        <p>ByteDance 的 HeteroScale 已在数万 GPU 上验证；MIT 的 LLM Archetypes 把 Agent 模拟从千级扩到百万级；Third Moment Research 常态运行 10,000 个 agent 持续 36 小时以上（2026-10 原文时点）。这些数字按原文版本呈现，本页未联网核实，也不作为本页教学数据的依据。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="arch-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">扩展架构</p><h2 id="arch-title">请求进队列，<br>Worker 无状态。</h2></div>
+      <p class="reading-intro">原文的架构是：API 网关 → 消息队列 → 无状态 Worker 池 → LLM 网关、状态存储、语义缓存和流式响应。队列深度驱动扩缩容。</p>
+    </div>
+    <div class="prose">
+      <div class="sc-arch" role="list" aria-label="高并发 Agent 架构">
+        <div><b>API 网关</b><span>认证、限流、路由；无状态，可自由水平扩展。</span></div>
+        <div class="sc-arch-arrow">↓</div>
+        <div><b>消息队列</b><span>RabbitMQ / Redis Streams / SQS；解耦请求接收和处理，队列深度触发 Worker 扩容。</span></div>
+        <div class="sc-arch-arrow">↓</div>
+        <div><b>无状态 Worker 池</b><span>Celery Workers / K8s Jobs；执行 Agent 逻辑和 LLM 调用，每个 Worker 无状态。</span></div>
+        <div class="sc-arch-arrow">↙ ↓ ↘</div>
+        <div><b>LLM 网关 / 状态存储 / 语义缓存</b><span>LiteLLM 或 Portkey 做多提供商路由和故障转移；Redis 存会话、PostgreSQL 做持久化；语义缓存减少实际 LLM 调用。流式响应走 SSE / WebSocket。</span></div>
+      </div>
+      <p class="sc-fixed-note">架构与组件来自原文 Mermaid 和 architecture 字典；本页未部署任何组件</p>
+      <details>
+        <summary>查看原文 Mermaid 源码（扩展架构）</summary>
+        <pre><code>flowchart LR
+    A["用户请求"] --&gt; B["API 网关"]
+    B --&gt; Q["消息队列&lt;br/&gt;队列深度驱动扩缩容"]
+    Q --&gt; W["无状态 Worker 池&lt;br/&gt;状态全部外置"]
+    W --&gt; G["LLM 网关&lt;br/&gt;多提供商分流 + 故障转移"]
+    W --&gt; S["状态存储&lt;br/&gt;Redis / PG"]
+    W --&gt; C["语义缓存&lt;br/&gt;减少 LLM 调用"]
+    W --&gt; R["流式响应&lt;br/&gt;SSE / WebSocket"]
+    G --&gt; R
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class A,B,Q,W,R proc
+    class S,C store
+    class G neutral</code></pre>
+      </details>
+      <div class="table-wrap">
+        <table class="data sc-table-wide">
+          <caption class="sr-only">原文的扩展架构组件</caption>
+          <thead><tr><th scope="col">层</th><th scope="col">组件</th><th scope="col">扩展方式</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">接入层</th><td>API Gateway + Load Balancer</td><td>无状态，自由水平扩展</td></tr>
+            <tr><th scope="row">请求队列</th><td>RabbitMQ / Redis Streams / SQS</td><td>队列深度 → 触发 Worker 扩容</td></tr>
+            <tr><th scope="row">Worker 池</th><td>Celery Workers / K8s Jobs</td><td>基于队列深度自动扩缩容</td></tr>
+            <tr><th scope="row">状态存储</th><td>Redis（会话）+ PostgreSQL（持久化）</td><td>Redis Cluster / PG 读写分离</td></tr>
+            <tr><th scope="row">模型网关</th><td>LiteLLM / Portkey</td><td>多提供商路由 + 限流 + 故障转移</td></tr>
+            <tr><th scope="row">缓存层</th><td>Redis Semantic Cache</td><td>命中率越高，扩展压力越小</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>无状态是水平扩展的前提：会话历史、执行状态、检查点都放到外部存储，Worker 才能随时增加或减少。否则一个用户的多步执行被绑在某个实例上，扩缩容就会丢状态。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="queue-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">任务队列</p><h2 id="queue-title">超时按任务设，<br>不要用默认值。</h2></div>
+      <p class="reading-intro">原文的 Celery 任务把 time_limit 设为 600s、soft_time_limit 540s：默认 120s 会硬杀长任务。Coding / Research Agent 等更长任务建议 1800s 以上。</p>
+    </div>
+    <div class="prose">
+      <p>任务从外部存储加载会话状态，执行 Agent，保存更新后的状态，再通过 WebSocket / SSE 推送结果。遇到 LLM API 限流 <code>RateLimitError</code> 就延迟 30 秒重试。扩缩容规则：队列深度 &gt;100 加 Worker；&lt;10 且持续 5 分钟减 Worker；最小 2 个保证可用；最大数按 API 限流上限计算。</p>
+      <details>
+        <summary>查看原文的 Celery 任务代码</summary>
+        <pre><code>from celery import Celery
+
+app = Celery('agent', broker='redis://redis:6379/0')
+
+@app.task(bind=True, max_retries=3, time_limit=600, soft_time_limit=540)
+def execute_agent_task(self, task_id, user_message, session_id):
+    """Agent 任务 Worker
+    time_limit 设为 600s（10min）：本文档前提是 Agent 1-60s 甚至更长，
+    Celery 默认 120s 会硬杀长任务。soft_time_limit 提前 1 分钟抛 SoftTimeLimitExceeded，
+    让 Worker 有机会优雅 cleanup。Coding/Research Agent 等更长任务建议 1800s+。
+    """
+    try:
+        # 从外部存储加载会话状态
+        session = SessionStore.load(session_id)
+
+        # 执行 Agent
+        result = agent.invoke(
+            message=user_message,
+            history=session.history,
+        )
+
+        # 保存更新后的状态
+        session.add_message(user_message, result)
+        SessionStore.save(session)
+
+        # 推送结果（WebSocket / SSE）
+        ResultChannel.push(task_id, result)
+        return result
+
+    except RateLimitError:
+        # LLM API 限流 → 延迟重试
+        self.retry(countdown=30)  # 30 秒后重试
+
+# 扩缩容策略：
+# 队列深度 &gt; 100 → 增加 Worker
+# 队列深度 &lt; 10 且持续 5 分钟 → 减少 Worker
+# 最小 Worker 数 = 2（保证可用性）
+# 最大 Worker 数 = 基于 API 限流上限计算</code></pre>
+      </details>
+      <p class="sc-code-note">代码只展示，不执行；本页没有 Celery、Redis 或任何真实 Worker。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="auto-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">自动扩缩容</p><h2 id="auto-title">队列深度和并发数，<br>不是 CPU。</h2></div>
+      <p class="reading-intro">Worker 大部分时间在等 LLM API（I/O 密集），CPU 可能只有 10% 但已经满载。原文的 AutoScaler 用队列深度、并发数和 API 剩余配额三项计算目标副本数。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data sc-table-wide">
+          <caption class="sr-only">原文自动扩缩容的三条策略</caption>
+          <thead><tr><th scope="col">策略</th><th scope="col">计算</th><th scope="col">作用</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">队列深度</th><td><code>ceil(queue_depth / processing_rate_per_worker)</code></td><td>按积压任务算需要多少 Worker</td></tr>
+            <tr><th scope="row">并发数</th><td><code>ceil(concurrent_requests / 5)</code></td><td>Agent 长连接，每 Worker 并发有限</td></tr>
+            <tr><th scope="row">API 限流</th><td><code>api_rate_limit_remaining &lt; 100</code> 时不再扩容</td><td>避免加 Worker 后更快撞上限</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="sc-fixed-note">公式与阈值来自原文；本页的 Worker 上限 8、每 Worker 每分钟 8 个任务是教学假设</p>
+      <details>
+        <summary>查看原文的 AutoScaler 代码</summary>
+        <pre><code>class AutoScaler:
+    """Agent 系统的自动扩缩容"""
+
+    def compute_desired_replicas(self, current_metrics):
+        """计算目标副本数"""
+
+        # 策略 1：基于队列深度
+        queue_depth = current_metrics["queue_depth"]
+        processing_rate = current_metrics["processing_rate_per_worker"]
+        queue_based = math.ceil(queue_depth / processing_rate)
+
+        # 策略 2：基于并发数
+        concurrent_requests = current_metrics["concurrent_requests"]
+        max_concurrent_per_worker = 5  # Agent 长连接，每 Worker 并发有限
+        concurrency_based = math.ceil(concurrent_requests / max_concurrent_per_worker)
+
+        # 策略 3：基于 API 限流
+        api_rate_limit = current_metrics["api_rate_limit_remaining"]
+        if api_rate_limit &lt; 100:
+            # API 限流接近上限，不再扩容
+            return current_metrics["current_replicas"]
+
+        # 取最大值，但不超过上限
+        desired = max(queue_based, concurrency_based)
+        desired = min(desired, self.max_replicas)
+        desired = max(desired, self.min_replicas)
+
+        return desired
+
+    # 注意：不要用 CPU 作为扩缩容指标！
+    # Agent Worker 大部分时间在等待 LLM API 响应（I/O 密集）
+    # CPU 利用率很低但实际已经满载</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="router-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">多提供商</p><h2 id="router-title">一个厂商满了，<br>换下一个。</h2></div>
+      <p class="reading-intro">原文的 MultiProviderRouter 按权重在 OpenAI、Anthropic、Google 之间分流；遇到限流或服务不可用就故障转移到下一个可用提供商。</p>
+    </div>
+    <div class="prose">
+      <p>原文示例的配额是 OpenAI 10,000 RPM、Anthropic 4,000 RPM、Google 5,000 RPM，权重分别是 0.4 / 0.35 / 0.25。这些数字是原文示例，本页没有联网核对，也不代表当前配额。</p>
+      <details>
+        <summary>查看原文的 MultiProviderRouter 代码</summary>
+        <pre><code>class MultiProviderRouter:
+    """多 LLM 提供商分散流量"""
+
+    def __init__(self):
+        self.providers = {
+            "openai": {
+                "rate_limit": 10000,  # RPM
+                "weight": 0.4,
+                "models": ["gpt-4o", "gpt-4o-mini"],
+            },
+            "anthropic": {
+                "rate_limit": 4000,
+                "weight": 0.35,
+                "models": ["claude-sonnet-4-5"],
+            },
+            "google": {
+                "rate_limit": 5000,
+                "weight": 0.25,
+                "models": ["gemini-2.0-flash"],
+            },
+        }
+
+    async def route(self, request):
+        """智能路由到可用的提供商"""
+        # 1. 检查各提供商的剩余配额
+        available = [
+            p for p in self.providers
+            if self.get_remaining_quota(p) &gt; 0
+        ]
+
+        # 2. 按权重选择
+        provider = self.weighted_select(available)
+
+        # 3. 故障转移
+        try:
+            return await self.call(provider, request)
+        except (RateLimitError, ServiceUnavailableError):
+            # 自动切换到下一个提供商
+            fallback = self.get_next_available(exclude=provider)
+            return await self.call(fallback, request)</code></pre>
+      </details>
+      <p class="sc-code-note">配额、权重与模型名按原文示例；本页不调用任何模型 API。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="degrade-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">降级顺序</p><h2 id="degrade-title">先省，再降，<br>最后才拒绝。</h2></div>
+      <p class="reading-intro">原文的降级分五级：缓存优先、模型降级、功能降级、排队等待、限流拒绝。越往后，用户体验代价越大。</p>
+    </div>
+    <div class="prose">
+      <div class="sc-degrade-steps">
+        <div class="sc-degrade-step"><b>Level 1</b><strong>缓存优先</strong><span>提高语义缓存相似度阈值（0.95 → 0.90），更积极使用缓存结果</span><span>质量不变</span></div>
+        <div class="sc-degrade-step"><b>Level 2</b><strong>模型降级</strong><span>复杂任务从 GPT-4o 降到 GPT-4o-mini，牺牲部分质量换吞吐</span><span>质量下降</span></div>
+        <div class="sc-degrade-step"><b>Level 3</b><strong>功能降级</strong><span>禁用非必要工具、减少最大步数、简化推理流程</span><span>能力收窄</span></div>
+        <div class="sc-degrade-step"><b>Level 4</b><strong>排队等待</strong><span>显示“当前繁忙，请稍候”；优先处理高优先级请求</span><span>等待变长</span></div>
+        <div class="sc-degrade-step"><b>Level 5</b><strong>限流拒绝</strong><span>返回 429 Too Many Requests，提供重试建议</span><span>拒绝部分用户</span></div>
+      </div>
+      <p class="sc-fixed-note">五级降级顺序与动作来自原文；本页的队列变化为教学数据</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">两个误区，<br>两个追问。</h2></div>
+      <p class="reading-intro">CPU 扩容和“加机器解决一切”是两个常见误区；资源估算和 Serverless 是常见追问。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <div class="misconception-label">误区 01</div>
+        <div><h3>“Agent 系统和 Web 服务一样用 CPU 指标扩容”</h3><p>Agent Worker 大部分时间在等待 LLM API 响应（I/O 密集），CPU 利用率可能只有 10% 但已经满载。应该用队列深度、并发连接数或 API 配额剩余量作为扩缩容指标。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 02</div>
+        <div><h3>“加机器就能解决高并发”</h3><p>Agent 系统的瓶颈通常不在计算资源，而在 LLM API 的限流。无限加 Worker 只会更快触及 API 限流上限。需要多提供商分散流量、缓存减少 API 调用、模型路由优化。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 03</div>
+        <div><h3>如何估算 Agent 系统需要的资源？</h3><p>公式：所需 Worker 数 = 目标 QPS × 平均响应时间（秒） / 每 Worker 并发数。原文例子：目标 100 QPS、平均响应 5s、每 Worker 并发 5，需要 100 个 Worker；再按缓存命中率打折。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 04</div>
+        <div><h3>Serverless 适合 Agent 系统吗？</h3><p>适合低流量和突发流量，但要注意冷启动延迟（2–10s）影响体验；执行时间限制（Lambda 15min）可能不够长 Agent；高流量时成本可能高于容器化。建议低流量用 Serverless，高流量用容器化。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="sources-title">
+    <p class="eyebrow">参考资料</p>
+    <h2 class="source-heading" id="sources-title">原文引用与延伸阅读</h2>
+    <p class="source-summary">以下链接来自原文。只有主动点击外链才会离开本页；本页不加载任何外部资源。</p>
+    <details>
+      <summary>展开 6 条参考资料</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.frontiersin.org/journals/artificial-intelligence/articles/10.3389/frai.2025.1638227/full" rel="noreferrer noopener">Auto-scaling LLM-based Multi-Agent Systems (Frontiers in AI)</a></li>
+          <li><a href="https://apxml.com/courses/langchain-production-llm/chapter-6-optimizing-scaling-langchain/handling-high-concurrency" rel="noreferrer noopener">Handling High Concurrency and Throughput (APXML)</a></li>
+          <li><a href="https://compute.hivenet.com/post/llm-inference-production-guide" rel="noreferrer noopener">Practical Guide to LLM Inference in Production 2025 (Hivenet)</a></li>
+          <li><a href="https://arxiv.org/html/2508.19559v1" rel="noreferrer noopener">Taming the Chaos: Coordinated Autoscaling for LLM Inference (arXiv)</a></li>
+          <li><a href="https://www.media.mit.edu/posts/new-paper-on-limits-of-agency-at-aamas-2025/" rel="noreferrer noopener">Scaling LLM-Guided Agent Simulations to Millions (MIT Media Lab)</a></li>
+          <li><a href="https://openai.com/index/third-moment-research" rel="noreferrer noopener">OpenAI — How Third Moment Research runs 10,000 agents for 36+ hours</a></li>
+        </ul>
+        <p class="source-footnote">生产实例、论文与配额数字按原文 2026-10 时点呈现；本页未联网核实，也未连接任何真实基础设施。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>10-production-and-deployment/094-scaling-strategies.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 6 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const TIERS = Object.freeze([
+    { rps: 20, queue: 0, workers: 2, cpu: 11, quota: 72, p95: 2.1, queueBased: 0, concBased: 2, concurrent: 10, status: "健康" },
+    { rps: 60, queue: 18, workers: 5, cpu: 12, quota: 41, p95: 2.8, queueBased: 3, concBased: 5, concurrent: 22, status: "正常" },
+    { rps: 120, queue: 96, workers: 8, cpu: 13, quota: 9, p95: 6.4, queueBased: 12, concBased: 8, concurrent: 40, status: "接近饱和" },
+    { rps: 200, queue: 240, workers: 8, cpu: 14, quota: 0, p95: 12.8, queueBased: 30, concBased: 13, concurrent: 64, status: "饱和" }
+  ]);
+
+  const DEGRADES = Object.freeze([
+    { level: 1, name: "缓存优先", action: "相似度阈值 0.95 → 0.90，更积极使用缓存", effect: "队列 240 → 180", queue: 180, rejected: 0, quality: "质量基本不变" },
+    { level: 2, name: "模型降级", action: "复杂任务从 GPT-4o 降到 GPT-4o-mini", effect: "队列 180 → 120", queue: 120, rejected: 0, quality: "质量下降，吞吐上升" },
+    { level: 3, name: "功能降级", action: "禁用非必要工具、减少 max_steps、简化推理", effect: "队列 120 → 80", queue: 80, rejected: 0, quality: "能力收窄" },
+    { level: 4, name: "排队等待", action: "显示当前繁忙，优先处理高优先级请求", effect: "队列 80 → 40", queue: 40, rejected: 0, quality: "等待变长" },
+    { level: 5, name: "限流拒绝", action: "返回 429，提供重试建议，保护系统稳定", effect: "队列 40 → 0，拒绝 60 RPS", queue: 0, rejected: 60, quality: "拒绝部分用户" }
+  ]);
+
+  const STAGES = Object.freeze([
+    { nav: "流量与队列", title: "流量翻倍，队列先涨，CPU 几乎不动。", subtitle: "固定四档流量：20 / 60 / 120 / 200 RPS。看队列深度、P95 和 API 配额怎么变；CPU 一直在 11–14%。" },
+    { nav: "扩缩容", title: "按队列深度扩，按 API 配额停。", subtitle: "切换 CPU 与队列深度两种扩容策略；到达 8 个 Worker 后，API 配额见底，再加也加不上去。" },
+    { nav: "降级", title: "扩不上去，就按顺序降级。", subtitle: "只有饱和后才启用降级。从缓存优先到限流拒绝，五级逐级推进；未来的级别保持灰色。" }
+  ]);
+
+  const state = { stage: 0, tier: 0, mode: "queue", degrade: 0 };
+  const byId = (id) => document.getElementById(id);
+
+  function tier() {
+    return TIERS[state.tier];
+  }
+
+  function tierBadgeClass(value, limit) {
+    if (value >= limit) return "bad";
+    if (value >= limit * 0.6) return "warn";
+    return "";
+  }
+
+  function tierTabs() {
+    return TIERS.map((item, index) => `<button type="button" class="sc-tier" data-tier="${index}" aria-pressed="${index === state.tier}"><b>${item.rps} RPS</b>${item.status}</button>`).join("");
+  }
+
+  function queueMeter(value) {
+    const pct = Math.min(100, (value / 240) * 100);
+    const cls = value >= 200 ? " bad" : value >= 80 ? " warn" : "";
+    return `<div class="sc-queue"><div class="sc-queue-head"><b>待处理队列</b><span>${value} 个请求 · 容量基线 240</span></div><div class="sc-queue-track"><div class="sc-queue-fill${cls}" style="width:${pct.toFixed(1)}%"></div></div></div>`;
+  }
+
+  function trafficScene() {
+    const t = tier();
+    const cpuClass = "";
+    return `
+      <div class="sc-topbar"><div class="sc-badge ${state.tier === 3 ? "sc-bad" : state.tier === 2 ? "sc-warn" : "sc-ok"}">${t.status} · 固定负载 ${t.rps} RPS</div><span class="sc-badge sc-neutral">固定教学流量</span></div>
+      <div class="sc-tiers" role="group" aria-label="选择流量档位">${tierTabs()}</div>
+      <div class="sc-metrics">
+        <div class="sc-metric"><b>入口流量</b><strong>${t.rps} RPS</strong><span>固定档位</span></div>
+        <div class="sc-metric ${t.queue >= 200 ? "bad" : t.queue >= 80 ? "warn" : ""}"><b>队列深度</b><strong>${t.queue}</strong><span>待处理请求</span></div>
+        <div class="sc-metric"><b>Worker</b><strong>${t.workers} / 8</strong><span>当前副本</span></div>
+        <div class="sc-metric"><b>CPU</b><strong>${t.cpu}%</strong><span>I/O 密集，偏低</span></div>
+        <div class="sc-metric ${t.quota === 0 ? "bad" : t.quota < 15 ? "warn" : ""}"><b>API 配额剩余</b><strong>${t.quota}%</strong><span>上游限流余量</span></div>
+        <div class="sc-metric ${t.p95 > 5 ? "bad" : t.p95 > 3 ? "warn" : ""}"><b>P95 延迟</b><strong>${t.p95.toFixed(1)}s</strong><span>端到端</span></div>
+      </div>
+      ${queueMeter(t.queue)}
+      <div class="sc-callout ${state.tier === 3 ? "bad" : state.tier === 2 ? "warn" : ""}">
+        <strong>${state.tier === 3 ? "饱和：" : state.tier === 2 ? "接近饱和：" : "观察："}</strong>
+        ${state.tier === 3 ? "队列 240，API 配额 0；CPU 只有 14%，但再加 Worker 也没有配额可用。" : state.tier === 2 ? "队列 96，配额只剩 9%；扩容接近 API 上限。" : `CPU ${t.cpu}%，队列 ${t.queue}；此时按 CPU 扩容会误判。`}
+      </div>
+      <p class="sc-fixed-note">固定教学数据：四档流量与五项指标为本页预设；不产生真实流量</p>`;
+  }
+
+  function workerGrid() {
+    return Array.from({ length: 8 }, (_, index) => `<div class="sc-worker ${index < tier().workers ? "on" : "idle"}">${index < tier().workers ? "W" + (index + 1) : "—"}</div>`).join("");
+  }
+
+  function scaleScene() {
+    const t = tier();
+    const cpuBased = t.cpu >= 70 ? 8 : 2;
+    const queueDesired = Math.max(2, Math.min(8, Math.max(t.queueBased, t.concBased)));
+    const desired = state.mode === "queue" ? queueDesired : cpuBased;
+    const capReached = state.mode === "queue" && Math.max(t.queueBased, t.concBased) > 8;
+    return `
+      <div class="sc-topbar">
+        <div class="sc-weights" role="group" aria-label="选择扩容策略">
+          <span>扩容依据</span>
+          <button type="button" class="sc-chip" data-mode="cpu" aria-pressed="${state.mode === "cpu"}">CPU 利用率</button>
+          <button type="button" class="sc-chip" data-mode="queue" aria-pressed="${state.mode === "queue"}">队列深度 + 并发</button>
+        </div>
+        <span class="sc-badge ${desired < t.workers ? "sc-bad" : "sc-info"}">目标副本 ${desired}</span>
+      </div>
+      <div class="sc-formula">
+        <div><b>队列深度公式</b><strong>${t.queueBased}</strong><span>ceil(${t.queue} / 每 Worker 8 个任务)</span></div>
+        <div><b>并发数公式</b><strong>${t.concBased}</strong><span>ceil(${t.concurrent} / 每 Worker 5 并发)</span></div>
+        <div><b>最终目标</b><strong>${desired}</strong><span>${state.mode === "queue" ? "取两者最大，夹在 2–8" : "CPU 未达 70%，只保留最小 2 个"}</span></div>
+      </div>
+      <div class="sc-queue">
+        <div class="sc-queue-head"><b>Worker 池</b><span>${t.workers} 个运行中 · 上限 8 · 当前策略：${state.mode === "queue" ? "队列深度 + 并发" : "CPU 利用率"}</span></div>
+        <div class="sc-scale">${workerGrid()}</div>
+        <div class="sc-legend"><span><i></i>运行中</span><span><i class="off"></i>未分配</span><span>CPU ${t.cpu}%</span><span>配额 ${t.quota}%</span></div>
+      </div>
+      ${state.mode === "cpu"
+        ? `<div class="sc-callout bad"><strong>CPU 策略会误判：</strong>CPU 只有 ${t.cpu}%，按 70% 阈值只保留 2 个 Worker；但队列已有 ${t.queue} 个请求，Agent 在等 LLM 而不是算 CPU。缩到 2 个会让队列继续涨。</div>`
+        : t.quota === 0
+          ? `<div class="sc-callout bad"><strong>已经到顶：</strong>队列和并发算出 ${Math.max(t.queueBased, t.concBased)} 个，但上限是 8；API 配额剩余 0%，继续加 Worker 也拿不到调用配额。</div>`
+          : `<div class="sc-callout ${capReached ? "warn" : ""}"><strong>${capReached ? "已到扩容上限：" : "扩容计算："}</strong>队列按 ${t.queueBased}、并发按 ${t.concBased}，取最大后夹在 2–8，目标 ${desired} 个。还要看 API 配额 ${t.quota}%。</div>`}
+      <div class="sc-formula">
+        <div><b>当前 Worker</b><strong>${t.workers}</strong><span>实际副本</span></div>
+        <div><b>目标 Worker</b><strong>${desired}</strong><span>${state.mode === "queue" ? "队列/并发驱动" : "CPU 驱动"}</span></div>
+        <div><b>API 配额</b><strong>${t.quota}%</strong><span>${t.quota === 0 ? "已耗尽，停止扩容" : "仍有扩容空间"}</span></div>
+      </div>
+      <p class="sc-fixed-note">固定教学数据：Worker 上限 8、每 Worker 8 任务/分钟、5 并发为教学假设；公式来自原文</p>`;
+  }
+
+  function degradeLevels() {
+    return DEGRADES.map((item) => {
+      const status = item.level < state.degrade ? "is-past" : item.level === state.degrade ? "is-current" : "is-future";
+      const badge = item.level < state.degrade ? '<span class="sc-badge sc-ok">已采取</span>' : item.level === state.degrade ? '<span class="sc-badge sc-info">当前</span>' : '<span class="sc-badge sc-neutral">未触发</span>';
+      return `<div class="sc-level ${status}"><b>Level ${item.level} · ${item.name}</b><span>${item.action}</span>${badge}</div>`;
+    }).join("");
+  }
+
+  function degradeScene() {
+    const t = tier();
+    const active = DEGRADES[state.degrade - 1];
+    const saturated = t.quota === 0;
+    const currentQueue = state.degrade === 0 ? t.queue : active.queue;
+    return `
+      <div class="sc-topbar"><div class="sc-badge ${saturated ? "sc-bad" : "sc-ok"}">${saturated ? "已饱和 · 可降级" : "未饱和 · 不需要降级"}</div><span class="sc-badge sc-neutral">固定教学降级</span></div>
+      ${!saturated ? `<div class="sc-callout"><strong>还没到降级点：</strong>当前配额 ${t.quota}%，队列 ${t.queue}。先回到阶段 1 把流量加到 200 RPS，再看五级降级。</div>` : ""}
+      <div class="sc-queue"><div class="sc-queue-head"><b>降级后的队列</b><span>${currentQueue} 个请求 ${active && active.rejected ? `· 拒绝 ${active.rejected} RPS` : ""}</span></div><div class="sc-queue-track"><div class="sc-queue-fill ${currentQueue >= 200 ? "bad" : currentQueue >= 80 ? "warn" : ""}" style="width:${Math.min(100, (currentQueue / 240) * 100).toFixed(1)}%"></div></div></div>
+      <div class="sc-topbar" style="margin-top:var(--s-3)">
+        <button type="button" class="sc-btn primary" id="sc-degrade-next" ${saturated ? "" : "disabled"}>${state.degrade >= 5 ? "重新演练" : "触发下一级降级"}</button>
+        <span class="sc-badge ${state.degrade === 0 ? "sc-neutral" : state.degrade >= 4 ? "sc-bad" : "sc-warn"}">${state.degrade === 0 ? "尚未降级" : `当前 Level ${state.degrade} · ${active.name}`}</span>
+      </div>
+      <div class="sc-levels">${degradeLevels()}</div>
+      <div class="sc-callout ${state.degrade >= 4 ? "bad" : state.degrade > 0 ? "warn" : ""}">
+        <strong>${state.degrade === 0 ? "降级顺序：" : "当前代价："}</strong>${state.degrade === 0 ? "先缓存、再模型、再功能、再排队，最后才拒绝。未来的级别保持灰色，不提前高亮。" : active.quality + `；${active.effect}。`}
+      </div>
+      <p class="sc-fixed-note">固定教学数据：五级队列变化与拒绝量为本页预设；降级顺序来自原文</p>`;
+  }
+
+  const SCENES = [trafficScene, scaleScene, degradeScene];
+
+  function bindSceneControls() {
+    document.querySelectorAll("[data-tier]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.tier = Number(button.dataset.tier);
+        state.degrade = 0;
+        renderStage(state.stage);
+        byId("sc-announcement").textContent = `已切换到 ${tier().rps} RPS：队列 ${tier().queue}`;
+      });
+    });
+    document.querySelectorAll("[data-mode]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.mode = button.dataset.mode;
+        renderStage(1);
+        byId("sc-announcement").textContent = `扩容策略已切换为${state.mode === "queue" ? "队列深度 + 并发" : "CPU 利用率"}`;
+      });
+    });
+    const degradeButton = byId("sc-degrade-next");
+    if (degradeButton) {
+      degradeButton.addEventListener("click", () => {
+        state.degrade = state.degrade >= 5 ? 0 : state.degrade + 1;
+        renderStage(2);
+        byId("sc-announcement").textContent = state.degrade === 0 ? "已重置降级" : `已进入 Level ${state.degrade}：${DEGRADES[state.degrade - 1].name}`;
+      });
+    }
+  }
+
+  function summaryFor(stage) {
+    const t = tier();
+    if (stage === 0) return `阶段 1 / 3 · ${t.rps} RPS · 队列 ${t.queue}`;
+    if (stage === 1) return `阶段 2 / 3 · ${state.mode === "queue" ? "队列扩缩容" : "CPU 扩缩容"} · ${t.workers} Worker`;
+    return `阶段 3 / 3 · ${t.quota === 0 ? (state.degrade === 0 ? "已饱和未降级" : `Level ${state.degrade}`) : "未饱和"}`;
+  }
+
+  function renderStage(stage) {
+    state.stage = stage;
+    const meta = STAGES[stage];
+    byId("sc-scene").innerHTML = SCENES[stage]();
+    byId("sc-index").textContent = `阶段 ${stage + 1} / 3 · 固定教学扩容`;
+    byId("sc-title").textContent = meta.title;
+    byId("sc-subtitle").textContent = meta.subtitle;
+    byId("sc-note").textContent = "固定教学数据：流量、队列、Worker、CPU、配额与延迟均为本页预设；不连接真实基础设施。";
+    byId("sc-summary").textContent = summaryFor(stage);
+    byId("sc-back").disabled = stage === 0;
+    byId("sc-next").disabled = stage === STAGES.length - 1;
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      if (Number(button.dataset.stage) === stage) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    bindSceneControls();
+    byId("sc-announcement").textContent = `${meta.title}。${meta.subtitle}`;
+  }
+
+  byId("sc-reset").addEventListener("click", () => {
+    state.tier = 0;
+    state.mode = "queue";
+    state.degrade = 0;
+    renderStage(0);
+  });
+  byId("sc-back").addEventListener("click", () => renderStage(Math.max(0, state.stage - 1)));
+  byId("sc-next").addEventListener("click", () => renderStage(Math.min(STAGES.length - 1, state.stage + 1)));
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+
+  renderStage(0);
+</script>
+</body>
+</html>

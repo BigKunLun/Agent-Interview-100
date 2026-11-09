@@ -1,0 +1,970 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>场景题：你的 Agent 在生产环境出了故障，如何系统性排查和修复？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .ts-banner { display: flex; align-items: flex-start; gap: 9px; margin: var(--s-4) var(--s-6) 0; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .ts-banner::before { content: "教学"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .ts-banner strong { color: #4d3000; }
+  .ts-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid transparent; border-radius: 999px; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .ts-neutral { background: #eef1ee; color: #3f463f; border-color: #c9cec9; }
+  .ts-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .ts-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .ts-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .ts-bad { background: #fbecec; color: #8a1f1f; border-color: #d9a3a3; }
+  .ts-scenarios { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-bottom: var(--s-3); }
+  .ts-scenario { min-width: 0; text-align: left; padding: 8px 9px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: 10px; line-height: 1.5; color: var(--text-dim); }
+  .ts-scenario b { display: block; font: 600 11px/1.5 var(--sans); color: var(--ink); }
+  .ts-scenario:hover { background: var(--surface-soft); }
+  .ts-scenario[aria-pressed="true"] { border-color: #194f87; background: #eaf1f8; color: #194f87; box-shadow: inset 0 0 0 1px #194f87; }
+  .ts-scenario[aria-pressed="true"] b { color: #194f87; }
+  .ts-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: var(--s-3); }
+  .ts-chip { min-height: 34px; padding: 4px 9px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: 10px; color: var(--text-dim); }
+  .ts-chip:hover { border-color: #194f87; }
+  .ts-chip[aria-pressed="true"] { background: #194f87; border-color: #194f87; color: #fff; font-weight: 600; }
+  .ts-alert { padding: 11px 13px; border: 1px solid #d9a3a3; border-radius: var(--r-1); background: #fdf6f6; }
+  .ts-alert-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; }
+  .ts-alert-head b { font: 600 14px/1.5 var(--sans); color: #6d1717; }
+  .ts-alert p { margin-top: 4px; font-size: 11px; line-height: 1.7; color: #5b2a2a; }
+  .ts-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-3); }
+  .ts-metric { min-width: 0; padding: 8px 9px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); }
+  .ts-metric b { display: block; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .ts-metric strong { display: block; margin-top: 2px; font: 600 15px/1.3 var(--mono); }
+  .ts-metric span { display: block; margin-top: 2px; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .ts-metric.bad { border-color: #d9a3a3; background: #fdf6f6; }
+  .ts-metric.bad strong { color: #8a1f1f; }
+  .ts-ooda { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-3); }
+  .ts-ooda div { padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface-soft); font-size: 10px; line-height: 1.6; }
+  .ts-ooda b { display: block; font: 600 11px/1.5 var(--sans); }
+  .ts-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); gap: var(--s-4); align-items: start; }
+  .ts-panel { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3); }
+  .ts-panel-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 5px; margin-bottom: var(--s-2); }
+  .ts-panel-head b { font: 600 12px/1.5 var(--sans); }
+  .ts-panel-head span { font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .ts-trace { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+  .ts-step { width: 100%; display: grid; grid-template-columns: 22px minmax(0, 1fr) 62px; gap: 6px; align-items: center; padding: 5px 6px; border: 1px solid transparent; border-radius: 4px; background: transparent; text-align: left; }
+  .ts-step:hover { background: var(--surface-soft); }
+  .ts-step[aria-pressed="true"] { border-color: #194f87; background: #eaf1f8; }
+  .ts-step.is-bad { border-color: #d9a3a3; background: #fdf6f6; }
+  .ts-step[aria-pressed="true"].is-bad { border-color: #194f87; box-shadow: inset 0 0 0 1px #8a1f1f; }
+  .ts-step.is-warn { border-color: #d9b47a; background: #fdf3e3; }
+  .ts-step[aria-pressed="true"].is-warn { border-color: #194f87; box-shadow: inset 0 0 0 1px #b98a2f; }
+  .ts-step-num { display: inline-grid; place-items: center; width: 20px; height: 20px; border: 1px solid var(--border-bright); border-radius: 50%; font: 9px/1 var(--mono); color: var(--text-dim); }
+  .ts-step-name { min-width: 0; font: 10px/1.5 var(--mono); overflow-wrap: anywhere; }
+  .ts-step-name small { display: block; color: var(--text-dim); font-size: 9px; }
+  .ts-step-meta { font: 9px/1.4 var(--mono); color: var(--text-dim); text-align: right; white-space: nowrap; }
+  .ts-detail h3 { font: 600 17px/1.4 var(--serif); margin-top: var(--s-2); overflow-wrap: anywhere; }
+  .ts-detail > p { margin-top: var(--s-2); font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .ts-attrs { margin-top: var(--s-3); border-top: 1px solid var(--border); }
+  .ts-attr { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 10px; line-height: 1.65; }
+  .ts-attr dt { font: 9px/1.7 var(--mono); color: var(--text-dim); }
+  .ts-attr dd { margin: 0; overflow-wrap: anywhere; }
+  .ts-evidence { margin-top: var(--s-3); padding: 8px 10px; border-left: 3px solid #8a1f1f; background: #fbecec; color: #6d1717; font-size: 11px; line-height: 1.7; }
+  .ts-fixed-note { display: inline-block; margin-top: var(--s-3); padding: 3px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  .ts-root { padding: 11px 13px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; }
+  .ts-root b { font: 600 13px/1.5 var(--sans); color: #6b4300; }
+  .ts-root p { margin-top: 4px; font-size: 12px; line-height: 1.7; color: #5b3a05; }
+  .ts-fixes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-3); }
+  .ts-fix { min-width: 0; padding: 9px 11px; border: 1px solid #9cc39e; border-radius: var(--r-1); background: #f4faf4; font-size: 11px; line-height: 1.7; }
+  .ts-fix b { display: block; font: 600 12px/1.5 var(--sans); color: #14532d; }
+  .ts-fix span { display: block; margin-top: 2px; color: #3d463d; }
+  .ts-verify { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-3); }
+  .ts-verify div { padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); font-size: 10px; line-height: 1.6; }
+  .ts-verify b { display: block; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .ts-verify strong { display: block; margin-top: 2px; font: 600 13px/1.4 var(--mono); }
+  .ts-verify em { font-style: normal; color: #14532d; }
+  .ts-table-wide { min-width: 760px; }
+  .ts-table td:first-child, .ts-table th:first-child { min-width: 7em; }
+  .ts-pillars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .ts-pillar { min-width: 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 11px; line-height: 1.7; }
+  .ts-pillar b { display: block; margin-bottom: 3px; font: 600 13px/1.5 var(--sans); }
+  .ts-pillar span { display: block; color: var(--text-dim); }
+  .ts-flow { display: grid; gap: 7px; margin-top: var(--s-4); }
+  .ts-flow-row { display: grid; grid-template-columns: 165px minmax(0, 1fr); gap: 10px; align-items: center; }
+  .ts-flow-step { padding: 9px 11px; border: 1px solid #9eb4c9; border-radius: var(--r-1); background: #eaf1f8; font-size: 12px; line-height: 1.5; }
+  .ts-flow-step b { display: block; color: #123c67; font: 600 12px/1.5 var(--sans); }
+  .ts-flow-step span { display: block; margin-top: 2px; font: 10px/1.5 var(--mono); color: #2c4a66; }
+  .ts-flow-arrow { font: 11px/1.5 var(--mono); color: var(--text-dim); }
+  .ts-flow-arrow.bad { color: #8a1f1f; }
+  .ts-code-note { margin-top: var(--s-3); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  @media (max-width: 1000px) {
+    .ts-scenarios { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .ts-grid { grid-template-columns: 1fr; }
+    .ts-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ts-pillars { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .ts-banner { margin-inline: var(--s-4); }
+    .ts-scenarios { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ts-ooda { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .ts-fixes, .ts-verify { grid-template-columns: 1fr; }
+    .ts-step { grid-template-columns: 22px minmax(0, 1fr); }
+    .ts-step-meta { display: none; }
+    .ts-attr { grid-template-columns: 1fr; gap: 2px; }
+    .ts-flow-row { grid-template-columns: 1fr; gap: 4px; }
+    .ts-flow-arrow { transform: rotate(90deg); justify-self: start; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">104 / 生产故障排查</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 19 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="095-disaster-recovery-ha.html">← 上一页 · Agent 系统的灾难恢复与高可用设…</a><a href="107-agent-code-review.html">下一页 → · 代码 Review 题</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">高级 · Production &amp; Deployment · 可交互讲解</p>
+      <h1>别猜。<br>顺着 Trace 往下走。</h1>
+    </div>
+    <div>
+      <p class="lead">Agent 的故障常常不是崩溃，而是“看起来正常，结果不对”。排查从告警开始，用 Trace ID 还原每一步的输入、输出和工具响应，定位到具体步骤，再决定修 Prompt、修工具、修权限还是修模型版本。</p>
+      <p class="definition"><strong>关键边界：</strong>本页的五个故障场景、日志、指标和 Trace 都是固定教学数据，不冒充真实事故，也不调用任何真实模型、工具或生产系统。方法来自原文的 OODA 循环与 Trace 驱动排查。</p>
+      <div class="hero-meta"><span class="pill">高级</span><span class="pill">Production</span><span class="pill">Trace 驱动排查</span><span class="pill">固定教学数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="ts-title">
+    <div class="player-top">
+      <div class="player-label">故障排查台 <small>五类场景 · Trace 定位 · 根因与修复</small></div>
+      <div class="controls" role="group" aria-label="排查演示控制">
+        <button type="button" class="button button-quiet" id="ts-reset">重置</button>
+        <button type="button" class="button" id="ts-back" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="ts-next">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="排查演示阶段">
+      <ol style="--stages: 3">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>告警与症状</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>Trace 定位</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>根因与修复</button></li>
+      </ol>
+    </nav>
+    <p class="ts-banner"><span><strong>本页是固定教学故障，不是真实事故。</strong>五个场景的告警、指标、Trace 步骤、根因和修复结果都是预设数据；页面不读取日志、不查询 Trace 后端、不执行任何修复命令。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="ts-index">阶段 1 / 3 · 固定教学故障</p>
+      <h2 id="ts-title">先看告警，再进 Trace，最后才谈修复。</h2>
+      <p id="ts-subtitle">五个场景：无限循环、RAG 幻觉、工具超时、危险操作、模型突变。选一个场景，从告警面板开始。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="ts-scene"></div>
+      <p class="demo-note" id="ts-note">固定教学数据：告警、指标、Trace 步骤和修复结果均为本页预设；不连接任何生产、日志或模型服务。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学故障 · 5 个场景 · 3 个排查阶段</span><span id="ts-summary">阶段 1 / 3 · 无限循环 · Token 暴涨</span></div>
+  </section>
+  <p id="ts-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">故障特殊性</p><h2 id="why-title">同样的输入，<br>不一定走同一条路。</h2></div>
+      <p class="reading-intro">Agent 故障是非确定性的：同一输入可能产生不同执行路径。排查必须依赖完整的 Trace 记录，而不是简单回放日志。</p>
+    </div>
+    <div class="prose">
+      <p>原文把排查流程写成 OODA 循环：Observe 通过 Metrics 告警发现异常；Orient 用分布式追踪定位到具体 step；Decide 分析 LLM 输入输出和工具响应找根因；Act 制定修复并验证。之后用 Post-Mortem 把故障模式沉淀成检测规则，闭合防复发。</p>
+      <div class="ts-flow" role="list" aria-label="Trace 驱动排查四步">
+        <div class="ts-flow-row" role="listitem"><div class="ts-flow-step"><b>Metrics 告警</b><span>Token 异常 · P99 飙升 · 错误率突增</span></div><div class="ts-flow-arrow">↓ 找到异常会话</div></div>
+        <div class="ts-flow-row" role="listitem"><div class="ts-flow-step"><b>Trace 深入分析</b><span>Step 回放 · Context 快照 · 路径还原</span></div><div class="ts-flow-arrow">↓ 定位到具体步骤</div></div>
+        <div class="ts-flow-row" role="listitem"><div class="ts-flow-step"><b>根因分析</b><span>LLM / Tool 层定位具体原因</span></div><div class="ts-flow-arrow">↓ 给出修复方案</div></div>
+        <div class="ts-flow-row" role="listitem"><div class="ts-flow-step"><b>修复验证 + Post-Mortem</b><span>回归测试 + 灰度发布；沉淀检测规则</span></div><div class="ts-flow-arrow bad">↺ 规则回到告警，防同类复发</div></div>
+      </div>
+      <p class="ts-fixed-note">流程与图示来自原文 Mermaid；本页用结构化流程离线呈现</p>
+      <details>
+        <summary>查看原文 Mermaid 源码（Trace 驱动排查）</summary>
+        <pre><code>flowchart TD
+    M["Metrics 告警触发&lt;br/&gt;Token 异常 · P99 飙升 · 错误率突增"] --&gt; T["Trace 深入分析&lt;br/&gt;Step 回放 · Context 快照 · 路径还原"]
+    T --&gt; RC["根因分析&lt;br/&gt;LLM / Tool 层定位具体原因"]
+    RC --&gt; F["修复验证&lt;br/&gt;回归测试 + 灰度发布"]
+    F --&gt; PM["Post-Mortem&lt;br/&gt;故障模式沉淀为检测规则"]
+    PM -- "闭环防复发" --&gt; M
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class T,RC,F,PM proc
+    class M err</code></pre>
+      </details>
+      <p class="ts-code-note">关键原则是“不要猜测，要用数据说话”：每个故障都必须有对应的 Trace 证据。本页第 2 阶段的步骤面板就是这条原则的固定演示。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="tools-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">排查工具集</p><h2 id="tools-title">四个检查，<br>覆盖常见异常。</h2></div>
+      <p class="reading-intro">原文的 TraceAnalyzer 提供循环检测、Context 位置分析、工具延迟统计；TokenBudgetMonitor 负责预算、步数和突增预警。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data ts-table-wide">
+          <caption class="sr-only">原文排查工具集的能力</caption>
+          <thead><tr><th scope="col">工具 / 方法</th><th scope="col">检查什么</th><th scope="col">触发信号</th><th scope="col">输出</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><code>detect_infinite_loop</code></th><td>工具调用序列的重复模式</td><td>同一模式重复 ≥3 次</td><td>pattern、repeat_count、critical</td></tr>
+            <tr><th scope="row"><code>analyze_context_placement</code></th><td>检索内容在 Prompt 中的位置</td><td>位置比例落在 0.3–0.7</td><td>位置比例、Lost-in-the-Middle 风险</td></tr>
+            <tr><th scope="row"><code>get_tool_latency_stats</code></th><td>各工具 P50 / P99 / 错误率</td><td>P99 或错误率异常</td><td>按工具分组的延迟与错误率</td></tr>
+            <tr><th scope="row"><code>TokenBudgetMonitor</code></th><td>累计 token、步数、单步突增</td><td>超预算 / 超步数 / 单步 &gt; 前两步均值 3 倍</td><td>CRITICAL 或 WARNING 告警</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="ts-fixed-note">方法与阈值来自原文代码；本页不执行代码，也不读取真实 Trace</p>
+      <details>
+        <summary>查看原文的 TraceAnalyzer 与 TokenBudgetMonitor 代码</summary>
+        <pre><code>class TraceAnalyzer:
+    """Agent Trace 分析器 —— 故障排查核心工具"""
+
+    def __init__(self, steps: list[TraceStep]):
+        self.steps = steps
+
+    def detect_infinite_loop(self, max_repeats: int = 3) -&gt; dict:
+        """检测无限循环 —— 滑动窗口发现重复 tool_call 模式"""
+        seq = [s.tool_name for s in self.steps if s.action == "tool_call" and s.tool_name]
+        for win in range(1, len(seq) // 2 + 1):
+            for i in range(len(seq) - win * max_repeats + 1):
+                pattern = seq[i:i + win]
+                count = sum(1 for j in range(i, len(seq) - win + 1, win)
+                            if seq[j:j + win] == pattern)
+                if count &gt;= max_repeats:
+                    return {"detected": True, "pattern": pattern,
+                            "repeat_count": count, "severity": "critical"}
+        return {"detected": False}
+
+    def analyze_context_placement(self) -&gt; dict:
+        """分析检索内容在 Context 中的位置 —— 排查 Lost-in-the-Middle"""
+        for step in self.steps:
+            if step.action == "llm_call" and "[RETRIEVED_CONTEXT]" in step.input_text:
+                pos = step.input_text.find("[RETRIEVED_CONTEXT]")
+                ratio = pos / len(step.input_text)
+                return {"position_ratio": ratio,
+                        "risk": "high" if 0.3 &lt; ratio &lt; 0.7 else "low"}
+        return {"risk": "unknown"}
+
+    def get_tool_latency_stats(self) -&gt; dict:
+        """各工具延迟分布 —— 排查超时问题"""
+        buckets: dict[str, list[float]] = {}
+        for s in self.steps:
+            if s.action == "tool_call" and s.tool_name:
+                buckets.setdefault(s.tool_name, []).append(s.latency_ms)
+        return {name: {"p50": sorted(lats)[len(lats)//2],
+                       "p99": sorted(lats)[int(len(lats)*0.99)],
+                       "error_rate": sum(1 for s in self.steps
+                                         if s.tool_name == name and s.error) / len(lats)}
+                for name, lats in buckets.items()}
+
+
+class TokenBudgetMonitor:
+    """Token 预算监控器 —— 实时追踪和预警"""
+
+    def __init__(self, max_tokens: int = 100_000, max_steps: int = 30):
+        self.max_tokens, self.max_steps = max_tokens, max_steps
+        self.consumed, self.step_count = 0, 0
+        self.history: list[int] = []
+
+    def record(self, step: TraceStep) -&gt; dict:
+        self.consumed += step.token_count
+        self.step_count += 1
+        self.history.append(step.token_count)
+        alert = None
+        if self.consumed &gt;= self.max_tokens:
+            alert = "CRITICAL: Token 预算耗尽"
+        elif self.step_count &gt;= self.max_steps:
+            alert = "CRITICAL: 步数超限"
+        elif len(self.history) &gt;= 3:
+            avg = sum(self.history[-3:-1]) / 2
+            if avg &gt; 0 and self.history[-1] &gt; avg * 3:
+                alert = f"WARNING: Token 突增 (当前{self.history[-1]}, 均值{avg:.0f})"
+        return {"step": self.step_count, "used": self.consumed, "alert": alert}
+
+    def should_terminate(self) -&gt; tuple[bool, str]:
+        if self.consumed &gt;= self.max_tokens: return True, "Token 预算耗尽"
+        if self.step_count &gt;= self.max_steps: return True, "步数超限"
+        return False, ""</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="compare-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">五大场景</p><h2 id="compare-title">症状不同，<br>证据链是同一条。</h2></div>
+      <p class="reading-intro">原文用一张表对比五类故障的症状、关键指标、根因类别和防御性修复。它们都遵循同一条路径：告警 → Trace → 根因 → 修复。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data ts-table-wide">
+          <caption class="sr-only">原文五大生产故障场景对比</caption>
+          <thead><tr><th scope="col">场景</th><th scope="col">核心症状</th><th scope="col">排查关键指标</th><th scope="col">根因类别</th><th scope="col">防御性修复</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">无限循环</th><td>Token 消耗暴涨</td><td>step_count、tool_call 重复模式</td><td>Prompt / Tool 交互</td><td>循环检测 + max_steps</td></tr>
+            <tr><th scope="row">RAG 幻觉</th><td>回答与检索不符</td><td>Context 位置、Prompt 结构</td><td>Context Window 管理</td><td>位置优化 + 内容压缩</td></tr>
+            <tr><th scope="row">工具超时</th><td>间歇性失败率飙升</td><td>工具延迟 P99、HTTP 429 比例</td><td>外部依赖限流</td><td>退避重试 + 缓存 + 限流感知</td></tr>
+            <tr><th scope="row">危险操作</th><td>不可逆数据损失</td><td>工具权限审计、审批记录</td><td>权限设计缺陷</td><td>最小权限 + HITL + Dry-Run</td></tr>
+            <tr><th scope="row">模型突变</th><td>输出格式 / 逻辑变化</td><td>模型版本、输出 diff</td><td>外部模型版本漂移</td><td>Pin 版本 + 回归测试 + 灰度</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="ts-fixed-note">场景与结论来自原文；本页演示中的具体数字为固定教学值</p>
+      <p>注意第 4 类的代价：危险操作不是“回答错了”，而是已经删除了 50,000 条记录。排查能定位问题，但恢复要靠备份和软删除；所以修复重点在事前拦截，而不是事后解释。</p>
+      <p>第 5 类最容易被误判成代码故障。原文的排查顺序是先查代码变更和基础设施，再看 Trace 对比，最后查 API Response Header 里的模型版本：<code>gpt-4-0613</code> 变成 <code>gpt-4-0125-preview</code>，供应商静默升级了默认版本。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="pillars-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">可观测性体系</p><h2 id="pillars-title">Metrics 发现，<br>Trace 定位，Log 复盘。</h2></div>
+      <p class="reading-intro">三者通过 Trace ID 关联。缺任何一层，排查都会断在中间：只有指标不知道哪一步错，只有日志还原不了整条路径。</p>
+    </div>
+    <div class="prose">
+      <div class="ts-pillars">
+        <div class="ts-pillar"><b>Metrics 指标监控</b><span>Token 消耗 / 秒、延迟 P50 / P99、工具成功率、步数分布。负责发现异常。</span></div>
+        <div class="ts-pillar"><b>Tracing 分布式追踪</b><span>Trace ID 串联、每步 Input / Output、Tool Response、Context 快照。负责定位根因。</span></div>
+        <div class="ts-pillar"><b>Logging 结构化日志</b><span>Step 级别日志、错误堆栈、决策理由（CoT）、审计操作日志。负责事后分析。</span></div>
+      </div>
+      <p class="ts-fixed-note">三支柱内容来自原文；本页未接入任何观测系统</p>
+      <p>原文强调告警阈值要基于历史基线动态设定，而不是拍一个固定数字。基线会随模型版本、流量结构和业务季节变化；固定阈值要么太松漏报，要么太紧制造告警疲劳。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="postmortem-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">Post-Mortem</p><h2 id="postmortem-title">事故结束，<br>规则才开始工作。</h2></div>
+      <p class="reading-intro">原文的模板包含事件时间线、根因、带负责人和截止日期的 Action Items，以及经验教训。目标是 Blameless：追系统缺陷，不追个人。</p>
+    </div>
+    <div class="prose">
+      <p>模板里的示例事故是 INC-2025-042：P1，持续 2 小时 15 分，影响 1,200 个用户会话。时间线从 14:00 Token 告警开始，到 16:15 验证通过。根因是工具错误信息含 “please retry”，LLM 解读成重试指令。</p>
+      <details>
+        <summary>查看原文的 Post-Mortem 模板</summary>
+        <pre><code>POST_MORTEM_TEMPLATE = {
+    "incident_id": "INC-2025-042",
+    "severity": "P1",
+    "duration": "2h 15m",
+    "impact": "影响 1,200 个用户会话",
+    "timeline": [
+        "14:00 - Token 消耗告警触发",
+        "14:05 - On-call 确认，开始排查",
+        "14:20 - 定位到无限循环",
+        "14:30 - 临时修复：终止异常会话",
+        "15:00 - 根因确认：工具错误格式导致 LLM 误读",
+        "15:30 - 部署修复：循环检测 + 错误格式规范化",
+        "16:15 - 验证通过，告警恢复",
+    ],
+    "root_cause": "工具错误信息含 'please retry'，LLM 解读为重试指令",
+    "action_items": [
+        {"task": "工具错误返回格式规范化", "owner": "平台组", "deadline": "1周"},
+        {"task": "全局循环检测中间件", "owner": "框架组", "deadline": "2周"},
+        {"task": "Token 预算强制上限", "owner": "平台组", "deadline": "1周"},
+        {"task": "无限循环回归测试", "owner": "QA", "deadline": "2周"},
+    ],
+    "lessons_learned": [
+        "工具错误信息必须结构化，避免自然语言误导 LLM",
+        "Agent 执行必须有硬性上限（Token + Steps）",
+        "监控需覆盖 Token 消耗速率异常",
+    ]
+}</code></pre>
+      </details>
+      <p class="ts-fixed-note">模板与示例编号来自原文；示例事故不是本页的真实事件</p>
+      <p>原文的四条 Action Items 都有负责人和截止日期。没有 owner 和 deadline 的 Action Item 只是愿望，不会变成检测规则。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">两个误区，<br>两个追问。</h2></div>
+      <p class="reading-intro">日志不能替代 Trace；回滚代码也不总能解决 Agent 故障。可观测性体系和 Post-Mortem 是常见追问。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <div class="misconception-label">误区 01</div>
+        <div><h3>“直接看日志就够了，不需要专门的 Trace 系统”</h3><p>Agent 执行路径是非确定性的，传统日志只能看到离散事件点，无法还原完整决策链路。多步推理中某一步的错误可能几步之后才显现，没有 Trace 串联根本无法回溯。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 02</div>
+        <div><h3>“出了问题直接回滚代码就能解决”</h3><p>Agent 故障很多时候不是代码问题，而是模型行为变化、外部 API 状态变化、数据分布漂移等非代码因素。回滚代码对这类问题完全无效。先通过 Trace 定位根因类别（Prompt / 模型 / 工具 / 数据），再针对性修复。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 03</div>
+        <div><h3>如何设计 Agent 的可观测性体系？</h3><p>三个层次：Metrics（Token 消耗速率、工具成功率、端到端延迟、步数分布）发现异常；Tracing（每步 Input/Output、Tool Response、Context 快照、模型版本）定位根因；Logging（结构化决策日志、错误堆栈、审计记录）事后分析。三者通过 Trace ID 关联，告警阈值基于历史基线动态设定。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 04</div>
+        <div><h3>生产故障后如何做 Post-Mortem？</h3><p>遵循 Blameless Post-Mortem：建立完整事件时间线，用 5 Whys 追溯根因到系统性缺陷，产出有负责人和截止日期的 Action Items。关键是把每次故障模式沉淀为自动化检测规则，确保同类问题不复发。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="sources-title">
+    <p class="eyebrow">参考资料</p>
+    <h2 class="source-heading" id="sources-title">原文引用与延伸阅读</h2>
+    <p class="source-summary">以下链接来自原文。只有主动点击外链才会离开本页；本页不加载任何外部资源。</p>
+    <details>
+      <summary>展开 5 条参考资料</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.anthropic.com/research/building-reliable-agents" rel="noreferrer noopener">Building Reliable AI Agents: Lessons from Production (Anthropic Blog)</a></li>
+          <li><a href="https://docs.smith.langchain.com/observability" rel="noreferrer noopener">Observability for LLM Applications (LangSmith Docs)</a></li>
+          <li><a href="https://arxiv.org/abs/2307.03172" rel="noreferrer noopener">Lost in the Middle: How Language Models Use Long Contexts (arXiv 2307.03172)</a></li>
+          <li><a href="https://openai.com/index/practices-for-governing-agentic-ai-systems/" rel="noreferrer noopener">Practices for Governing Agentic AI Systems (OpenAI)</a></li>
+          <li><a href="https://www.atlassian.com/incident-management/postmortem/blameless" rel="noreferrer noopener">The Blameless Post-Mortem Guide (Atlassian)</a></li>
+        </ul>
+        <p class="source-footnote">排查方法、工具代码与模板按原文版本呈现；本页未联网核实，也未执行任何排查或修复操作。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>10-production-and-deployment/104-agent-production-troubleshooting.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 6 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const SCENARIOS = Object.freeze({
+    loop: {
+      nav: "无限循环",
+      symptom: "Token 5 分钟暴涨 20 倍",
+      severity: "P1",
+      alertTitle: "Token 消耗 5 分钟暴涨 20 倍",
+      alertText: "固定告警：会话 S-8842 的 Token 消耗从基线 620/分钟升到 12,400/分钟；LLM 反复调用 query_database，每次调用后又判断“需要重试”。",
+      metrics: [
+        { label: "Token / 分钟", value: "12,400", note: "基线 620", bad: true },
+        { label: "step_count", value: "47", note: "正常 < 10", bad: true },
+        { label: "query_database", value: "42 次", note: "同工具重复", bad: true },
+        { label: "会话时长", value: "5m 12s", note: "单会话", bad: true }
+      ],
+      steps: [
+        { name: "llm_call · 规划", sub: "决定查询订单表", meta: "420 tok · 1.2s", status: "ok", input: "用户：帮我查一下订单 8842 的退款状态。", output: "需要调用 query_database，参数 order_id=8842。" },
+        { name: "tool_call · query_database", sub: "第一次查询", meta: "超时 10s", status: "bad", input: "{\"order_id\":\"8842\"}", output: "Error: connection timeout, please retry" },
+        { name: "llm_call · 决策", sub: "把错误文本当指令", meta: "510 tok · 1.1s", status: "warn", input: "工具返回：Error: connection timeout, please retry", output: "系统要求重试，再次调用 query_database。" },
+        { name: "tool_call · query_database", sub: "第二次查询", meta: "超时 10s", status: "bad", input: "{\"order_id\":\"8842\"}", output: "Error: connection timeout, please retry" },
+        { name: "tool_call · query_database", sub: "重复 42 次", meta: "累计 47 步", status: "bad", input: "{\"order_id\":\"8842\"}", output: "同一错误反复返回；无 max_steps，循环没有出口。" }
+      ],
+      keyStep: 2,
+      evidence: "工具错误里的 “please retry” 被模型当成系统指令；连续 42 次 query_database，步数到 47，Token 账单跟着放大。",
+      root: "工具错误信息用自然语言写了 “please retry”，LLM 把它读成系统指令；缺少 max_steps 和重复调用检测，循环没有出口。",
+      fixes: [
+        "循环检测：连续 3 次同名工具调用就中断",
+        "工具错误结构化：统一 [TOOL_ERROR]，并明确“不要重试”",
+        "硬上限：max_steps=25，Token 预算 100k"
+      ],
+      verify: [
+        { label: "修复后步数", value: "47 → 8", note: "回归样例" },
+        { label: "Token / 分钟", value: "12,400 → 780", note: "回到基线附近" },
+        { label: "同类回归", value: "0 次循环", note: "固定 20 条样例" }
+      ]
+    },
+    rag: {
+      nav: "RAG 幻觉",
+      symptom: "检索正确，回答不符",
+      severity: "P2",
+      alertTitle: "回答与检索文档不符，但 Recall@5 正常",
+      alertText: "固定告警：用户投诉回答错误。检索层 Recall@5 = 0.92，Top-5 文档正确；最终回答却引用了文档里没有的价格。",
+      metrics: [
+        { label: "Recall@5", value: "0.92", note: "检索正常", bad: false },
+        { label: "回答忠实度", value: "0.41", note: "Judge 评分", bad: true },
+        { label: "文档位置", value: "52%", note: "Prompt 中间", bad: true },
+        { label: "Context 长度", value: "4,050 tok", note: "单次请求", bad: false }
+      ],
+      steps: [
+        { name: "retrieval · top-5", sub: "检索命中", meta: "5 docs · 320ms", status: "ok", input: "query: 退款政策第 3 条是什么？", output: "Top-5 文档，相关度 0.91 / 0.88 / 0.84 / 0.79 / 0.76。" },
+        { name: "prompt · 组装", sub: "文档放在中间", meta: "4,050 tok", status: "warn", input: "System 300t → History 2,000t → Docs 1,500t → Query 50t → Instruct 200t", output: "检索内容位于 Prompt 的 52% 位置，处于中段。" },
+        { name: "llm_call · 回答", sub: "与文档不符", meta: "3.4s", status: "bad", input: "请基于参考资料回答退款政策第 3 条。", output: "退款需在 45 天内申请……（文档写的是 30 天）" },
+        { name: "judge · 忠实度", sub: "标记无依据", meta: "0.41 / 1.0", status: "bad", input: "回答 + Top-5 文档", output: "45 天不在任何检索文档中，判定为无依据生成。" }
+      ],
+      keyStep: 1,
+      evidence: "文档位置比例 52%，落在 0.3–0.7 的 Lost-in-the-Middle 高风险区；模型更容易依赖参数知识，而不是中间的检索内容。",
+      root: "检索结果被放在 Prompt 中间位置，受 Lost-in-the-Middle 效应影响，LLM 对中间信息关注度下降，更倾向依赖自身参数知识。",
+      fixes: [
+        "检索内容紧跟 System Prompt，利用 Primacy Bias",
+        "只保留最近 3 轮对话，降低历史噪声",
+        "按相关性取 Top-3，并明确“无依据就告知用户”"
+      ],
+      verify: [
+        { label: "回答忠实度", value: "0.41 → 0.88", note: "Judge 评分" },
+        { label: "文档位置", value: "52% → 8%", note: "移到前部" },
+        { label: "Context 长度", value: "4,050 → 2,450 tok", note: "压缩历史与文档" }
+      ]
+    },
+    timeout: {
+      nav: "工具超时",
+      symptom: "高峰失败率 1% → 35%",
+      severity: "P1",
+      alertTitle: "高峰期工具调用失败率从 1% 升到 35%",
+      alertText: "固定告警：14:00–16:00 工具失败率 35%，非高峰正常；仅 search_api 受影响，78% 的失败是 HTTP 429。",
+      metrics: [
+        { label: "失败率", value: "35%", note: "14:00–16:00", bad: true },
+        { label: "HTTP 429 占比", value: "78%", note: "失败请求中", bad: true },
+        { label: "峰值请求", value: "120 次/分钟", note: "限额 100 次/分钟", bad: true },
+        { label: "其他工具", value: "0.9%", note: "失败率正常", bad: false }
+      ],
+      steps: [
+        { name: "tool_call · search_api", sub: "高峰首次调用", meta: "429 · 180ms", status: "bad", input: "{\"q\":\"退款政策\",\"top_k\":5}", output: "HTTP 429 Too Many Requests" },
+        { name: "tool_call · search_api", sub: "立即重试", meta: "429 · 160ms", status: "bad", input: "同一参数立即重试", output: "HTTP 429 Too Many Requests（重试放大并发）" },
+        { name: "tool_call · search_api", sub: "第三次重试", meta: "429 · 170ms", status: "bad", input: "同一参数第三次", output: "HTTP 429；没有退避，也没有缓存命中。" },
+        { name: "agent · fallback", sub: "最终失败", meta: "3 次后放弃", status: "warn", input: "retries=3 用尽", output: "返回“多次重试失败”，用户看到错误。" }
+      ],
+      keyStep: 1,
+      evidence: "只有 search_api 受影响，且 78% 的失败是 429；峰值请求 120 次/分钟，达到限额的 120%。立即重试没有退避，反而继续推高并发。",
+      root: "第三方 API 限制 100 req/min，高峰期并发超限触发 HTTP 429；客户端没有限流预检、指数退避和缓存。",
+      fixes: [
+        "限流预检：本地阈值 90/min，留 10% 余量",
+        "指数退避：429 时等待更久，并加随机抖动",
+        "缓存 5 分钟，减少重复检索"
+      ],
+      verify: [
+        { label: "失败率", value: "35% → 2.1%", note: "高峰回归" },
+        { label: "P99 延迟", value: "9.8s → 2.4s", note: "search_api" },
+        { label: "缓存命中", value: "31%", note: "重复查询" }
+      ]
+    },
+    danger: {
+      nav: "危险操作",
+      symptom: "误删 50,000 行",
+      severity: "P0",
+      alertTitle: "审计告警：delete_records 删除 50,000 行",
+      alertText: "固定告警：用户说“清理过期数据”，Agent 直接调用 delete_records，删除 50,000 条记录，其中约 18% 仍在有效期内。",
+      metrics: [
+        { label: "删除行数", value: "50,000", note: "单次调用", bad: true },
+        { label: "有效数据占比", value: "18%", note: "约 9,000 行", bad: true },
+        { label: "审批记录", value: "0", note: "无人工确认", bad: true },
+        { label: "备份", value: "无", note: "不可逆", bad: true }
+      ],
+      steps: [
+        { name: "user · 输入", sub: "自然语言请求", meta: "1 条消息", status: "ok", input: "清理过期数据。", output: "意图：删除过期记录；未给出时间范围和确认条件。" },
+        { name: "llm_call · 推断", sub: "自行生成 filter", meta: "660 tok", status: "warn", input: "用户未指定“过期”的定义。", output: "推断 filter：created_at &lt; 2024-01；直接调用 delete_records。" },
+        { name: "tool_call · delete_records", sub: "无 dry-run 直接执行", meta: "2.8s", status: "bad", input: "{\"filter\":\"created_at &lt; 2024-01\"}", output: "Deleted 50,000 rows；无预览、无审批、无备份。" },
+        { name: "audit · 记录", sub: "事后才发现", meta: "延迟 6 分钟", status: "bad", input: "审计日志", output: "删除操作完成 6 分钟后触发告警，已无法回滚。" }
+      ],
+      keyStep: 2,
+      evidence: "filter 由 LLM 自行推断，delete_records 没有权限分级、dry-run 和审批；删除完成后才触发审计告警。",
+      root: "工具权限过于粗放，delete_records 无条件执行；缺少 Human-in-the-Loop 审批；LLM 自行推断的 filter 条件无人审核。",
+      fixes: [
+        "风险分级：只读 / 写 / 不可逆，默认高风险",
+        "高风险先 dry-run，再人工审批",
+        "自动备份 + 软删除，保留恢复窗口"
+      ],
+      verify: [
+        { label: "同类请求", value: "100% 进审批", note: "固定 50 条样例" },
+        { label: "直接删除", value: "0 次", note: "未审批不执行" },
+        { label: "恢复窗口", value: "7 天", note: "软删除" }
+      ]
+    },
+    drift: {
+      nav: "模型突变",
+      symptom: "JSON 变自然语言",
+      severity: "P1",
+      alertTitle: "输出格式异常：JSON 合法率从 98.7% 降到 41.2%",
+      alertText: "固定告警：大量用户反馈输出格式异常，JSON 变成自然语言叙述，多步规划退化；前一天没有任何代码变更。",
+      metrics: [
+        { label: "JSON 合法率", value: "41.2%", note: "基线 98.7%", bad: true },
+        { label: "规划步数", value: "2.1", note: "基线 4.2", bad: true },
+        { label: "部署记录", value: "0", note: "无代码变更", bad: false },
+        { label: "模型版本", value: "已变化", note: "Header 对比", bad: true }
+      ],
+      steps: [
+        { name: "llm_call · 昨日", sub: "同 Prompt 对照", meta: "2.8s", status: "ok", input: "固定回归样例 Q-104，Prompt v7。", output: "{\"plan\":[\"search\",\"compare\",\"answer\"]}（JSON 合法）" },
+        { name: "llm_call · 今日", sub: "输出变自然语言", meta: "2.6s", status: "bad", input: "同一固定样例 Q-104，Prompt v7。", output: "我会先搜索，再比较，最后回答。（非 JSON）" },
+        { name: "response · Header", sub: "模型版本漂移", meta: "无部署", status: "warn", input: "API Response Header", output: "x-model-version: gpt-4-0613 → gpt-4-0125-preview" },
+        { name: "ci · 回归", sub: "未拦截", meta: "0 条断言", status: "bad", input: "格式断言未覆盖", output: "回归测试只检查关键词，没有校验 JSON Schema。" }
+      ],
+      keyStep: 2,
+      evidence: "代码和基础设施都没变；同一 Prompt 昨日与今日输出格式不同，Response Header 显示默认模型版本被供应商静默升级。",
+      root: "模型供应商静默升级默认版本，新版本 Instruction Following 行为变化；Agent 未 pin 具体版本，直接受影响。",
+      fixes: [
+        "Pin 具体模型版本，Header 不符就回退",
+        "回归测试加 JSON Schema 与相似度断言",
+        "按 10% 步长灰度切换，观察质量与格式"
+      ],
+      verify: [
+        { label: "JSON 合法率", value: "41.2% → 97.8%", note: "回退后" },
+        { label: "规划步数", value: "2.1 → 4.1", note: "恢复" },
+        { label: "灰度步长", value: "10%", note: "固定教学值" }
+      ]
+    }
+  });
+
+  const STAGES = Object.freeze([
+    { nav: "告警与症状", title: "先看告警，再进 Trace，最后才谈修复。", subtitle: "五个场景：无限循环、RAG 幻觉、工具超时、危险操作、模型突变。选一个场景，从告警面板开始。" },
+    { nav: "Trace 定位", title: "点开每一步，找那条能解释症状的证据。", subtitle: "左侧是固定 Trace 步骤，红色是异常步骤，黄色是需要解释的决策。选中后看输入、输出和排查判断。" },
+    { nav: "根因与修复", title: "根因要落到一类问题，修复要能防复发。", subtitle: "每个场景给出根因、三条防御性修复和固定回归结果；修复不是“再试一次”。" }
+  ]);
+
+  const state = { stage: 0, scenario: "loop", step: 0 };
+  const byId = (id) => document.getElementById(id);
+
+  function current() {
+    return SCENARIOS[state.scenario];
+  }
+
+  function scenarioCards() {
+    return Object.keys(SCENARIOS).map((key) => {
+      const sc = SCENARIOS[key];
+      return `<button type="button" class="ts-scenario" data-scenario="${key}" aria-pressed="${key === state.scenario}"><b>${sc.nav}</b>${sc.symptom}</button>`;
+    }).join("");
+  }
+
+  function scenarioChips() {
+    return Object.keys(SCENARIOS).map((key) => {
+      const sc = SCENARIOS[key];
+      return `<button type="button" class="ts-chip" data-scenario="${key}" aria-pressed="${key === state.scenario}">${sc.nav}</button>`;
+    }).join("");
+  }
+
+  function alertScene() {
+    const sc = current();
+    const metrics = sc.metrics.map((metric) => `<div class="ts-metric${metric.bad ? " bad" : ""}"><b>${metric.label}</b><strong>${metric.value}</strong><span>${metric.note}</span></div>`).join("");
+    return `
+      <div class="ts-scenarios" role="group" aria-label="选择故障场景">${scenarioCards()}</div>
+      <div class="ts-alert">
+        <div class="ts-alert-head"><b>${sc.alertTitle}</b><span class="ts-badge ts-bad">${sc.severity} · 固定教学告警</span></div>
+        <p>${sc.alertText}</p>
+      </div>
+      <div class="ts-metrics">${metrics}</div>
+      <div class="ts-ooda" aria-label="OODA 排查循环">
+        <div><b>Observe</b>Metrics 告警：${sc.symptom}</div>
+        <div><b>Orient</b>用 Trace ID 还原执行路径</div>
+        <div><b>Decide</b>定位到具体 step 的输入输出</div>
+        <div><b>Act</b>修复、回归、灰度验证</div>
+      </div>
+      <p class="ts-fixed-note">固定教学数据：告警与四项指标为本页预设；不读取真实日志或监控</p>`;
+  }
+
+  function selectedStep() {
+    const steps = current().steps;
+    return steps[Math.min(state.step, steps.length - 1)];
+  }
+
+  function stepRows() {
+    return current().steps.map((step, index) => {
+      const cls = step.status === "bad" ? " is-bad" : step.status === "warn" ? " is-warn" : "";
+      return `<li><button type="button" class="ts-step${cls}" data-step="${index}" aria-pressed="${index === state.step}">
+        <span class="ts-step-num">${index + 1}</span>
+        <span class="ts-step-name">${step.name}<small>${step.sub}</small></span>
+        <span class="ts-step-meta">${step.meta}</span>
+      </button></li>`;
+    }).join("");
+  }
+
+  function traceScene() {
+    const sc = current();
+    const step = selectedStep();
+    const status = step.status === "bad" ? '<span class="ts-badge ts-bad">异常</span>' : step.status === "warn" ? '<span class="ts-badge ts-warn">可疑</span>' : '<span class="ts-badge ts-ok">正常</span>';
+    const isKey = current().steps[state.step] && state.step === sc.keyStep;
+    return `
+      <div class="ts-chips" role="group" aria-label="切换故障场景">${scenarioChips()}</div>
+      <div class="ts-grid">
+        <section class="ts-panel" aria-label="Trace 步骤">
+          <div class="ts-panel-head"><b>Trace · ${sc.nav}</b><span>${sc.steps.length} 个固定步骤</span></div>
+          <ol class="ts-trace">${stepRows()}</ol>
+        </section>
+        <section class="ts-panel ts-detail" aria-label="步骤详情">
+          ${status}
+          <h3>${state.step + 1}. ${step.name}</h3>
+          <p>${step.sub} · ${step.meta}</p>
+          <dl class="ts-attrs">
+            <div class="ts-attr"><dt>input</dt><dd>${step.input}</dd></div>
+            <div class="ts-attr"><dt>output</dt><dd>${step.output}</dd></div>
+            <div class="ts-attr"><dt>判断</dt><dd>${isKey ? "这一步能解释症状，是证据链的关键节点。" : "继续对比前后步骤；单看这一步还不能定根因。"}</dd></div>
+          </dl>
+          ${isKey ? `<div class="ts-evidence"><strong>证据链：</strong>${sc.evidence}</div>` : ""}
+        </section>
+      </div>
+      <p class="ts-fixed-note">固定教学 Trace：步骤、输入输出与指标均为本页预设；不查询任何 Trace 后端</p>`;
+  }
+
+  function fixScene() {
+    const sc = current();
+    const fixes = sc.fixes.map((fix, index) => `<div class="ts-fix"><b>修复 ${index + 1}</b><span>${fix}</span></div>`).join("");
+    const verify = sc.verify.map((item) => `<div><b>${item.label}</b><strong>${item.value}</strong><em>${item.note}</em></div>`).join("");
+    return `
+      <div class="ts-chips" role="group" aria-label="切换故障场景">${scenarioChips()}</div>
+      <div class="ts-root"><b>根因 · ${sc.nav}</b><p>${sc.root}</p></div>
+      <div class="ts-fixes">${fixes}</div>
+      <div class="ts-verify" aria-label="固定回归结果">${verify}</div>
+      <p class="ts-fixed-note">固定教学数据：修复项来自原文；回归数字为本页预设，不代表真实测试结果</p>`;
+  }
+
+  const SCENES = [alertScene, traceScene, fixScene];
+
+  function summaryFor(stage) {
+    const sc = current();
+    if (stage === 0) return `阶段 1 / 3 · ${sc.nav} · ${sc.severity} 固定告警`;
+    if (stage === 1) return `阶段 2 / 3 · ${sc.nav} · 步骤 ${state.step + 1} / ${sc.steps.length}`;
+    return `阶段 3 / 3 · ${sc.nav} · 3 项修复 · 固定回归`;
+  }
+
+  function bindSceneControls() {
+    document.querySelectorAll("[data-scenario]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.scenario = button.dataset.scenario;
+        state.step = 0;
+        renderStage(state.stage);
+        byId("ts-announcement").textContent = `已切换故障场景：${current().nav}`;
+      });
+    });
+    document.querySelectorAll("[data-step]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.step = Number(button.dataset.step);
+        renderStage(1);
+        byId("ts-announcement").textContent = `已选择步骤 ${state.step + 1}：${selectedStep().name}`;
+      });
+    });
+  }
+
+  function renderStage(stage) {
+    state.stage = stage;
+    const meta = STAGES[stage];
+    byId("ts-scene").innerHTML = SCENES[stage]();
+    byId("ts-index").textContent = `阶段 ${stage + 1} / 3 · 固定教学故障`;
+    byId("ts-title").textContent = meta.title;
+    byId("ts-subtitle").textContent = meta.subtitle;
+    byId("ts-note").textContent = "固定教学数据：五个场景的告警、指标、Trace 步骤、根因和修复结果均为本页预设；不连接生产、日志、模型或工具服务。";
+    byId("ts-summary").textContent = summaryFor(stage);
+    byId("ts-back").disabled = stage === 0;
+    byId("ts-next").disabled = stage === STAGES.length - 1;
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      if (Number(button.dataset.stage) === stage) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    bindSceneControls();
+    byId("ts-announcement").textContent = `${meta.title}。${meta.subtitle}`;
+  }
+
+  byId("ts-reset").addEventListener("click", () => {
+    state.scenario = "loop";
+    state.step = 0;
+    renderStage(0);
+  });
+  byId("ts-back").addEventListener("click", () => renderStage(Math.max(0, state.stage - 1)));
+  byId("ts-next").addEventListener("click", () => renderStage(Math.min(STAGES.length - 1, state.stage + 1)));
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+
+  renderStage(0);
+</script>
+</body>
+</html>

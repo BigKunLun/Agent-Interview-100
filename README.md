@@ -7,6 +7,7 @@
     <img src="https://img.shields.io/badge/难度覆盖-基础 · 中级 · 高级-orange?style=flat-square" />
     <img src="https://img.shields.io/badge/语言-中文-red?style=flat-square" />
     <img src="https://img.shields.io/badge/许可证-MIT-purple?style=flat-square" />
+    <a href="https://bigkunlun.github.io/Agent-Interview-100/"><img src="https://img.shields.io/badge/在线阅读-HTML%20版-blue?style=flat-square" alt="在线阅读 HTML 版" /></a>
   </p>
 </p>
 
@@ -17,6 +18,13 @@
 ![Agent 技术栈全景](assets/agent-stack-map.png)
 
 > 四阶递进：入门基础（Agent 架构）→ 核心能力（RAG / 工具调用 / 多智能体 / 记忆 / 规划推理）→ 工程实践（提示 / 评估 / 安全）→ 生产生态（部署 / 框架）。源文件为 [assets/agent-stack-map.drawio](assets/agent-stack-map.drawio)，可用 draw.io 编辑更新。
+
+---
+
+## 🖥️ 两种阅读方式
+
+- **HTML 在线阅读**：[bigkunlun.github.io/Agent-Interview-100](https://bigkunlun.github.io/Agent-Interview-100/) — 带交互图解和固定教学演示，桌面 / 手机都能读，页面可离线保存，适合通读和面试复盘。
+- **Markdown 源文件**：仓库内 `.md` 文件与 HTML 一一对应，适合搜索、复制代码、提交 PR 和引用原文。
 
 ---
 

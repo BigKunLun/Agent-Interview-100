@@ -1,0 +1,685 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>静态 Benchmark 的陷阱：为什么 95% 准确率在生产中会失效？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .page-nav-pager .disabled { color: var(--text-dim); }
+  /* 076 静态 Benchmark 陷阱 */
+  .bt-stage { padding: var(--s-5) var(--s-6); }
+  .bt-controls { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; }
+  .bt-control-label { font: 11px/1.5 var(--mono); color: var(--text-dim); letter-spacing: .04em; margin-right: var(--s-1); }
+  .bt-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+  .bt-tab { min-height: 40px; padding: 7px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; color: var(--text-dim); }
+  .bt-tab:hover { background: var(--surface-soft); }
+  .bt-tab[aria-pressed="true"] { background: var(--accent-dim); border-color: var(--accent); color: var(--ink); font-weight: 600; }
+  .bt-board { margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); overflow: hidden; }
+  .bt-board-head { display: flex; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--border); background: var(--surface-soft); font-size: 11px; color: var(--text-dim); }
+  .bt-board-head b { color: var(--ink); }
+  .bt-row { display: grid; grid-template-columns: 7.5em 1fr 5.5em; gap: var(--s-3); align-items: center; padding: var(--s-3) var(--s-4); border-bottom: 1px solid var(--border); }
+  .bt-row:last-child { border-bottom: 0; }
+  .bt-model { display: flex; align-items: center; gap: 7px; min-width: 0; }
+  .bt-rank { display: inline-grid; place-items: center; width: 22px; height: 22px; flex: 0 0 auto; border-radius: 50%; border: 1px solid var(--border-bright); font: 11px/1 var(--mono); color: var(--text-dim); background: var(--surface-soft); }
+  .bt-row[data-first="true"] .bt-rank { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .bt-model b { font-size: 13px; font-weight: 600; }
+  .bt-bar-wrap { min-width: 0; }
+  .bt-bar { height: 12px; border-radius: 999px; background: var(--surface-soft); overflow: hidden; }
+  .bt-bar span { display: block; height: 100%; border-radius: 999px; background: var(--accent); transition: width var(--med) var(--ease); }
+  .bt-bar.prod span { background: var(--series-2); }
+  .bt-meta { margin-top: 4px; display: flex; justify-content: space-between; gap: var(--s-2); font-size: 10px; color: var(--text-dim); }
+  .bt-value { text-align: right; font: 600 16px/1.2 var(--mono); color: var(--ink); }
+  .bt-value small { display: block; font: 10px/1.5 var(--mono); color: var(--text-dim); font-weight: 400; }
+  .bt-flip { margin-top: var(--s-4); padding: var(--s-3) var(--s-4); border-left: 4px solid var(--series-2); border-radius: var(--r-1); background: #fff4ec; font-size: 12px; line-height: 1.7; color: #5a2a12; }
+  .bt-flip b { color: #3f1c0b; }
+  .bt-legend { display: flex; flex-wrap: wrap; gap: var(--s-4); margin-top: var(--s-3); font-size: 11px; color: var(--text-dim); }
+  .bt-legend span { display: inline-flex; align-items: center; gap: 6px; }
+  .bt-swatch { width: 10px; height: 10px; border-radius: 2px; background: var(--accent); }
+  .bt-swatch.prod { background: var(--series-2); }
+  .bt-reasons { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .bt-reason { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .bt-reason h3 { margin-top: 0; font-size: 16px; }
+  .bt-reason p { margin-top: var(--s-2); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .bt-reason .bt-tag { display: inline-block; font: 10px/1.5 var(--mono); color: var(--accent); letter-spacing: .04em; }
+  .bt-funnel { display: grid; gap: var(--s-2); margin-top: var(--s-4); }
+  .bt-layer { display: grid; grid-template-columns: 5.5em 1fr; gap: var(--s-3); align-items: start; padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .bt-layer-num { font: 600 11px/1.6 var(--mono); color: var(--accent); letter-spacing: .04em; }
+  .bt-layer h3 { margin: 0; font-size: 15px; }
+  .bt-layer p { margin-top: 3px; font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .bt-layer-note { font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .bt-reject { margin-top: var(--s-2); padding: var(--s-2) var(--s-4); border: 1px dashed #b04a3f; border-radius: var(--r-1); background: #fbe9e7; color: #7a1f18; font-size: 12px; }
+  .bt-table td, .bt-table th { vertical-align: top; }
+  .bt-table td:first-child, .bt-table th:first-child { min-width: 9em; }
+  .bt-cheat { min-width: 640px; }
+  .bt-crisis { min-width: 700px; }
+  .bt-warn { border: 1px solid #b45309; border-radius: var(--r-1); background: #fff8ec; padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+  .bt-warn .bt-warn-label { font: 600 11px/1.6 var(--mono); color: #8a4708; letter-spacing: .04em; }
+  .bt-warn p { font-size: var(--t-small); max-width: 52em; margin-top: 4px; }
+  .bt-quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 18px/1.7 var(--serif); max-width: 36em; }
+  @media (max-width: 880px) {
+    .bt-reasons { grid-template-columns: 1fr; }
+    .bt-row { grid-template-columns: 6.5em 1fr 4.5em; }
+  }
+  @media (max-width: 620px) {
+    .bt-stage { padding: var(--s-4); }
+    .bt-row { grid-template-columns: 1fr; gap: 6px; }
+    .bt-value { text-align: left; }
+    .bt-meta { font-size: 11px; }
+    .bt-layer { grid-template-columns: 1fr; gap: 3px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">076 / 静态 Benchmark 陷阱</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 1 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><span class="disabled">← 上一页</span><a href="077-continuous-evaluation-pipeline.html">下一页 → · 如何构建持续评估（Continuou…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">高级 · Evaluation · 可交互讲解</p>
+      <h1>95% 的准确率，<br>可能只是见过题。</h1>
+    </div>
+    <div>
+      <p class="lead">静态 benchmark 测的是固定题库。模型可能背过答案、针对题库调过流程、或者只是在题库的分布上表现好。到了你的生产数据上，这些优势不跟着走。</p>
+      <p class="definition">原文把失效归为四因：<strong>数据泄露、分布偏移、评估粒度不足、基准饱和</strong>。本页所有分数、榜单与论文日期按<strong>原文 2026-10 口径</strong>保留，标“原文版本、未联网核实”；互动中的模型与分数是<strong>固定教学数据</strong>，不是真实榜单。</p>
+      <div class="hero-meta"><span class="pill">高级</span><span class="pill">Evaluation</span><span class="pill">静态 Benchmark</span><span class="pill">固定教学数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-label="脱钩演示：公开基准分数与生产任务成功率">
+    <div class="player-top">
+      <div class="player-label">脱钩演示 <small>同一组分数，换一种排序就翻盘</small></div>
+      <div class="controls" role="group" aria-label="脱钩演示控制">
+        <button type="button" class="button button-quiet" id="bt-reset">重置</button>
+      </div>
+    </div>
+    <div class="bt-stage scene" data-scene="benchmark-decoupling">
+      <div class="bt-controls" role="group" aria-label="排序依据与生产任务">
+        <span class="bt-control-label">排序依据</span>
+        <div class="bt-tabs">
+          <button type="button" class="bt-tab" data-sort="bench" aria-pressed="true">公开基准分数</button>
+          <button type="button" class="bt-tab" data-sort="prod" aria-pressed="false">生产任务成功率</button>
+        </div>
+      </div>
+      <div class="bt-controls" style="margin-top: 10px">
+        <span class="bt-control-label">生产任务</span>
+        <div class="bt-tabs">
+          <button type="button" class="bt-tab" data-task="bugfix" aria-pressed="true">单点 bug 修复</button>
+          <button type="button" class="bt-tab" data-task="refactor" aria-pressed="false">跨文件重构</button>
+          <button type="button" class="bt-tab" data-task="evolution" aria-pressed="false">长周期演化</button>
+        </div>
+      </div>
+      <div class="bt-board">
+        <div class="bt-board-head"><span>固定教学数据 · 三个虚构模型</span><span id="bt-sort-note">当前按公开基准分数排序</span></div>
+        <div id="bt-rows"></div>
+      </div>
+      <div class="bt-legend"><span><i class="bt-swatch"></i>公开基准分数</span><span><i class="bt-swatch prod"></i>生产任务成功率</span><span>分数均为百分比</span></div>
+      <p class="bt-flip" id="bt-flip"></p>
+      <p class="demo-note">固定教学数据：模型甲 / 乙 / 丙与全部分数均为本页预设，用来演示“榜单排名与生产表现脱钩”；不对应任何真实模型或真实榜单。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定演示数据 · 不请求任何排行榜</span><span id="bt-state">按公开基准排序 · 单点 bug 修复</span></div>
+  </section>
+  <p id="bt-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="bt-why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">一 · 四个失效原因</p><h2 id="bt-why-title">高分消失，<br>通常不是模型变笨。</h2></div>
+      <p class="reading-intro">原文列出四个原因。它们可以单独出现，也常常叠加：一个模型既背过题，又只在题库分布上被优化过，还在已经饱和的指标上领先 2 个百分点。</p>
+    </div>
+    <div class="prose">
+      <div class="bt-reasons">
+        <div class="bt-reason"><span class="bt-tag">原因 1</span><h3>数据泄露</h3><p>训练数据包含基准题目，模型在“记忆”答案而不是推理。原文引用 LiveCodeBench 的观察：部分模型在训练截止日期之前的题目上，准确率比之后的题目高 20–30%。</p></div>
+        <div class="bt-reason"><span class="bt-tag">原因 2</span><h3>分布偏移</h3><p>基准的任务类型和难度分布不等于生产环境。MMLU 测学术知识，不等于用户的真实问题；HumanEval 测独立函数，不等于修改大型代码库。</p></div>
+        <div class="bt-reason"><span class="bt-tag">原因 3</span><h3>评估粒度不足</h3><p>只看最终对错，不看过程。模型可能用错误推理得到正确答案；也可能在 95% 的简单题上全对，但 5% 的关键场景全错。</p></div>
+        <div class="bt-reason"><span class="bt-tag">原因 4</span><h3>基准饱和</h3><p>顶尖模型都在 90%+，失去区分度。原文举例：MMLU 上 GPT-4o 88%、Claude 87%、Gemini 86%，2–3% 的差距在统计上可能不显著。</p></div>
+      </div>
+      <div class="bt-warn">
+        <p class="bt-warn-label">原文版本、未联网核实</p>
+        <p>20–30% 的下降幅度、MMLU 的 88 / 87 / 86 都是原文 2026-10 口径。本页未联网核对，也不更新榜单；这些数字只用来说明失效机制，不是当前排名。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="bt-decouple-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">二 · 大脱钩</p><h2 id="bt-decouple-title">排行榜，<br>失去了预测力。</h2></div>
+      <p class="reading-intro">2025 年业界观察到“The Great Decoupling”：公开排行榜与生产表现脱钩。原文给了三条证据和一个反例式的尝试——HLE。</p>
+    </div>
+    <div class="prose">
+      <p>原文的定义很直接：<strong>公开排行榜失去了对生产用例的预测能力</strong>。三条证据是：MMLU 80%+ 对生产表现几乎没有预测力；模型在真正新颖的问题上得分下降 20–30%；基准得分相近的模型在实际任务中表现差异巨大。根因是静态基准测的是“过去的能力”，不是“未来的泛化”。</p>
+      <p>HLE（Humanity's Last Exam）是一次反向尝试：由领域专家出极难题目（2700+ 题），目标是设计模型“不可能”通过的学术基准。发布初期（2025-01）最强模型准确率低于 10%；原文记录 2026-05 的 SOTA 是 Gemini 3.1 Pro Preview 约 44.7%（Artificial Analysis 数据），一年内从 10% 到 44%+，约 4 倍。</p>
+      <p>但原文把 HLE 也归为反面教材：它仍然是静态的。饱和速度远超预期，正好印证“静态基准会被追上”。</p>
+      <p class="source-footnote">HLE 的题量、日期与 44.7% 均按原文 2026-10 口径保留，未联网核实。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="bt-swe-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三 · SWE-bench 信任危机</p><h2 id="bt-swe-title">87–94%，<br>不等于接近完美。</h2></div>
+      <p class="reading-intro">原文给出一句面试总结：SWE-bench 顶部 87–94% 不是“模型已经接近完美”，而是“评测流程已经被充分优化”。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data bt-crisis">
+          <caption class="sr-only">SWE-bench 分数可被操纵的四个维度</caption>
+          <thead><tr><th scope="col">刷分维度</th><th scope="col">做法</th><th scope="col">为什么生产不可复现</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Harness 配置</th><td>同一模型换不同测试容器 / 框架配置。</td><td>生产用的是你自己的 harness，不会为分数调参。</td></tr>
+            <tr><th scope="row">Retry 策略</th><td>失败后自动重试、多次采样取最优解。</td><td>生产没有无限重试预算，重试还会放大成本和延迟。</td></tr>
+            <tr><th scope="row">Reasoning effort</th><td>开更长推理链、更多 token 预算。</td><td>生产要在成本与延迟约束下运行，不能每题都拉满。</td></tr>
+            <tr><th scope="row">Test patch 选择性</th><td>只跑测试子集，规避可能失败的用例。</td><td>真实用户不会只挑你会做的用例。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文的归因是：基准从“测真实能力”退化为“测刷分能力”，比的是谁更会针对基准优化。更关键的是，SWE-bench 只测单点 bug 修复，不覆盖真实软件的长周期演化；高分 Agent 在多文件协作、跨模块重构中，表现远不如分数暗示。</p>
+      <div class="bt-quote">“任何在生产中无法复现的重试预算、容器配置、推理预算，都是 benchmark 分数的水分来源。”</div>
+      <p>原文的应对是三条：固化评测流程配置（统一 harness、禁止无限重试），挤出水分；用 SWE-EVO 等演化型基准补充；始终回到自己的领域数据验证。</p>
+      <p class="source-footnote">87–94%、Claude 系列领先等均为原文 2026-10 口径，未联网核实，不更新排名。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="bt-promax-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四 · SWE-Bench ProMax</p><h2 id="bt-promax-title">不修补旧题，<br>直接换探针。</h2></div>
+      <p class="reading-intro">arXiv 2608.09802（2026-08）是对信任危机的正面回应：从“单点 bug 修复”换成“行为保持的跨文件重构”，更难背题。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data bt-table">
+          <caption class="sr-only">SWE-Bench ProMax 的设计与结果</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">内容</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">为什么另起炉灶</th><td>Verified 被审计出近 60% 未解实例存在测试缺陷（过窄或过宽）；前沿模型能逐字复现部分 gold patch，是记忆泄漏而非推理。</td></tr>
+            <tr><th scope="row">换什么探针</th><td>行为保持的跨文件重构：改完代码行为不变，但需要理解多个文件的关系。</td></tr>
+            <tr><th scope="row">规模</th><td>7 种语言、170 个专家精修的真实重构任务；平均每例改 11.4 个文件、261.6 行。</td></tr>
+            <tr><th scope="row">数据治理</th><td>issue 描述全部重写，测试逐条人工复核，剔除过窄 / 过宽用例。</td></tr>
+            <tr><th scope="row">结果</th><td>前沿模型最好解决率仅 41.2%，对比 Verified 顶部 87–94%。</td></tr>
+            <tr><th scope="row">启示</th><td>同一批模型换一个更难泄漏的探针，分数从 90% 量级掉到 40% 量级，说明 Verified 的高分主要衡量“见过多少”，而非“能改多少”。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="source-footnote">ProMax 的规模、行数、41.2% 与 arXiv 编号均按原文 2026-10 口径保留，标“原文版本、未联网核实”。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="bt-judge-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">五 · Judge 的稳定性陷阱</p><h2 id="bt-judge-title">判决一致，<br>理由可能每次不同。</h2></div>
+      <p class="reading-intro">LLM-as-Judge 看起来省事，但“多次运行判决一致”可能掩盖推理不稳定。原文把最危险的失败模式叫 Trapped Judge。</p>
+    </div>
+    <div class="prose">
+      <p>原文记录的研究发现有三层：表面一致性很高，多次运行的判决一致率很高；但推理不稳定，判决相同、推理理由可能完全不同；相同配置下准确率波动可达 15%。</p>
+      <p><strong>Trapped Judge</strong> 是最危险的模式：Judge 先给出判决，再编造证据来支持这个判决，给出看似合理的“通过”评估，跳过了人工审核。它不是随机出错，而是把错误包装成可信的结论。</p>
+      <p>缓解三条：不只看判决结果，还要检查推理链；多次运行取统计结果；定期用人工标注校准 Judge。</p>
+      <p class="source-footnote">15% 的准确率波动按原文 2026-10 口径保留，未联网核实。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="bt-dynamic-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">六 · 动态基准</p><h2 id="bt-dynamic-title">让题目，<br>跑在训练截止之后。</h2></div>
+      <p class="reading-intro">动态基准的核心不是“新”，而是题目发布时间晚于模型训练截止日期。原文列了四种做法，优势与局限并不相同。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data bt-table">
+          <caption class="sr-only">四种动态基准的做法、发现或优势、局限或挑战</caption>
+          <thead><tr><th scope="col">基准</th><th scope="col">方法</th><th scope="col">发现 / 优势</th><th scope="col">局限 / 挑战</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">LiveCodeBench</th><td>从 LeetCode / Codeforces 持续收集新题，每月更新。</td><td>题目发布时间晚于训练截止日期；原文发现部分模型在新题上准确率下降 30%。</td><td>原文未单列局限。</td></tr>
+            <tr><th scope="row">SWE-MERA</th><td>从最新 GitHub Issue 自动收集测试用例。</td><td>持续更新，不易被训练数据污染。</td><td>自动收集的题目质量参差不齐。</td></tr>
+            <tr><th scope="row">SWE-EVO</th><td>评估真实长周期软件演化任务（arXiv 2512.18470）。</td><td>补上 SWE-bench 只测单点 bug 的缺口；意义是直接回应信任危机，把评测从刷单点分数拉回真实工程能力。</td><td>原文未单列局限。</td></tr>
+            <tr><th scope="row">Chatbot Arena</th><td>用户实时投票对比两个模型的回答。</td><td>反映真实用户偏好，动态 ELO。</td><td>偏向对话场景，不覆盖复杂 Agent 任务。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>这四种不是互斥选项。生产上更稳的组合是：私有领域集做决策，动态基准做交叉验证，Arena 只作为偏好参考。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="bt-strategy-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">七 · 正确的评估策略</p><h2 id="bt-strategy-title">四层漏斗，<br>任一层不达标就淘汰。</h2></div>
+      <p class="reading-intro">原文的漏斗是：公开基准初筛 → 领域专属评估 → 小流量在线 A/B → 安全与合规测试。公开基准只配初筛，领域数据才是决策依据。</p>
+    </div>
+    <div class="prose">
+      <div class="bt-funnel">
+        <div class="bt-layer"><span class="bt-layer-num">Layer 1</span><div><h3>公开基准初筛</h3><p>快速淘汰明显不合格的模型。原文示例：MMLU 低于 70% 直接排除。</p><p class="bt-layer-note">作用：门槛筛选 · 不用于最终决策</p></div></div>
+        <div class="bt-layer"><span class="bt-layer-num">Layer 2</span><div><h3>领域专属评估（核心）</h3><p>从生产日志采样 200–500 个典型任务，标注期望结果和评分标准，定义领域指标。这是选模型的真正依据。</p><p class="bt-layer-note">作用：决策依据 · 投资回报率最高</p></div></div>
+        <div class="bt-layer"><span class="bt-layer-num">Layer 3</span><div><h3>小流量在线 A/B</h3><p>用 5% 流量对比新旧模型，LLM-as-Judge 自动评分，同时收集显式与隐式用户反馈。</p><p class="bt-layer-note">作用：真实流量验证 · 不能替代离线评估</p></div></div>
+        <div class="bt-layer"><span class="bt-layer-num">Layer 4</span><div><h3>安全与合规测试</h3><p>看延迟 P95、每请求成本、安全护栏通过率、PII 泄露率等非功能性指标。</p><p class="bt-layer-note">作用：上线前最后一道门</p></div></div>
+      </div>
+      <p class="bt-reject">任一层不达标 → 淘汰。不要用“下一层表现好”去抵消上一层的硬伤。</p>
+      <p>原文的成本提醒：大部分成本在领域评估层，但这是投资回报率最高的环节。公开基准免费且快，在线测试要真实流量，安全测试要专门工具；把钱花在能代表你业务的那一层。</p>
+
+      <details>
+        <summary>查看原文四层评估漏斗 Mermaid 源码（离线仅作文本）</summary>
+        <pre><code>flowchart LR
+    A["候选模型"] --&gt; B["Layer 1&lt;br/&gt;公开基准初筛"]
+    B -- "不达标" --&gt; X["淘汰"]
+    B --&gt; C["Layer 2&lt;br/&gt;领域专属评估（决策依据）"]
+    C -- "不达标" --&gt; X
+    C --&gt; D["Layer 3&lt;br/&gt;小流量在线 A/B"]
+    D -- "不达标" --&gt; X
+    D --&gt; E["Layer 4&lt;br/&gt;安全与合规测试"]
+    E -- "不达标" --&gt; X
+    E --&gt; F["上线"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class B,C,D,E proc
+    class X err
+    class A,F neutral</code></pre>
+        <p class="source-footnote">源码按原文保留，仅做 HTML 转义；上方四层卡片是同一流程的离线可读呈现。</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="bt-cheat-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">八 · 速查表</p><h2 id="bt-cheat-title">八个陷阱，<br>八条对策。</h2></div>
+      <p class="reading-intro">原文的速查表按“陷阱 → 缓解策略”排列，本页原样保留八行。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data bt-cheat">
+          <caption class="sr-only">静态 Benchmark 常见陷阱与缓解策略速查</caption>
+          <thead><tr><th scope="col">陷阱</th><th scope="col">缓解策略</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">数据泄露导致虚高分数</th><td>使用动态基准 + 时间切分。</td></tr>
+            <tr><th scope="row">基准分布 ≠ 生产分布</th><td>构建领域专属测试集。</td></tr>
+            <tr><th scope="row">只看准确率忽略其他维度</th><td>加入延迟、成本、安全等指标。</td></tr>
+            <tr><th scope="row">一次评估永久有效</th><td>持续评估 + 定期更新测试集。</td></tr>
+            <tr><th scope="row">相信单一排行榜</th><td>多基准交叉验证 + 自有评估。</td></tr>
+            <tr><th scope="row">LLM Judge 自动化偏差</th><td>人工校准 + 多 Judge 投票。</td></tr>
+            <tr><th scope="row">基准饱和失去区分力</th><td>设计更难的任务或细分维度。</td></tr>
+            <tr><th scope="row">Benchmark 被 gaming</th><td>固化 harness / retry 配置 + 用 SWE-EVO 等演化型基准。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="bt-mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="bt-mis-title">两个误区，<br>三个追问。</h2></div>
+      <p class="reading-intro">按原文顺序保留 5 条：前两条是误区，后三条是面试追问。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“排行榜第一就是最好的模型。”</h3><p>排行榜反映的是在特定基准上的得分，不是在你的业务场景中的表现。不同模型在不同领域有不同优势。选模型的唯一可靠方式，是用你自己的数据测试。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“基准分数高就可以直接上线。”</h3><p>生产有基准测试没有的复杂性：网络超时、恶意输入、长尾分布、安全攻击。基准测试必要但远不充分，还需要在线评估、安全测试和灰度发布。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>“SWE-bench 顶部都到 87–94% 了，为什么还不能信？”</h3><p>顶部分数可被 harness 配置、retry 策略、reasoning effort 等人为拉高，比的是谁更会针对基准优化；而且它只测单点 bug 修复，不覆盖长周期演化。应对：固化评测配置、用 SWE-EVO 等演化型基准补充、回到自己的领域数据验证。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>“如何构建不会被污染的评估？”</h3><p>用内部业务数据构建私有测试集，不公开发布；定期从最新生产日志补充新用例；用动态基准（LiveCodeBench、SWE-MERA、SWE-EVO）作为补充；关注模型在训练截止日期之后的数据上的表现。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 3</p>
+      <div><h3>“如何平衡评估的全面性和成本？”</h3><p>分层策略：公开基准免费快速初筛 → 领域评估（200–500 用例，LLM Judge 自动化）→ 小流量在线测试（5% 流量 A/B）。大部分成本在领域评估层，但这是投资回报率最高的环节。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="bt-related-title">
+    <p class="eyebrow">相关阅读与参考</p>
+    <h2 class="source-heading" id="bt-related-title">继续深入</h2>
+    <p class="source-summary">相关页面按当前仓库进度列出；外链只有主动点击才会离开本页。</p>
+    <details>
+      <summary>展开相关阅读（5 条）</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="069-evaluation-methodology.html">069 评估方法论</a>：LLM 评估三类方法与 Agent 评估四层模型。</li>
+          <li><a href="071-llm-as-judge.html">071 LLM-as-Judge</a>：Judge 偏差、位置偏差与稳定性。</li>
+          <li><a href="072-agent-benchmarks.html">072 Agent Benchmark 设计</a>：SWE-bench、GAIA 等基准的构造与局限。</li>
+          <li><a href="077-continuous-evaluation-pipeline.html">077 持续评估流水线</a>：把评估嵌进 CI/CD 与生产流量。</li>
+          <li><a href="111-eval-harness-design.html">111 Eval Harness 设计</a>：harness 配置如何改变同一个 benchmark 的分数。</li>
+        </ul>
+      </div>
+    </details>
+
+    <details>
+      <summary>展开原文参考链接（10 条）</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.goodeyelabs.com/insights/llm-evaluation-2025-review" target="_blank" rel="noopener noreferrer">2025 Year in Review for LLM Evaluation: When the Scorecard Broke（Goodeye Labs）</a></li>
+          <li><a href="https://www.honeyhive.ai/post/avoiding-common-pitfalls-in-llm-evaluation" target="_blank" rel="noopener noreferrer">Avoiding Common Pitfalls in LLM Evaluation（HoneyHive）</a></li>
+          <li><a href="https://arxiv.org/html/2601.11783" target="_blank" rel="noopener noreferrer">The Stability Trap: Evaluating the Reliability of LLM-Based Instruction Adherence Auditing（arXiv）</a></li>
+          <li><a href="https://arxiv.org/html/2510.26130v1" target="_blank" rel="noopener noreferrer">Beyond Synthetic Benchmarks: Evaluating LLM Performance on Real-World Code（arXiv）</a></li>
+          <li><a href="https://responsibleailabs.ai/knowledge-hub/articles/llm-evaluation-benchmarks-2025" target="_blank" rel="noopener noreferrer">LLM Evaluation Benchmarks and Safety Datasets for 2025（Responsible AI Labs）</a></li>
+          <li><a href="https://www.swebench.com/" target="_blank" rel="noopener noreferrer">SWE-bench 官方排行榜</a></li>
+          <li><a href="https://moogician.github.io/blog/2026/trustworthy-benchmarks-cont/" target="_blank" rel="noopener noreferrer">Trustworthy Benchmarks: SWE-bench 信任危机分析（2026）</a></li>
+          <li><a href="https://www.birjob.com/blog/agent-benchmarks-2026" target="_blank" rel="noopener noreferrer">Agent Benchmarks 2026 对比</a></li>
+          <li><a href="https://arxiv.org/html/2512.18470v6" target="_blank" rel="noopener noreferrer">SWE-EVO：长周期软件演化基准（arXiv 2512.18470）</a></li>
+          <li><a href="https://arxiv.org/abs/2608.09802" target="_blank" rel="noopener noreferrer">SWE-Bench ProMax：多语言大规模重构基准（arXiv 2608.09802）</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>08-evaluation/076-static-benchmark-trap.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 6 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const BT_MODELS = Object.freeze([
+    { id: "jia", name: "模型甲", bench: 93, prod: { bugfix: 78, refactor: 58, evolution: 44 } },
+    { id: "yi", name: "模型乙", bench: 91, prod: { bugfix: 62, refactor: 66, evolution: 51 } },
+    { id: "bing", name: "模型丙", bench: 95, prod: { bugfix: 55, refactor: 41, evolution: 29 } }
+  ]);
+  const BT_TASKS = Object.freeze({
+    bugfix: "单点 bug 修复",
+    refactor: "跨文件重构",
+    evolution: "长周期演化"
+  });
+  const btState = { sort: "bench", task: "bugfix" };
+  const btById = (id) => document.getElementById(id);
+
+  function btSorted() {
+    const key = btState.sort === "bench" ? "bench" : "prod";
+    return BT_MODELS.slice().sort((a, b) => {
+      const av = key === "bench" ? a.bench : a.prod[btState.task];
+      const bv = key === "bench" ? b.bench : b.prod[btState.task];
+      return bv - av;
+    });
+  }
+
+  function btRender(announce = true) {
+    const rows = btSorted();
+    const benchFirst = BT_MODELS.slice().sort((a, b) => b.bench - a.bench)[0];
+    btById("bt-rows").innerHTML = rows.map((model, index) => {
+      const bench = model.bench;
+      const prod = model.prod[btState.task];
+      const isBench = btState.sort === "bench";
+      const value = isBench ? bench : prod;
+      const other = isBench ? `生产 ${prod}%` : `基准 ${bench}`;
+      return `<div class="bt-row" data-first="${index === 0}">
+        <div class="bt-model"><span class="bt-rank">${index + 1}</span><b>${model.name}</b></div>
+        <div class="bt-bar-wrap">
+          <div class="bt-bar ${isBench ? "" : "prod"}"><span style="width:${value}%"></span></div>
+          <div class="bt-meta"><span>${isBench ? "公开基准" : `生产 · ${BT_TASKS[btState.task]}`}</span><span>${other}</span></div>
+        </div>
+        <div class="bt-value">${value}%<small>${isBench ? "基准分" : "成功率"}</small></div>
+      </div>`;
+    }).join("");
+
+    const top = rows[0];
+    const benchRankOfTop = BT_MODELS.slice().sort((a, b) => b.bench - a.bench).findIndex((m) => m.id === top.id) + 1;
+    const prodRankOfBenchFirst = BT_MODELS.slice().sort((a, b) => b.prod[btState.task] - a.prod[btState.task]).findIndex((m) => m.id === benchFirst.id) + 1;
+    if (btState.sort === "bench") {
+      btById("bt-flip").innerHTML = `<b>榜单第 1 是${benchFirst.name}（基准 ${benchFirst.bench}%）。</b>切到“生产任务成功率”，看它在“${BT_TASKS[btState.task]}”上排第几。`;
+    } else {
+      btById("bt-flip").innerHTML = `<b>${top.name}在这个任务上排第 1（${top.prod[btState.task]}%），但公开基准只排第 ${benchRankOfTop}。</b>榜单第 1 的${benchFirst.name}，在生产任务上排第 ${prodRankOfBenchFirst}。排序依据一换，结论就换。`;
+    }
+    btById("bt-sort-note").textContent = `当前按${btState.sort === "bench" ? "公开基准分数" : `生产任务成功率（${BT_TASKS[btState.task]}）`}排序`;
+    btById("bt-state").textContent = `按${btState.sort === "bench" ? "公开基准" : "生产表现"}排序 · ${BT_TASKS[btState.task]}`;
+    document.querySelectorAll("[data-sort]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.sort === btState.sort));
+    });
+    document.querySelectorAll("[data-task]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.task === btState.task));
+    });
+    if (announce) {
+      btById("bt-announcement").textContent = `当前按${btState.sort === "bench" ? "公开基准分数" : "生产任务成功率"}排序，任务为${BT_TASKS[btState.task]}。${btById("bt-flip").textContent}`;
+    }
+  }
+
+  document.querySelectorAll("[data-sort]").forEach((button) => {
+    button.addEventListener("click", () => {
+      btState.sort = button.dataset.sort;
+      btRender();
+    });
+  });
+  document.querySelectorAll("[data-task]").forEach((button) => {
+    button.addEventListener("click", () => {
+      btState.task = button.dataset.task;
+      btRender();
+    });
+  });
+  btById("bt-reset").addEventListener("click", () => {
+    btState.sort = "bench";
+    btState.task = "bugfix";
+    btRender(false);
+    btById("bt-announcement").textContent = "已重置为按公开基准排序、单点 bug 修复任务。";
+  });
+
+  btRender(false);
+</script>
+</body>
+</html>

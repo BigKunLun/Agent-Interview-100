@@ -1,0 +1,1047 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Agent 编排模式：Hub-Spoke、Pipeline、Hierarchical · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .orch-tabs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 0 var(--s-6); margin-top: var(--s-4); }
+  .orch-tab { min-height: 44px; padding: 8px 13px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: var(--t-small); }
+  .orch-tab:hover { background: var(--surface-soft); }
+  .orch-tab[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .orch-task { flex: 1 1 260px; min-width: 0; font-size: var(--t-label); color: var(--text-dim); }
+  .flow-stage { padding: var(--s-4) var(--s-6) var(--s-5); }
+  .parallel-badge { display: inline-flex; align-items: center; padding: 2px 8px; margin-left: 6px; border: 1px solid #9eb4c9; border-radius: 999px; background: var(--accent-dim); color: var(--accent); font: 10px/1.6 var(--mono); }
+  .pattern-view { display: none; }
+  .pattern-view.is-active { display: block; animation: arrive var(--med) var(--ease); }
+  .flow-node { min-width: 0; padding: 9px 11px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: var(--t-label); line-height: 1.5; transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease); }
+  .node-name { display: block; font-weight: 600; }
+  .node-state { display: block; margin-top: 2px; font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .flow-node[data-state="running"] { border-color: var(--accent); background: var(--accent-dim); }
+  .flow-node[data-state="running"] .node-state { color: var(--accent); }
+  .flow-node[data-state="done"] { border-color: #9eb4c9; background: #f5f8f2; }
+  .flow-node[data-state="done"] .node-state { color: #2e7d32; }
+  .flow-node[data-state="pending"] { opacity: .5; }
+  .flow-arrow { display: grid; place-items: center; flex: 0 0 auto; color: var(--text-dim); font-size: 16px; line-height: 1; }
+  .pipeline-flow { display: flex; align-items: stretch; gap: 5px; }
+  .pipeline-flow .flow-node { flex: 1 1 0; }
+  .hub-map { display: grid; grid-template-columns: minmax(110px, .75fr) minmax(0, 1.35fr); gap: 8px; align-items: stretch; }
+  .hub-core { grid-row: 1 / span 3; display: grid; align-content: center; gap: 6px; padding: 8px; border: 1px dashed var(--border-bright); border-radius: var(--r-1); background: var(--surface-soft); }
+  .hub-core .flow-node { background: var(--surface); }
+  .hub-core .flow-arrow { font-size: 14px; }
+  .hub-row { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 7px; align-items: stretch; }
+  .hub-io { display: grid; place-items: center; padding: 4px 2px; border: 1px dashed var(--border); border-radius: var(--r-1); font: 9px/1.5 var(--mono); color: var(--text-dim); text-align: center; }
+  .hub-out { margin-top: 8px; padding: 8px 11px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); font-size: var(--t-label); color: var(--text-dim); }
+  .tree-map { display: grid; gap: 5px; }
+  .tree-level { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 8px; align-items: center; }
+  .tree-tag { font: 9px/1.5 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .tree-nodes { display: flex; flex-wrap: wrap; gap: 6px; }
+  .tree-nodes .flow-node { flex: 1 1 96px; }
+  .tree-link { padding-left: 64px; font: 10px/1.6 var(--mono); color: var(--text-dim); }
+  .tree-link.up { color: var(--accent); }
+  .fan-map { display: grid; grid-template-columns: minmax(90px, .65fr) minmax(0, 1.5fr) minmax(90px, .65fr); gap: 10px; align-items: center; }
+  .fan-lanes-wrap { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+  .fan-side { font: 9px/1.5 var(--mono); color: var(--text-dim); text-align: center; }
+  .fan-lanes { display: grid; gap: 6px; padding-left: 10px; border-left: 2px solid var(--border); }
+  .fan-result { align-self: stretch; display: flex; flex-direction: column; justify-content: center; }
+  .flow-log { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px dashed var(--border); }
+  .log-label { font: 9px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .05em; }
+  .log-value { margin-top: 2px; font-size: var(--t-label); line-height: 1.6; overflow-wrap: anywhere; }
+  .read-chain { display: flex; align-items: stretch; gap: 5px; margin-top: var(--s-4); }
+  .read-chain .flow-node { flex: 1 1 0; text-align: center; }
+  .read-figure-note { margin-top: var(--s-3); font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .mc-loop { display: grid; grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr) 28px minmax(0, 1fr); gap: 6px; max-width: 720px; margin-top: var(--s-4); align-items: stretch; }
+  .mc-node { padding: 10px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); text-align: center; font-size: var(--t-label); }
+  .mc-node b { display: block; font: 600 10px/1.6 var(--mono); color: var(--text-dim); }
+  .mc-arrow { display: grid; place-items: center; color: var(--text-dim); }
+  .mc-return { grid-column: 1 / -1; margin-top: 4px; padding: 7px 10px; border: 1px dashed #c2410c; border-radius: var(--r-1); background: #fdf1ea; font-size: 10px; line-height: 1.6; color: #8a2c0a; }
+  @media (max-width: 1000px) {
+    .orch-tabs, .flow-stage { padding-inline: var(--s-5); }
+  }
+  @media (max-width: 720px) {
+    .orch-tabs { padding-inline: var(--s-4); }
+    .flow-stage { padding: var(--s-4); }
+    .pipeline-flow { flex-direction: column; }
+    .pipeline-flow .flow-arrow { transform: rotate(90deg); height: 16px; }
+    .hub-map { grid-template-columns: 1fr; }
+    .hub-core { grid-row: auto; }
+    .hub-row { grid-template-columns: 52px minmax(0, 1fr); }
+    .fan-map { grid-template-columns: 1fr; }
+    .fan-lanes-wrap { gap: 5px; }
+    .fan-side { text-align: left; }
+    .fan-lanes { padding: 4px 0 4px 14px; border-left: 2px solid var(--border-bright); }
+    .flow-log { grid-template-columns: 1fr; gap: 6px; }
+    .read-chain { flex-direction: column; }
+    .read-chain .flow-arrow { transform: rotate(90deg); }
+    .tree-level { grid-template-columns: 48px minmax(0, 1fr); }
+    .tree-link { padding-left: 56px; }
+    .tree-nodes .flow-node { flex: 1 1 80px; }
+    .mc-loop { grid-template-columns: 1fr; }
+    .mc-arrow { transform: rotate(90deg); height: 18px; }
+    .mc-return { grid-column: 1; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">033 / Agent 编排模式</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 3 / 10 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="../01-agent-architecture/006-agent-loop-and-error-recovery.html">← 上一页 · Agent Loop 设计</a><a href="../05-memory-and-state/040-memory-types.html">下一页 → · Agent 记忆的类型</a></div>
+    </nav>
+    <main id="main-content">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">中级 · Multi-Agent · 可交互讲解</p>
+          <h1>先看依赖，<br>再选拓扑。</h1>
+        </div>
+        <div>
+          <p class="lead">多 Agent 编排模式决定 Agent 之间的控制流和协作结构。三种核心模式：Pipeline 顺序链、Hub-Spoke 中心辐射、Hierarchical 层级树；Parallel 和 Maker-Checker 是两种常用补充。</p>
+          <p class="definition"><strong>编排模式不是 Agent 数量，而是控制流。</strong>选择取决于任务的依赖关系、并行度和控制粒度。生产系统通常组合多种模式，而不是只选一种。</p>
+          <div class="hero-meta"><span class="pill">中级</span><span class="pill">Multi-Agent</span><span class="pill">编排拓扑</span><span class="pill">模式选择</span></div>
+        </div>
+      </header>
+
+      <section class="walkthrough" id="explainer" aria-labelledby="demo-title">
+        <div class="player-top">
+          <div class="player-label">编排模式演练台 <small>四种拓扑，按拍推进</small></div>
+          <div class="controls" role="group" aria-label="编排演示控制">
+            <button type="button" class="button button-quiet" id="reset-button">重置</button>
+            <button type="button" class="button" id="back-button" disabled>上一步</button>
+            <button type="button" class="button button-primary" id="next-button">下一拍 →</button>
+            <button type="button" class="button" id="auto-button" aria-pressed="false">自动播放</button>
+          </div>
+        </div>
+
+        <nav class="stage-nav" aria-label="编排拍次">
+          <ol id="stage-list" style="--stages: 4"></ol>
+        </nav>
+
+        <div class="orch-tabs" role="group" aria-label="选择编排模式">
+          <button type="button" class="orch-tab" data-pattern="pipeline" aria-pressed="true">Pipeline</button>
+          <button type="button" class="orch-tab" data-pattern="hub" aria-pressed="false">Hub-Spoke</button>
+          <button type="button" class="orch-tab" data-pattern="hierarchy" aria-pressed="false">Hierarchical</button>
+          <button type="button" class="orch-tab" data-pattern="parallel" aria-pressed="false">Parallel</button>
+          <span class="orch-task" id="orch-task">任务：写一篇 AI Agent 技术博客</span>
+        </div>
+
+        <div class="scene-caption">
+          <p class="figure-index"><span id="step-index">模式演练 · 第 1 / 4 拍</span><span class="parallel-badge" id="parallel-badge" hidden>并行 × 3</span></p>
+          <h2 id="demo-title">研究 Agent 收集资料。</h2>
+          <p id="scene-subtitle">固定教学任务：写一篇 AI Agent 技术博客。每个拍次推进一个控制流阶段。</p>
+        </div>
+
+        <div class="scene-host">
+          <div class="flow-stage">
+            <div class="pattern-view is-active" data-pattern="pipeline" id="view-pipeline">
+              <div class="pipeline-flow" aria-label="Pipeline：研究、大纲、写作、编辑、发布依次串行">
+                <div class="flow-node" data-node="research"><span class="node-name">研究 Agent</span><span class="node-state">运行中</span></div>
+                <span class="flow-arrow" aria-hidden="true">→</span>
+                <div class="flow-node" data-node="outline"><span class="node-name">大纲 Agent</span><span class="node-state">待命</span></div>
+                <span class="flow-arrow" aria-hidden="true">→</span>
+                <div class="flow-node" data-node="writer"><span class="node-name">写作 Agent</span><span class="node-state">待命</span></div>
+                <span class="flow-arrow" aria-hidden="true">→</span>
+                <div class="flow-node" data-node="editor"><span class="node-name">编辑 Agent</span><span class="node-state">待命</span></div>
+              </div>
+            </div>
+
+            <div class="pattern-view" data-pattern="hub" id="view-hub" hidden>
+              <div class="hub-map" aria-label="Hub-Spoke：协调器向研究、代码、设计三个专家并行分派，再汇总结果">
+                <div class="hub-core">
+                  <div class="flow-node"><span class="node-name">用户请求</span><span class="node-state">输入任务</span></div>
+                  <span class="flow-arrow" aria-hidden="true">↓</span>
+                  <div class="flow-node" data-node="hub"><span class="node-name">协调器</span><span class="node-state">待命</span></div>
+                </div>
+                <div class="hub-row"><span class="hub-io">分派 →<br>← 回传</span><div class="flow-node" data-node="researcher"><span class="node-name">研究专家</span><span class="node-state">待命</span></div></div>
+                <div class="hub-row"><span class="hub-io">分派 →<br>← 回传</span><div class="flow-node" data-node="coder"><span class="node-name">代码专家</span><span class="node-state">待命</span></div></div>
+                <div class="hub-row"><span class="hub-io">分派 →<br>← 回传</span><div class="flow-node" data-node="designer"><span class="node-name">设计专家</span><span class="node-state">待命</span></div></div>
+              </div>
+              <p class="hub-out">三位专家互不等待，结果回到协调器汇总 → 最终输出。</p>
+            </div>
+
+            <div class="pattern-view" data-pattern="hierarchy" id="view-hierarchy" hidden>
+              <div class="tree-map" aria-label="Hierarchical：CEO 到两位 VP，再到三位执行 Agent，逐级委派、逐级汇报">
+                <div class="tree-level">
+                  <span class="tree-tag">第 1 层</span>
+                  <div class="tree-nodes"><div class="flow-node" data-node="ceo"><span class="node-name">CEO Agent · 战略分解</span><span class="node-state">待命</span></div></div>
+                </div>
+                <p class="tree-link">↓ 部门任务</p>
+                <div class="tree-level">
+                  <span class="tree-tag">第 2 层</span>
+                  <div class="tree-nodes">
+                    <div class="flow-node" data-node="vp-dev"><span class="node-name">研发 VP</span><span class="node-state">待命</span></div>
+                    <div class="flow-node" data-node="vp-content"><span class="node-name">内容 VP</span><span class="node-state">待命</span></div>
+                  </div>
+                </div>
+                <p class="tree-link">↓ 工作项</p>
+                <div class="tree-level">
+                  <span class="tree-tag">第 3 层</span>
+                  <div class="tree-nodes">
+                    <div class="flow-node" data-node="researcher"><span class="node-name">调研 Agent</span><span class="node-state">待命</span></div>
+                    <div class="flow-node" data-node="writer"><span class="node-name">撰写 Agent</span><span class="node-state">待命</span></div>
+                    <div class="flow-node" data-node="designer"><span class="node-name">配图 Agent</span><span class="node-state">待命</span></div>
+                  </div>
+                </div>
+                <p class="tree-link up">↑ 逐级汇报</p>
+              </div>
+            </div>
+
+            <div class="pattern-view" data-pattern="parallel" id="view-parallel" hidden>
+              <div class="fan-map" aria-label="Parallel：同一任务扇出给技术、成本、风险三个分析 Agent，同时执行后扇入汇总">
+                <div class="flow-node fan-task"><span class="node-name">同一分析任务</span><span class="node-state">固定教学输入</span></div>
+                <div class="fan-lanes-wrap">
+                  <p class="fan-side">扇出 ⇉ 三路同时开始</p>
+                  <div class="fan-lanes">
+                    <div class="flow-node" data-node="tech"><span class="node-name">技术视角</span><span class="node-state">待命</span></div>
+                    <div class="flow-node" data-node="cost"><span class="node-name">成本视角</span><span class="node-state">待命</span></div>
+                    <div class="flow-node" data-node="risk"><span class="node-name">风险视角</span><span class="node-state">待命</span></div>
+                  </div>
+                  <p class="fan-side">⇉ 扇入 三份结果汇总</p>
+                </div>
+                <div class="flow-node fan-result" data-node="aggregator"><span class="node-name">汇总 Agent</span><span class="node-state">待命</span></div>
+              </div>
+            </div>
+
+            <div class="flow-log">
+              <div><p class="log-label">本拍并行</p><p class="log-value" id="log-parallel">1 个 Agent</p></div>
+              <div><p class="log-label">本拍产出</p><p class="log-value" id="log-output">资料卡片 8 张</p></div>
+              <div><p class="log-label">控制流</p><p class="log-value" id="log-flow">链式传递：上一个 Agent 的输出是下一个的输入</p></div>
+            </div>
+            <p class="demo-note">四种模式各用一条固定教学任务演示，节点状态和拍次由本页脚本计算。本页不调用模型，也不启动任何真实 Agent。</p>
+          </div>
+        </div>
+        <div class="walkthrough-foot"><span>固定教学数据 · 不调用模型</span><span id="state-summary">Pipeline · 第 1 / 4 拍 · 峰值并行 1</span></div>
+      </section>
+      <p id="orch-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+      <section class="reading" aria-labelledby="overview-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">一、总览</p><h2 id="overview-title">三种核心拓扑，<br>三种控制流。</h2></div>
+          <p class="reading-intro">Pipeline 是链，Hub-Spoke 是中心到多个专家，Hierarchical 是多层树。拓扑不同，失败方式、延迟和调试难度也不同。</p>
+        </div>
+        <div class="prose">
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">三种核心编排模式的拓扑、控制方式与适用场景</caption>
+              <thead><tr><th scope="col">模式</th><th scope="col">拓扑</th><th scope="col">控制方式</th><th scope="col">适用场景</th><th scope="col">主要代价</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Pipeline</th><td>链：A → B → C</td><td>固定顺序</td><td>步骤固定、有先后依赖</td><td>无法并行，一步失败全停</td></tr>
+                <tr><th scope="row">Hub-Spoke</th><td>中心辐射：协调器 → 多个专家</td><td>集中分派与汇总</td><td>一个任务需要多种专业能力</td><td>协调器是单点瓶颈</td></tr>
+                <tr><th scope="row">Hierarchical</th><td>多层树：管理者 → 子管理者 → 执行者</td><td>逐级分解与委派</td><td>大型复杂项目、多层审批</td><td>层级延迟与信息失真</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>补充的 Parallel（扇出/扇入）解决“同一任务多角度并行”，Maker-Checker（生成-校验循环）解决“质量需要迭代把关”。它们经常嵌在三种核心模式内部使用。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="pipeline-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">模式 1 · Pipeline</p><h2 id="pipeline-title">一条链，<br>上一个的输出是下一个的输入。</h2></div>
+          <p class="reading-intro">每个 Agent 处理前一个 Agent 的输出，按预定顺序链式执行。简单、可预测，但任何一步都不能跳过。</p>
+        </div>
+        <div class="prose">
+          <figure>
+            <div class="read-chain" aria-label="Pipeline 链：研究 Agent 到分析 Agent 到写作 Agent 到最终输出">
+              <div class="flow-node"><span class="node-name">Agent A · 研究</span><span class="node-state">输出资料</span></div>
+              <span class="flow-arrow" aria-hidden="true">→</span>
+              <div class="flow-node"><span class="node-name">Agent B · 分析</span><span class="node-state">输出结论</span></div>
+              <span class="flow-arrow" aria-hidden="true">→</span>
+              <div class="flow-node"><span class="node-name">Agent C · 写作</span><span class="node-state">输出成稿</span></div>
+              <span class="flow-arrow" aria-hidden="true">→</span>
+              <div class="flow-node"><span class="node-name">最终输出</span><span class="node-state">交付</span></div>
+            </div>
+            <figcaption class="read-figure-note">图 1 · Pipeline 是链式拓扑：每一步只依赖上一步的产物，没有并行分支。</figcaption>
+          </figure>
+
+          <p class="code-label">Pipeline 模式实现 · 原文代码</p>
+          <pre><code># Pipeline 模式实现
+class Pipeline:
+    def __init__(self, agents: list):
+        self.agents = agents  # 按执行顺序排列
+
+    async def run(self, initial_input):
+        result = initial_input
+        for agent in self.agents:
+            result = await agent.process(result)
+        return result
+
+# 使用示例：内容生产流水线
+pipeline = Pipeline([
+    ResearchAgent(),    # Step 1: 搜索资料
+    OutlineAgent(),     # Step 2: 生成大纲
+    WriterAgent(),      # Step 3: 撰写内容
+    EditorAgent(),      # Step 4: 编辑润色
+])
+output = await pipeline.run("写一篇关于 AI Agent 的技术博客")</code></pre>
+          <p><strong>适用场景：</strong>数据处理流水线、内容生产（研究→写作→审核）、ETL 工作流。</p>
+          <p><strong>优势：</strong>简单可预测、易于调试、每步结果可检查。</p>
+          <p><strong>劣势：</strong>无法并行、一步失败整个流水线停止、不适合需要迭代的任务。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="hub-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">模式 2 · Hub-Spoke</p><h2 id="hub-title">一个中心，<br>把任务分给多个专家。</h2></div>
+          <p class="reading-intro">协调器分析任务、分派给专家 Agent，再汇总结果。集中控制带来灵活分派，也让协调器成为单点瓶颈。</p>
+        </div>
+        <div class="prose">
+          <figure>
+            <div class="hub-map" aria-label="Hub-Spoke：协调器向专家 A、B、C 分派，三个专家结果回到协调器汇总">
+              <div class="hub-core">
+                <div class="flow-node"><span class="node-name">用户</span><span class="node-state">提出任务</span></div>
+                <span class="flow-arrow" aria-hidden="true">↓</span>
+                <div class="flow-node"><span class="node-name">协调器</span><span class="node-state">分析任务 · 分派</span></div>
+              </div>
+              <div class="hub-row"><span class="hub-io">分派 →<br>← 回传</span><div class="flow-node"><span class="node-name">专家 Agent A</span><span class="node-state">独立执行</span></div></div>
+              <div class="hub-row"><span class="hub-io">分派 →<br>← 回传</span><div class="flow-node"><span class="node-name">专家 Agent B</span><span class="node-state">独立执行</span></div></div>
+              <div class="hub-row"><span class="hub-io">分派 →<br>← 回传</span><div class="flow-node"><span class="node-name">专家 Agent C</span><span class="node-state">独立执行</span></div></div>
+            </div>
+            <p class="hub-out">三位专家各自执行，结果全部回到协调器汇总 → 最终输出。</p>
+            <figcaption class="read-figure-note">图 2 · Hub-Spoke：中心到多个专家，专家之间互不直接通信；协调器负责分派和汇总，因此也是单点瓶颈。</figcaption>
+          </figure>
+          <details>
+            <summary>查看原文 Mermaid Hub-Spoke 图源码</summary>
+            <pre><code>flowchart LR
+    U["用户"] --&gt; H["协调器&lt;br/&gt;分析任务 · 分派"]
+    H --&gt; S1["专家 Agent A"]
+    H --&gt; S2["专家 Agent B"]
+    H --&gt; S3["专家 Agent C"]
+    S1 --&gt; F["汇总输出"]
+    S2 --&gt; F
+    S3 --&gt; F
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class H,S1,S2,S3 agent
+    class U,F proc</code></pre>
+            <p class="source-footnote">源码按原文保留，仅做 HTML 转义；上方静态图按同一分派/回传关系呈现。</p>
+          </details>
+
+          <p class="code-label">Hub-Spoke 实现 · 原文代码</p>
+          <pre><code>class HubSpokeOrchestrator:
+    def __init__(self, coordinator, specialists: dict):
+        self.coordinator = coordinator
+        self.specialists = specialists  # name → agent
+
+    async def run(self, task):
+        # 协调器分析任务，决定分派给哪些专家
+        plan = await self.coordinator.plan(task)
+
+        results = {}
+        for subtask in plan.subtasks:
+            agent = self.specialists[subtask.assigned_to]
+            results[subtask.id] = await agent.execute(subtask)
+
+        # 协调器汇总所有专家的结果
+        return await self.coordinator.synthesize(results)
+
+# Google ADK 风格：Coordinator + sub_agents
+coordinator = LlmAgent(
+    name="coordinator",
+    instruction="你是项目经理，分析用户需求并分配给合适的专家",
+    sub_agents=[researcher, coder, designer],
+    # LLM 驱动的委派：基于专家描述自动选择
+)</code></pre>
+          <p><strong>适用场景：</strong>客服路由、任务分发、专家咨询系统。</p>
+          <p><strong>优势：</strong>集中控制、灵活分派、专家可独立扩展。</p>
+          <p><strong>劣势：</strong>协调器是单点瓶颈、协调器需要理解所有专家的能力。</p>
+          <p>注意：原文代码里的循环是顺序 <code>await</code>；要真正并行，需要把专家调用并发执行。拓扑上它们是从中心分出的分支，执行上是否并行取决于实现。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="hierarchy-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">模式 3 · Hierarchical</p><h2 id="hierarchy-title">多层管理，<br>逐级分解和委派。</h2></div>
+          <p class="reading-intro">顶层管理者做战略分解，中层做战术分解，底层专家执行具体任务，结果再自底向上汇报。适合大型复杂项目。</p>
+        </div>
+        <div class="prose">
+          <figure>
+            <div class="tree-map" aria-label="Hierarchical：CEO 到研发、市场、产品三个 VP，再到前端、后端、营销、设计、PM 五个执行 Agent">
+              <div class="tree-level"><span class="tree-tag">第 1 层</span><div class="tree-nodes"><div class="flow-node"><span class="node-name">CEO Agent · 战略分解</span><span class="node-state">拆部门任务</span></div></div></div>
+              <p class="tree-link">↓ 部门任务</p>
+              <div class="tree-level"><span class="tree-tag">第 2 层</span><div class="tree-nodes"><div class="flow-node"><span class="node-name">VP · 研发</span><span class="node-state">战术分解</span></div><div class="flow-node"><span class="node-name">VP · 市场</span><span class="node-state">战术分解</span></div><div class="flow-node"><span class="node-name">VP · 产品</span><span class="node-state">战术分解</span></div></div></div>
+              <p class="tree-link">↓ 工作项</p>
+              <div class="tree-level"><span class="tree-tag">第 3 层</span><div class="tree-nodes"><div class="flow-node"><span class="node-name">前端 Agent</span><span class="node-state">执行</span></div><div class="flow-node"><span class="node-name">后端 Agent</span><span class="node-state">执行</span></div><div class="flow-node"><span class="node-name">营销 Agent</span><span class="node-state">执行</span></div><div class="flow-node"><span class="node-name">设计 Agent</span><span class="node-state">执行</span></div><div class="flow-node"><span class="node-name">PM Agent</span><span class="node-state">执行</span></div></div></div>
+              <p class="tree-link up">↑ 逐级汇报</p>
+            </div>
+            <figcaption class="read-figure-note">图 3 · Hierarchical 是多层树：任务从上往下逐级委派，结果从下往上逐级汇报；每一层只面对自己的子节点。</figcaption>
+          </figure>
+          <details>
+            <summary>查看原文 Mermaid Hierarchical 图源码</summary>
+            <pre><code>flowchart TD
+    CEO["CEO Agent&lt;br/&gt;战略分解"] --&gt; V1["VP·研发"]
+    CEO --&gt; V2["VP·市场"]
+    CEO --&gt; V3["VP·产品"]
+    V1 --&gt; W1["前端 Agent"]
+    V1 --&gt; W2["后端 Agent"]
+    V2 --&gt; W3["营销 Agent"]
+    V3 --&gt; W4["设计 Agent"]
+    V3 --&gt; W5["PM Agent"]
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class CEO,V1,V2,V3 agent
+    class W1,W2,W3,W4,W5 proc</code></pre>
+            <p class="source-footnote">源码按原文保留，仅做 HTML 转义；上方静态树按同一层级关系呈现。</p>
+          </details>
+
+          <p class="code-label">Hierarchical 实现 · 原文代码</p>
+          <pre><code>class HierarchicalOrchestrator:
+    """多层级管理结构"""
+
+    async def run(self, task):
+        # 顶层：CEO Agent 做战略分解
+        strategy = await self.ceo.decompose(task)
+
+        # 中层：VP Agent 做战术分解
+        for department_task in strategy.department_tasks:
+            vp = self.get_vp(department_task.department)
+            tactical_plan = await vp.plan(department_task)
+
+            # 底层：专家 Agent 执行具体任务
+            for work_item in tactical_plan.work_items:
+                worker = self.get_worker(work_item.skill)
+                await worker.execute(work_item)
+
+        # 自底向上汇报
+        return await self.ceo.synthesize_reports()</code></pre>
+          <p class="code-label">LangGraph 的层级结构 · 原文代码</p>
+          <pre><code># LangGraph 的层级结构
+from langgraph.graph import StateGraph
+
+# 顶层图
+top_graph = StateGraph(TopState)
+top_graph.add_node("research_team", research_subgraph)  # 子图作为节点
+top_graph.add_node("dev_team", dev_subgraph)
+top_graph.add_node("manager", manager_node)
+
+# 子图（研究团队）
+research_subgraph = StateGraph(ResearchState)
+research_subgraph.add_node("searcher", search_agent)
+research_subgraph.add_node("analyzer", analysis_agent)</code></pre>
+          <p><strong>适用场景：</strong>复杂企业级任务、需要多层审批的工作流、大型软件开发。</p>
+          <p><strong>优势：</strong>可管理大规模 Agent、每层关注不同抽象级别。</p>
+          <p><strong>劣势：</strong>层级过深会增加延迟、信息在层级间传递时可能失真。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="extra-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">补充模式</p><h2 id="extra-title">并行与质量回路，<br>常嵌在核心拓扑里。</h2></div>
+          <p class="reading-intro">Parallel 负责扇出/扇入，Maker-Checker 负责生成-校验循环。它们不是第四、第五种“大拓扑”，更像可复用的局部结构。</p>
+        </div>
+        <div class="prose">
+          <h3>Parallel（扇出/扇入）</h3>
+          <figure>
+            <div class="fan-map" aria-label="Parallel：任务扇出给三个分析 Agent，结果扇入汇总">
+              <div class="flow-node"><span class="node-name">同一个任务</span><span class="node-state">输入</span></div>
+              <div class="fan-lanes-wrap">
+                <p class="fan-side">扇出 ⇉ 三路同时开始</p>
+                <div class="fan-lanes">
+                  <div class="flow-node"><span class="node-name">分析 Agent A</span><span class="node-state">独立视角</span></div>
+                  <div class="flow-node"><span class="node-name">分析 Agent B</span><span class="node-state">独立视角</span></div>
+                  <div class="flow-node"><span class="node-name">分析 Agent C</span><span class="node-state">独立视角</span></div>
+                </div>
+                <p class="fan-side">⇉ 扇入 三份结果汇总</p>
+              </div>
+              <div class="flow-node"><span class="node-name">汇总</span><span class="node-state">投票 / 合并 / LLM 综合</span></div>
+            </div>
+            <figcaption class="read-figure-note">图 4 · Parallel：同一任务同时分发给多个 Agent，三路独立执行，最后扇入汇总。速度和多角度分析是收益，重复计算是成本。</figcaption>
+          </figure>
+          <pre><code># 多个 Agent 并行执行，结果汇聚
+async def fan_out_fan_in(task, agents):
+    # Fan-out：并行分发
+    results = await asyncio.gather(
+        *[agent.execute(task) for agent in agents]
+    )
+    # Fan-in：汇聚结果
+    return aggregate(results)  # 投票、合并或 LLM 综合</code></pre>
+
+          <h3>Maker-Checker（生成-校验循环）</h3>
+          <figure>
+            <div class="mc-loop" role="img" aria-label="Maker-Checker：生成 Agent 产出，校验 Agent 审核，通过则输出，驳回则带反馈回到生成">
+              <div class="mc-node"><b>1 · Maker</b>生成初稿</div>
+              <span class="mc-arrow" aria-hidden="true">→</span>
+              <div class="mc-node"><b>2 · Checker</b>审核并给反馈</div>
+              <span class="mc-arrow" aria-hidden="true">→</span>
+              <div class="mc-node"><b>3 · 通过</b>最终输出</div>
+              <div class="mc-return">↑ 驳回：把上一轮反馈追加到任务，回到 Maker 重新生成；最多 3 轮。Checker 也可以是人。</div>
+            </div>
+            <figcaption class="read-figure-note">图 5 · Maker-Checker 是内置质量回路：生成和校验分离，未通过就带着反馈重来，达到轮次上限后返回最后一版。</figcaption>
+          </figure>
+          <pre><code># 一个 Agent 生成，另一个 Agent 校验
+async def maker_checker_loop(task, maker, checker, max_rounds=3):
+    for round in range(max_rounds):
+        output = await maker.generate(task)
+        review = await checker.review(output)
+        if review.approved:
+            return output
+        task = f"{task}\n\n上一轮反馈：{review.feedback}"
+    return output  # 达到最大轮次</code></pre>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="choose-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">模式选择</p><h2 id="choose-title">按依赖、专业度、<br>规模和质量要求选。</h2></div>
+          <p class="reading-intro">先看步骤之间有没有先后依赖，再看是否需要多种专业能力、是否需要多层治理、是否能并行、是否需要质量回路。</p>
+        </div>
+        <div class="prose">
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">场景与推荐编排模式</caption>
+              <thead><tr><th scope="col">场景</th><th scope="col">推荐模式</th><th scope="col">原因</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">步骤固定、有先后依赖</th><td>Pipeline</td><td>简单可预测</td></tr>
+                <tr><th scope="row">一个任务需要多种专业能力</th><td>Hub-Spoke</td><td>灵活分派</td></tr>
+                <tr><th scope="row">大型复杂项目、需要多层管理</th><td>Hierarchical</td><td>分层治理</td></tr>
+                <tr><th scope="row">需要多角度分析同一问题</th><td>Parallel</td><td>速度 + 多样性</td></tr>
+                <tr><th scope="row">需要质量保证和迭代改进</th><td>Maker-Checker</td><td>内置质量循环</td></tr>
+                <tr><th scope="row">混合需求</th><td>组合多种模式</td><td>如 Hierarchical + Parallel</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>这张表给的是起点，不是硬规则。真实系统常常在一种大拓扑里嵌套另一种：Hierarchical 的每一层内部可能是 Pipeline，Hub-Spoke 的某个专家分支可能是一个 Parallel 扇出。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="frameworks-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">框架支持</p><h2 id="frameworks-title">同样的拓扑，<br>不同框架的原语不一样。</h2></div>
+          <p class="reading-intro">“支持”通常指框架提供了对应原语或示例，不代表每种模式都是一等公民；组合方式仍要自己设计。</p>
+        </div>
+        <div class="prose">
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">主流框架对编排模式的支持</caption>
+              <thead><tr><th scope="col">框架</th><th scope="col">支持的模式</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">LangGraph</th><td>Pipeline、Hierarchical、Parallel、自定义图</td></tr>
+                <tr><th scope="row">Google ADK</th><td>Hub-Spoke（sub_agents）、Sequential、Parallel、Loop</td></tr>
+                <tr><th scope="row">OpenAI Agents SDK</th><td>Hub-Spoke（Handoff）、Pipeline</td></tr>
+                <tr><th scope="row">CrewAI</th><td>Pipeline、Hierarchical</td></tr>
+                <tr><th scope="row">AutoGen</th><td>Group Chat（多种编排）</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="misconception-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="misconception-title">四条，<br>按原文顺序。</h2></div>
+          <p class="reading-intro">前两条是误区，后两条是面试追问；答案都来自原文。</p>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">误区 1</p>
+          <div><h3>“选一种模式就够了。”</h3><p>实际生产系统通常混合使用多种模式。例如 Hierarchical 的每一层内部可能是 Pipeline 或 Parallel。Strands Agents 就采用了 ReWOO 的规划纪律 + ReAct 的步内灵活性的混合方法。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">误区 2</p>
+          <div><h3>“Hub-Spoke 中协调器必须是 LLM。”</h3><p>协调器可以是确定性代码（基于规则路由），而非 LLM。OpenAI 建议：当需要可预测性和速度时，用代码编排而非 LLM 编排。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">追问 1</p>
+          <div><h3>如何在编排模式中加入 Human-in-the-Loop？</h3><p>多种模式都支持：Pipeline 中在关键步骤后插入人工审核节点；Hub-Spoke 中协调器可以将高风险任务路由给人类审批；Maker-Checker 中 Checker 可以是人类。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">追问 2</p>
+          <div><h3>编排模式如何影响测试策略？</h3><p>Pipeline 可以逐节点单元测试；Hub-Spoke 需要测试协调器的路由逻辑；Hierarchical 需要集成测试验证层间通信。因为 Agent 输出不确定性，建议用评分标准或 LLM-as-Judge 而非精确匹配断言。</p></div>
+        </div>
+      </section>
+
+      <section class="source-section" aria-labelledby="source-title">
+        <p class="eyebrow">技术细节，按需展开</p>
+        <h2 class="source-heading" id="source-title">原文参考资料</h2>
+        <p class="source-summary">讲解依据《Agent 编排模式：Hub-Spoke、Pipeline、Hierarchical》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+        <details>
+          <summary>展开原文列出的五条参考链接</summary>
+          <div class="source-content">
+            <ul>
+              <li><a href="https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/ai-agent-design-patterns" target="_blank" rel="noopener noreferrer">AI Agent Orchestration Patterns · Microsoft Azure</a></li>
+              <li><a href="https://google.github.io/adk-docs/agents/multi-agents/" target="_blank" rel="noopener noreferrer">Multi-Agent Systems · Google ADK Docs</a></li>
+              <li><a href="https://openai.github.io/openai-agents-python/multi_agent/" target="_blank" rel="noopener noreferrer">Agent Orchestration · OpenAI Agents SDK</a></li>
+              <li><a href="https://www.ibm.com/think/topics/ai-agent-orchestration" target="_blank" rel="noopener noreferrer">What is AI Agent Orchestration? · IBM</a></li>
+              <li><a href="https://aws.amazon.com/blogs/machine-learning/customize-agent-workflows-with-advanced-orchestration-techniques-using-strands-agents/" target="_blank" rel="noopener noreferrer">Advanced Orchestration Techniques with Strands Agents · AWS</a></li>
+            </ul>
+            <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+          </div>
+        </details>
+      </section>
+    </main>
+    <footer><span>Agent-Interview-100 · <code>04-multi-agent/033-orchestration-patterns.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 2 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const PATTERNS = {
+    pipeline: {
+      name: "Pipeline",
+      task: "写一篇 AI Agent 技术博客",
+      flow: "链式传递：上一个 Agent 的输出是下一个的输入",
+      steps: [
+        { nav: "研究", title: "研究 Agent 收集资料。", detail: "研究 Agent 先从固定资料来源整理卡片，输出作为下一步的输入。", active: ["research"], output: "资料卡片 8 张" },
+        { nav: "大纲", title: "大纲 Agent 搭结构。", detail: "大纲 Agent 只接收资料卡片，生成五节大纲；它不回头看研究过程。", active: ["outline"], output: "5 节大纲" },
+        { nav: "写作", title: "写作 Agent 写初稿。", detail: "写作 Agent 按大纲展开，输出初稿；前两步的产物已经固定在上下文里。", active: ["writer"], output: "2,800 字初稿" },
+        { nav: "编辑", title: "编辑 Agent 润色并交付。", detail: "编辑 Agent 只处理初稿，做事实核对和语言润色；终稿直接作为链尾输出，没有额外的发布 Agent。", active: ["editor"], activeLabel: "已完成", output: "2,600 字终稿（固定教学数据）" }
+      ]
+    },
+    hub: {
+      name: "Hub-Spoke",
+      task: "同一篇博客，需要研究、代码示例和配图三种能力",
+      flow: "中心分派 → 专家并行 → 中心汇总",
+      steps: [
+        { nav: "拆解", title: "协调器拆解任务。", detail: "协调器把博客拆成资料、代码示例、配图三个子任务。", active: ["hub"], activeLabel: "拆解中", output: "3 个子任务" },
+        { nav: "分派", title: "同一拍分派给三个专家。", detail: "三位专家同时收到子任务，彼此不等待；协调器不参与具体执行。", active: ["researcher", "coder", "designer"], activeLabel: "并行运行", output: "三路同时开始" },
+        { nav: "并行", title: "三个专家分别返回。", detail: "研究卡片、代码片段、配图说明在同一拍就绪，形成三条并行分支的汇合点。", active: ["researcher", "coder", "designer"], activeLabel: "并行运行", output: "三份结果同时就绪" },
+        { nav: "汇总", title: "协调器汇总三份结果。", detail: "协调器检查缺口并合并内容；专家之间没有直接通信。", active: ["hub"], activeLabel: "汇总中", output: "合并稿" },
+        { nav: "交付", title: "协调器交付最终输出。", detail: "协调器完成最后检查并交付；它始终是唯一的控制中心。", active: ["hub"], activeLabel: "已完成", output: "成稿（固定教学数据）" }
+      ]
+    },
+    hierarchy: {
+      name: "Hierarchical",
+      task: "企业级内容生产：CEO 拆战略，VP 拆战术，专家执行",
+      flow: "逐级委派 ↓ → 专家执行 → 逐级汇报 ↑",
+      steps: [
+        { nav: "战略", title: "CEO 做战略分解。", detail: "CEO 把博客项目拆成研发与内容两条部门任务。", active: ["ceo"], activeLabel: "战略分解", output: "2 个部门任务" },
+        { nav: "战术", title: "VP 做战术分解。", detail: "两位 VP 在同一层各自拆工作项，互不越级指挥对方的专家。", active: ["vp-dev", "vp-content"], activeLabel: "战术分解", output: "3 个工作项" },
+        { nav: "执行", title: "专家执行具体工作项。", detail: "调研、撰写、配图三个工作项并行执行，分别归属各自的 VP。", active: ["researcher", "writer", "designer"], activeLabel: "并行执行", output: "资料 / 初稿 / 配图" },
+        { nav: "汇报", title: "结果逐级向上汇报。", detail: "专家结果先回到各自 VP，由 VP 汇总成部门报告，而不是直接交给 CEO。", active: ["vp-dev", "vp-content"], activeLabel: "汇报中", output: "2 份部门报告" },
+        { nav: "汇总", title: "CEO 汇总部门报告。", detail: "CEO 合并两份部门报告，完成最终交付。", active: ["ceo"], activeLabel: "已完成", output: "最终成稿（固定教学数据）" }
+      ]
+    },
+    parallel: {
+      name: "Parallel",
+      task: "同一问题需要技术、成本、风险三个角度分析",
+      flow: "扇出 ⇉ → 三路并行 → 扇入汇总",
+      steps: [
+        { nav: "扇出", title: "同一拍扇出给三个分析 Agent。", detail: "三个 Agent 同时开始，使用同一份固定输入，彼此不依赖。", active: ["tech", "cost", "risk"], activeLabel: "并行运行", output: "三路同时开始" },
+        { nav: "并行", title: "三路独立分析。", detail: "技术、成本、风险三个视角各自给出结论，没有任何一路等待另一路。", active: ["tech", "cost", "risk"], activeLabel: "并行运行", output: "3 份独立结论" },
+        { nav: "扇入", title: "汇总 Agent 扇入结果。", detail: "汇总 Agent 按投票、合并或 LLM 综合把三份结论收敛成一份输出。", active: ["aggregator"], activeLabel: "已完成", output: "1 份综合结论" }
+      ]
+    }
+  };
+
+  const state = { pattern: "pipeline", step: 0, timer: null };
+  const byId = (id) => document.getElementById(id);
+
+  function steps() {
+    return PATTERNS[state.pattern].steps;
+  }
+
+  function peakParallel() {
+    return Math.max(...steps().map((step) => step.active.length));
+  }
+
+  function buildStageNav() {
+    const list = byId("stage-list");
+    const current = steps();
+    list.style.setProperty("--stages", String(current.length));
+    list.textContent = "";
+    current.forEach((step, index) => {
+      const li = document.createElement("li");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "stage-button";
+      button.dataset.step = String(index);
+      button.setAttribute("aria-controls", "explainer");
+      button.setAttribute("aria-label", `第 ${index + 1} 拍：${step.nav}`);
+      button.innerHTML = `<span class="stage-number">${index + 1}</span><span>${step.nav}</span>`;
+      if (index === state.step) button.setAttribute("aria-current", "step");
+      button.addEventListener("click", () => goToStep(index));
+      li.append(button);
+      list.append(li);
+    });
+  }
+
+  function updateStageNav() {
+    document.querySelectorAll("#stage-list .stage-button").forEach((button) => {
+      if (Number(button.dataset.step) === state.step) {
+        button.setAttribute("aria-current", "step");
+      } else {
+        button.removeAttribute("aria-current");
+      }
+    });
+  }
+
+  function renderNodes() {
+    const view = document.querySelector(`.pattern-view[data-pattern="${state.pattern}"]`);
+    if (!view) return;
+    const current = steps();
+    const seen = new Set();
+    for (let i = 0; i < state.step; i += 1) {
+      current[i].active.forEach((id) => seen.add(id));
+    }
+    const activeStep = current[state.step];
+
+    view.querySelectorAll("[data-node]").forEach((node) => {
+      const id = node.dataset.node;
+      const stateLabel = node.querySelector(".node-state");
+      let nodeState = "pending";
+      let text = "待命";
+      if (activeStep.active.includes(id)) {
+        text = activeStep.activeLabel || (activeStep.active.length > 1 ? "并行运行" : "运行中");
+        nodeState = text === "已完成" ? "done" : "running";
+      } else if (seen.has(id)) {
+        nodeState = "done";
+        text = "完成";
+      }
+      node.dataset.state = nodeState;
+      if (stateLabel) stateLabel.textContent = text;
+    });
+  }
+
+  function render() {
+    const pattern = PATTERNS[state.pattern];
+    const current = pattern.steps;
+    const step = current[state.step];
+    const activeCount = step.active.length;
+
+    document.querySelectorAll(".orch-tab").forEach((button) => {
+      button.setAttribute("aria-pressed", button.dataset.pattern === state.pattern ? "true" : "false");
+    });
+    document.querySelectorAll(".pattern-view").forEach((view) => {
+      const isActive = view.dataset.pattern === state.pattern;
+      view.classList.toggle("is-active", isActive);
+      view.hidden = !isActive;
+    });
+
+    byId("orch-task").textContent = `任务：${pattern.task}`;
+    byId("step-index").textContent = `模式演练 · 第 ${state.step + 1} / ${current.length} 拍`;
+    byId("demo-title").textContent = step.title;
+    byId("scene-subtitle").textContent = `${step.detail} 固定教学任务：${pattern.task}。`;
+    const badge = byId("parallel-badge");
+    badge.hidden = activeCount < 2;
+    badge.textContent = `并行 × ${activeCount}`;
+    byId("log-parallel").textContent = `${activeCount} 个 Agent${activeCount > 1 ? "（同一拍同时执行）" : "（单路执行）"}`;
+    byId("log-output").textContent = step.output;
+    byId("log-flow").textContent = pattern.flow;
+    byId("state-summary").textContent = `${pattern.name} · 第 ${state.step + 1} / ${current.length} 拍 · 峰值并行 ${peakParallel()}`;
+
+    renderNodes();
+    updateStageNav();
+    byId("back-button").disabled = state.step === 0;
+    byId("next-button").disabled = state.step === current.length - 1;
+  }
+
+  function announce(text) {
+    byId("orch-announcement").textContent = text;
+  }
+
+  function goToStep(index) {
+    stopAuto();
+    const total = steps().length;
+    state.step = Math.max(0, Math.min(index, total - 1));
+    render();
+    const step = steps()[state.step];
+    announce(`第 ${state.step + 1} 拍：${step.title} 本拍并行 ${step.active.length} 个 Agent。`);
+  }
+
+  function next() {
+    stopAuto();
+    if (state.step < steps().length - 1) {
+      state.step += 1;
+      render();
+      announce(`进入第 ${state.step + 1} 拍：${steps()[state.step].title}`);
+    }
+  }
+
+  function back() {
+    stopAuto();
+    if (state.step > 0) {
+      state.step -= 1;
+      render();
+      announce(`返回第 ${state.step + 1} 拍：${steps()[state.step].title}`);
+    }
+  }
+
+  function reset() {
+    stopAuto();
+    state.step = 0;
+    render();
+    announce(`已重置${PATTERNS[state.pattern].name}演示。`);
+  }
+
+  function stopAuto() {
+    if (state.timer) {
+      clearInterval(state.timer);
+      state.timer = null;
+    }
+    const button = byId("auto-button");
+    button.setAttribute("aria-pressed", "false");
+    button.textContent = "自动播放";
+  }
+
+  function toggleAuto() {
+    if (state.timer) {
+      stopAuto();
+      announce("已暂停自动播放。");
+      return;
+    }
+    if (state.step === steps().length - 1) {
+      state.step = 0;
+      render();
+    }
+    const button = byId("auto-button");
+    button.setAttribute("aria-pressed", "true");
+    button.textContent = "暂停";
+    announce("开始自动播放。");
+    state.timer = setInterval(() => {
+      if (state.step < steps().length - 1) {
+        state.step += 1;
+        render();
+      } else {
+        stopAuto();
+        announce("演示已到最后拍。");
+      }
+    }, 1400);
+  }
+
+  function setPattern(id) {
+    stopAuto();
+    state.pattern = id;
+    state.step = 0;
+    buildStageNav();
+    render();
+    announce(`已切换到${PATTERNS[id].name}模式，任务：${PATTERNS[id].task}。`);
+  }
+
+  document.querySelectorAll(".orch-tab").forEach((button) => {
+    button.addEventListener("click", () => setPattern(button.dataset.pattern));
+  });
+  byId("next-button").addEventListener("click", next);
+  byId("back-button").addEventListener("click", back);
+  byId("reset-button").addEventListener("click", reset);
+  byId("auto-button").addEventListener("click", toggleAuto);
+
+  buildStageNav();
+  render();
+</script>
+</body>
+</html>

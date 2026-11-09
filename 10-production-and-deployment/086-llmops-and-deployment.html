@@ -1,0 +1,940 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>LLMOps 与 Agent 部署架构 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .lo-stage { padding-top: var(--s-2); }
+  .lo-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--s-6); align-items: start; }
+  .lo-main { min-width: 0; }
+  .lo-side { min-width: 0; border-left: 1px solid var(--border); padding-left: var(--s-5); }
+  .lo-side h2 { font: 600 24px/1.4 var(--serif); margin: 2px 0 var(--s-2); }
+  .lo-side > p { color: var(--text-dim); font-size: var(--t-small); }
+  .lo-facts { display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; margin: var(--s-4) 0 0; font-size: 12px; }
+  .lo-facts dt { color: var(--text-dim); }
+  .lo-facts dd { margin: 0; font-family: var(--mono); font-size: 11px; text-align: right; }
+  .lo-note { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px dashed var(--border); color: var(--text-dim); font-size: 11px; line-height: 1.7; }
+  .lo-kicker { font: 10px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .08em; text-transform: uppercase; }
+  .lo-h3 { font: 600 21px/1.4 var(--serif); margin: 3px 0 var(--s-2); }
+  .lo-lede { font-size: 13px; color: var(--text-dim); max-width: 58em; }
+  .lo-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 10px; padding: 7px 10px; border-bottom: 1px solid var(--border); font-size: 11.5px; line-height: 1.65; }
+  .lo-row:last-child { border-bottom: 0; }
+  .lo-rows { margin: var(--s-3) 0 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); overflow: hidden; }
+  .lo-row dt { color: var(--text-dim); font-size: 10.5px; }
+  .lo-row dd { margin: 0; }
+  .lo-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: var(--s-2); }
+  .lo-chip { display: inline-flex; align-items: center; min-height: 20px; padding: 1px 7px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font: 9px/1.4 var(--mono); color: var(--text-dim); }
+  .lo-chip.hot { border-color: #9eb4c9; background: var(--accent-dim); color: var(--accent); }
+  .lo-callout { margin-top: var(--s-3); border: 1px solid #9eb4c9; background: var(--accent-dim); border-radius: var(--r-1); padding: 9px 11px; font-size: 11.5px; line-height: 1.7; }
+  .lo-callout b { color: var(--accent); }
+  .lo-callout.warn { border-color: #e4c98f; background: #fdf9ef; }
+  .lo-callout.warn b { color: #7a4a00; }
+  .lo-waterfall { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px 11px; }
+  .lo-wf-head { display: flex; justify-content: space-between; gap: 8px; font: 9px/1.6 var(--mono); color: var(--text-dim); margin-bottom: 5px; }
+  .lo-bar-row { display: grid; grid-template-columns: 52px minmax(0, 1fr) 62px; gap: 7px; align-items: center; padding: 3px 0; }
+  .lo-bar-label { font: 9px/1.4 var(--mono); color: var(--text-dim); }
+  .lo-bar-track { height: 10px; background: var(--surface-soft); border-radius: 999px; overflow: hidden; }
+  .lo-bar { height: 100%; width: var(--w, 0%); min-width: 4px; border-radius: 999px; background: #c3c8c1; }
+  .lo-bar-row.current .lo-bar { background: var(--accent); }
+  .lo-bar-row.current .lo-bar-label { color: var(--accent); font-weight: 700; }
+  .lo-bar-row.done .lo-bar { background: #8aa8c4; }
+  .lo-bar-row.future .lo-bar { background: #d5d8d1; }
+  .lo-bar-row.future .lo-bar-ms { color: var(--text-dim); }
+  .lo-bar-ms { font: 9px/1.4 var(--mono); color: var(--text-dim); text-align: right; white-space: nowrap; }
+  .lo-stack { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); overflow: hidden; }
+  .lo-stack-row { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 10px; padding: 9px 11px; border-bottom: 1px solid var(--border); }
+  .lo-stack-row:last-child { border-bottom: 0; }
+  .lo-stack-no { font: 600 10px/1.5 var(--mono); color: var(--accent); }
+  .lo-stack-row b { font-size: 12px; line-height: 1.5; }
+  .lo-stack-row p { margin-top: 1px; font-size: 10.5px; line-height: 1.65; color: var(--text-dim); }
+  .lo-stack-sub { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 5px; }
+  .lo-stack-sub span { font-size: 9.5px; line-height: 1.5; color: var(--text-dim); border: 1px dashed var(--border); border-radius: 3px; padding: 2px 5px; }
+  .lo-stack-row:nth-child(1) { border-left: 3px solid #194f87; }
+  .lo-stack-row:nth-child(2) { border-left: 3px solid #2e7d32; }
+  .lo-stack-row:nth-child(3) { border-left: 3px solid #b07d20; }
+  .lo-stack-row:nth-child(4) { border-left: 3px solid #6b21a8; }
+  .lo-stack-row:nth-child(5) { border-left: 3px solid #5d625d; }
+  .lo-compare { min-width: 820px; }
+  .lo-compare td:first-child { min-width: 96px; }
+  .lo-components { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: var(--s-3); }
+  .lo-component { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px 11px; min-width: 0; }
+  .lo-component h3 { margin: 0; font-size: 12px; line-height: 1.5; }
+  .lo-component .tool { display: block; margin-top: 2px; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .lo-component p { margin-top: 4px; font-size: 10.5px; line-height: 1.65; color: var(--text-dim); }
+  .lo-component p b { color: var(--ink); }
+  .lo-workflow { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px 11px; }
+  .lo-wf-row { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; font-size: 10.5px; }
+  .lo-wf-row + .lo-wf-row { margin-top: 6px; }
+  .lo-node { border: 1px solid var(--border-bright); border-radius: 4px; padding: 3px 7px; background: var(--surface-soft); white-space: nowrap; }
+  .lo-node.dark { background: var(--accent); border-color: var(--accent); color: white; }
+  .lo-arrow { color: var(--text-dim); font-family: var(--mono); }
+  .lo-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin-top: var(--s-3); }
+  .lo-metric { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 8px 10px; min-width: 0; }
+  .lo-metric b { display: block; font: 600 11px/1.5 var(--mono); color: var(--accent); }
+  .lo-metric span { display: block; margin-top: 2px; font-size: 10px; line-height: 1.55; color: var(--text-dim); }
+  .lo-two { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: var(--s-3); }
+  .lo-two > div { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px 12px; }
+  .lo-two h3 { margin: 0 0 4px; font-size: 12px; line-height: 1.5; }
+  .lo-two ul { margin: 0; padding-left: 1.1em; }
+  .lo-two li { font-size: 10.5px; line-height: 1.7; color: var(--text-dim); }
+  .lo-two .share { margin-top: 7px; padding-top: 6px; border-top: 1px dashed var(--border); font-size: 10px; color: var(--text-dim); }
+  .lo-deploy { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); overflow: hidden; }
+  .lo-deploy-row { display: grid; grid-template-columns: 138px minmax(0, 1fr); gap: 10px; padding: 8px 11px; border-bottom: 1px solid var(--border); font-size: 11px; line-height: 1.65; }
+  .lo-deploy-row:last-child { border-bottom: 0; }
+  .lo-deploy-row b { font-size: 11.5px; }
+  .lo-deploy-row small { display: block; color: var(--text-dim); font-size: 10px; }
+  .lo-common { margin: var(--s-3) 0 0; padding-left: 1.2em; }
+  .lo-common li { font-size: 11px; line-height: 1.7; margin-block: 4px; }
+  .lo-common li b { color: var(--ink); }
+  .lo-code-note { margin-top: var(--s-2); font-size: 10px; color: var(--text-dim); }
+  @media (max-width: 960px) {
+    .lo-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+    .lo-side { border-left: 0; border-top: 1px solid var(--border); padding-left: 0; padding-top: var(--s-4); }
+    .lo-components { grid-template-columns: 1fr; }
+    .lo-metrics { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 720px) {
+    .lo-row { grid-template-columns: 68px minmax(0, 1fr); }
+    .lo-bar-row { grid-template-columns: 44px minmax(0, 1fr) 52px; }
+    .lo-two { grid-template-columns: 1fr; }
+    .lo-deploy-row { grid-template-columns: 1fr; gap: 2px; }
+    .lo-stack-sub { grid-template-columns: 1fr; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">086 / LLMOps 与部署</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 11 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="../09-safety-and-alignment/115-agent-compliance-eu-ai-act.html">← 上一页 · Agent 产品如何做合规设计？EU…</a><a href="089-model-routing.html">下一页 → · 模型路由（Model Routing…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Production &amp; Deployment · 可交互讲解</p>
+      <h1>五层堆起来，<br>请求才走得稳。</h1>
+    </div>
+    <div>
+      <p class="lead">LLMOps 是面向 LLM 应用的运维体系：以使用模型为核心，主要成本从训练 GPU 转向运行时推理 API，迭代周期从周/月级缩到小时/天级。生产级 Agent 通常分五层部署：接入、编排、模型网关、数据与工具、可观测性。</p>
+      <p class="definition">关键边界：本页的请求、Trace、耗时、Token 和成本都是<strong>固定教学数据</strong>，不连接真实云服务或模型 API。成本数字仅用于演示，原文示例、未更新现价；缓存降本 90% 等结论按原文标注。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Production &amp; Deployment</span><span class="pill">LLMOps</span><span class="pill">固定教学请求</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="lo-caption-title">
+    <div class="player-top">
+      <div class="player-label">请求路径演练台 <small>一个固定请求，走完五层部署</small></div>
+      <div class="controls" role="group" aria-label="演练控制">
+        <button type="button" class="button button-quiet" id="lo-reset">重置</button>
+        <button type="button" class="button" id="lo-prev" disabled>上一层</button>
+        <button type="button" class="button button-primary" id="lo-next">下一层 →</button>
+      </div>
+    </div>
+    <div class="stage-nav">
+      <ol style="--stages: 5">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>接入</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>编排</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>模型网关</button></li>
+        <li><button type="button" class="stage-button" data-stage="3"><span class="stage-number">4</span>数据工具</button></li>
+        <li><button type="button" class="stage-button" data-stage="4"><span class="stage-number">5</span>可观测</button></li>
+      </ol>
+    </div>
+    <div class="scene-host">
+      <div class="lo-stage scene" id="lo-scene" data-scene="llmops">
+        <div class="lo-grid">
+          <section class="lo-main" aria-label="五层部署路径">
+            <section class="lo-panel" data-panel="0">
+              <p class="lo-kicker">L1 · 接入层</p>
+              <h3 class="lo-h3">先认证、限流，再把请求放进来。</h3>
+              <p class="lo-lede">固定请求从 API Gateway 进入。认证、限流、路由都在这一层完成；需要 Token 流式输出时，用 SSE 保持单向推送。</p>
+              <dl class="lo-rows">
+                <div class="lo-row"><dt>职责</dt><dd>认证、限流、路由、CORS</dd></div>
+                <div class="lo-row"><dt>流式响应</dt><dd>SSE（Server-Sent Events）用于单向流；Token 流式输出，用户无需等待完整回答</dd></div>
+                <div class="lo-row"><dt>健康检查</dt><dd><code>/health</code> 检查服务可用性 + LLM API 连通性 + DB 连通性</dd></div>
+              </dl>
+              <div class="lo-chips"><span class="lo-chip hot">Kong</span><span class="lo-chip">AWS API Gateway</span><span class="lo-chip">Nginx</span><span class="lo-chip">SSE</span><span class="lo-chip">/health</span></div>
+              <div class="lo-callout"><b>固定检查结果：</b>tenant=demo 认证通过；配额 42 / 100；路由到 agent-runtime；SSE 已开启。本层固定耗时 12 ms。</div>
+              <div class="lo-waterfall" aria-label="固定请求的五层耗时瀑布">
+                <div class="lo-wf-head"><span>Trace · tr-6b-086</span><span>固定教学数据</span></div>
+                <div class="lo-bar-row" data-bar="0"><span class="lo-bar-label">接入</span><div class="lo-bar-track"><div class="lo-bar" style="--w:1.3%"></div></div><span class="lo-bar-ms">12 ms</span></div>
+                <div class="lo-bar-row" data-bar="1"><span class="lo-bar-label">编排</span><div class="lo-bar-track"><div class="lo-bar" style="--w:35.6%"></div></div><span class="lo-bar-ms">320 ms</span></div>
+                <div class="lo-bar-row" data-bar="2"><span class="lo-bar-label">网关</span><div class="lo-bar-track"><div class="lo-bar" style="--w:100%"></div></div><span class="lo-bar-ms">900 ms</span></div>
+                <div class="lo-bar-row" data-bar="3"><span class="lo-bar-label">数据工具</span><div class="lo-bar-track"><div class="lo-bar" style="--w:53.3%"></div></div><span class="lo-bar-ms">480 ms</span></div>
+                <div class="lo-bar-row" data-bar="4"><span class="lo-bar-label">可观测</span><div class="lo-bar-track"><div class="lo-bar" style="--w:2.2%"></div></div><span class="lo-bar-ms">20 ms</span></div>
+              </div>
+            </section>
+
+            <section class="lo-panel" data-panel="1" hidden>
+              <p class="lo-kicker">L2 · Agent 编排层</p>
+              <h3 class="lo-h3">推理循环、工具选择、状态检查点。</h3>
+              <p class="lo-lede">Agent Runtime 管理“推理—行动”循环。固定请求被拆成三步计划；每一步保存检查点，失败时可恢复。</p>
+              <dl class="lo-rows">
+                <div class="lo-row"><dt>Agent Runtime</dt><dd>LangGraph（最成熟，适合复杂有状态工作流）/ CrewAI（多 Agent 协作）/ 自研（需要完全控制）</dd></div>
+                <div class="lo-row"><dt>状态管理</dt><dd>每步保存检查点，支持恢复和回放；跨请求维护会话；Redis 存短期，PostgreSQL 存长期</dd></div>
+                <div class="lo-row"><dt>执行模式</dt><dd>Plan-then-Execute：规划和执行解耦，支持并行，适合复杂多步任务；ReAct：简单灵活，逐步推理，适合简单任务和对话式交互</dd></div>
+              </dl>
+              <div class="lo-chips"><span class="lo-chip hot">LangGraph</span><span class="lo-chip">CrewAI</span><span class="lo-chip">Redis</span><span class="lo-chip">PostgreSQL</span><span class="lo-chip">检查点</span></div>
+              <div class="lo-callout"><b>固定编排结果：</b>Plan-then-Execute 生成 3 步计划；选择工具 <code>get_order</code>、<code>draft_email</code>；检查点已保存到 Redis。本层固定耗时 320 ms。</div>
+              <div class="lo-callout warn"><b>原文判断：</b>2025 年的趋势是 Plan-then-Execute 优于 ReAct。前者把规划和执行分开，复杂多步任务更容易并行和恢复；后者更适合简单任务与对话式交互。</div>
+            </section>
+
+            <section class="lo-panel" data-panel="2" hidden>
+              <p class="lo-kicker">L3 · 模型网关层</p>
+              <h3 class="lo-h3">所有模型调用，必须过网关。</h3>
+              <p class="lo-lede">LLM Gateway 统一多模型 API，负责故障转移、Prompt 缓存、模型路由和成本追踪。固定请求在这里命中一次缓存未命中，然后路由到大模型。</p>
+              <dl class="lo-rows">
+                <div class="lo-row"><dt>统一 API</dt><dd>一个接口调用 OpenAI / Anthropic / Google 等</dd></div>
+                <div class="lo-row"><dt>故障转移</dt><dd>主模型不可用时自动切换到备用模型</dd></div>
+                <div class="lo-row"><dt>Prompt 缓存</dt><dd>相同前缀的请求复用缓存；原文示例称可降低成本 90%，该数字按原文标注，未更新现价</dd></div>
+                <div class="lo-row"><dt>模型路由</dt><dd>按任务复杂度选择模型：简单任务用小模型，复杂任务用大模型</dd></div>
+                <div class="lo-row"><dt>成本追踪</dt><dd>实时记录每个请求的 Token 用量和费用</dd></div>
+              </dl>
+              <div class="lo-chips"><span class="lo-chip hot">LiteLLM</span><span class="lo-chip">Portkey</span><span class="lo-chip">OpenRouter</span><span class="lo-chip">缓存</span><span class="lo-chip">故障转移</span></div>
+              <div class="lo-callout"><b>固定网关结果：</b>缓存未命中；路由到大模型；输入 1840 Token / 输出 260 Token；固定演示成本 $0.0042；主模型正常，未触发故障转移。本层固定耗时 900 ms。</div>
+              <div class="lo-callout warn"><b>成本口径：</b>$0.0042 是固定教学数字，不对应任何真实模型现价；Prompt 缓存降低 90% 也只是原文示例。本页不联网更新价格，也不承诺实际降本幅度。</div>
+            </section>
+
+            <section class="lo-panel" data-panel="3" hidden>
+              <p class="lo-kicker">L4 · 数据与工具层</p>
+              <h3 class="lo-h3">检索、工具、状态，各归各的存储。</h3>
+              <p class="lo-lede">固定请求在这里查订单、检索知识、写会话状态。工具调用必须经过权限校验；邮件只创建草稿，不直接外发。</p>
+              <dl class="lo-rows">
+                <div class="lo-row"><dt>向量数据库</dt><dd>RAG 检索；Pinecone（托管）/ Weaviate（自部署）/ pgvector（嵌入 PostgreSQL）</dd></div>
+                <div class="lo-row"><dt>工具服务</dt><dd>MCP（Model Context Protocol）标准化 LLM 与外部工具/数据源的连接</dd></div>
+                <div class="lo-row"><dt>持久化存储</dt><dd>对话历史 PostgreSQL；会话缓存 Redis；文件存储 S3 / GCS</dd></div>
+              </dl>
+              <div class="lo-chips"><span class="lo-chip hot">pgvector</span><span class="lo-chip">Pinecone</span><span class="lo-chip">Weaviate</span><span class="lo-chip">MCP</span><span class="lo-chip">Redis</span><span class="lo-chip">S3</span></div>
+              <div class="lo-callout"><b>固定数据层结果：</b>向量检索返回 top 3；MCP <code>get_order</code> 返回订单 A-1024；<code>draft_email</code> 只创建草稿，未发送；Redis 会话命中；PostgreSQL 写入审计记录。本层固定耗时 480 ms。</div>
+              <div class="lo-callout warn"><b>安全边界：</b>这是固定教学模拟，页面不连接任何数据库、MCP 服务或邮件系统，也不执行工具调用。真实系统里，工具服务必须有权限白名单和出口控制。</div>
+            </section>
+
+            <section class="lo-panel" data-panel="4" hidden>
+              <p class="lo-kicker">L5 · 可观测性层</p>
+              <h3 class="lo-h3">Trace、指标、告警，从 Day 1 接入。</h3>
+              <p class="lo-lede">固定请求走完全程后，Trace 记录五层 span，指标进入 Prometheus，告警规则检查质量、性能、成本和安全四类信号。</p>
+              <dl class="lo-rows">
+                <div class="lo-row"><dt>Trace</dt><dd>Langfuse 等工具记录请求级 span，串起接入、编排、网关、工具</dd></div>
+                <div class="lo-row"><dt>指标</dt><dd>Prometheus 采集质量、性能、成本、安全指标；异常触发告警</dd></div>
+                <div class="lo-row"><dt>固定结果</dt><dd>trace_id=tr-6b-086；总耗时 1732 ms；输入 1840 / 输出 260 Token；固定演示成本 $0.0042；告警 0 条</dd></div>
+              </dl>
+              <div class="lo-metrics">
+                <div class="lo-metric"><b>质量</b><span>回答准确率、用户满意度、幻觉率</span></div>
+                <div class="lo-metric"><b>性能</b><span>延迟 P50/P95、TTFT、吞吐量</span></div>
+                <div class="lo-metric"><b>成本</b><span>每请求成本、每用户日均成本、Token 使用量</span></div>
+                <div class="lo-metric"><b>安全</b><span>护栏触发率、注入检测率、PII 泄露率</span></div>
+              </div>
+              <div class="lo-callout"><b>固定观测结果：</b>五层 span 全部落地；总耗时 1732 ms；无告警。可观测层自身固定开销 20 ms。真实系统的 Trace 采样率、保留期和告警阈值要按业务定。</div>
+            </section>
+          </section>
+
+          <aside class="lo-side" aria-labelledby="lo-caption-title">
+            <p class="figure-index" id="lo-figure">图 1 · 接入层</p>
+            <h2 id="lo-caption-title">五层堆叠，<br>请求逐层往下。</h2>
+            <p id="lo-desc">固定请求先到接入层：认证、限流、路由。每往下一层，就多一段可观测的 span。</p>
+            <dl class="lo-facts">
+              <dt>固定请求</dt><dd>查订单并起草退款邮件</dd>
+              <dt>当前层</dt><dd id="lo-fact-layer">L1 接入</dd>
+              <dt>累计耗时</dt><dd id="lo-fact-time">12 ms</dd>
+              <dt>Token</dt><dd id="lo-fact-token">—</dd>
+              <dt>固定成本</dt><dd id="lo-fact-cost">—</dd>
+              <dt>告警</dt><dd id="lo-fact-alert">0</dd>
+            </dl>
+            <div class="lo-note">固定教学数据：请求、五层耗时、Token、成本和告警都是写死的，不连接真实云服务、模型 API 或数据库。成本数字仅用于演示，原文示例、未更新现价。</div>
+          </aside>
+        </div>
+      </div>
+      <p class="demo-note">演练台说明：固定请求“查订单 A-1024 并起草退款邮件”只作教学示例。页面不发起网络请求、不调用模型、不连接数据库，也不发送邮件；所有 Trace、Token 和成本均为固定教学数据。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学请求 · 5 层路径 · 不连接真实云服务</span><span id="lo-summary">L1 接入 · 12 ms · 第 1 / 5 层</span></div>
+  </section>
+  <p id="lo-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="diff-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">LLMOps vs MLOps</p><h2 id="diff-title">一个训练模型，<br>一个使用模型。</h2></div>
+      <p class="reading-intro">原文用十个维度对比 MLOps 与 LLMOps。核心差异是：MLOps 以训练模型为核心，LLMOps 以使用模型为核心；主要成本从训练 GPU 转到运行时推理 API。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data lo-compare">
+          <thead><tr><th>维度</th><th>MLOps</th><th>LLMOps</th></tr></thead>
+          <tbody>
+            <tr><td><strong>核心模型</strong></td><td>自训练模型</td><td>预训练 LLM（API）</td></tr>
+            <tr><td><strong>数据类型</strong></td><td>结构化数据</td><td>非结构化文本</td></tr>
+            <tr><td><strong>主要产物</strong></td><td>模型文件、特征</td><td>Prompt、向量索引</td></tr>
+            <tr><td><strong>迭代周期</strong></td><td>周/月级</td><td>小时/天级</td></tr>
+            <tr><td><strong>主要成本</strong></td><td>训练（GPU 时间）</td><td>推理（API 调用）</td></tr>
+            <tr><td><strong>评估方式</strong></td><td>AUC/F1/MSE</td><td>LLM Judge/人工</td></tr>
+            <tr><td><strong>版本管理</strong></td><td>模型+数据版本</td><td>Prompt+配置版本</td></tr>
+            <tr><td><strong>可观测性</strong></td><td>模型漂移</td><td>Prompt 漂移+Trace</td></tr>
+            <tr><td><strong>部署模式</strong></td><td>模型服务器</td><td>API Gateway</td></tr>
+            <tr><td><strong>安全关注</strong></td><td>数据隐私</td><td>Prompt Injection</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <p class="callout-label">原文判断</p>
+        <p>LLMOps 不替代 MLOps，而是在其基础上扩展。企业通常需要两者协同工作：推荐系统、风控模型仍然需要 MLOps；LLM 应用需要 LLMOps 管 Prompt、RAG、评估和运行时成本。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="components-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">LLMOps 核心组件</p><h2 id="components-title">六个组件，<br>各管一段。</h2></div>
+      <p class="reading-intro">原文列了六个核心组件，并分别给了 MLOps 类比。它们不是六个独立工具，而是一条从 Prompt 到监控的链路。</p>
+    </div>
+    <div class="prose">
+      <div class="lo-components">
+        <div class="lo-component">
+          <h3>Prompt 管理</h3>
+          <span class="tool">LangSmith · Humanloop · PromptLayer</span>
+          <p><b>内容：</b>Prompt 版本控制、A/B 测试、模板管理。</p>
+          <p><b>类比：</b>MLOps 中的特征工程。</p>
+        </div>
+        <div class="lo-component">
+          <h3>模型网关</h3>
+          <span class="tool">LiteLLM · Portkey · Kong AI Gateway</span>
+          <p><b>内容：</b>API 路由、负载均衡、故障转移、成本控制。</p>
+          <p><b>类比：</b>MLOps 中的模型服务器。</p>
+        </div>
+        <div class="lo-component">
+          <h3>RAG 基础设施</h3>
+          <span class="tool">Pinecone · Weaviate · Chroma</span>
+          <p><b>内容：</b>向量数据库、文档处理、索引更新。</p>
+          <p><b>类比：</b>MLOps 中的特征存储。</p>
+        </div>
+        <div class="lo-component">
+          <h3>评估管道</h3>
+          <span class="tool">DeepEval · Ragas · Braintrust</span>
+          <p><b>内容：</b>自动化评估、回归测试、LLM Judge。</p>
+          <p><b>类比：</b>MLOps 中的模型验证。</p>
+        </div>
+        <div class="lo-component">
+          <h3>可观测性</h3>
+          <span class="tool">Langfuse · LangSmith · Arize Phoenix</span>
+          <p><b>内容：</b>Trace/Span 追踪、成本监控、质量监控。</p>
+          <p><b>类比：</b>MLOps 中的模型监控。</p>
+        </div>
+        <div class="lo-component">
+          <h3>安全护栏</h3>
+          <span class="tool">Guardrails AI · NeMo Guardrails</span>
+          <p><b>内容：</b>输入/输出过滤、PII 检测、内容安全。</p>
+          <p><b>类比：</b>MLOps 中的数据验证，但范围更广。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="workflow-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">LLMOps 工作流</p><h2 id="workflow-title">五步循环，<br>四个指标面。</h2></div>
+      <p class="reading-intro">原文的典型工作流是：Prompt 设计与迭代 → RAG 配置 → 评估 → 部署 → 监控与优化。每一步都可以接入自动化。</p>
+    </div>
+    <div class="prose">
+      <div class="lo-workflow" role="img" aria-label="LLMOps 工作流：Prompt 设计与迭代，RAG 配置，评估，部署，监控与优化，再回到 Prompt 设计">
+        <div class="lo-wf-row"><span class="lo-node dark">Prompt 设计</span><span class="lo-arrow">→</span><span class="lo-node">RAG 配置</span><span class="lo-arrow">→</span><span class="lo-node">评估</span><span class="lo-arrow">→</span><span class="lo-node">部署</span><span class="lo-arrow">→</span><span class="lo-node">监控优化</span></div>
+        <div class="lo-wf-row"><span class="lo-arrow">↺ 监控结果回到 Prompt 设计；部署采用灰度 5% → 25% → 100%</span></div>
+      </div>
+      <p>原文的部署步骤写的是灰度发布（5% → 25% → 100%）加实时监控。这里的百分比是原文示例流程，不是本页实测数据。</p>
+      <div class="lo-metrics">
+        <div class="lo-metric"><b>质量</b><span>回答准确率、用户满意度、幻觉率</span></div>
+        <div class="lo-metric"><b>性能</b><span>延迟 P50/P95、TTFT、吞吐量</span></div>
+        <div class="lo-metric"><b>成本</b><span>每请求成本、每用户日均成本、Token 使用量</span></div>
+        <div class="lo-metric"><b>安全</b><span>护栏触发率、注入检测率、PII 泄露率</span></div>
+      </div>
+      <details>
+        <summary>展开原文的工作流与指标代码骨架</summary>
+        <pre><code>class LLMOpsWorkflow:
+    """LLMOps 的典型工作流"""
+
+    def development_cycle(self):
+        """开发迭代循环"""
+        return [
+            "1. Prompt 设计与迭代",
+            "   - 编写/修改 System Prompt",
+            "   - 在 Playground 中测试",
+            "   - 版本化保存",
+
+            "2. RAG 配置（如需要）",
+            "   - 文档处理和分块",
+            "   - 向量索引构建",
+            "   - 检索策略调优",
+
+            "3. 评估",
+            "   - 在 Golden Dataset 上运行评估",
+            "   - LLM Judge 自动评分",
+            "   - 对比基线版本",
+
+            "4. 部署",
+            "   - Prompt 和配置推送到生产",
+            "   - 灰度发布（5% → 25% → 100%）",
+            "   - 实时监控",
+
+            "5. 监控与优化",
+            "   - 追踪质量指标和成本",
+            "   - 收集用户反馈",
+            "   - 识别优化机会",
+        ]</code></pre>
+        <p class="lo-code-note">以上为原文节选，只作阅读展示，本页不执行。灰度百分比是原文示例流程。</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="collab-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">企业协同</p><h2 id="collab-title">MLOps 和 LLMOps，<br>不是二选一。</h2></div>
+      <p class="reading-intro">原文用保险行业举例：定价、欺诈检测、客户分群归 MLOps；智能客服、保单解释、理赔报告归 LLMOps。两者共享 CI/CD、监控基础设施和数据治理。</p>
+    </div>
+    <div class="prose">
+      <div class="lo-two">
+        <div>
+          <h3>MLOps 管理</h3>
+          <ul>
+            <li>定价模型：结构化数据 → 风险评分</li>
+            <li>欺诈检测模型：交易数据 → 欺诈概率</li>
+            <li>客户分群模型：行为数据 → 用户画像</li>
+          </ul>
+        </div>
+        <div>
+          <h3>LLMOps 管理</h3>
+          <ul>
+            <li>智能客服：用户问题 → 自然语言回答</li>
+            <li>保单解释助手：保单文档 → RAG 回答</li>
+            <li>理赔报告生成：结构化数据 → 文本报告</li>
+          </ul>
+          <p class="share">共享：CI/CD 管道、监控基础设施、数据治理框架</p>
+        </div>
+      </div>
+      <p>这张分工图说明：LLMOps 不是“把 MLOps 换掉”，而是把 LLM 应用的 Prompt、RAG、评估和运行时成本纳入同一套工程体系。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="stack-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">五层架构全景</p><h2 id="stack-title">接入、编排、网关、<br>数据工具、可观测。</h2></div>
+      <p class="reading-intro">生产级 Agent 的五层堆叠。原文特别强调：LLM 调用必须过网关层，不能散落在应用代码里。</p>
+    </div>
+    <div class="prose">
+      <div class="lo-stack" role="img" aria-label="Agent 部署五层架构：接入层、Agent 编排层、模型网关层、数据与工具层、可观测性层">
+        <div class="lo-stack-row">
+          <span class="lo-stack-no">L1</span>
+          <div><b>接入层</b><p>API Gateway / Load Balancer：认证、限流、路由、流式响应。</p></div>
+        </div>
+        <div class="lo-stack-row">
+          <span class="lo-stack-no">L2</span>
+          <div><b>Agent 编排层</b><p>Agent Runtime（LangGraph / 自研）：推理循环、工具选择、状态检查点。</p></div>
+        </div>
+        <div class="lo-stack-row">
+          <span class="lo-stack-no">L3</span>
+          <div><b>模型网关层</b><p>LLM Gateway（LiteLLM / Portkey）：模型路由、故障转移、缓存、成本追踪。</p></div>
+        </div>
+        <div class="lo-stack-row">
+          <span class="lo-stack-no">L4</span>
+          <div><b>数据与工具层</b>
+            <div class="lo-stack-sub"><span>向量数据库（RAG）</span><span>工具服务（MCP）</span><span>状态存储（Redis/PG）</span><span>安全护栏（Guardrails）</span></div>
+          </div>
+        </div>
+        <div class="lo-stack-row">
+          <span class="lo-stack-no">L5</span>
+          <div><b>可观测性层</b><p>Traces（Langfuse）、Metrics（Prometheus）+ Alerts。</p></div>
+        </div>
+      </div>
+      <div class="lo-callout"><b>原文的 2025 趋势判断：</b>Context Engineering 成为核心学科；Plan-then-Execute 优于 ReAct；MCP 协议成为工具集成行业标准。这三条和五层架构一起看，才能理解“部署”不只是把服务跑起来。</div>
+      <details>
+        <summary>展开原文的 Mermaid 五层架构源码</summary>
+        <pre><code>flowchart TD
+    subgraph L1["接入层"]
+        A["API Gateway / Load Balancer&lt;br/&gt;认证 · 限流 · 路由 · 流式响应"]
+    end
+    subgraph L2["Agent 编排层"]
+        B["Agent Runtime（LangGraph / 自研）&lt;br/&gt;推理循环 · 工具选择 · 状态检查点"]
+    end
+    subgraph L3["模型网关层"]
+        C["LLM Gateway（LiteLLM / Portkey）&lt;br/&gt;模型路由 · 故障转移 · 缓存 · 成本追踪"]
+    end
+    subgraph L4["数据与工具层"]
+        D1["向量数据库&lt;br/&gt;(RAG)"]
+        D2["工具服务&lt;br/&gt;(MCP)"]
+        D3["状态存储&lt;br/&gt;(Redis/PG)"]
+        D4["安全护栏&lt;br/&gt;(Guardrails)"]
+    end
+    subgraph L5["可观测性层"]
+        E["Traces(Langfuse)&lt;br/&gt;Metrics(Prometheus) + Alerts"]
+    end
+    L1 --- L2
+    L2 --- L3
+    L3 --- L4
+    L4 --- L5
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class A,B,C proc
+    class D1,D2,D3,D4 store
+    class E neutral</code></pre>
+        <p class="lo-code-note">Mermaid 源码按原文保留；页面不加载 Mermaid，阅读以上方 CSS 堆叠图为离线版本。</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="deploy-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">部署策略</p><h2 id="deploy-title">按规模选形态，<br>先 Serverless 再 K8s。</h2></div>
+      <p class="reading-intro">原文按用户规模给三档部署：早期/MVP 用 Serverless，中期用容器，大规模上 Kubernetes。用户数是原文示例阈值，固定教学数据。</p>
+    </div>
+    <div class="prose">
+      <div class="lo-deploy">
+        <div class="lo-deploy-row"><div><b>早期 / MVP</b><small>&lt; 1000 用户（原文示例）</small></div><div>Serverless（Cloud Run / Lambda）；按用量付费，无需管理服务器。注意冷启动延迟 + 执行时间限制。</div></div>
+        <div class="lo-deploy-row"><div><b>中期 / 增长</b><small>1K–100K 用户（原文示例）</small></div><div>容器化（ECS / Cloud Run 持续运行）；自动扩缩容 + 健康检查；引入 Redis 缓存和 CDN。</div></div>
+        <div class="lo-deploy-row"><div><b>大规模</b><small>100K+ 用户（原文示例）</small></div><div>Kubernetes 集群；多区域部署 + 全球负载均衡；自建模型服务（vLLM）降低成本。</div></div>
+      </div>
+      <h3>四件共同要事</h3>
+      <ul class="lo-common">
+        <li><b>密钥管理：</b>Vault / AWS Secrets Manager；不要把密钥写进代码或 Git。</li>
+        <li><b>网络隔离：</b>Agent 不直接访问公网；出口走白名单或代理。</li>
+        <li><b>CI/CD：</b>代码和 Prompt 都走管道，避免 Prompt 改动绕过评审。</li>
+        <li><b>可观测性：</b>从 Day 1 接入 Trace，不要等出事再补。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="container-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">容器化部署</p><h2 id="container-title">一个 Compose 文件，<br>把基础件串起来。</h2></div>
+      <p class="reading-intro">原文给了一个基础 docker-compose 配置：Agent API、Redis、PostgreSQL（pgvector）。它适合本地验证和早期部署，不是大规模生产模板。</p>
+    </div>
+    <div class="prose">
+      <details>
+        <summary>展开原文的 docker-compose.yml 节选</summary>
+        <pre><code>version: '3.8'
+services:
+  agent-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://agent_user:${POSTGRES_PASSWORD}@postgres:5432/agent
+    depends_on:
+      - redis
+      - postgres
+    deploy:
+      resources:
+        limits:
+          memory: 2G  # Agent 需要较多内存
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      - POSTGRES_DB=agent
+      - POSTGRES_USER=agent_user
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:</code></pre>
+        <p class="lo-code-note">以上为原文节选，只作阅读展示，本页不执行 Docker、不连接数据库。</p>
+      </details>
+      <div class="callout warn">
+        <p class="callout-label">原文提醒</p>
+        <p>配套 <code>.env</code> 在生产中通过密钥管理服务注入，不要提交到 Git。示例里的 <code>POSTGRES_PASSWORD=change-me-in-production</code> 只是占位符，不能直接用于生产。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">不是加个 Prompt 管理，<br>也不是直接调 API。</h2></div>
+      <p class="reading-intro">原文列了 4 条误区和 4 条追问。高频点包括：LLMOps 与 MLOps 的关系、模型网关的必要性、Agent 部署的特殊性、小团队怎么起步。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“LLMOps 就是 MLOps 加个 Prompt 管理。”</h3><p>LLMOps 引入了全新的挑战维度：非确定性输出评估、Prompt Injection 安全、运行时成本控制、向量数据库管理等。这些不是简单地在 MLOps 上“加功能”，而是需要不同的思维方式和工具链。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“用了 LLM API 就不需要 MLOps 了。”</h3><p>大多数企业的 AI 系统同时包含传统 ML 模型和 LLM 应用。推荐系统、风控模型仍然需要 MLOps。LLMOps 和 MLOps 是互补关系，不是替代关系。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 3</p>
+      <div><h3>“直接在应用代码里调 LLM API 就行。”</h3><p>生产系统需要模型网关层来处理故障转移、限流、成本控制和缓存。直接调 API 会导致：单点故障、无法切换模型、成本失控、无法追踪。原文称 LiteLLM 或 Portkey 可以一行代码解决这些问题。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 4</p>
+      <div><h3>“Agent 系统和普通 Web 服务部署一样。”</h3><p>Agent 有独特的部署挑战：(1) 长时间运行（一次任务可能执行数分钟）；(2) 状态管理（多步执行需要检查点）；(3) 高内存需求（上下文窗口占用大量内存）；(4) 不确定的成本（每次请求的 Token 消耗不同）。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>LLMOps 的最大挑战是什么？</h3><p>原文的答案是评估。传统 ML 有明确的量化指标（准确率、F1），但 LLM 输出的质量是主观且多维度的。如何自动化、可靠地评估 LLM 输出质量是 LLMOps 的核心难题，也是 LLM-as-Judge 等技术兴起的原因。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>小团队如何起步 LLMOps？</h3><p>原文的最小可行方案：(1) Prompt 用 Git 版本管理；(2) 用 Langfuse（免费开源）记录所有请求和成本；(3) 维护 50 条 Golden Dataset 做回归测试；(4) 用 LiteLLM 统一多模型 API。原文称这四步一周内可以搭好。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 3</p>
+      <div><h3>如何处理 Agent 的长时间运行任务？</h3><p>(1) 异步执行：接收请求后立即返回任务 ID，客户端轮询或 WebSocket 推送结果；(2) 检查点机制：每步保存状态，支持断点恢复；(3) 超时保护：设置最大执行时间和最大步数；(4) 流式输出：中间结果实时推送给用户。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 4</p>
+      <div><h3>选择框架还是自研？</h3><p>原文的参考原则：如果需求匹配框架能力的 80%+，用框架（LangGraph）；如果需要深度定制或框架是瓶颈，自研核心 Agent 循环但复用社区工具（LiteLLM、Langfuse）。原文还强调：框架选择比模型选择更重要。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《LLMOps 与 Agent 部署架构》（原 #086 与 #087 合并，原文标注 2026-05-23 重构）。工具版本、成本示例和架构结论按原文时点，本页未联网核实。</p>
+    <details>
+      <summary>展开原文列出的十条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.zenml.io/blog/mlops-vs-llmops" target="_blank" rel="noopener noreferrer">MLOps vs LLMOps: What's the Difference? (ZenML)</a></li>
+          <li><a href="https://www.pluralsight.com/resources/blog/ai-and-data/what-is-llmops" target="_blank" rel="noopener noreferrer">What is LLMOps Compared to MLOps (Pluralsight)</a></li>
+          <li><a href="https://circleci.com/blog/from-mlops-to-llmops/" target="_blank" rel="noopener noreferrer">From MLOps to LLMOps: The Evolution of Automation (CircleCI)</a></li>
+          <li><a href="https://www.ideas2it.com/blogs/llmops-vs-mlops-key-differences-and-evolution" target="_blank" rel="noopener noreferrer">LLMOps vs MLOps: Key Differences and Evolution (Ideas2IT)</a></li>
+          <li><a href="https://lakefs.io/blog/llmops/" target="_blank" rel="noopener noreferrer">What is LLMOps? Key Components &amp; Differences to MLOps (lakeFS)</a></li>
+          <li><a href="https://www.zenml.io/blog/llm-agents-in-production-architectures-challenges-and-best-practices" target="_blank" rel="noopener noreferrer">LLM Agents in Production: Architectures, Challenges, and Best Practices (ZenML)</a></li>
+          <li><a href="https://machinelearningmastery.com/deploying-ai-agents-to-production-architecture-infrastructure-and-implementation-roadmap/" target="_blank" rel="noopener noreferrer">Deploying AI Agents to Production: Architecture and Implementation Roadmap (MLM)</a></li>
+          <li><a href="https://developers.googleblog.com/architecting-efficient-context-aware-multi-agent-framework-for-production/" target="_blank" rel="noopener noreferrer">Architecting Efficient Context-Aware Multi-Agent Framework for Production (Google)</a></li>
+          <li><a href="https://www.zenml.io/blog/what-1200-production-deployments-reveal-about-llmops-in-2025" target="_blank" rel="noopener noreferrer">What 1,200 Production Deployments Reveal About LLMOps in 2025 (ZenML)</a></li>
+          <li><a href="https://aisera.com/blog/llm-agents/" target="_blank" rel="noopener noreferrer">LLM Agents: The Enterprise Technical Guide 2025 (Aisera)</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。延伸阅读：<a href="089-model-routing.html">089 模型路由</a>、<a href="090-latency-optimization.html">090 延迟优化</a>、<a href="091-prompt-drift-management.html">091 Prompt Drift 管理</a>。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>10-production-and-deployment/086-llmops-and-deployment.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 6 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const LO_SPANS = ["12 ms", "320 ms", "900 ms", "480 ms", "20 ms"];
+
+  const LO_STAGES = [
+    { label: "接入", figure: "图 1 · 接入层", title: "五层堆叠，<br>请求逐层往下。", desc: "固定请求先到接入层：认证、限流、路由。每往下一层，就多一段可观测的 span。", time: "12 ms", token: "—", cost: "—", alert: "0" },
+    { label: "编排", figure: "图 2 · Agent 编排层", title: "循环和状态，<br>都由它管。", desc: "Agent Runtime 拆计划、选工具、存检查点。固定请求在这里生成 3 步计划。", time: "332 ms", token: "—", cost: "—", alert: "0" },
+    { label: "模型网关", figure: "图 3 · 模型网关层", title: "模型调用，<br>必须过网关。", desc: "网关做路由、缓存、故障转移和成本追踪。固定请求缓存未命中，路由到大模型。", time: "1232 ms", token: "2100", cost: "$0.0042", alert: "0" },
+    { label: "数据工具", figure: "图 4 · 数据与工具层", title: "检索、工具、状态，<br>各归各的存储。", desc: "向量检索、MCP 工具、Redis 会话、PostgreSQL 审计。邮件只建草稿，不发送。", time: "1712 ms", token: "2100", cost: "$0.0042", alert: "0" },
+    { label: "可观测", figure: "图 5 · 可观测性层", title: "Trace 串起来，<br>指标才看得懂。", desc: "五层 span 全部落地；总耗时 1732 ms；告警 0 条。可观测层自身固定开销 20 ms。", time: "1732 ms", token: "2100", cost: "$0.0042", alert: "0" }
+  ];
+
+  const loButtons = Array.from(document.querySelectorAll(".stage-button"));
+  const loPanels = Array.from(document.querySelectorAll(".lo-panel"));
+  const loBars = Array.from(document.querySelectorAll(".lo-bar-row"));
+  const loPrev = document.getElementById("lo-prev");
+  const loNext = document.getElementById("lo-next");
+  const loReset = document.getElementById("lo-reset");
+  const loFigure = document.getElementById("lo-figure");
+  const loDesc = document.getElementById("lo-desc");
+  const loFactLayer = document.getElementById("lo-fact-layer");
+  const loFactTime = document.getElementById("lo-fact-time");
+  const loFactToken = document.getElementById("lo-fact-token");
+  const loFactCost = document.getElementById("lo-fact-cost");
+  const loFactAlert = document.getElementById("lo-fact-alert");
+  const loSummary = document.getElementById("lo-summary");
+  const loAnnouncement = document.getElementById("lo-announcement");
+  let loIndex = 0;
+
+  function loRender(next, announce) {
+    loIndex = next;
+    loPanels.forEach((panel, i) => {
+      panel.hidden = i !== next;
+    });
+    loButtons.forEach((button, i) => {
+      if (i === next) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    loBars.forEach((bar, i) => {
+      bar.classList.remove("current", "done", "future");
+      const ms = bar.querySelector(".lo-bar-ms");
+      if (i < next) {
+        bar.classList.add("done");
+        ms.textContent = LO_SPANS[i];
+      } else if (i === next) {
+        bar.classList.add("current");
+        ms.textContent = LO_SPANS[i];
+      } else {
+        bar.classList.add("future");
+        ms.textContent = "待执行";
+      }
+    });
+    const stage = LO_STAGES[next];
+    loFigure.textContent = stage.figure;
+    loDesc.textContent = stage.desc;
+    loFactLayer.textContent = "L" + (next + 1) + " " + stage.label;
+    loFactTime.textContent = stage.time;
+    loFactToken.textContent = stage.token;
+    loFactCost.textContent = stage.cost;
+    loFactAlert.textContent = stage.alert;
+    loSummary.textContent = "L" + (next + 1) + " " + stage.label + " · " + stage.time + " · 第 " + (next + 1) + " / 5 层";
+    loPrev.disabled = next === 0;
+    loNext.disabled = next === LO_STAGES.length - 1;
+    loNext.textContent = next === LO_STAGES.length - 1 ? "已到观测层" : "下一层 →";
+    if (announce) {
+      loAnnouncement.textContent = "第 " + (next + 1) + " 层：" + stage.label + "。累计耗时 " + stage.time + "。";
+    }
+  }
+
+  loButtons.forEach((button) => {
+    button.addEventListener("click", () => loRender(Number(button.dataset.stage), true));
+  });
+  loPrev.addEventListener("click", () => {
+    if (loIndex > 0) loRender(loIndex - 1, true);
+  });
+  loNext.addEventListener("click", () => {
+    if (loIndex < LO_STAGES.length - 1) loRender(loIndex + 1, true);
+  });
+  loReset.addEventListener("click", () => {
+    loRender(0, false);
+    loAnnouncement.textContent = "已重置到第 1 层：接入层。";
+  });
+
+  loRender(0, false);
+</script>
+</body>
+</html>

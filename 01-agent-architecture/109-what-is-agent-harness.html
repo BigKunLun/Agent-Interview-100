@@ -1,0 +1,978 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>什么是 Agent Harness？与 Framework / Runtime 三层抽象有何区别？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .hns-scene { padding: var(--s-5) var(--s-6) var(--s-6); }
+
+  /* —— 互动：选层决策 —— */
+  .hns-grid { display: grid; grid-template-columns: minmax(0, 1.18fr) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+  .hns-question { min-width: 0; }
+  .hns-question h2 { font: 600 23px/1.45 var(--serif); letter-spacing: -.015em; }
+  .hns-question-note { margin-top: var(--s-2); font-size: 12px; line-height: 1.7; color: var(--text-dim); max-width: 40em; }
+  .hns-options { display: grid; gap: var(--s-2); margin-top: var(--s-4); }
+  .hns-option { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: start; width: 100%; padding: 11px 12px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface-soft); text-align: left; transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease); }
+  .hns-option:hover { border-color: var(--accent); background: var(--accent-dim); }
+  .hns-option-key { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 11px/1 var(--mono); color: var(--text-dim); background: var(--surface); }
+  .hns-option b { display: block; font-size: 13px; line-height: 1.55; font-weight: 600; }
+  .hns-option small { display: block; margin-top: 2px; font-size: 11px; line-height: 1.55; color: var(--text-dim); }
+  .hns-result { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: #f7f6f1; padding: var(--s-4); min-height: 100%; }
+  .hns-result-title { font: 600 19px/1.5 var(--serif); margin-top: 2px; }
+  .hns-result-empty { margin-top: var(--s-3); font-size: 12px; line-height: 1.75; color: var(--text-dim); }
+  .hns-combo { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--s-3); }
+  .hns-combo span { display: inline-flex; align-items: center; min-height: 26px; padding: 2px 9px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font: 11px/1.5 var(--mono); }
+  .hns-combo span.is-main { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); font-weight: 600; }
+  .hns-result-body { margin-top: var(--s-3); font-size: 12px; line-height: 1.75; color: var(--ink); }
+  .hns-result-body p + p { margin-top: 6px; }
+  .hns-result-body strong { font-weight: 600; }
+  .hns-result-boundary { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px dashed var(--border-bright); font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .hns-layers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); margin-top: var(--s-4); }
+  .hns-layer-chip { border: 1px dashed var(--border); border-radius: var(--r-1); padding: 8px 10px; background: var(--surface); transition: opacity var(--fast) var(--ease), border-color var(--fast) var(--ease); }
+  .hns-layer-chip strong { display: block; font-size: 12px; line-height: 1.5; }
+  .hns-layer-chip span { display: block; font-size: 10px; line-height: 1.5; color: var(--text-dim); }
+  .hns-layer-chip.is-on { border-style: solid; border-color: var(--accent); background: var(--accent-dim); }
+  .hns-layer-chip.is-on strong { color: var(--accent); }
+  .hns-layer-chip.is-off { opacity: .45; }
+  .hns-state { margin-top: var(--s-3); font: 11px/1.6 var(--mono); color: var(--text-dim); }
+
+  /* —— 阅读：三层卡片与堆叠图 —— */
+  .hns-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .hns-layer-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); border-top: 4px solid var(--series-1); }
+  .hns-layer-card.runtime { border-top-color: var(--series-2); }
+  .hns-layer-card.harness { border-top-color: var(--series-3); }
+  .hns-layer-card h3 { margin-top: 0; font-size: 18px; }
+  .hns-layer-kicker { font: 11px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .05em; }
+  .hns-layer-card p { font-size: 12px; line-height: 1.75; margin-top: var(--s-2); }
+  .hns-layer-card ul { margin: var(--s-2) 0 0; padding-left: 1.1em; font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .hns-layer-card li { margin-block: 2px; }
+  .hns-layer-not { margin-top: var(--s-3); padding-top: var(--s-2); border-top: 1px dashed var(--border); font-size: 11px !important; color: var(--text-dim); }
+  .hns-stack { margin-top: var(--s-5); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: var(--s-4); }
+  .hns-stack-row { display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: var(--s-3); align-items: center; padding: 11px 12px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); }
+  .hns-stack-row + .hns-stack-arrow + .hns-stack-row { margin-top: 0; }
+  .hns-stack-name { font: 600 14px/1.4 var(--mono); }
+  .hns-stack-row p { font-size: 11px; line-height: 1.65; color: var(--text-dim); }
+  .hns-stack-row.harness { border-left: 5px solid var(--series-3); }
+  .hns-stack-row.runtime { border-left: 5px solid var(--series-2); }
+  .hns-stack-row.framework { border-left: 5px solid var(--series-1); }
+  .hns-stack-row.llm { border-left: 5px solid var(--series-4); }
+  .hns-stack-arrow { display: flex; justify-content: center; align-items: center; gap: 8px; height: 26px; font: 10px/1.4 var(--mono); color: var(--text-dim); }
+  .hns-stack-arrow::before { content: "↑"; font-size: 14px; }
+
+  /* —— 阅读：对照表与决策树 —— */
+  .hns-compare th:first-child { width: 116px; }
+  .hns-tree { margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .hns-tree-root { width: max-content; max-width: 100%; margin-inline: auto; padding: 8px 16px; border: 1px solid var(--ink); border-radius: 999px; background: var(--surface-soft); font-size: 13px; font-weight: 600; text-align: center; }
+  .hns-tree-branches { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-2); margin-top: var(--s-4); }
+  .hns-tree-branch { position: relative; padding: 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .hns-tree-branch::before { content: ""; position: absolute; top: -16px; left: 50%; width: 1px; height: 16px; background: var(--border-bright); }
+  .hns-tree-branch b { display: block; font-size: 12px; line-height: 1.55; }
+  .hns-tree-branch span { display: block; margin-top: 4px; font-size: 11px; line-height: 1.6; color: var(--text-dim); }
+  .hns-tree-branch em { display: inline-block; margin-top: 5px; font: 10px/1.5 var(--mono); font-style: normal; color: var(--accent); }
+
+  /* —— 阅读：代码与前缀表 —— */
+  .hns-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .hns-fact { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .hns-fact h3 { margin-top: 0; font-size: 15px; }
+  .hns-fact p { font-size: 12px; line-height: 1.7; }
+  .hns-fact .num { font: 600 22px/1.3 var(--mono); color: var(--accent); }
+  .hns-source-note { font-size: 11px; line-height: 1.65; color: var(--text-dim); margin-top: var(--s-2); }
+
+  @media (max-width: 900px) {
+    .hns-grid { grid-template-columns: 1fr; }
+    .hns-three { grid-template-columns: 1fr; }
+    .hns-tree-branches { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: var(--s-4); }
+  }
+  @media (max-width: 720px) {
+    .hns-scene { padding: var(--s-4); }
+    .hns-layers { grid-template-columns: 1fr; }
+    .hns-layer-chip { display: flex; align-items: baseline; gap: 8px; }
+    .hns-layer-chip span { display: inline; }
+    .hns-facts { grid-template-columns: 1fr; }
+    .hns-stack-row { grid-template-columns: 1fr; gap: 2px; }
+    .hns-tree-branches { grid-template-columns: 1fr; row-gap: 18px; }
+    .hns-tree-branch::before { top: -12px; height: 12px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">109 / Agent Harness</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 8 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="108-interview-deep-dive-chain.html">← 上一页 · 面试追问链</a><a href="113-computer-use-agent.html">下一页 → · 什么是 Computer Use /…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Agent 架构 · 可交互讲解</p>
+      <h1>模型之外的一切，<br>才是 Harness。</h1>
+    </div>
+    <div>
+      <p class="lead">Agent Harness 是围绕固定 LLM 装配好的运行壳：默认 system prompt、工具注册表、上下文工程、Hook 生命周期、沙箱与权限整套打包。Framework 给你积木，Runtime 保证跑得稳，Harness 直接给你一辆装配好的车。</p>
+      <p class="definition">关键边界：<strong>三层不是同义词</strong>。Framework 不提供 opinionated 默认 Agent；Runtime 只管持久化执行；Harness 是拿来就能跑、只留少数扩展点的代码 Agent 运行壳。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Agent 架构</span><span class="pill">三层抽象</span><span class="pill">Harness 6+1</span><span class="pill">固定教学场景</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="hns-question-title">
+    <div class="player-top">
+      <div class="player-label">先看产物，再选抽象层 <small>固定教学决策树 · 不联网、不调用模型</small></div>
+      <div class="controls" role="group" aria-label="选层决策控制">
+        <button type="button" class="button button-quiet" id="hns-reset">重新开始</button>
+        <button type="button" class="button" id="hns-back" disabled>返回上一步</button>
+      </div>
+    </div>
+    <div class="hns-scene scene" id="hns-scene">
+      <div class="hns-grid">
+        <div class="hns-question">
+          <p class="figure-index" id="hns-position">判断 1 · 最多 2 步</p>
+          <h2 id="hns-question-title">你要造的是什么？</h2>
+          <p class="hns-question-note" id="hns-question-note">先看产物形态，而不是先看团队熟悉哪个框架。</p>
+          <div class="hns-options" id="hns-options" role="group" aria-labelledby="hns-question-title"></div>
+        </div>
+        <aside class="hns-result" aria-labelledby="hns-result-title">
+          <p class="figure-index">选层结果</p>
+          <h2 class="hns-result-title" id="hns-result-title">还没有选择</h2>
+          <div id="hns-result-body">
+            <p class="hns-result-empty">从左侧选一个产物形态。页面按原文的选型逻辑给出建议，并标出哪几层真正参与。</p>
+          </div>
+        </aside>
+      </div>
+      <div class="hns-layers" id="hns-layers">
+        <div class="hns-layer-chip" data-layer="framework"><strong>Framework</strong><span>积木：Agent / Tool / Chain / Handoff</span></div>
+        <div class="hns-layer-chip" data-layer="runtime"><strong>Runtime</strong><span>持久执行：断点续跑 / 状态 / HITL</span></div>
+        <div class="hns-layer-chip" data-layer="harness"><strong>Harness</strong><span>装配好的车：默认值 + 扩展点</span></div>
+      </div>
+      <p class="hns-state" id="hns-state">尚未选择 · 三层都未点亮</p>
+      <p class="demo-note">固定教学场景：四个产物形态与两轮判断来自原文的选型逻辑，不是对任何团队或产品的评估。本页不联网、不调用模型，也不读取任何真实仓库。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定决策树 · 结果只按原文框架演示</span><span>不是绝对选型排名</span></div>
+  </section>
+  <p id="hns-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="layers-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">一 · 三层抽象</p><h2 id="layers-title">积木、稳定器、<br>装配好的车。</h2></div>
+      <p class="reading-intro">LangChain 官方在 2025-10 把 Agent 软件栈分成三层。自下而上是 LLM → Framework → Runtime → Harness：越往上，封装越多，你拥有的自由度越少。</p>
+    </div>
+    <div class="prose">
+      <div class="hns-three">
+        <article class="hns-layer-card framework">
+          <p class="hns-layer-kicker">01 · 最底层可编程抽象</p>
+          <h3>Framework</h3>
+          <p><strong>教你如何拼装 Agent。</strong>提供 Agent、Tool、Chain、Handoff 等原语，不提供默认的 prompt、工具集和沙箱。</p>
+          <ul>
+            <li>代表：LangChain / CrewAI / OpenAI Agents SDK</li>
+            <li>输出：SDK 代码</li>
+            <li>你要写：loop、memory、hook、sandbox</li>
+          </ul>
+          <p class="hns-layer-not">不负责：给你一个开箱就有性格、能直接跑的 Agent。</p>
+        </article>
+        <article class="hns-layer-card runtime">
+          <p class="hns-layer-kicker">02 · 执行稳定性</p>
+          <h3>Runtime</h3>
+          <p><strong>让 Agent 拼好后跑得稳。</strong>负责 durable execution、streaming、HITL、跨线程状态，让长任务可恢复、可观察。</p>
+          <ul>
+            <li>代表：LangGraph / Temporal / Inngest</li>
+            <li>输出：可恢复的执行图或工作流</li>
+            <li>你要写：图结构、节点逻辑、状态契约</li>
+          </ul>
+          <p class="hns-layer-not">不负责：替你决定 Agent 的性格、默认工具和上下文策略。</p>
+        </article>
+        <article class="hns-layer-card harness">
+          <p class="hns-layer-kicker">03 · 产品形态</p>
+          <h3>Harness</h3>
+          <p><strong>直接给你一辆装配好的车。</strong>opinionated defaults 把 prompt、tools、context、sandbox 全部装好，只留少数扩展点。</p>
+          <ul>
+            <li>代表：Claude Code / Codex CLI / Cline / Devin</li>
+            <li>输出：CLI / IDE 扩展</li>
+            <li>你只 customize 四件事：system prompt、tools、context、subagents</li>
+          </ul>
+          <p class="hns-layer-not">不负责：像 Framework 一样让你从零定义整个运行时。</p>
+        </article>
+      </div>
+
+      <figure class="hns-stack" aria-labelledby="stack-caption">
+        <div class="hns-stack-row harness"><span class="hns-stack-name">Harness</span><p>装配好的车 · Claude Code / Codex CLI / Cline / Devin<br>opinionated defaults：prompts / tools / context / sandbox</p></div>
+        <div class="hns-stack-arrow">往上封装：默认值越来越多</div>
+        <div class="hns-stack-row runtime"><span class="hns-stack-name">Runtime</span><p>保证跑得稳 · LangGraph / Temporal / Inngest<br>durable execution / streaming / HITL / 跨线程状态</p></div>
+        <div class="hns-stack-arrow">往上封装：执行可靠性</div>
+        <div class="hns-stack-row framework"><span class="hns-stack-name">Framework</span><p>造 Agent 的积木 · LangChain / CrewAI / OpenAI Agents SDK<br>abstraction primitives：Agent / Tool / Chain / Handoff</p></div>
+        <div class="hns-stack-arrow">往上封装：编程原语</div>
+        <div class="hns-stack-row llm"><span class="hns-stack-name">LLM</span><p>模型本身 · Claude / GPT / Gemini<br>只负责根据本次上下文生成输出</p></div>
+        <figcaption class="hns-source-note" id="stack-caption">图 1 · 三层抽象自下而上。箭头表示封装方向，不表示调用顺序；Harness 可以不套第三方 Runtime，Runtime 也可以脱离 Harness 使用。</figcaption>
+      </figure>
+      <details>
+        <summary>查看原文三层抽象 Mermaid 源码</summary>
+        <pre><code>flowchart TD
+    subgraph HARNESS["🔧 Harness — 装配好的车"]
+        H["Claude Code · Codex CLI · Cline · Devin&lt;br/&gt;opinionated defaults：prompts / tools / context / sandbox&lt;br/&gt;「拿来就能跑的代码 Agent」"]
+    end
+    subgraph RUNTIME["⚙️ Runtime — 保证跑得稳"]
+        R["LangGraph · Temporal · Inngest&lt;br/&gt;durable execution / streaming / HITL / 跨线程状态&lt;br/&gt;「保证 Agent 不丢状态」"]
+    end
+    subgraph FRAMEWORK["🧱 Framework — 造 Agent 的积木"]
+        F["LangChain · CrewAI · OpenAI Agents SDK&lt;br/&gt;abstraction primitives：Agent / Tool / Chain / Handoff&lt;br/&gt;「拼装 Agent 的原语」"]
+    end
+    LLM["🧠 LLM — Claude · GPT · Gemini"]
+
+    HARNESS --- RUNTIME --- FRAMEWORK --- LLM
+
+    classDef harness fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef runtime fill:#fff8e1,stroke:#ef6c00,color:#e65100
+    classDef framework fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef llm fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class H harness
+    class R runtime
+    class F framework
+    class LLM llm</code></pre>
+        <p class="source-footnote">源码按原文保留，仅做 HTML 转义；图 1 用同样的层序和边界做离线呈现。</p>
+      </details>
+
+      <div class="callout">
+        <p class="callout-label">一句话区分</p>
+        <p>Framework 教你“如何拼装 Agent”；Runtime 让你“Agent 拼装好后跑得稳”；Harness 直接给你“拼装好且调好性格的 Agent”。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="sixone-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">二 · 最小完整抽象</p><h2 id="sixone-title">六个模块，<br>加一个观测面。</h2></div>
+      <p class="reading-intro">社区收敛出的 Harness 通用抽象是 6+1：Loop、State / Context、Tool、Memory、Hook、Skill，加 Observability。Claude Code 是这套抽象的一个具体实现。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">Harness 的 6+1 模块、职责与 Claude Code 实现</caption>
+          <thead><tr><th scope="col">模块</th><th scope="col">职责</th><th scope="col">Claude Code 中的实现</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Loop</th><td>ReAct 主循环：reason → tool call → observe → repeat；终止条件 / 超时 / 用户中断</td><td>内置 agent loop，max_turns 可配</td></tr>
+            <tr><th scope="row">State / Context</th><td>消息历史 + token 预算 + compaction 策略</td><td>75% 自动 compact + Memory tool</td></tr>
+            <tr><th scope="row">Tool</th><td>工具注册表 + schema + 执行沙箱</td><td>内置工具 + MCP server + Skill bash</td></tr>
+            <tr><th scope="row">Memory</th><td>会话 / 项目级 append-only 日志 + flush / replay</td><td>CLAUDE.md + <code>~/.claude/projects/&lt;id&gt;/memory/</code></td></tr>
+            <tr><th scope="row">Hook</th><td>生命周期事件 pre / post 拦截 → 策略执行</td><td>12+ 事件，5 种 handler，PreToolUse 可硬拦</td></tr>
+            <tr><th scope="row">Skill</th><td>Progressive disclosure 的领域知识包</td><td>三级懒加载（metadata / body / resources）</td></tr>
+            <tr><th scope="row">Observability</th><td>trace / replay / cost-latency 度量</td><td>trace JSON + Anthropic Console</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <p class="callout-label">关键判断</p>
+        <p>MCP 不是 Harness 的核心抽象，它是 <strong>Tool 层的一个实现选项</strong>；Slash Command 也不是，它是 <strong>Skill 的简化形式</strong>。Harness 设计要回答的本质问题是：<strong>用户能扩展什么、不能扩展什么？</strong></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三 · 为什么自研</p><h2 id="why-title">不是模型不行，<br>是装配方式不同。</h2></div>
+      <p class="reading-intro">Devin、Claude Code、Codex、Cline 这些 SOTA 代码 Agent 全部自研 harness，不是偶然。原文给了四个硬约束，以及 Terminal Bench 2.0 上的排名差异。</p>
+    </div>
+    <div class="prose">
+      <p>Parallel.ai 的原文数据点称 harness 大约决定 Agent <strong>70%</strong> 的实战表现。这是原文引用的经验数据，本页未复现实验，也不把它当作精确定律。</p>
+      <div class="hns-facts">
+        <article class="hns-fact">
+          <h3>Post-training Coupling</h3>
+          <p>Codex 模型在 post-training 阶段被绑定到 <code>apply_patch</code> 的语法。换 harness 时若不模仿原工具签名，模型能力会掉。<strong>模型对工具签名的偏好会被冻进权重。</strong></p>
+        </article>
+        <article class="hns-fact">
+          <h3>延迟敏感</h3>
+          <p>ReAct 每步开销 <span class="num">&lt; 100ms</span> 是原文给出的体验底线。多一层 state graph 序列化、checkpointer 写盘和 event bus，对话感会变卡。</p>
+        </article>
+        <article class="hns-fact">
+          <h3>Hook / Sandbox 不可让渡</h3>
+          <p>生产 Agent 要拦截 <code>rm -rf</code>、<code>git push --force</code>，还要隔离 <code>apply_patch</code> 避免污染主机。这两类能力必须开箱即用。</p>
+        </article>
+        <article class="hns-fact">
+          <h3>Trace 数据是核心 IP</h3>
+          <p>Harness 厂商用 trace 数据 fine-tune 自家模型，形成“模型与 harness 协同进化”的飞轮，不愿意走第三方框架把数据让出去。</p>
+        </article>
+      </div>
+
+      <h3>Terminal Bench 2.0：同模型，不同 harness</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">原文给出的 Terminal Bench 2.0 harness 对比数据</caption>
+          <thead><tr><th scope="col">配置</th><th scope="col">排名 / 得分</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Claude Opus 4.6 + 通用框架</th><td class="num">#33</td></tr>
+            <tr><th scope="row">Claude Opus 4.6 + Claude Code</th><td class="num">~#5</td></tr>
+            <tr><th scope="row">Claude Opus 4.7 + Cline CLI</th><td class="num">74.2%</td></tr>
+            <tr><th scope="row">Claude Opus 4.7 + Claude Code（同模型对照）</th><td class="num">69.4%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="hns-source-note">以上数字按原文版本原样保留，是原文引用的 2026-Q1 榜单示例，不是本页实时核验的排名。</p>
+      <p class="quote">“It's not a model problem. It's a configuration problem.”<br><span class="hns-source-note">— HumanLayer，原文引用</span></p>
+
+      <h3>2026-09 的第三个选项：厂商托管 Harness</h3>
+      <p>OpenAI 在 2026-09-10 发布 Agents API，把驱动 Codex 的 harness 以托管云服务形式开放，包含编排、长会话和工具调用。Harness 层因此从“自己装配 / 套用现成产品”延伸出第三条路：<strong>直接用厂商托管的 harness 基建</strong>。对照之下，Claude Agent SDK 走的是“harness 砖块 + 自装配”路线。选型问题从“造还是套”变成“造、套、还是托管”。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="compare-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四 · 对照与选型</p><h2 id="compare-title">自由与责任，<br>约束与默认值。</h2></div>
+      <p class="reading-intro">Framework 给自由和责任，Harness 给约束和默认值。选哪层，取决于你要造的是通用编排、领域 Agent，还是一辆能直接上路的代码 Agent。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data hns-compare">
+          <caption class="sr-only">Framework 与 Harness 的六个维度对照</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">Framework（LangChain / CrewAI / Agents SDK）</th><th scope="col">Harness（Claude Code / Codex / Cline）</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">给什么</th><td>abstraction primitives</td><td>opinionated runtime</td></tr>
+            <tr><th scope="row">你要做的</th><td>自己写 loop / memory / hook / sandbox</td><td>只 customize 4 件事：system prompt、tools、context（CLAUDE.md / AGENTS.md）、subagents</td></tr>
+            <tr><th scope="row">学习曲线</th><td>“如何用框架 API”</td><td>“如何调 harness”</td></tr>
+            <tr><th scope="row">适合</th><td>custom 工作流编排</td><td>通用 Agent 任务</td></tr>
+            <tr><th scope="row">模型耦合</th><td>模型无关（理论上）</td><td>模型耦合（post-training coupling）</td></tr>
+            <tr><th scope="row">输出</th><td>SDK 代码</td><td>CLI / IDE 扩展</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <figure class="hns-tree" aria-labelledby="tree-caption">
+        <div class="hns-tree-root">要造什么？</div>
+        <div class="hns-tree-branches">
+          <div class="hns-tree-branch"><b>业务系统加点 LLM 能力</b><span>chatbot / 表单解析 / 路由</span><em>直接调 API 或 Framework</em></div>
+          <div class="hns-tree-branch"><b>特定领域的 custom Agent</b><span>需要持久执行时再加 Runtime</span><em>Framework（+ Runtime）</em></div>
+          <div class="hns-tree-branch"><b>代码 Agent / 通用电脑 Agent</b><span>套现成 Harness，按需扩展</span><em>Claude Code / Codex / Cline</em></div>
+          <div class="hns-tree-branch"><b>下一代 Harness 产品</b><span>先回答 opinionated default 与差异化</span><em>自研 Harness</em></div>
+        </div>
+        <figcaption class="hns-source-note" id="tree-caption">图 2 · 原文选型树的离线呈现。四条分支互斥；只有第二条分支可能叠加 Runtime。</figcaption>
+      </figure>
+      <details>
+        <summary>查看原文选型 Mermaid 源码</summary>
+        <pre><code>flowchart TD
+    Q{"要造什么?"}
+    Q -- "业务系统加点 LLM 能力&lt;br/&gt;chatbot / 表单解析 / 路由" --&gt; A["直接调 API 或用 Framework&lt;br/&gt;LangChain Expression Language"]
+    Q -- "特定领域的&lt;br/&gt;custom Agent" --&gt; B["Framework + Runtime&lt;br/&gt;LangGraph 给 durable execution"]
+    Q -- "代码 Agent /&lt;br/&gt;通用电脑 Agent" --&gt; C["套 Harness：Claude Code / Codex / Cline&lt;br/&gt;按需扩展 Skill / Hook / Subagent"]
+    Q -- "下一代 Harness&lt;br/&gt;产品级" --&gt; D["自研&lt;br/&gt;先回答 opinionated default 与差异化在哪"]
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class Q decision
+    class A,B,C,D proc</code></pre>
+        <p class="source-footnote">源码按原文保留。原文第二条分支写作 Framework + Runtime；本页决策树注明“需要持久执行时再加 Runtime”，因为 Runtime 不是所有领域 Agent 的必需品。</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="code-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">五 · 代码视角</p><h2 id="code-title">一个自己拼，<br>一个配置完就开。</h2></div>
+      <p class="reading-intro">同一件事——让模型读代码、调工具、循环执行——Framework 要你显式搭出每个节点，Harness 只让你放配置文件和 Skill。</p>
+    </div>
+    <div class="prose">
+      <details>
+        <summary>展开原文代码：LangGraph 拼装 vs Claude Code 配置</summary>
+        <pre><code># Framework 风格（LangGraph）：自己拼装一切
+from langgraph.graph import StateGraph, END
+from langgraph.checkpoint.sqlite import SqliteSaver
+from typing import TypedDict
+
+class AgentState(TypedDict):
+    messages: list
+    next_step: str
+
+def reason_node(state):
+    # 自己决定怎么调 LLM、怎么解析输出、怎么决定下一步
+    ...
+    return {"messages": state["messages"] + [...], "next_step": "tool"}
+
+def tool_node(state):
+    # 自己实现工具调度、参数解析、错误处理
+    ...
+
+graph = StateGraph(AgentState)
+graph.add_node("reason", reason_node)
+graph.add_node("tool", tool_node)
+graph.add_conditional_edges("reason", lambda s: s["next_step"])
+# ... 你还要自己写: compaction / hook / sandbox / memory / observability
+
+
+# Harness 风格（Claude Code，伪代码视角）：只配置 + 启动
+# 用户视角：在项目根放一个 CLAUDE.md + .claude/ 目录
+#
+# .claude/
+# ├── settings.json        # permission allowlist / hooks
+# ├── hooks/
+# │   └── pre-commit.sh    # 必须每次跑的 lint
+# ├── skills/
+# │   └── testing/SKILL.md # 写测试时按需加载
+# └── agents/
+#     └── reviewer.md      # subagent 定义
+#
+# 然后:
+#   $ claude
+# 即得到一个"懂你 repo、懂你工具、懂你流程"的代码 Agent
+# loop / memory / sandbox / observability 全部 opinionated 内置</code></pre>
+      </details>
+      <div class="callout">
+        <p class="callout-label">核心洞察</p>
+        <p>Framework 让你“造 Agent”；Harness 让你“开 Agent”。Harness 的 opinionated default 反过来是约束，但也是让你少写大量基建代码的捷径。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="frontier-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">六 · 2026 前沿</p><h2 id="frontier-title">Harness 本身，<br>成为优化对象。</h2></div>
+      <p class="reading-intro">2026-08 出现的一批工作不再只由人设计 harness，而是把它当作可搜索、可演化、甚至可在线训练的对象。原文明确标注：以下均为社区单次实验，尚无独立复现。</p>
+    </div>
+    <div class="prose">
+      <div class="callout">
+        <p class="callout-label">引用限定</p>
+        <p><strong>以下结论按原文版本保留，均为社区单次实验、未经独立复现。</strong>本页没有联网核验论文，也不把单次实验当作生产结论。</p>
+      </div>
+      <p><strong>StateM</strong>（arXiv 2608.15089，2026-08-15）提出 harness scaling：不动模型权重，只把模型外面的运行时做厚——持久状态、阶段局部上下文、受检状态转移、可恢复 runbook、带版本的过程性实践。原文称 Terminal-Bench 2.1 上同一个 GPT-5.5 xhigh 从 <strong>83.1% 提升到 92.1%</strong>，论文标题最好成绩 95.3%。模型是常量，涨的分全部来自 harness。</p>
+      <p>方法侧两条路线：<strong>DarwinX</strong>（arXiv 2608.07545）冻结权重，只演化 prompt / 工具 / 技能 / 控制流，适应度由 benchmark 自带 verifier 给出，不需要标准答案，并用 preserve-and-extend 契约拒绝导致回归的变体；<strong>AutoDesign</strong>（arXiv 2608.13560）让 meta-optimizer 指导 code agent 按 rollout 反馈递归改写自身 harness。共同点：把工程师从 harness 调参循环里换出去。</p>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">手工设计 harness 与自动搜索 / 演化 harness 的对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">手工设计 harness（当前主流）</th><th scope="col">自动搜索 / 演化 harness（研究阶段）</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">谁来改</th><td>人：读 trace、改 prompt、加工具</td><td>演化循环 / meta-optimizer 按 rollout 反馈自动改写</td></tr>
+            <tr><th scope="row">优化信号</th><td>工程师判断 + 离线跑分</td><td>benchmark 自带 verifier 的通过 / 失败信号，不需标准答案</td></tr>
+            <tr><th scope="row">防退步机制</th><td>人工回归测试 + code review</td><td>preserve-and-extend 契约：导致回归的变体直接拒绝</td></tr>
+            <tr><th scope="row">可解释性</th><td>高，改动都是人写的</td><td>低，搜出来的 harness 未必讲得清为什么有效</td></tr>
+            <tr><th scope="row">成熟度</th><td>生产在跑（Claude Code / Codex / Cline）</td><td>论文阶段，单次实验、未经复现</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>短期内生产系统仍是手工设计的天下——可解释性和可回滚性不可让渡。但 StateM 的 9 个百分点说明这层还有大量未被人工榨干的空间。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">先把边界<br>说清楚。</h2></div>
+      <p class="reading-intro">三条误区针对三层概念本身，五条追问覆盖 SDK、榜单数据、Runtime 独立化与自动搜索 harness。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <p class="misconception-label">误区 1</p>
+        <div><h3>“Harness 就是另一种框架。”</h3><p>表面上都是“模型外面的代码”，但本质不同。Framework 是 unopinionated 积木箱，需要你自己拼装 loop / memory / hook；Harness 是 opinionated 装配好的车，这些全部内置，你只能在预留扩展点（CLAUDE.md / Hook / Skill / Subagent）做定制。<strong>Framework 给自由 + 责任，Harness 给约束 + 默认值。</strong></p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">误区 2</p>
+        <div><h3>“自研 Harness 是过度设计，直接用 LangGraph 就行。”</h3><p>对一般业务系统确实是过度设计。但对需要 opinionated default + post-training coupling 的代码 Agent / 通用电脑 Agent，框架抽象层会成为天花板。Devin / Claude Code / Codex / Cline 全部自研 harness 不是偶然。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">误区 3</p>
+        <div><h3>“换模型不需要换 harness。”</h3><p>Post-training coupling 让模型与 harness 深度绑定。Codex 模型脱离 <code>apply_patch</code> 签名性能会掉；Claude Sonnet 在 Claude Code 与通用 chat 中表现像两个性格。<strong>模型与 harness 是一对深度耦合的系统。</strong></p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 1</p>
+        <div><h3>LangChain / OpenAI Agents SDK 算 Framework 还是 Harness？</h3><p>都是 Framework，LangChain 自家文档明确。判断标准：是否给出 opinionated 默认 prompt + tool + sandbox + hook 全套？是否拿来就能跑出一个“有性格的 Agent”？LangChain / Agents SDK 不给默认 prompt 与默认 tool。DeepAgents（LangChain 2025-11 推出的 harness）才算 Harness。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 2</p>
+        <div><h3>Harness 与 SDK 是什么关系？</h3><p>SDK 是“客户端库”概念（OpenAI Agents SDK、Claude Agent SDK），描述如何调用 API 的 Python / TS 类库；Harness 是“应用形态”概念，描述装配好的 Agent 产品。Claude Code = harness，底层用 Claude Agent SDK；Cursor = harness，底层有自家 Composer SDK。SDK 是 harness 的实现砖块之一。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 3</p>
+        <div><h3>“Harness &gt; 模型”的杠杆数据出自哪里？怎么验证？</h3><p>出自原文引用的 Terminal Bench 2.0（2026-Q1）：同一个 Claude Opus 4.6 在不同 harness 中差 28 个排名位次。原文建议参考 Artificial Analysis 的 Coding Agents Leaderboard 持续追踪。机制是 system prompt + tool 选择 + context 工程 + retry 策略 + sandbox 隔离五者协同，对单步 ReAct 正确率有乘法效应。这些数字本页未联网复核。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 4</p>
+        <div><h3>Cline SDK 2026-05 为什么把 runtime 从 IDE 剥离？意味着什么？</h3><p>意味着 Harness 进入“runtime 独立化”阶段。<code>@cline/sdk</code> 把 agent loop 从 VS Code 插件里彻底拆出，可在 CLI / Web / CI 任意 surface 调用。行业方向是：Harness 从“单一产品形态”演化为“runtime + 多 surface 适配器”，同一份 agent runtime 跑 IDE、终端、CI、Kanban。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 5</p>
+        <div><h3>harness 既然决定七成表现，能不能自动搜出最优 harness？</h3><p>原文的答法是“路径已经跑通，但离生产还有距离”。方法侧：DarwinX 冻结权重只演化 prompt / 工具 / 技能 / 控制流，用 benchmark verifier 当适应度；AutoDesign 让 meta-optimizer 递归改写自身 harness。效果侧：StateM 把 GPT-5.5 xhigh 从 83.1% 推到 92.1%。<strong>必须补限定</strong>：都是社区单次实验、尚无独立复现；自动搜出的 harness 可解释性差、难回滚，生产环境短期内仍以手工设计为主。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《什么是 Agent Harness？与 Framework / Runtime 三层抽象有何区别？》。原文中的 2026 数据、榜单和论文均为原文版本，本页没有联网核验。</p>
+    <details>
+      <summary>展开原文列出的九条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.langchain.com/blog/agent-frameworks-runtimes-and-harnesses-oh-my" target="_blank" rel="noopener noreferrer">LangChain Blog — Agent Frameworks, Runtimes, and Harnesses</a> — 三层抽象的官方定义出处</li>
+          <li><a href="https://parallel.ai/articles/what-is-an-agent-harness" target="_blank" rel="noopener noreferrer">Parallel.ai — What Is an Agent Harness?</a> — “everything except the LLM itself” 定义 + 70% 性能数据点</li>
+          <li><a href="https://www.humanlayer.dev/blog/skill-issue-harness-engineering-for-coding-agents" target="_blank" rel="noopener noreferrer">HumanLayer — Skill Issue: Harness Engineering for Coding Agents</a> — Post-training coupling 详解</li>
+          <li><a href="https://addyosmani.com/blog/agent-harness-engineering/" target="_blank" rel="noopener noreferrer">Addy Osmani — Agent Harness Engineering</a> — Harness 6+1 抽象</li>
+          <li><a href="https://cline.bot/blog/introducing-cline-sdk-the-upgraded-agent-runtime" target="_blank" rel="noopener noreferrer">Cline Blog — Introducing the Cline SDK</a> — 2026-05 Runtime 与 IDE 解耦</li>
+          <li><a href="https://atalupadhyay.wordpress.com/2026/05/02/the-agent-harness-what-it-is-why-it-matters-and-how-to-build-one-from-scratch/" target="_blank" rel="noopener noreferrer">atalupadhyay — The Agent Harness</a> — 从零构建 harness 的工程视角</li>
+          <li><a href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills" target="_blank" rel="noopener noreferrer">Anthropic — Equipping Agents for the Real World with Agent Skills</a> — Progressive Disclosure 与 Skill 抽象</li>
+          <li><a href="https://artificialanalysis.ai/agents/coding" target="_blank" rel="noopener noreferrer">Artificial Analysis — Coding Agents Leaderboard</a> — 原文引用的持续排行来源</li>
+          <li><a href="https://arxiv.org/abs/2609.01437" target="_blank" rel="noopener noreferrer">arXiv 2609.01437 — HarnessDev</a> — 把 harness 当作可自动优化对象的系统研究</li>
+        </ul>
+        <p class="source-footnote">以上链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+    <details>
+      <summary>展开原文“2026-08 前沿动向”七条链接（社区单次实验、未经独立复现）</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://arxiv.org/abs/2608.15089" target="_blank" rel="noopener noreferrer">StateM: 95.3% on Terminal-Bench 2.1 via Harness Scaling</a> — 同模型 83.1% → 92.1%</li>
+          <li><a href="https://arxiv.org/abs/2608.07545" target="_blank" rel="noopener noreferrer">DarwinX: Evolving Agent Harnesses Through Natural Selection</a> — 冻结权重演化 harness</li>
+          <li><a href="https://arxiv.org/abs/2608.13560" target="_blank" rel="noopener noreferrer">AutoDesign: Meta-Harness Optimization</a> — meta-optimizer 递归改写 harness</li>
+          <li><a href="https://arxiv.org/abs/2608.19880" target="_blank" rel="noopener noreferrer">EnvHarness: Awakening Static Worlds for Agent Learning</a> — 把 harness 思路扩到环境</li>
+          <li><a href="https://arxiv.org/abs/2608.16590" target="_blank" rel="noopener noreferrer">Zetta ζ: An Efficient Closed-Loop Embodied Harness</a> — 在线演化运行时 critic</li>
+          <li><a href="https://arxiv.org/abs/2608.14036" target="_blank" rel="noopener noreferrer">Demystifying Agent Skills: Why They Work—Until They Don't</a> — Skill 收益的四因素归因</li>
+          <li><a href="https://openai.com/index/introducing-the-agents-api" target="_blank" rel="noopener noreferrer">OpenAI — Introducing the Agents API</a> — Codex harness 产品化为托管云服务（2026-09-10）</li>
+        </ul>
+        <p class="source-footnote">这些论文结论在原文中已注明“社区单次实验、尚无独立复现”。本页原样保留日期与出处，不做实时核验。</p>
+      </div>
+    </details>
+    <details>
+      <summary>展开原文相关阅读（本库其他篇目）</summary>
+      <div class="source-content">
+        <ul>
+          <li>007 — Workflow vs Agent：Harness 是“光谱右端”的高自主性方案，需要工作流配合。</li>
+          <li>098 — 框架 vs 自研：Harness 是“自研 vs 框架”之外的第三种选择。</li>
+          <li>099 — OpenAI Agents SDK vs Claude Agent SDK：两家 SDK 是构建 Harness 的“砖块”层（本批未生成页面）。</li>
+          <li>110 — Coding Agent Harness 横评：Harness 的产品级横向对比（本批未生成页面）。</li>
+        </ul>
+        <p class="source-footnote">相关阅读按原文保留标题；未生成页面的篇目不提供链接，避免坏链。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>01-agent-architecture/109-what-is-agent-harness.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 3 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  (() => {
+    const byId = (id) => document.getElementById(id);
+
+    const QUESTIONS = {
+      start: {
+        title: "你要造的是什么？",
+        note: "先看产物形态，而不是先看团队熟悉哪个框架。",
+        position: "判断 1 · 最多 2 步",
+        options: [
+          { label: "业务系统里加点 LLM 能力", sub: "chatbot / 表单解析 / 路由", next: "business" },
+          { label: "特定领域的 custom Agent", sub: "流程编排、工具调用、领域知识", next: "domain" },
+          { label: "代码 Agent / 通用电脑 Agent", sub: "读写仓库、跑命令、长时间执行", next: "coding" },
+          { label: "下一代 Harness 产品", sub: "要定义自己的默认值与差异化", next: "nextgen" }
+        ]
+      },
+      domain: {
+        title: "这个 Agent 需要 durable execution 吗？",
+        note: "长任务、断点续跑、跨线程状态、人工审批，都属于 Runtime 的职责。",
+        position: "判断 2 · 最多 2 步",
+        options: [
+          { label: "需要：长任务 / 断点续跑 / HITL", sub: "执行必须可恢复", next: "domainRuntime" },
+          { label: "不需要：单轮或短流程", sub: "普通调用即可完成", next: "domainPlain" }
+        ]
+      },
+      coding: {
+        title: "你要用现成 Harness，还是自研？",
+        note: "现成产品已经把 loop / memory / hook / sandbox 装好；自研要先回答差异化。",
+        position: "判断 2 · 最多 2 步",
+        options: [
+          { label: "先用现成 Harness", sub: "Claude Code / Codex CLI / Cline", next: "codingReady" },
+          { label: "自研 Harness", sub: "有自己的模型、trace 或分发场景", next: "codingBuild" }
+        ]
+      }
+    };
+
+    const RESULTS = {
+      business: {
+        title: "直接调 API 或 Framework",
+        layers: ["framework"],
+        combo: ["Framework", "不需要 Runtime / Harness"],
+        main: "Framework",
+        body: "<p><strong>为什么：</strong>业务功能通常是确定性的短链路。原文对应分支写的是“直接调 API 或用 Framework（LangChain Expression Language）”。</p><p><strong>你负责：</strong>prompt、工具定义、业务校验和评测。框架只提供原语，不会替你决定 Agent 性格。</p>",
+        boundary: "边界：这类产物不需要 Harness。套一个代码 Agent 运行壳，只会把简单链路复杂化。"
+      },
+      domainPlain: {
+        title: "Framework 即可",
+        layers: ["framework"],
+        combo: ["Framework"],
+        main: "Framework",
+        body: "<p><strong>为什么：</strong>领域 Agent 要自定义流程和工具，但执行是短流程、可一次跑完，不需要断点续跑。</p><p><strong>你负责：</strong>loop 的写法、工具 schema、上下文拼装。若要换成声明式编排，可再引入 Runtime。</p>",
+        boundary: "边界：没有 Runtime 就没有 durable execution；进程中断后，正在跑的那一轮不会自动恢复。"
+      },
+      domainRuntime: {
+        title: "Framework + Runtime",
+        layers: ["framework", "runtime"],
+        combo: ["Framework", "Runtime"],
+        main: "Framework + Runtime",
+        body: "<p><strong>为什么：</strong>需要长任务、断点续跑、人工审批或跨线程状态时，执行稳定性交给 Runtime。原文示例用 LangGraph 提供 durable execution。</p><p><strong>分工：</strong>Framework 定义 Agent / Tool / Chain；Runtime 负责状态持久化与恢复。两者可以来自同一家，也可以分开。</p>",
+        boundary: "边界：Runtime 不会替你写 Agent 的 loop 和工具逻辑，也不提供 opinionated 默认 prompt。"
+      },
+      codingReady: {
+        title: "套现成 Harness",
+        layers: ["harness"],
+        combo: ["Harness", "底层可用 SDK 作砖块"],
+        main: "Harness",
+        body: "<p><strong>为什么：</strong>代码 Agent 需要开箱即用的 loop、memory、hook、sandbox 和权限模型。Claude Code / Codex CLI / Cline 已经把这些装好。</p><p><strong>你负责：</strong>四件定制——system prompt、tools、context（CLAUDE.md / AGENTS.md）、subagents；其余走默认值。</p>",
+        boundary: "边界：Harness 的默认值是约束。你能扩展的点有限，不能像 Framework 一样重写整个 runtime。"
+      },
+      codingBuild: {
+        title: "自研 Harness",
+        layers: ["harness", "runtime", "framework"],
+        combo: ["Harness", "Runtime（可选）", "Framework（可选）"],
+        main: "Harness",
+        body: "<p><strong>为什么：</strong>当你有自己的模型、trace 数据或分发场景，框架抽象层会成为天花板。原文列出四个硬约束：post-training coupling、延迟、Hook / Sandbox、trace IP。</p><p><strong>你负责：</strong>先回答 opinionated default 是什么、差异化在哪，再决定哪些层自建、哪些复用（Framework / Runtime 都可作为砖块）。</p>",
+        boundary: "边界：自研不等于全部重写。原文的建议是先想清楚默认值和差异化，再选可复用的砖块。"
+      },
+      nextgen: {
+        title: "自研产品级 Harness",
+        layers: ["harness", "runtime", "framework"],
+        combo: ["Harness（产品级）", "Runtime / Framework 按需复用"],
+        main: "Harness",
+        body: "<p><strong>为什么：</strong>“下一代 Harness”不是套现成产品，而是定义新的 opinionated default。原文要求先回答默认值与差异化在哪。</p><p><strong>你负责：</strong>loop、context 工程、Hook、沙箱、权限、trace 飞轮，以及面向多 surface 的适配。Runtime / Framework 是可选砖块，不是必须自建。</p>",
+        boundary: "边界：产品级 Harness 的难点不在“再包一层”，而在默认值是否足够好，以及 trace 能否形成数据飞轮。"
+      }
+    };
+
+    const state = { history: [], current: "start", result: null };
+
+    function setLayers(layers) {
+      document.querySelectorAll("[data-layer]").forEach((chip) => {
+        const on = layers.includes(chip.dataset.layer);
+        chip.classList.toggle("is-on", on);
+        chip.classList.toggle("is-off", !on);
+      });
+      byId("hns-state").textContent = layers.length
+        ? `参与层：${layers.map((key) => ({ framework: "Framework", runtime: "Runtime", harness: "Harness" }[key])).join(" + ")}`
+        : "尚未选择 · 三层都未点亮";
+    }
+
+    function renderQuestion(key, announce) {
+      const q = QUESTIONS[key];
+      byId("hns-position").textContent = q.position;
+      byId("hns-question-title").textContent = q.title;
+      byId("hns-question-note").textContent = q.note;
+      const host = byId("hns-options");
+      host.textContent = "";
+      q.options.forEach((opt, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "hns-option";
+        button.dataset.next = opt.next;
+        const keyEl = document.createElement("span");
+        keyEl.className = "hns-option-key";
+        keyEl.textContent = String(index + 1);
+        const text = document.createElement("span");
+        const label = document.createElement("b");
+        label.textContent = opt.label;
+        const sub = document.createElement("small");
+        sub.textContent = opt.sub;
+        text.append(label, sub);
+        button.append(keyEl, text);
+        button.addEventListener("click", () => choose(opt.next));
+        host.append(button);
+      });
+      byId("hns-back").disabled = state.history.length === 0;
+      if (announce) {
+        byId("hns-announcement").textContent = `${q.title} 共 ${q.options.length} 个选项。`;
+      }
+    }
+
+    function renderResult(key, announce) {
+      const result = RESULTS[key];
+      byId("hns-result-title").textContent = result.title;
+      const body = byId("hns-result-body");
+      body.innerHTML = "";
+      const combo = document.createElement("div");
+      combo.className = "hns-combo";
+      result.combo.forEach((label, index) => {
+        const chip = document.createElement("span");
+        chip.textContent = label;
+        if (index === 0) chip.className = "is-main";
+        combo.append(chip);
+      });
+      const text = document.createElement("div");
+      text.className = "hns-result-body";
+      text.innerHTML = result.body;
+      const boundary = document.createElement("p");
+      boundary.className = "hns-result-boundary";
+      boundary.textContent = result.boundary;
+      body.append(combo, text, boundary);
+      setLayers(result.layers);
+      byId("hns-question-title").textContent = "决策完成";
+      byId("hns-question-note").textContent = "可以返回上一步改条件，或重新开始。";
+      byId("hns-position").textContent = "结果";
+      byId("hns-options").textContent = "";
+      byId("hns-back").disabled = state.history.length === 0;
+      if (announce) {
+        byId("hns-announcement").textContent = `建议：${result.title}。${result.boundary}`;
+      }
+    }
+
+    function choose(next) {
+      state.history.push({ current: state.current, result: state.result });
+      if (QUESTIONS[next]) {
+        state.current = next;
+        state.result = null;
+        renderQuestion(next, true);
+      } else {
+        state.current = null;
+        state.result = next;
+        renderResult(next, true);
+      }
+    }
+
+    function back() {
+      const prev = state.history.pop();
+      if (!prev) return;
+      if (prev.result) {
+        state.current = null;
+        state.result = prev.result;
+        renderResult(prev.result, true);
+      } else {
+        state.current = prev.current;
+        state.result = null;
+        renderQuestion(prev.current, true);
+      }
+    }
+
+    function reset() {
+      state.history = [];
+      state.current = "start";
+      state.result = null;
+      byId("hns-result-title").textContent = "还没有选择";
+      const body = byId("hns-result-body");
+      body.innerHTML = '<p class="hns-result-empty">从左侧选一个产物形态。页面按原文的选型逻辑给出建议，并标出哪几层真正参与。</p>';
+      setLayers([]);
+      renderQuestion("start", true);
+      byId("hns-announcement").textContent = "已重置，回到第一个判断。";
+    }
+
+    byId("hns-back").addEventListener("click", back);
+    byId("hns-reset").addEventListener("click", reset);
+    renderQuestion("start", false);
+  })();
+</script>
+</body>
+</html>

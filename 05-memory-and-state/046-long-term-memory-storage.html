@@ -1,0 +1,930 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>长期记忆存储介质选型：向量 / 结构化 / 图谱 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .sim-banner { display: flex; align-items: flex-start; gap: 9px; margin: var(--s-4) var(--s-6) 0; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .sim-banner strong { color: #4d3000; }
+  .sim-banner::before { content: "选型"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .badge-neutral { background: #eef1ee; color: #3f463f; border-color: #c9cec9; }
+  .badge-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .badge-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .badge-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .badge-bad { background: #fbecec; color: #8a1f1f; border-color: #d9a3a3; }
+  .badge-solid { background: #194f87; color: #fff; border-color: #194f87; }
+  .path { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: var(--s-4); padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); font-size: 12px; }
+  .path .step { padding: 2px 8px; border: 1px solid #9eb4c9; border-radius: 999px; background: var(--surface); color: #194f87; font: 11px/1.6 var(--mono); }
+  .path .arrow { color: var(--text-dim); font: 11px/1 var(--mono); }
+  .choice-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .choice-card { text-align: left; padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); min-height: 132px; }
+  .choice-card:hover { border-color: var(--border-bright); }
+  .choice-card[aria-pressed="true"] { border-color: #194f87; background: #eaf1f8; box-shadow: inset 0 0 0 1px #194f87; }
+  .choice-card b { display: block; font-size: 15px; font-weight: 600; }
+  .choice-card .example { display: block; margin-top: 4px; font-size: 12px; color: #194f87; }
+  .choice-card span.desc { display: block; margin-top: 5px; font-size: 11px; line-height: 1.65; color: var(--text-dim); }
+  .chosen-note { margin-top: var(--s-3); padding: 9px 11px; border-left: 3px solid #194f87; background: #eaf1f8; font-size: 12px; }
+  .rec { margin-top: var(--s-4); padding: var(--s-4) var(--s-5); border: 1px solid var(--border); border-left: 4px solid #194f87; border-radius: var(--r-1); background: var(--surface); }
+  .rec h3 { font-size: var(--t-h3); line-height: 1.45; }
+  .rec p { margin-top: var(--s-2); font-size: 12px; }
+  .store-row { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--s-3); }
+  .store { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font: 11px/1.6 var(--mono); border: 1px solid transparent; }
+  .store.vector { background: #dbe7f3; color: #194f87; border-color: #9eb4c9; }
+  .store.structured { background: #dcefdc; color: #14532d; border-color: #9cc39e; }
+  .store.graph { background: #eadcf5; color: #5b2178; border-color: #c4a8d9; }
+  .rec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); margin-top: var(--s-4); }
+  .rec-cell { padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .rec-cell b { display: block; font: 600 11px/1.6 var(--mono); color: var(--text-dim); margin-bottom: 3px; }
+  .rec-cell ul { margin: 0; padding-left: 1.1em; }
+  .rec-cell li { margin-block: 4px; }
+  .graph-flow { margin-top: var(--s-4); padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .flow-row { display: grid; grid-template-columns: minmax(0, 1fr) 60px minmax(0, 1.2fr); gap: var(--s-2); align-items: center; margin-top: var(--s-2); }
+  .flow-row:first-child { margin-top: 0; }
+  .flow-box { padding: 9px 11px; border: 1px solid #9eb4c9; border-radius: var(--r-1); background: var(--surface); text-align: center; font-size: 12px; }
+  .flow-box.graph { border-color: #c4a8d9; background: #eadcf5; color: #5b2178; }
+  .flow-box.ctx { border-color: #194f87; color: #194f87; font-weight: 600; }
+  .flow-arrow { text-align: center; font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .flow-splits { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+  .flow-splits span { padding: 8px 4px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); text-align: center; font-size: 11px; }
+  .fixed-note { display: inline-block; margin-top: var(--s-3); padding: 3px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  .numeric-note { margin-top: var(--s-3); padding: 8px 11px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; }
+  .pending-note { display: inline-block; padding: 2px 7px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font-size: 11px; white-space: nowrap; }
+  @media (max-width: 900px) {
+    .choice-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .sim-banner { margin-inline: var(--s-4); }
+    .table-wrap table.data.wide { min-width: 720px; }
+    .rec-grid { grid-template-columns: 1fr; }
+    .flow-row { grid-template-columns: 1fr; }
+    .flow-arrow { text-align: left; padding-left: 4px; }
+    .rec { padding: var(--s-3) var(--s-4); }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">046 / 长期记忆存储</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 19 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="044-state-management-patterns.html">← 上一页 · 状态管理在 Agent 系统中的设计…</a><a href="048-memory-forgetting-updating.html">下一页 → · 记忆的遗忘与更新机制</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Memory &amp; State · 可交互讲解</p>
+      <h1>记忆放哪里，<br>决定它能回答什么。</h1>
+    </div>
+    <div>
+      <p class="lead">Agent 长期记忆有三类存储介质：向量擅长语义相似度，结构化存储擅长精确字段查询，知识图谱擅长关系推理与时间推理。生产系统通常走混合架构，而不是三选一。</p>
+      <p class="definition"><strong>关键边界：</strong>向量检索不是“理解”，只能找语义相近的内容；图谱也不是把所有信息都存成三元组，只存实体、关系和关键事实。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Memory &amp; State</span><span class="pill">选型决策</span><span class="pill">原文数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="route-title">
+    <div class="player-top">
+      <div class="player-label">长期记忆选型路径 <small>固定判断框架 · 本地模拟</small></div>
+      <div class="controls" role="group" aria-label="选型演示控制">
+        <button type="button" class="button button-quiet" id="reset-button">重置</button>
+        <button type="button" class="button" id="back-button" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="next-button">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="选型阶段">
+      <ol style="--stages: 5">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>查询</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>关系</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>规模</button></li>
+        <li><button type="button" class="stage-button" data-stage="3"><span class="stage-number">4</span>选型</button></li>
+        <li><button type="button" class="stage-button" data-stage="4"><span class="stage-number">5</span>框架</button></li>
+      </ol>
+    </nav>
+    <p class="sim-banner"><span><strong>本页是按原文判断框架做的选型演示，不是基准测试。</strong>下面的选择只改变本页脚本里的推荐结果；不连接任何数据库，也不声称某个框架一定更快或更准。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="scene-index">阶段 1 / 5 · 固定判断框架</p>
+      <h2 id="route-title">先问：你主要在查什么？</h2>
+      <p id="scene-subtitle">固定场景：为一个小型 Agent 产品选长期记忆存储。先确定查询类型，再看关系需求和规模。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="route-scene"></div>
+      <p class="demo-note" id="scene-note">固定教学数据：三个问题的选项和推荐逻辑均来自原文的介质对比，不代表任何真实容量规划或性能测试。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定判断框架 · 不连接数据库 · 不访问网络</span><span id="state-summary">阶段 1 / 5 · 尚未选择查询类型</span></div>
+  </section>
+  <p id="route-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="diff-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三种介质</p><h2 id="diff-title">同样是“记住”，<br>查法完全不同。</h2></div>
+      <p class="reading-intro">向量存高维浮点，查语义相似度；结构化存表 / 键值 / 文档，查精确字段；知识图谱存节点、边和属性，查多跳关系和时间有效性。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">三种长期记忆存储介质的核心区别</caption>
+          <thead><tr><th scope="col">介质</th><th scope="col">数据结构</th><th scope="col">查询能力</th><th scope="col">典型场景</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">向量</th><td>高维浮点向量</td><td>语义相似度</td><td>对话历史、文档检索</td></tr>
+            <tr><th scope="row">结构化（SQL / NoSQL）</th><td>表 / 键值 / 文档</td><td>精确字段查询</td><td>用户画像、偏好、配置</td></tr>
+            <tr><th scope="row">知识图谱</th><td>节点 + 边 + 属性</td><td>多跳推理 + 时间推理</td><td>实体关系、事实追踪</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="vector-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">向量记忆</p><h2 id="vector-title">意思相近，<br>就能找出来。</h2></div>
+      <p class="reading-intro">文本编码成向量，按余弦相似度找最近邻。不需要预定义 Schema，语义理解强；但相似不等于理解，也不支持关系和时间推理。</p>
+    </div>
+    <div class="prose">
+      <div class="rec-grid">
+        <div class="rec-cell"><b>优势</b><ul><li>语义理解：按含义匹配，不靠关键词</li><li>灵活：不需要预定义 Schema</li><li>HNSW 索引在百万级数据上仍保持毫秒级检索（原文表述）</li></ul></div>
+        <div class="rec-cell"><b>劣势</b><ul><li>语义相近但含义不同的内容可能被错误检索</li><li>不支持关系推理：“A 的上级是 B，B 的上级是谁？”</li><li>不支持时间推理：“上周和这周的偏好有什么变化？”</li></ul></div>
+      </div>
+      <details>
+        <summary>查看向量记忆的原文代码</summary>
+        <pre><code>class VectorMemory:
+    def store(self, text: str):
+        embedding = embed_model.encode(text)  # 文本 → 向量
+        self.index.add(embedding, metadata={"text": text})
+
+    def retrieve(self, query: str, top_k=5):
+        query_vec = embed_model.encode(query)
+        results = self.index.search(query_vec, top_k)
+        return results
+
+memory.store("用户是 Python 开发者，偏好 FastAPI")
+memory.store("上次讨论了数据库优化，使用了 PostgreSQL")
+results = memory.retrieve("推荐一个 Web 框架")</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="struct-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">结构化记忆</p><h2 id="struct-title">字段对得上，<br>就别绕语义。</h2></div>
+      <p class="reading-intro">用户画像、偏好、配置这类键值化数据，用 PostgreSQL、DynamoDB 或 Redis 直接查字段，延迟低、一致性强、容易审计和迁移。</p>
+    </div>
+    <div class="prose">
+      <div class="rec-grid">
+        <div class="rec-cell"><b>优势</b><ul><li>精确查询：按字段名直接获取</li><li>强一致性：ACID 事务支持</li><li>低延迟：主键查询毫秒级</li><li>易审计、易迁移</li></ul></div>
+        <div class="rec-cell"><b>劣势</b><ul><li>不支持模糊匹配：“偏好类似 FastAPI 的框架”无法直接用 SQL 表达</li><li>Schema 演化成本高</li><li>不擅长关系推理</li></ul></div>
+      </div>
+      <details>
+        <summary>查看结构化记忆的原文代码</summary>
+        <pre><code>class StructuredMemory:
+    """适合用户画像、偏好等键值化数据"""
+
+    def __init__(self, db):
+        self.db = db  # PostgreSQL / DynamoDB / Redis
+
+    def update_profile(self, user_id, updates: dict):
+        self.db.upsert("user_profile", user_id, updates)
+
+    def get_profile(self, user_id):
+        return self.db.get("user_profile", user_id)
+
+    def query_by_attribute(self, attr, value):
+        return self.db.query(
+            f"SELECT * FROM users WHERE {attr} = ?", value)</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="graph-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">知识图谱记忆</p><h2 id="graph-title">谁和谁有关，<br>什么时候变的。</h2></div>
+      <p class="reading-intro">向量记忆能记住“张三在公司 A 工作”和“张三跳槽到公司 B”，但没法判断哪条最新。知识图谱用带时间有效性的边，直接找到当前有效的关系。</p>
+    </div>
+    <div class="prose">
+      <div class="flow-splits" style="margin-top:var(--s-4)">
+        <span>张三 --[works_at, 2024-01 ~ 2025-05]--> 公司 A</span>
+        <span>张三 --[works_at, 2025-06 ~ now]--> 公司 B</span>
+        <span>查询“张三现在在哪？” → 公司 B</span>
+      </div>
+
+      <h3>Graphiti 的混合检索架构</h3>
+      <div class="graph-flow" role="img" aria-label="Graphiti 架构：用户交互经 LLM 提取实体与关系后写入知识图谱，查询走图遍历、语义向量、BM25 三路，经 RRF 融合后注入 LLM 上下文">
+        <div class="flow-row"><div class="flow-box">用户交互</div><div class="flow-arrow">→</div><div class="flow-box">LLM 提取实体与关系</div></div>
+        <div class="flow-row"><div class="flow-box">知识图谱：节点 / 边 / 双时间线</div><div class="flow-arrow">→</div><div class="flow-splits"><span>图遍历</span><span>语义向量</span><span>BM25 关键词</span></div></div>
+        <div class="flow-row"><div class="flow-box graph">RRF 融合排序</div><div class="flow-arrow">→</div><div class="flow-box ctx">注入 LLM 上下文</div></div>
+      </div>
+      <p>Graphiti 用双时间线：时间线 T 是事件实际发生的时间，时间线 T' 是数据被系统记录的时间。每条事实还带 <code>valid_from</code> / <code>valid_to</code>，支持“张三 2024 年 6 月在哪工作”和“我们什么时候得知张三跳槽”两类查询。多个 Agent 共享同一张图时，任何一个 Agent 的更新都对其他 Agent 可见；写入前先找冲突事实，把旧事实标记失效，再写新事实。</p>
+      <div class="numeric-note"><strong>延迟提醒：</strong>原文实测 Graphiti 检索阶段不调用 LLM，但中位数延迟 2–3 秒，受图查询深度和 Neo4j 网络开销影响，并非常被引用的“300ms”。生产需要做延迟测试并设置 SLA。以上为原文版本数据，本页未联网核实。</div>
+      <details>
+        <summary>查看 Graphiti 架构的原文 Mermaid 源码</summary>
+        <pre><code>flowchart TD
+    I["用户交互"] --&gt; L["LLM 提取&lt;br/&gt;实体与关系"]
+    L --&gt; K["知识图谱&lt;br/&gt;节点 / 边 / 双时间线"]
+    K --&gt; T1["图遍历"]
+    K --&gt; T2["语义向量"]
+    K --&gt; T3["BM25 关键词"]
+    T1 --&gt; F["RRF 融合排序"]
+    T2 --&gt; F
+    T3 --&gt; F
+    F --&gt; C["注入 LLM 上下文"]</code></pre>
+      </details>
+      <details>
+        <summary>查看双时间线事实的原文代码</summary>
+        <pre><code>class BiTemporalFact:
+    subject: str          # 主体
+    predicate: str        # 关系
+    object: str           # 客体
+    event_time: datetime      # T: 事件发生时间
+    ingestion_time: datetime  # T': 系统记录时间
+    valid_from: datetime      # 生效时间
+    valid_to: datetime | None # 失效时间（None=当前有效）
+
+fact1 = BiTemporalFact(
+    subject="张三", predicate="works_at", object="公司A",
+    event_time="2024-01-15",    # 实际入职时间
+    ingestion_time="2024-03-01",  # 我们获知的时间
+    valid_from="2024-01-15", valid_to="2025-05-31"
+)</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="when-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">何时选择</p><h2 id="when-title">先看查询，<br>再看关系和时间。</h2></div>
+      <p class="reading-intro">原文的选型表很直接：语义搜索和 RAG 走向量；偏好和属性走结构化；实体关系、时间推理、多跳走图谱；用户画像 + 偏好、生产级个性化走混合。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">原文的需求场景到存储方案对照</caption>
+          <thead><tr><th scope="col">需求场景</th><th scope="col">推荐方案</th><th scope="col">原因</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">语义搜索非结构化文本</th><td>向量</td><td>模糊匹配是强项</td></tr>
+            <tr><th scope="row">简单事实召回</th><td>向量</td><td>够用且简单</td></tr>
+            <tr><th scope="row">RAG / 知识检索</th><td>向量</td><td>标准方案</td></tr>
+            <tr><th scope="row">用户偏好 / 属性</th><td>结构化</td><td>精确字段查询</td></tr>
+            <tr><th scope="row">实体关系追踪</th><td>知识图谱</td><td>关系推理是强项</td></tr>
+            <tr><th scope="row">时间推理</th><td>知识图谱</td><td>支持时间有效性</td></tr>
+            <tr><th scope="row">多跳推理</th><td>知识图谱</td><td>图遍历天然支持</td></tr>
+            <tr><th scope="row">用户画像 + 偏好</th><td>混合</td><td>结构化属性 + 语义历史</td></tr>
+            <tr><th scope="row">生产级个性化</th><td>混合</td><td>三者互补</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>混合架构</h3>
+      <p>对话历史进向量库；抽取实体和关系进图库；用户属性进结构化库。查询时三路检索再合并。Mem0 的混合方案就是向量做语义记忆、图数据库做关系追踪，统一 API 对上层透明。</p>
+      <details>
+        <summary>查看 HybridMemory 的原文代码</summary>
+        <pre><code>class HybridMemory:
+    def __init__(self):
+        self.vector_store = ChromaDB()       # 语义检索
+        self.knowledge_graph = Neo4j()       # 关系推理
+        self.profile_store = PostgreSQL()    # 结构化属性
+
+    async def store(self, interaction):
+        # 1. 对话历史 → 向量存储
+        self.vector_store.add(interaction["text"])
+
+        # 2. 提取实体和关系 → 知识图谱
+        entities = extract_entities(interaction["text"])
+        for entity in entities:
+            self.knowledge_graph.upsert(entity)
+
+        # 3. 用户属性 → 结构化存储
+        profile_updates = extract_profile(interaction["text"])
+        self.profile_store.update(interaction["user_id"], profile_updates)
+
+    async def retrieve(self, query, user_id):
+        semantic_results = self.vector_store.search(query, top_k=5)
+        entities = extract_entities(query)
+        graph_results = self.knowledge_graph.query(entities)
+        profile = self.profile_store.get(user_id)
+        return merge(semantic_results, graph_results, profile)</code></pre>
+      </details>
+      <p class="numeric-note">原文性能对比：Mem0 混合方案 vs 纯全上下文方案，准确率 +26%，P95 延迟 −91%，Token 成本 −90%+。以上为原文版本数据，本页未联网核实，也不代表当前产品实测。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="framework-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">框架横评</p><h2 id="framework-title">四个框架，<br>四种记忆抽象。</h2></div>
+      <p class="reading-intro">原文把 2026 年称为“Agent Memory 元年”。Mem0、Zep、LangMem、Letta 的差异，本质是“记忆是什么”的抽象不同。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">原文的四大 Agent Memory 框架对比</caption>
+          <thead><tr><th scope="col">框架</th><th scope="col">出身</th><th scope="col">核心思路</th><th scope="col">记忆底座</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Mem0</th><td>独立记忆层产品</td><td>LLM 抽取原子事实 → 混合存储</td><td>向量库 + 图数据库</td></tr>
+            <tr><th scope="row">Zep</th><td>Graphiti 作者团队</td><td>时序知识图谱（双时间线）</td><td>Neo4j + 混合检索（Graphiti 引擎）</td></tr>
+            <tr><th scope="row">LangMem</th><td>LangChain 官方</td><td>LangGraph 之上的记忆原语</td><td>可插拔 Store（后端无关）</td></tr>
+            <tr><th scope="row">Letta</th><td>基于 MemGPT 研究</td><td>类 OS 的分页式自管理记忆</td><td>块存储（core）+ 向量（archival）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fixed-note">原文 2026 年版本表述，未联网核实；不更新榜单或版本号</p>
+
+      <h3>一句话区分</h3>
+      <ul>
+        <li><strong>Mem0：</strong>把记忆抽象成原子事实，粒度最细，接入最快。</li>
+        <li><strong>Zep：</strong>把记忆抽象成带时间戳的图结构，最强于关系推理和时间推理。</li>
+        <li><strong>LangMem：</strong>借鉴认知科学的三分类（semantic / episodic / procedural），不同类型走不同写入和检索策略。</li>
+        <li><strong>Letta：</strong>把记忆抽象成计算机内存层级，Agent 通过 function call 自己翻页（page in / out）。</li>
+      </ul>
+
+      <h3>更新与检索的机制差异</h3>
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">四个框架的冲突处理与检索方式</caption>
+          <thead><tr><th scope="col">框架</th><th scope="col">更新机制</th><th scope="col">检索方式</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Mem0</th><td>LLM 判定新事实与旧事实关系，四态 ADD / UPDATE / DELETE / NOOP</td><td>向量相似度 + 图遍历，返回扁平事实列表</td></tr>
+            <tr><th scope="row">Zep</th><td>双时间线：旧边自动失效，新边生效，保留全部历史</td><td>向量 + BM25 + 图遍历，RRF 融合</td></tr>
+            <tr><th scope="row">LangMem</th><td>开发者在 graph 节点定义更新逻辑</td><td>可插拔 Store，策略由开发者定</td></tr>
+            <tr><th scope="row">Letta</th><td>Agent 调用 replace 工具改写 core memory，需 guardrail 兜底</td><td>core memory 常驻，需要时 Agent 主动检索 archival</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>最重要的范式差异：Mem0 / Zep / LangMem 是系统在用户无感的情况下自动管理记忆，更像数据库；Letta 走 Agent 自主管理路线，记忆操作本身是 Agent 可调用的工具，更像大脑。</p>
+      <p>记忆的遗忘与更新机制详见同批 <a href="048-memory-forgetting-updating.html">048 记忆的遗忘与更新机制</a>；持久化记忆的完整生命周期见 <a href="043-persistent-memory.html">043 持久化记忆</a>；三种记忆类型的总览见 <a href="040-memory-types.html">040 Agent 记忆类型</a>。</p>
+
+      <h3>自研 vs 框架</h3>
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">自研与使用框架的取舍</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">用框架</th><th scope="col">自研</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">冷启动速度</th><td>几行代码接入，立即可用</td><td>从头实现抽取 / 冲突 / 检索</td></tr>
+            <tr><th scope="row">数据主权 / 隐私</th><td>托管版数据出域；自托管需运维</td><td>数据全部留在自家基础设施</td></tr>
+            <tr><th scope="row">定制灵活性</th><td>受框架抽象约束</td><td>记忆类型、更新策略完全可控</td></tr>
+            <tr><th scope="row">生产成熟度</th><td>框架已踩过冲突 / 一致性 / 延迟的坑</td><td>需自己踩坑：双时间线、实体消歧、图谱膨胀</td></tr>
+            <tr><th scope="row">依赖耦合</th><td>引入一个依赖及它的后端</td><td>栈更轻，但代码量更大</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文经验法则：MVP / 中小流量直接上框架（Mem0 最快，Zep 最强推理，LangMem 最贴合 LangGraph 栈，Letta 适合需要 Agent 自治的场景）；大流量 / 强数据主权 / 特殊记忆结构则自研，借鉴框架的设计，框架可用来做原型验证。</p>
+      <details>
+        <summary>查看框架选型的原文 Mermaid 源码</summary>
+        <pre><code>flowchart TD
+    Q{"你的记忆需求是什么？"}
+    Q -- "偏好/事实召回" --&gt; M1["Mem0（最快落地）&lt;br/&gt;或 LangMem（已在 LangGraph 栈内）"]
+    Q -- "关系推理 + 时间推理" --&gt; M2["Zep / Graphiti&lt;br/&gt;双时间线 + 图遍历是刚需"]
+    Q -- "Agent 自主决定记什么" --&gt; M3["Letta&lt;br/&gt;self-editing memory 范式"]
+    Q -- "多 Agent 共享记忆" --&gt; M4["Zep（图天然共享）&lt;br/&gt;或自建带权限的记忆服务"]
+    Q -- "大规模生产" --&gt; M5["自研混合架构&lt;br/&gt;+ 框架做原型验证"]</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="amem-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">A-MEM</p><h2 id="amem-title">像卡片笔记一样，<br>让记忆互相联想。</h2></div>
+      <p class="reading-intro">A-MEM 把 Zettelkasten 卡片笔记法用于 Agent 记忆：每条笔记是原子化知识点，带上下文、关键词、关联和时间，笔记之间形成互联的知识网络。</p>
+    </div>
+    <div class="prose">
+      <details>
+        <summary>查看 A-MEM 笔记结构的原文代码</summary>
+        <pre><code>class AMemNote:
+    """结构化记忆笔记"""
+    content: str           # 原子化的知识点
+    context: str           # 上下文描述
+    keywords: list[str]    # 关键词标签
+    links: list[str]       # 与其他笔记的关联
+    created_at: datetime
+    access_count: int
+
+# 记忆笔记之间形成互联的知识网络
+# 类似人脑的联想记忆</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="challenges-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">设计挑战</p><h2 id="challenges-title">图谱很强，<br>坑也很具体。</h2></div>
+      <p class="reading-intro">实体消歧、Schema 进化、图谱膨胀、提取质量、查询延迟、混合架构一致性，原文逐条给了应对方案。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">知识图谱记忆的设计挑战与解决方案</caption>
+          <thead><tr><th scope="col">挑战</th><th scope="col">解决方案</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">实体消歧（同名不同人）</th><td>上下文感知的实体链接 + 唯一 ID</td></tr>
+            <tr><th scope="row">Schema 进化</th><td>Graphiti 支持 prescribed + learned ontology</td></tr>
+            <tr><th scope="row">图谱膨胀</th><td>时间失效 + 定期清理低价值节点</td></tr>
+            <tr><th scope="row">提取质量</th><td>LLM 提取 + 人工审核关键事实</td></tr>
+            <tr><th scope="row">查询延迟</th><td>混合索引（向量 + BM25 + 图遍历）+ 缓存</td></tr>
+            <tr><th scope="row">混合架构一致性</th><td>事务性写入 / 最终一致性 + 删除同步</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">八个问题，<br>从“一把梭”到一致性。</h2></div>
+      <p class="reading-intro">前四个是误区，后四个是追问。回答时先讲介质边界，再讲混合与一致性。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <div class="misconception-label">误区 01</div>
+        <div><h3>“向量数据库能解决所有记忆需求”</h3><p>向量检索基于相似度，不是真正的理解。它无法回答“A 和 B 是什么关系？”或“这个信息是什么时候变的？”等需要结构化推理的问题。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 02</div>
+        <div><h3>“知识图谱太复杂，不值得用”</h3><p>对于简单应用确实如此。但当 Agent 需要追踪实体关系、处理矛盾信息或做时间推理时，知识图谱的价值会迅速超过构建成本。Graphiti 等框架已大幅降低门槛。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 03</div>
+        <div><h3>“知识图谱就是把所有信息都存成三元组”</h3><p>不是所有信息都适合图谱。对话历史、非结构化文档适合向量；用户属性配置适合结构化；图谱只存实体、关系和关键事实。混合架构是最佳实践。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 04</div>
+        <div><h3>“构建知识图谱必须预定义完整 Schema”</h3><p>Graphiti 等现代框架支持 learned ontology：从数据中自动学习 Schema，同时支持预定义的 prescribed ontology 约束关键关系。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 05</div>
+        <div><h3>向量检索返回语义相似但实际无关的内容怎么办？</h3><p>两层解决：加 Reranker 对检索结果做精排；结合结构化元数据过滤（按用户 ID、时间范围、类别筛选后再做语义检索）。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 06</div>
+        <div><h3>混合架构的一致性如何保证？</h3><p>同一条信息在向量存储和图谱中需要同步更新。实践中用事务性写入或最终一致性。删除尤其要注意：向量存储和图谱里都要清理。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 07</div>
+        <div><h3>图谱记忆的实体提取准确率不够怎么办？</h3><p>三层保障：用专门的 NER 模型做初步提取；LLM 做上下文理解和关系推理；对关键事实做人工审核或交叉验证。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 08</div>
+        <div><h3>图谱和 RAG 的关系是什么？</h3><p>GraphRAG 是两者的结合：用知识图谱增强 RAG 检索。传统 RAG 只做文档级语义检索，GraphRAG 可以在检索后利用图结构做关系推理和多跳问答。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="sources-title">
+    <p class="eyebrow">参考资料</p>
+    <h2 class="source-heading" id="sources-title">原文引用与延伸阅读</h2>
+    <p class="source-summary">以下链接来自原文。只有主动点击外链才会离开本页；本页不加载任何外部资源。</p>
+    <details>
+      <summary>展开 8 条参考资料</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.marktechpost.com/2025/11/10/comparing-memory-systems-for-llm-agents-vector-graph-and-event-logs/" rel="noreferrer noopener">Comparing Memory Systems for LLM Agents: Vector, Graph, and Event Logs (MarkTechPost)</a></li>
+          <li><a href="https://mem0.ai/research" rel="noreferrer noopener">Mem0 Research: 26% Accuracy Boost for LLMs</a></li>
+          <li><a href="https://www.freecodecamp.org/news/how-ai-agents-remember-things-vector-stores-in-llm-memory/" rel="noreferrer noopener">How AI Agents Remember Things: Vector Stores in LLM Memory (freeCodeCamp)</a></li>
+          <li><a href="https://arxiv.org/pdf/2502.12110" rel="noreferrer noopener">A-MEM: Agentic Memory for LLM Agents (arXiv)</a></li>
+          <li><a href="https://machinelearningmastery.com/beyond-short-term-memory-the-3-types-of-long-term-memory-ai-agents-need/" rel="noreferrer noopener">Beyond Short-term Memory: 3 Types of Long-term Memory (ML Mastery)</a></li>
+          <li><a href="https://github.com/getzep/graphiti" rel="noreferrer noopener">Graphiti: Build Real-Time Knowledge Graphs for AI Agents (GitHub)</a></li>
+          <li><a href="https://neo4j.com/blog/developer/graphiti-knowledge-graph-memory/" rel="noreferrer noopener">Graphiti: Knowledge Graph Memory for an Agentic World (Neo4j Blog)</a></li>
+          <li><a href="https://blog.getzep.com/content/files/2025/01/ZEP__USING_KNOWLEDGE_GRAPHS_TO_POWER_LLM_AGENT_MEMORY_2025011700.pdf" rel="noreferrer noopener">Zep: Temporal Knowledge Graph Architecture for Agent Memory</a></li>
+        </ul>
+        <p class="source-footnote">性能数据、框架版本和延迟数字均按原文 2026 年版本呈现，本页未联网核实。相关页面：<a href="048-memory-forgetting-updating.html">048</a>（本批生成）、<a href="043-persistent-memory.html">043</a>（本批生成）、<a href="040-memory-types.html">040</a>（已在库内）。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>05-memory-and-state/046-long-term-memory-storage.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 4 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const QUESTIONS = [
+    {
+      key: "query",
+      title: "先问：你主要在查什么？",
+      subtitle: "固定场景：为一个小型 Agent 产品选长期记忆存储。先确定查询类型，再看关系需求和规模。",
+      summary: "阶段 1 / 5 · 尚未选择查询类型",
+      options: [
+        { id: "semantic", label: "语义召回", example: "“推荐一个 Web 框架”", desc: "找“意思相近”的非结构化文本，模糊匹配优先。" },
+        { id: "structured", label: "精确属性", example: "“用户偏好语言是什么？”", desc: "按字段查用户画像、偏好、配置，要求准确。" },
+        { id: "graph", label: "实体关系", example: "“张三现在在哪家公司？”", desc: "查实体之间的关系，可能需要多跳或时间推理。" }
+      ]
+    },
+    {
+      key: "relation",
+      title: "再问：需要关系和时间推理吗？",
+      subtitle: "关系需求决定要不要上图谱。多跳查询和时间有效性，都是向量和结构化存储的弱项。",
+      summary: "阶段 2 / 5 · 等待选择关系需求",
+      options: [
+        { id: "none", label: "不需要", example: "只查单条事实", desc: "查询停留在单条记忆，不沿实体关系走。" },
+        { id: "multi", label: "需要多跳", example: "“张三的上级的上级是谁？”", desc: "沿图遍历多跳，向量相似度帮不上忙。" },
+        { id: "temporal", label: "需要时间有效性", example: "“张三这个月在哪工作？”", desc: "要区分事实何时生效、何时失效，保留历史。" }
+      ]
+    },
+    {
+      key: "scale",
+      title: "最后问：规模和一致性要求？",
+      subtitle: "单用户、小规模可以先用一种存储；多用户生产通常需要混合架构；强一致和审计会把结构化存储推到主位。",
+      summary: "阶段 3 / 5 · 等待选择规模",
+      options: [
+        { id: "single", label: "单用户 / 小规模", example: "< 10 万条记忆", desc: "先跑通，优先简单，后续再拆。" },
+        { id: "prod", label: "多用户生产", example: "QPS / 成本 / 合规", desc: "需要混合架构、reranker、访问隔离和可观测性。" },
+        { id: "consistency", label: "强一致 / 审计", example: "事务、删除可追溯", desc: "结构化存储做主轴，跨库写入要事务或补偿。" }
+      ]
+    }
+  ];
+
+  const STATE = { query: null, relation: null, scale: null };
+  const state = { stage: 0 };
+  const byId = (id) => document.getElementById(id);
+
+  const STORE_LABELS = Object.freeze({
+    vector: { name: "向量", cls: "vector" },
+    structured: { name: "结构化", cls: "structured" },
+    graph: { name: "知识图谱", cls: "graph" }
+  });
+
+  function answersComplete() {
+    return Boolean(STATE.query && STATE.relation && STATE.scale);
+  }
+
+  function questionScene(index) {
+    const q = QUESTIONS[index];
+    const chosen = STATE[q.key];
+    const cards = q.options.map((opt) => `<button type="button" class="choice-card" data-answer="${opt.id}" aria-pressed="${chosen === opt.id}">
+      <b>${opt.label}</b><span class="example">${opt.example}</span><span class="desc">${opt.desc}</span>
+    </button>`).join("");
+    const note = chosen
+      ? `<p class="chosen-note">已选择：<strong>${q.options.find((o) => o.id === chosen).label}</strong>。点“下一步”继续。</p>`
+      : `<p class="chosen-note">还没有选择。本页只按固定判断框架给建议，不做性能预测。</p>`;
+    return `<div class="choice-grid" role="group" aria-label="${q.title}">${cards}</div>${note}
+      <p class="demo-note">这些选择只改变本页的推荐结果；不连接数据库，也不读取任何真实记忆。</p>`;
+  }
+
+  function recommend() {
+    const stores = new Set();
+    if (STATE.query === "semantic") stores.add("vector");
+    if (STATE.query === "structured") stores.add("structured");
+    if (STATE.query === "graph") stores.add("graph");
+    if (STATE.relation === "multi" || STATE.relation === "temporal") stores.add("graph");
+    if (STATE.scale === "prod") { stores.add("vector"); stores.add("structured"); }
+    if (STATE.scale === "consistency") stores.add("structured");
+    if (stores.size === 0) stores.add("vector");
+
+    let primary = "vector";
+    if (STATE.query === "graph" || STATE.relation !== "none") primary = "graph";
+    else if (STATE.query === "structured") primary = "structured";
+    if (STATE.scale === "consistency") primary = "structured";
+    if (!stores.has(primary)) stores.add(primary);
+
+    const reasons = [];
+    if (STATE.query === "semantic") reasons.push("查询以语义召回为主，向量检索的模糊匹配是强项。");
+    if (STATE.query === "structured") reasons.push("查询是精确属性，结构化存储按字段直接取，准确且延迟低。");
+    if (STATE.query === "graph") reasons.push("查询围绕实体关系，图遍历天然支持多跳。");
+    if (STATE.relation === "temporal") reasons.push("需要区分事实的生效与失效时间，采用带 valid_from / valid_to 的双时间线图谱。");
+    if (STATE.relation === "multi") reasons.push("需要沿关系多跳，向量相似度无法表达“谁的上级是谁”。");
+    if (STATE.scale === "prod") reasons.push("多用户生产需要混合架构：向量管语义历史，结构化管属性，图谱管关系。");
+    if (STATE.scale === "consistency") reasons.push("强一致与审计要求结构化存储做主位，跨库写入用事务或补偿。");
+
+    const caveats = [];
+    if (stores.has("graph")) caveats.push("图谱要处理实体消歧、Schema 进化和图谱膨胀；检索中位数延迟按原文实测为 2–3 秒，需要设 SLA。");
+    if (stores.has("vector")) caveats.push("纯向量没有时间维度和重要性维度，ANN 召回有 false positive，生产应加 reranker 和元数据过滤。");
+    if (stores.has("structured")) caveats.push("结构化不支持模糊匹配，Schema 演化成本高；需要提前设计迁移策略。");
+    if (stores.size > 1) caveats.push("混合架构要保证跨库同步：写入用事务或最终一致性，删除时向量库和图谱都要清理。");
+    const ordered = [primary, ...Array.from(stores).filter((key) => key !== primary)];
+    return { stores: ordered, primary, reasons, caveats };
+  }
+
+  function resultScene() {
+    if (!answersComplete()) {
+      return `<div class="rec"><h3>还差一个选择</h3><p>请回到第 1–3 步，把查询类型、关系需求和规模都选完，再看推荐结果。</p></div>`;
+    }
+    const rec = recommend();
+    const pathLabels = {
+      semantic: "语义召回", structured: "精确属性", graph: "实体关系",
+      none: "不需要关系", multi: "需要多跳", temporal: "需要时间有效性",
+      single: "单用户 / 小规模", prod: "多用户生产", consistency: "强一致 / 审计"
+    };
+    const storeChips = rec.stores.map((key) => `<span class="store ${STORE_LABELS[key].cls}">${STORE_LABELS[key].name}${key === rec.primary ? " · 主" : " · 辅"}</span>`).join("");
+    return `
+      <div class="path"><span class="step">${pathLabels[STATE.query]}</span><span class="arrow">→</span><span class="step">${pathLabels[STATE.relation]}</span><span class="arrow">→</span><span class="step">${pathLabels[STATE.scale]}</span></div>
+      <div class="rec">
+        <h3>推荐组合：${rec.stores.map((key) => STORE_LABELS[key].name).join(" + ")}</h3>
+        <div class="store-row">${storeChips}</div>
+        <p>主存储是 <strong>${STORE_LABELS[rec.primary].name}</strong>${rec.stores.length > 1 ? "，其余作为补充" : "，当前路径用单一介质即可覆盖"}。原文的判断是“按查询能力选介质，生产级个性化走混合”，不是三选一。</p>
+      </div>
+      <div class="rec-grid">
+        <div class="rec-cell"><b>为什么这样选</b><ul>${rec.reasons.map((r) => `<li>${r}</li>`).join("")}</ul></div>
+        <div class="rec-cell"><b>代价与注意</b><ul>${rec.caveats.map((c) => `<li>${c}</li>`).join("")}</ul></div>
+      </div>
+      <p class="demo-note">固定判断框架，不是绝对结论：同样的查询类型，不同团队会因为数据量、延迟和合规要求做不同选择。</p>`;
+  }
+
+  function frameworkScene() {
+    if (!answersComplete()) {
+      return `<div class="rec"><h3>先完成选型</h3><p>请回到第 1–3 步完成选择，再来看框架映射。</p></div>`;
+    }
+    const rec = recommend();
+    const rows = [
+      { name: "Mem0", when: "偏好 / 事实召回，想最快落地", fit: rec.stores.includes("vector") && STATE.scale !== "consistency" },
+      { name: "Zep / Graphiti", when: "关系推理 + 时间推理，双时间线是刚需", fit: rec.stores.includes("graph") },
+      { name: "LangMem", when: "已在 LangGraph 栈内，需要可插拔 Store", fit: STATE.scale !== "consistency" && !rec.stores.includes("graph") },
+      { name: "Letta", when: "需要 Agent 自主决定记什么、忘什么", fit: STATE.query === "graph" && STATE.scale === "single" },
+      { name: "自研混合架构", when: "大流量、强数据主权、合规严苛", fit: STATE.scale === "prod" || STATE.scale === "consistency" }
+    ];
+    const tableRows = rows.map((r) => `<tr>
+      <th scope="row">${r.name}</th>
+      <td>${r.when}</td>
+      <td>${r.fit ? '<span class="badge badge-ok">本路径优先</span>' : '<span class="badge badge-neutral">备选</span>'}</td>
+    </tr>`).join("");
+    return `
+      <div class="path"><span class="step">${STORE_LABELS[rec.primary].name}为主</span><span class="arrow">→</span><span class="step">${rec.stores.length > 1 ? "混合架构" : "单介质"}</span><span class="arrow">→</span><span class="step">${STATE.scale === "prod" || STATE.scale === "consistency" ? "生产约束" : "轻量场景"}</span></div>
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">按当前选型路径给出的框架映射</caption>
+          <thead><tr><th scope="col">框架</th><th scope="col">何时优先</th><th scope="col">与当前路径</th></tr></thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+      </div>
+      <p class="chosen-note">${STATE.scale === "consistency" ? "强一致 / 审计场景：框架通常只做原型，生产以自研结构化主轴 + 补偿写入为主。" : STATE.scale === "prod" ? "多用户生产：先用框架验证，再按 QPS、成本和合规要求决定是否自研混合架构。" : "轻量场景：优先用框架快速验证，不必一开始就自建三套存储。"}</p>
+      <p class="demo-note">以上映射来自原文的框架横评与经验法则，是判断框架的演示，不是绝对结论；框架版本与能力未联网核实。</p>`;
+  }
+
+  const SCENES = [() => questionScene(0), () => questionScene(1), () => questionScene(2), resultScene, frameworkScene];
+
+  function stageMeta(stage) {
+    if (stage < 3) return QUESTIONS[stage];
+    return {
+      title: stage === 3 ? "按三条路径，给出存储组合" : "把存储组合映射到框架",
+      subtitle: stage === 3
+        ? "推荐结果由前面三个选择决定。主存储负责核心查询，辅助存储补齐语义、属性或关系。"
+        : "同一套存储组合，可以对应不同框架。先看路径是否匹配，再看团队栈和运维能力。",
+      summary: stage === 3 ? "阶段 4 / 5 · 查看选型结果" : "阶段 5 / 5 · 查看框架映射"
+    };
+  }
+
+  function renderStage(stage) {
+    state.stage = stage;
+    const meta = stageMeta(stage);
+    byId("route-scene").innerHTML = SCENES[stage]();
+    byId("scene-index").textContent = `阶段 ${stage + 1} / 5 · 固定判断框架`;
+    byId("route-title").textContent = meta.title;
+    byId("scene-subtitle").textContent = meta.subtitle;
+    byId("state-summary").textContent = meta.summary;
+    byId("back-button").disabled = stage === 0;
+    byId("next-button").disabled = stage === 4 || (stage < 3 && !STATE[QUESTIONS[stage].key]);
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      const active = Number(button.dataset.stage) === stage;
+      if (active) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    document.querySelectorAll("[data-answer]").forEach((button) => {
+      button.addEventListener("click", () => {
+        STATE[QUESTIONS[stage].key] = button.dataset.answer;
+        renderStage(stage);
+        byId("route-announcement").textContent = `已选择：${button.querySelector("b").textContent}`;
+      });
+    });
+    byId("route-announcement").textContent = `${meta.title}。${meta.subtitle}`;
+  }
+
+  byId("reset-button").addEventListener("click", () => {
+    STATE.query = null; STATE.relation = null; STATE.scale = null;
+    renderStage(0);
+  });
+  byId("back-button").addEventListener("click", () => renderStage(Math.max(0, state.stage - 1)));
+  byId("next-button").addEventListener("click", () => {
+    if (state.stage < 3 && !STATE[QUESTIONS[state.stage].key]) return;
+    renderStage(Math.min(4, state.stage + 1));
+  });
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+
+  renderStage(0);
+</script>
+</body>
+</html>

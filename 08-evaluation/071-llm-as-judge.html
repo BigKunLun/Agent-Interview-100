@@ -1,0 +1,950 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>LLM-as-Judge：使用 LLM 评估 LLM 输出 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .lj-banner { display: flex; align-items: flex-start; gap: 9px; margin: var(--s-4) var(--s-6) 0; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .lj-banner::before { content: "教学"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .lj-banner strong { color: #4d3000; }
+  .lj-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .lj-neutral { background: #eef1ee; color: #3f463f; border-color: #c9cec9; }
+  .lj-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .lj-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .lj-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .lj-bad { background: #fbecec; color: #8a1f1f; border-color: #d9a3a3; }
+  .lj-question { padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-left: 4px solid #194f87; border-radius: var(--r-1); background: var(--surface); font-size: 13px; line-height: 1.75; }
+  .lj-question b { display: block; font: 600 10px/1.6 var(--mono); color: #194f87; letter-spacing: .06em; margin-bottom: 3px; }
+  .lj-answers { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); margin-top: var(--s-3); }
+  .lj-answer { min-width: 0; padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; line-height: 1.75; }
+  .lj-answer-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-2); margin-bottom: 5px; }
+  .lj-answer-head b { font: 600 13px/1.4 var(--mono); }
+  .lj-answer p { margin-top: 0; max-width: none; font-size: 12px; }
+  .lj-answer[data-active="true"] { border-color: #194f87; box-shadow: inset 0 0 0 1px #194f87; background: #f4f8fc; }
+  .lj-rubric { margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); overflow: hidden; }
+  .lj-rubric-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 5px; padding: 9px 12px; border-bottom: 1px solid var(--border); background: var(--surface-soft); }
+  .lj-rubric-head b { font-size: 13px; }
+  .lj-rubric-head span { font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .lj-dim { display: grid; grid-template-columns: 118px 52px minmax(0, 1fr); gap: 10px; align-items: start; padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: 12px; line-height: 1.65; }
+  .lj-dim:last-child { border-bottom: 0; }
+  .lj-dim-name { font-weight: 600; }
+  .lj-dim-max { font: 11px/1.7 var(--mono); color: var(--text-dim); }
+  .lj-dim-anchors { color: var(--text-dim); }
+  .lj-dim-anchors b { color: var(--ink); font-weight: 600; }
+  .lj-total-note { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; padding: 9px 12px; border-top: 1px solid var(--border); background: #f7f6f1; font-size: 12px; }
+  .lj-total-note strong { font-family: var(--mono); }
+  .lj-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: var(--s-4); }
+  .lj-toolbar-label { font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .lj-tab { min-height: 40px; padding: 6px 14px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: 12px; color: var(--text-dim); }
+  .lj-tab:hover { border-color: #194f87; }
+  .lj-tab[aria-pressed="true"] { background: #194f87; border-color: #194f87; color: #fff; font-weight: 600; }
+  .lj-score-card { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .lj-score-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--s-2); padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--surface-soft); }
+  .lj-score-head b { font-size: 13px; }
+  .lj-total { display: inline-flex; align-items: baseline; gap: 4px; padding: 2px 10px; border-radius: 999px; background: #194f87; color: #fff; font: 600 12px/1.8 var(--mono); }
+  .lj-total em { font-style: normal; font-size: 10px; opacity: .9; }
+  .lj-score-row { display: grid; grid-template-columns: 112px 96px minmax(0, 1fr); gap: 10px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 12px; line-height: 1.6; }
+  .lj-score-row:last-child { border-bottom: 0; }
+  .lj-pips { display: flex; gap: 3px; }
+  .lj-pip { width: 20px; height: 20px; display: grid; place-items: center; border: 1px solid #858d85; border-radius: 50%; background: #fff; color: #5d625d; font: 10px/1 var(--mono); }
+  .lj-pip.on { border-color: #194f87; background: #194f87; color: #fff; font-weight: 600; }
+  .lj-score-anchor { color: var(--text-dim); font-size: 11px; }
+  .lj-score-anchor b { color: var(--ink); font-weight: 600; }
+  .lj-summary-line { margin-top: var(--s-3); padding: 9px 12px; border-left: 3px solid #194f87; background: #eaf1f8; font-size: 12px; line-height: 1.75; }
+  .lj-order-box { margin-top: var(--s-3); padding: var(--s-3) var(--s-4); border: 1px dashed var(--border-bright); border-radius: var(--r-1); background: #f7f6f1; font-size: 12px; line-height: 1.8; }
+  .lj-order-box b { font-family: var(--mono); }
+  .lj-versus { display: grid; grid-template-columns: minmax(0, 1fr) 52px minmax(0, 1fr); gap: var(--s-3); align-items: stretch; margin-top: var(--s-3); }
+  .lj-versus-card { min-width: 0; padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; line-height: 1.7; }
+  .lj-versus-card .pos { display: block; font: 600 10px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .06em; }
+  .lj-versus-card b { display: block; margin-bottom: 3px; font: 600 15px/1.5 var(--mono); }
+  .lj-versus-mid { display: grid; place-items: center; font: 600 12px/1 var(--mono); color: var(--text-dim); }
+  .lj-verdict { margin-top: var(--s-3); padding: var(--s-3) var(--s-4); border: 1px solid #9cc39e; border-radius: var(--r-1); background: #e6f2e6; font-size: 13px; line-height: 1.7; }
+  .lj-verdict b { color: #14532d; }
+  .lj-verdict.lj-mismatch { border-color: #d9a3a3; background: #fbecec; }
+  .lj-verdict.lj-mismatch b { color: #8a1f1f; }
+  .lj-check { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); margin-top: var(--s-3); }
+  .lj-check-cell { padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; line-height: 1.7; }
+  .lj-check-cell b { display: block; margin-bottom: 3px; font: 600 11px/1.6 var(--mono); color: var(--text-dim); }
+  .lj-check-cell strong { color: var(--ink); }
+  .lj-kappa { display: grid; grid-template-columns: minmax(0, 1fr) 170px; gap: var(--s-4); align-items: center; margin-top: var(--s-3); padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .lj-kbar-row { display: grid; grid-template-columns: 118px minmax(0, 1fr) 52px; gap: 8px; align-items: center; margin-top: 8px; font-size: 11px; }
+  .lj-kbar-row:first-child { margin-top: 0; }
+  .lj-kbar-label { color: var(--text-dim); }
+  .lj-kbar-track { height: 18px; border: 1px solid var(--border-bright); border-radius: 3px; background: var(--surface-soft); overflow: hidden; }
+  .lj-kbar-fill { display: block; height: 100%; background: #9eb4c9; }
+  .lj-kbar-fill.chance { background: #c9cec9; }
+  .lj-kbar-row b { font: 600 11px/1 var(--mono); text-align: right; }
+  .lj-kappa-readout { text-align: center; padding: var(--s-3); border: 1px solid #194f87; border-radius: var(--r-1); background: #eaf1f8; }
+  .lj-kappa-readout span { display: block; font: 10px/1.6 var(--mono); color: #194f87; letter-spacing: .06em; }
+  .lj-kappa-readout b { display: block; margin-top: 2px; font: 600 34px/1.1 var(--mono); color: #194f87; }
+  .lj-kappa-readout small { display: block; margin-top: 4px; font-size: 10px; color: #3f463f; line-height: 1.5; }
+  .lj-formula { margin-top: var(--s-3); padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: #f7f6f1; font: 12px/1.9 var(--mono); color: var(--ink); overflow-wrap: anywhere; }
+  .lj-formula b { color: #194f87; }
+  .lj-scale { margin-top: var(--s-3); display: grid; gap: 6px; }
+  .lj-scale-row { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 8px; align-items: center; font-size: 11px; line-height: 1.6; }
+  .lj-scale-track { position: relative; height: 16px; border: 1px solid var(--border-bright); border-radius: 3px; background: var(--surface-soft); }
+  .lj-scale-band { position: absolute; top: 0; bottom: 0; background: #9cc39e; }
+  .lj-scale-band.judge { background: #9eb4c9; }
+  .lj-scale-mark { position: absolute; top: -3px; bottom: -3px; width: 2px; background: #202421; }
+  .lj-scale-mark.bad { background: #8a1f1f; }
+  .lj-scale-key { font: 10px/1.6 var(--mono); color: var(--text-dim); }
+  .lj-table td:first-child { min-width: 7em; }
+  .lj-wide { min-width: 760px; }
+  .lj-fixed-note { display: inline-block; margin-top: var(--s-3); padding: 3px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  @media (max-width: 900px) {
+    .lj-versus { grid-template-columns: 1fr; }
+    .lj-versus-mid { padding-block: 2px; }
+    .lj-kappa { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .lj-banner { margin-inline: var(--s-4); }
+    .lj-answers, .lj-check { grid-template-columns: 1fr; }
+    .lj-dim { grid-template-columns: 96px 48px minmax(0, 1fr); gap: 6px; }
+    .lj-score-row { grid-template-columns: 92px 92px minmax(0, 1fr); gap: 6px; }
+    .lj-pip { width: 18px; height: 18px; font-size: 9px; }
+    .lj-kbar-row { grid-template-columns: 84px minmax(0, 1fr) 44px; }
+    .lj-scale-row { grid-template-columns: 1fr; gap: 3px; }
+    .lj-width-scroll { overflow-x: auto; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">071 / LLM-as-Judge</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 16 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="../07-prompt-engineering/102-context-engineering.html">← 上一页 · 什么是 Context Engine…</a><a href="072-agent-benchmarks.html">下一页 → · Agent Benchmark</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Evaluation · 可交互讲解</p>
+      <h1>会打分的模型，<br>也会偏。</h1>
+    </div>
+    <div>
+      <p class="lead">LLM-as-Judge 用一个更强的 LLM 自动评估另一个模型的输出。两种核心模式：Pointwise 按 Rubric 给单个输出打分，Pairwise 比较两个输出谁更好。它便宜、可扩展，但分数是“有偏差的专家意见”，不是客观事实。</p>
+      <p class="definition"><strong>关键边界：</strong>衡量 Judge 可靠性要看 Cohen's Kappa，而不是 raw percent agreement。后者容易虚高：κ = 0.62 时，表面一致率仍可能超过 80%。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Evaluation</span><span class="pill">评分面板</span><span class="pill">固定教学评分</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="lj-title">
+    <div class="player-top">
+      <div class="player-label">固定评分面板 <small>Rubric · Pointwise · Pairwise · 不调用模型</small></div>
+      <div class="controls" role="group" aria-label="评分演示控制">
+        <button type="button" class="button button-quiet" id="lj-reset">重置</button>
+        <button type="button" class="button" id="lj-back" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="lj-next">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="评分演示阶段">
+      <ol style="--stages: 4">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>Rubric</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>Pointwise</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>Pairwise</button></li>
+        <li><button type="button" class="stage-button" data-stage="3"><span class="stage-number">4</span>Kappa</button></li>
+      </ol>
+    </nav>
+    <p class="lj-banner"><span><strong>本页是固定教学评分，不调用任何模型。</strong>题目、两个回答、四项分数、Judge 的两次选择和 Kappa 用例都是预设的，用来演示评分与偏差校正的计算过程；不代表真实模型或真实评估结果。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="lj-index">阶段 1 / 4 · 固定教学评分</p>
+      <h2 id="lj-title">先把评分标准写死，再让 Judge 打分</h2>
+      <p id="lj-subtitle">固定题目和两个候选回答。四项 Rubric 一共 10 分，每一项都有明确的分数锚点。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="lj-scene"></div>
+      <p class="demo-note" id="lj-note">固定教学数据：题目、回答、分数和选择均为本页预设，不调用模型，不访问网络。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学评分 · 0 次模型调用</span><span id="lj-summary">阶段 1 / 4 · Rubric 满分 10</span></div>
+  </section>
+  <p id="lj-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="modes-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">两种核心模式</p><h2 id="modes-title">打绝对分，<br>还是分胜负？</h2></div>
+      <p class="reading-intro">Pointwise 给单个输出打分，适合有明确标准的评估；Pairwise 比较两个输出，适合主观偏好，但会放大位置偏差。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data lj-wide">
+          <caption class="sr-only">Pointwise 与 Pairwise 对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">Pointwise 评分</th><th scope="col">Pairwise 对比</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">输入</th><td>一个问题 + 一个回答</td><td>一个问题 + 两个回答</td></tr>
+            <tr><th scope="row">输出</th><td>各维度分数，例如 1–5 或 0–3</td><td>A 更好 / B 更好 / 差不多</td></tr>
+            <tr><th scope="row">适合</th><td>事实正确性、格式合规、有明确 Rubric 的评估</td><td>风格、偏好、两个版本之间的相对好坏</td></tr>
+            <tr><th scope="row">弱点</th><td>分数含义依赖 Rubric，跨批次比较要小心</td><td>位置偏差更明显；原文引用 ACL 2025 研究称 Pairwise 会放大偏差</td></tr>
+            <tr><th scope="row">成本</th><td>每个回答一次 Judge 调用</td><td>每对回答一次；做位置交换则翻倍</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="lj-fixed-note">模式对比与 ACL 2025 结论来自原文，未联网核实</p>
+      <h3>原文的两种调用方式</h3>
+      <p>Pointwise 把问题和回答放进 Prompt，要求 Judge 先分析优缺点，再输出 JSON 分数；Pairwise 把两个回答并排，要求给出 A 更好、B 更好或差不多，并说明理由。</p>
+      <details>
+        <summary>查看 Pointwise 与 Pairwise 的原文代码</summary>
+        <pre><code># 模式 1：Pointwise 评分（直接打分）
+async def pointwise_judge(question, answer, rubric=None):
+    prompt = f"""
+    请评估以下回答的质量。
+
+    问题：{question}
+    回答：{answer}
+
+    评分标准（Rubric）：
+    {rubric or '''
+    5分：完全正确、完整、清晰
+    4分：基本正确，有小瑕疵
+    3分：部分正确，有明显遗漏
+    2分：大部分不正确或不相关
+    1分：完全错误或无关
+    '''}
+
+    请先分析回答的优缺点，然后给出分数。
+    输出 JSON：{{"analysis": "...", "score": 1-5}}
+    """
+    return await judge_llm.invoke(prompt)
+
+# 模式 2：Pairwise 对比（两两比较）
+async def pairwise_judge(question, answer_a, answer_b):
+    prompt = f"""
+    比较以下两个回答，判断哪个更好。
+
+    问题：{question}
+    回答 A：{answer_a}
+    回答 B：{answer_b}
+
+    比较维度：准确性、完整性、清晰度、实用性。
+    输出：A更好 / B更好 / 差不多，并说明理由。
+    """
+    return await judge_llm.invoke(prompt)</code></pre>
+      </details>
+      <div class="callout">
+        <p class="callout-label">选择建议</p>
+        <p>有明确标准的评估，Pointwise 加详细 Rubric 更高效；主观偏好或两个版本难以绝对打分时，用 Pairwise，但要交换位置并检查一致性。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="bias-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">已知偏差</p><h2 id="bias-title">分数里的偏差，<br>有六种常见来源。</h2></div>
+      <p class="reading-intro">前五种是格式层的被动干扰，可以用交换位置、统一格式等机械手段缓解；第六种是修辞层的主动攻击，机械手段不够用。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data lj-wide lj-table">
+          <caption class="sr-only">原文列出的 LLM Judge 已知偏差与缓解方式</caption>
+          <thead><tr><th scope="col">偏差</th><th scope="col">现象</th><th scope="col">原文缓解方式</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">位置偏差</th><td>Pairwise 中倾向给排在前面的答案更高分</td><td>交换 A/B 位置做两次评估，取平均或一致性结果</td></tr>
+            <tr><th scope="row">冗长偏差</th><td>偏好更长、更详细的回答</td><td>在 Rubric 中明确“简洁也是优点”</td></tr>
+            <tr><th scope="row">自我偏好</th><td>GPT-4 做 Judge 时偏好 GPT-4 生成的内容</td><td>用与被评估模型不同家族的模型做 Judge</td></tr>
+            <tr><th scope="row">格式偏差</th><td>偏好有列表、标题等格式更好的回答</td><td>统一格式，或在 Rubric 中降低格式权重</td></tr>
+            <tr><th scope="row">锚定效应</th><td>提供参考答案时，Judge 被打分参考锚定</td><td>不提供参考答案，做 reference-free 评估</td></tr>
+            <tr><th scope="row">修辞偏差</th><td>内容不变，只改修辞表达即可系统性抬高打分</td><td>多版修辞改写做稳健性测试；Rubric 锚定可核验的实质断言</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="lj-fixed-note">偏差清单与缓解方式来自原文；修辞偏差的论文结论为社区单次实验，未独立复现</p>
+
+      <h3>修辞偏差为什么单独说</h3>
+      <p>位置、冗长、格式偏差作用在表层特征上，像是随机噪声，固定流程基本能抵消。修辞偏差不同：改写本身合法合规，没有可对齐的“正确格式”，攻击者可以针对评分机制定向优化，也就是 reward hacking。</p>
+      <div class="table-wrap">
+        <table class="data lj-wide">
+          <caption class="sr-only">格式层偏差与修辞层偏差对比</caption>
+          <thead><tr><th scope="col"></th><th scope="col">位置 / 冗长 / 格式偏差</th><th scope="col">修辞偏差</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">层次</th><td>格式层：排序、长度、排版这类表层特征</td><td>修辞层：论证语气、确定性措辞、框架叙述</td></tr>
+            <tr><th scope="row">性质</th><td>被动干扰，方向大体固定，接近随机噪声</td><td>主动攻击，攻击者可定向优化评分</td></tr>
+            <tr><th scope="row">缓解</th><td>交换位置、统一格式等机械手段基本可消除</td><td>机械手段无效；需要对抗性改写测试和人工抽检</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文引用 arXiv:2608.08975《How Can Rhetoric Reward-Hack AI Reviewers?》（2026-08-14）。该文报告：用 4200 篇改写稿（源自 120 篇 ICLR 2026 投稿）实验，在科学内容完全不变的前提下，纯修辞改写可以系统性操纵 AI 审稿打分。原文同时提醒，这是社区单次实验，截至原文更新时未见独立复现，应作为需要防范的风险面，而不是已确立的定量结论。</p>
+      <div class="callout">
+        <p class="callout-label">实践含义</p>
+        <p>只要打分会带来实际收益（论文录用、排行榜位次、RLAIF 奖励信号），就要假设被评估方会针对 Judge 优化。评估设计要包含对抗性改写的稳健性测试，并保留人工抽检。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="reliable-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">构建可靠 Judge</p><h2 id="reliable-title">重复、投票、<br>交换位置。</h2></div>
+      <p class="reading-intro">原文给了一个 ReliableLLMJudge：同一输入评三次取平均，多模型取中位数，Pairwise 交换位置后再判。</p>
+    </div>
+    <div class="prose">
+      <h3>三种降低偏差的手段</h3>
+      <ul>
+        <li><strong>多次评估取平均：</strong>同一问题、同一回答评三次，减少单次随机性。</li>
+        <li><strong>多 Judge 投票：</strong>不同家族的模型各评一次，取中位数作为共识，减少单模型偏差。</li>
+        <li><strong>Pairwise 去偏：</strong>正序和交换位置各评一次；两次都选同一个答案才算胜出，否则判“不确定”。</li>
+      </ul>
+      <details>
+        <summary>查看 ReliableLLMJudge 的原文代码</summary>
+        <pre><code>class ReliableLLMJudge:
+    """带偏差缓解的 LLM 评估系统"""
+
+    async def evaluate(self, question, answer, rubric):
+        scores = []
+
+        # 策略 1：多次评估取平均（减少随机性）
+        for _ in range(3):
+            score = await self.pointwise_judge(question, answer, rubric)
+            scores.append(score)
+        avg_score = np.mean(scores)
+
+        # 策略 2：多 Judge 投票（减少单模型偏差）
+        judges = ["gpt-4o", "claude-sonnet-4-5", "gemini-pro"]
+        multi_scores = []
+        for judge in judges:
+            s = await self.judge_with_model(judge, question, answer, rubric)
+            multi_scores.append(s)
+        consensus = np.median(multi_scores)
+
+        return {
+            "single_judge_avg": avg_score,
+            "multi_judge_consensus": consensus,
+            "agreement": self.compute_agreement(multi_scores),
+        }
+
+    async def pairwise_debiased(self, question, answer_a, answer_b):
+        """消除位置偏差的 Pairwise 评估"""
+        # 正序评估
+        result_1 = await self.pairwise_judge(question, answer_a, answer_b)
+        # 交换位置再评估
+        result_2 = await self.pairwise_judge(question, answer_b, answer_a)
+
+        if result_1 == "A" and result_2 == "B":
+            return "A更好"  # 两次都选了同一个答案
+        elif result_1 == "B" and result_2 == "A":
+            return "B更好"
+        else:
+            return "不确定"  # 结果不一致，可能真的差不多</code></pre>
+      </details>
+      <h3>怎么选 Judge 模型</h3>
+      <p>原文给的原则是：Judge 应比被评估模型更强；Judge 应与被评估模型来自不同家族，减少自我偏好；关键评估用多个 Judge 投票。常见组合是用 GPT-4o 评估 Claude 输出，反之亦然。</p>
+      <div class="callout">
+        <p class="callout-label">成本控制</p>
+        <p>原文给出的做法是：大规模评估采样而非全量；先用便宜模型初筛，只对边界案例用强 Judge；缓存相同输入的评估结果。原文称 LLM Judge 成本通常是人工评估的 1/10。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="rubric-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">Rubric 设计</p><h2 id="rubric-title">“评估质量”太虚，<br>拆成可打分的项。</h2></div>
+      <p class="reading-intro">好的 Rubric 把每个维度的分数锚点写清楚。原文的示例是四项、满分 10 分：准确性 0–3、完整性 0–3、清晰度 0–2、实用性 0–2。</p>
+    </div>
+    <div class="prose">
+      <p>具体 Rubric 比模糊的“评估质量”可靠得多。每一项都说明什么情况得几分，Judge 才有稳定的判断依据，人工校准也才有可对照的标尺。</p>
+      <details open>
+        <summary>查看原文的四维 Rubric</summary>
+        <pre><code>rubric_example = """
+评估维度及标准：
+
+1. 事实准确性 (0-3分)
+   3: 所有事实完全正确
+   2: 大部分正确，有 1-2 处小错误
+   1: 有多处事实错误
+   0: 大部分内容不准确
+
+2. 完整性 (0-3分)
+   3: 全面覆盖问题的所有方面
+   2: 覆盖了主要方面，遗漏了次要点
+   1: 只回答了部分问题
+   0: 严重遗漏关键内容
+
+3. 清晰度 (0-2分)
+   2: 结构清晰，逻辑连贯
+   1: 基本可读但组织可改进
+   0: 混乱难懂
+
+4. 实用性 (0-2分)
+   2: 包含可操作的建议或代码
+   1: 提供了方向但缺少细节
+   0: 纯理论无实用价值
+
+总分 = 准确性 + 完整性 + 清晰度 + 实用性（满分 10）
+"""</code></pre>
+      </details>
+      <p>Rubric 还有两个作用：一是把“简洁也是优点”写进去，抵消冗长偏差；二是要求 Judge 先给分析再给分，让分数有可检查的依据。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="agent-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">前沿趋势</p><h2 id="agent-title">不只推理，<br>还能动手验证。</h2></div>
+      <p class="reading-intro">Agent-as-Judge 用 Agent 代替纯 LLM：除了推理评判，还能搜索事实、执行代码，再综合打分。原文把它列为 2025 年的新趋势。</p>
+    </div>
+    <div class="prose">
+      <p>纯 LLM Judge 只能基于已有上下文判断。Agent-as-Judge 多了工具：抽取回答中的关键声明并搜索验证，抽取代码块并执行检查，再把核查结果综合成评分。</p>
+      <details>
+        <summary>查看 AgentJudge 的原文代码</summary>
+        <pre><code>class AgentJudge:
+    """用 Agent 替代纯 LLM 做评估——可以调用工具验证"""
+
+    async def evaluate(self, question, answer):
+        # Agent 不仅用推理评判，还可以执行验证动作
+
+        # 1. 事实核查：搜索验证关键声明
+        claims = await self.extract_claims(answer)
+        fact_checks = []
+        for claim in claims:
+            evidence = await self.web_search(claim)
+            is_true = await self.verify(claim, evidence)
+            fact_checks.append({"claim": claim, "verified": is_true})
+
+        # 2. 代码验证：运行代码检查正确性
+        code_blocks = self.extract_code(answer)
+        for code in code_blocks:
+            result = await self.execute_code(code)
+            # 检查是否能运行、输出是否正确
+
+        # 3. 综合评分
+        return await self.synthesize_score(fact_checks, code_results)</code></pre>
+      </details>
+      <p>本页不执行任何代码，也不发起搜索。原文的参考资料里有一篇 Agent-as-a-Judge 的综述（arXiv:2508.02994v1），可以延伸阅读。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">五个问题，<br>分清分数与事实。</h2></div>
+      <p class="reading-intro">两个误区、三个追问。回答时先给结论，再讲适用条件和证据强度。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <div class="misconception-label">误区 01</div>
+        <div><h3>“LLM Judge 的评分就是客观事实”</h3><p>评分包含系统性偏差，只能算“有偏差的专家意见”，需要人工标注定期校准。衡量可靠性必须用 Cohen's Kappa，而不是 raw percent agreement。原文给出的基准是：人类-人类 κ ≈ 0.80，顶级 LLM Judge（GPT-4o / Claude Opus）κ ≈ 0.78–0.84（“Judging the Judges”, arXiv:2406.12624）。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 02</div>
+        <div><h3>“Pairwise 比 Pointwise 总是更好”</h3><p>Pairwise 在主观评估（风格、偏好）上更稳定；但对有明确标准的评估（事实正确性），Pointwise 加详细 Rubric 更高效。原文引用 ACL 2025 研究指出，Pairwise 实际上会放大偏差。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 03</div>
+        <div><h3>如何选择 Judge 模型？</h3><p>三条原则：Judge 应比被评估模型更强；Judge 应与被评估模型来自不同家族，减少自我偏好；关键评估用多个 Judge 投票。常见选择是 GPT-4o 评估 Claude 输出，反之亦然。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 04</div>
+        <div><h3>LLM Judge 的成本如何控制？</h3><p>大规模评估采样而非全量；先用便宜模型做初筛，只对边界案例用强 Judge；缓存相同输入的评估结果。原文称 LLM Judge 成本通常是人工评估的 1/10。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 05</div>
+        <div><h3>缓解了位置偏差和冗长偏差，Judge 就可信了吗？</h3><p>不够。位置、冗长、格式属于格式层的被动干扰，交换位置、统一排版基本可以消除；但 arXiv:2608.08975 报告了修辞层的主动攻击面：科学内容不变，纯修辞改写即可系统性操纵 AI 审稿打分。该实验用 4200 篇改写稿（源自 120 篇 ICLR 2026 投稿），改写本身合法合规，没有可对齐的“正确格式”。实践上，凡打分会带来收益的场景都要假设被评估方会针对 Judge 优化，加入对抗性改写测试并保留人工抽检。注意该结论来自社区单次实验、尚未独立复现，应作为风险面而非定量事实。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="sources-title">
+    <p class="eyebrow">参考资料</p>
+    <h2 class="source-heading" id="sources-title">原文引用与延伸阅读</h2>
+    <p class="source-summary">以下链接来自原文。只有主动点击外链才会离开本页；本页不加载任何外部资源。</p>
+    <details>
+      <summary>展开 6 条参考资料</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.confident-ai.com/blog/why-llm-as-a-judge-is-the-best-llm-evaluation-method" rel="noreferrer noopener">LLM-as-a-Judge Simply Explained (Confident AI)</a></li>
+          <li><a href="https://www.evidentlyai.com/llm-guide/llm-as-a-judge" rel="noreferrer noopener">LLM-as-a-Judge: A Complete Guide (Evidently AI)</a></li>
+          <li><a href="https://galileo.ai/blog/llm-as-a-judge-guide-evaluation" rel="noreferrer noopener">Comprehensive Guide to LLM-as-a-Judge Evaluation (Galileo AI)</a></li>
+          <li><a href="https://arxiv.org/html/2508.02994v1" rel="noreferrer noopener">The Rise of Agent-as-a-Judge Evaluation for LLMs (arXiv)</a></li>
+          <li><a href="https://www.patronus.ai/llm-testing/llm-as-a-judge" rel="noreferrer noopener">LLM As a Judge: Tutorial and Best Practices (Patronus AI)</a></li>
+          <li><a href="https://arxiv.org/abs/2608.08975" rel="noreferrer noopener">How Can Rhetoric Reward-Hack AI Reviewers? (arXiv:2608.08975；社区单次实验，未见独立复现)</a></li>
+        </ul>
+        <p class="source-footnote">Kappa 数值、ACL 2025 结论和修辞偏差论文结果均按原文表述呈现，本页未联网核实。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>08-evaluation/071-llm-as-judge.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 5 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const QUESTION = "RAG 检索没有返回相关内容时，Agent 应该怎么回答用户？";
+
+  const ANSWERS = Object.freeze({
+    A: {
+      label: "回答 A",
+      text: "直接说明没有检索到可引用的依据，给出两个可执行的下一步：放宽检索范围，或转人工；不要凭记忆编造答案。",
+      short: "没有依据就直说，给下一步，不编造。"
+    },
+    B: {
+      label: "回答 B",
+      text: "检索为空时，先不要直接回答。可以依次尝试：1）改写查询词；2）扩大 top_k；3）换一个检索源；4）如果仍然为空，就明确告诉用户没有依据，并建议补充信息或转人工。全程不要编造事实。",
+      short: "先重试检索，仍为空再说明没有依据。"
+    }
+  });
+
+  const DIMENSIONS = Object.freeze([
+    {
+      key: "accuracy", name: "事实准确性", max: 3,
+      anchors: ["大部分内容不准确", "有多处事实错误", "大部分正确，有 1–2 处小错误", "所有事实完全正确"]
+    },
+    {
+      key: "completeness", name: "完整性", max: 3,
+      anchors: ["严重遗漏关键内容", "只回答了部分问题", "覆盖主要方面，遗漏次要点", "全面覆盖问题的所有方面"]
+    },
+    {
+      key: "clarity", name: "清晰度", max: 2,
+      anchors: ["混乱难懂", "基本可读但组织可改进", "结构清晰，逻辑连贯"]
+    },
+    {
+      key: "usefulness", name: "实用性", max: 2,
+      anchors: ["纯理论无实用价值", "提供了方向但缺少细节", "包含可操作的建议或代码"]
+    }
+  ]);
+
+  const SCORES = Object.freeze({
+    A: { accuracy: 3, completeness: 2, clarity: 2, usefulness: 1 },
+    B: { accuracy: 3, completeness: 3, clarity: 1, usefulness: 1 }
+  });
+
+  const STAGES = Object.freeze([
+    {
+      nav: "Rubric",
+      title: "先把评分标准写死，再让 Judge 打分",
+      subtitle: "固定题目和两个候选回答。四项 Rubric 一共 10 分，每一项都有明确的分数锚点。",
+      note: "固定教学数据：题目、回答和 Rubric 均为本页预设，不调用模型，不访问网络。",
+      summary: "阶段 1 / 4 · Rubric 满分 10"
+    },
+    {
+      nav: "Pointwise",
+      title: "Pointwise：逐项打分，两个回答都是 8 分",
+      subtitle: "切换 A / B 查看四项得分。总分相同，但强项不同：A 更清晰，B 更完整。",
+      note: "固定教学评分：四项分数为预设值，用来演示 Rubric 的算法；真实评估需要模型按 Rubric 打分。",
+      summary: "阶段 2 / 4 · Pointwise · A 8 / B 8"
+    },
+    {
+      nav: "Pairwise",
+      title: "Pairwise：同一对回答，胜负跟着位置走",
+      subtitle: "切换 A 在前 / B 在前。两次都选排在前面的回答，说明这个固定的 Judge 有位置偏差。",
+      note: "固定教学评分：Judge 的两次选择被预设为“总选第一个”，专门用来演示位置偏差；真实 Judge 不会每次都这样。",
+      summary: "阶段 3 / 4 · Pairwise · 位置交换"
+    },
+    {
+      nav: "Kappa",
+      title: "Kappa：把随机一致扣掉，才看得见真实一致性",
+      subtitle: "固定用例：100 条评估里表面一致 80 条，但随机也能碰对 47 条。扣除后 κ 只有 0.62。",
+      note: "固定教学数据：100 条、80 条一致、47 条随机一致均为预设，用来演示 Kappa 公式；不是任何真实数据集的统计结果。",
+      summary: "阶段 4 / 4 · Kappa · 0.62"
+    }
+  ]);
+
+  const state = { stage: 0, answer: "A", order: "ab" };
+  const byId = (id) => document.getElementById(id);
+
+  function total(answer) {
+    return DIMENSIONS.reduce((sum, dim) => sum + SCORES[answer][dim.key], 0);
+  }
+
+  function pips(value, max) {
+    let html = "";
+    for (let i = 1; i <= max; i += 1) {
+      html += `<span class="lj-pip${i <= value ? " on" : ""}">${i}</span>`;
+    }
+    return html;
+  }
+
+  function rubricRows() {
+    return DIMENSIONS.map((dim) => `
+      <div class="lj-dim">
+        <span class="lj-dim-name">${dim.name}</span>
+        <span class="lj-dim-max">0–${dim.max} 分</span>
+        <span class="lj-dim-anchors">${dim.anchors.map((anchor, index) => `${index} 分：${anchor}`).join("<br>")}</span>
+      </div>`).join("");
+  }
+
+  function rubricScene() {
+    return `
+      <div class="lj-question"><b>固定题目</b>${QUESTION}</div>
+      <div class="lj-answers">
+        ${["A", "B"].map((key) => `
+          <article class="lj-answer">
+            <div class="lj-answer-head"><b>${ANSWERS[key].label}</b><span class="lj-badge lj-neutral">固定回答</span></div>
+            <p>${ANSWERS[key].text}</p>
+          </article>`).join("")}
+      </div>
+      <div class="lj-rubric">
+        <div class="lj-rubric-head"><b>四项 Rubric</b><span>原文示例：0–3 / 0–3 / 0–2 / 0–2</span></div>
+        ${rubricRows()}
+        <div class="lj-total-note"><span>总分 = 准确性 + 完整性 + 清晰度 + 实用性</span><span>满分 <strong>10</strong></span></div>
+      </div>
+      <p class="lj-fixed-note">固定教学数据：两个回答和评分锚点均为本页预设</p>`;
+  }
+
+  function pointwiseScene() {
+    const key = state.answer;
+    const answer = ANSWERS[key];
+    const rows = DIMENSIONS.map((dim) => {
+      const value = SCORES[key][dim.key];
+      const anchor = dim.anchors[value];
+      return `
+        <div class="lj-score-row">
+          <span>${dim.name}</span>
+          <span class="lj-pips" role="img" aria-label="${dim.name} ${value} 分，满分 ${dim.max} 分">${pips(value, dim.max)}</span>
+          <span class="lj-score-anchor"><b>${value} 分</b>：${anchor}</span>
+        </div>`;
+    }).join("");
+    const other = key === "A" ? "B" : "A";
+    return `
+      <div class="lj-toolbar" role="group" aria-label="选择要评分的回答">
+        <span class="lj-toolbar-label">评分对象</span>
+        ${["A", "B"].map((option) => `<button type="button" class="lj-tab" data-answer="${option}" aria-pressed="${option === key}">${ANSWERS[option].label}</button>`).join("")}
+      </div>
+      <div class="lj-score-card">
+        <div class="lj-score-head">
+          <b>${answer.label} · Pointwise 评分</b>
+          <span class="lj-total">${total(key)}<em>/ 10</em></span>
+        </div>
+        ${rows}
+      </div>
+      <div class="lj-check">
+        <div class="lj-check-cell"><b>${answer.label}</b>${answer.short}</div>
+        <div class="lj-check-cell"><b>另一个回答</b>${ANSWERS[other].label} 总分同样是 ${total(other)} / 10。Pointwise 只给绝对分，不直接回答“谁更好”。</div>
+      </div>
+      <p class="lj-summary-line">两个回答都是 <strong>8 / 10</strong>，但分数形状不同：A 在清晰度上更高，B 在完整性上更高。总分相同的时候，只看 Pointwise 分不出胜负。</p>
+      <p class="lj-fixed-note">固定教学评分：A 为 3+2+2+1，B 为 3+3+1+1，均为本页预设</p>`;
+  }
+
+  function orderBlock() {
+    if (state.order === "ab") {
+      return `<div class="lj-order-box"><b>回答 1</b>：${ANSWERS.A.short}<br><b>回答 2</b>：${ANSWERS.B.short}</div>`;
+    }
+    return `<div class="lj-order-box"><b>回答 1</b>：${ANSWERS.B.short}<br><b>回答 2</b>：${ANSWERS.A.short}</div>`;
+  }
+
+  function pairwiseScene() {
+    const ab = state.order === "ab";
+    const first = ab ? "A" : "B";
+    const second = ab ? "B" : "A";
+    const verdictFor = (label) => `${label} 更好`;
+    return `
+      <div class="lj-toolbar" role="group" aria-label="选择 Pairwise 的呈现顺序">
+        <span class="lj-toolbar-label">呈现顺序</span>
+        <button type="button" class="lj-tab" data-order="ab" aria-pressed="${ab}">A 在前</button>
+        <button type="button" class="lj-tab" data-order="ba" aria-pressed="${!ab}">B 在前</button>
+      </div>
+      ${orderBlock()}
+      <div class="lj-versus">
+        <div class="lj-versus-card"><span class="pos">回答 1</span><b>${ANSWERS[first].label}</b>${ANSWERS[first].short}</div>
+        <div class="lj-versus-mid">VS</div>
+        <div class="lj-versus-card"><span class="pos">回答 2</span><b>${ANSWERS[second].label}</b>${ANSWERS[second].short}</div>
+      </div>
+      <div class="lj-verdict"><b>固定 Judge 判定：${verdictFor(ANSWERS[first].label)}</b><br>这次判定只看相对位置：排在前面的回答被选中，与内容评分无关。</div>
+      <div class="lj-check">
+        <div class="lj-check-cell"><b>正序 A 在前</b>判定：A 更好</div>
+        <div class="lj-check-cell"><b>交换 B 在前</b>判定：B 更好</div>
+      </div>
+      <div class="lj-verdict lj-mismatch"><b>一致性检查：不一致 → 不确定</b><br>同一对回答，只交换位置就得到相反结论。按原文的去偏规则，两次都选同一个答案才算胜出；不一致时应判“不确定”，交给更多 Judge 或人工。</div>
+      <p class="lj-fixed-note">固定教学评分：Judge 的两次判定均预设为“选第一个”，用于演示位置偏差</p>`;
+  }
+
+  function kappaScene() {
+    return `
+      <div class="lj-kappa">
+        <div>
+          <div class="lj-kbar-row"><span class="lj-kbar-label">表面一致 Po</span><span class="lj-kbar-track"><span class="lj-kbar-fill" style="width:80%"></span></span><b>0.80</b></div>
+          <div class="lj-kbar-row"><span class="lj-kbar-label">随机一致 Pe</span><span class="lj-kbar-track"><span class="lj-kbar-fill chance" style="width:47%"></span></span><b>0.47</b></div>
+          <p class="lj-summary-line">100 条评估里，Judge 与人工表面一致 80 条（0.80）；即使随机打分，按类别分布也有 47 条会碰巧一致（0.47）。</p>
+        </div>
+        <div class="lj-kappa-readout"><span>COHEN'S KAPPA</span><b>0.62</b><small>扣除随机一致后的真实一致性</small></div>
+      </div>
+      <div class="lj-formula">κ = (Po − Pe) / (1 − Pe) = (0.80 − 0.47) / (1 − 0.47) = <b>0.62</b></div>
+      <div class="lj-scale">
+        <div class="lj-scale-row"><span>本页固定用例</span><span class="lj-scale-track"><span class="lj-scale-mark bad" style="left:62%"></span></span></div>
+        <div class="lj-scale-row"><span>顶级 Judge（原文）</span><span class="lj-scale-track"><span class="lj-scale-band judge" style="left:78%;width:6%"></span></span></div>
+        <div class="lj-scale-row"><span>人类-人类（原文）</span><span class="lj-scale-track"><span class="lj-scale-band" style="left:80%;width:1.5%"></span></span></div>
+        <div class="lj-scale-key">刻度 0–1 · 黑线为本页用例 0.62；蓝带 0.78–0.84；绿线 0.80</div>
+      </div>
+      <div class="lj-check">
+        <div class="lj-check-cell"><b>为什么不用 80% 一致率</b>0.80 看起来很高，但扣掉 0.47 的随机一致后只剩 0.62。raw percent agreement 会把“碰巧一致”算成可靠性。</div>
+        <div class="lj-check-cell"><b>原文基准</b>顶级 LLM Judge 的 κ ≈ 0.78–0.84，已逼近人类-人类 κ ≈ 0.80。本页的 0.62 明显低于这个区间。</div>
+      </div>
+      <p class="lj-fixed-note">固定教学数据：100 条、80 条一致、47 条随机一致均为预设；Kappa 数值由公式实算</p>`;
+  }
+
+  const SCENES = [rubricScene, pointwiseScene, pairwiseScene, kappaScene];
+
+  function bindSceneControls() {
+    document.querySelectorAll("[data-answer]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.answer = button.dataset.answer;
+        renderStage(1);
+        byId("lj-announcement").textContent = `已切换到 ${ANSWERS[state.answer].label} 的 Pointwise 评分`;
+      });
+    });
+    document.querySelectorAll("[data-order]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.order = button.dataset.order;
+        renderStage(2);
+        byId("lj-announcement").textContent = state.order === "ab" ? "已切换为 A 在前" : "已切换为 B 在前";
+      });
+    });
+  }
+
+  function renderStage(stage) {
+    state.stage = stage;
+    const meta = STAGES[stage];
+    byId("lj-scene").innerHTML = SCENES[stage]();
+    byId("lj-index").textContent = `阶段 ${stage + 1} / 4 · 固定教学评分`;
+    byId("lj-title").textContent = meta.title;
+    byId("lj-subtitle").textContent = meta.subtitle;
+    byId("lj-note").textContent = meta.note;
+    byId("lj-summary").textContent = meta.summary;
+    byId("lj-back").disabled = stage === 0;
+    byId("lj-next").disabled = stage === STAGES.length - 1;
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      const active = Number(button.dataset.stage) === stage;
+      if (active) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    bindSceneControls();
+    byId("lj-announcement").textContent = `${meta.title}。${meta.subtitle}`;
+  }
+
+  byId("lj-reset").addEventListener("click", () => {
+    state.answer = "A";
+    state.order = "ab";
+    renderStage(0);
+  });
+  byId("lj-back").addEventListener("click", () => renderStage(Math.max(0, state.stage - 1)));
+  byId("lj-next").addEventListener("click", () => renderStage(Math.min(STAGES.length - 1, state.stage + 1)));
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+
+  renderStage(0);
+</script>
+</body>
+</html>

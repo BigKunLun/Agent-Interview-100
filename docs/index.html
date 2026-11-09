@@ -1,0 +1,583 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>全库速览 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .page-nav-pager .disabled { color: #5d625d; }
+  .ix-boundary { margin-top: var(--s-4); padding: 11px 13px; border: 1px solid #d9b47a; border-left: 3px solid #b98a2f; border-radius: var(--r-1); background: #fdf3e3; color: #5b3a05; font-size: 12px; line-height: 1.75; }
+  .ix-boundary strong { color: #4d3000; }
+  .ix-readnote { margin-top: var(--s-3); color: var(--text-dim); font-size: 12px; line-height: 1.7; }
+  .ix-toc { margin-top: var(--s-4); padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .ix-toc p { font: 11px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .06em; }
+  .ix-toc ol { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; padding: 0; }
+  .ix-toc a { display: inline-flex; align-items: center; gap: 5px; min-height: 40px; padding: 5px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--accent); font-size: 11px; text-decoration: none; }
+  .ix-toc a:hover { background: var(--surface-soft); }
+  .ix-toc .ix-toc-num { font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .ix-toc .ix-toc-count { font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .ix-cat { margin-top: 8px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .ix-cat > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; padding: 12px 14px; min-height: 48px; list-style: none; cursor: pointer; }
+  .ix-cat > summary::-webkit-details-marker { display: none; }
+  .ix-cat > summary::before { content: "▸"; flex: 0 0 auto; color: var(--text-dim); font: 12px/1.5 var(--mono); }
+  .ix-cat[open] > summary::before { content: "▾"; }
+  .ix-cat > summary:hover { background: var(--surface-soft); }
+  .ix-cat-id { font: 600 12px/1.5 var(--mono); color: var(--accent); overflow-wrap: anywhere; }
+  .ix-cat-name { font: 600 15px/1.5 var(--sans); }
+  .ix-count { margin-left: auto; font: 11px/1.5 var(--mono); color: var(--text-dim); white-space: nowrap; }
+  .ix-list { list-style: none; margin: 0; padding: 0 14px 10px; }
+  .ix-list li { padding: 8px 0; border-top: 1px solid var(--border); font-size: 13px; line-height: 1.75; color: var(--text-dim); overflow-wrap: anywhere; }
+  .ix-list a { font-family: var(--mono); font-size: 12px; }
+  .ix-list code { font-size: 11px; }
+  .ix-slug code { color: var(--ink); }
+  .ix-badge { display: inline-flex; align-items: center; margin-left: 4px; padding: 1px 7px; border: 1px solid transparent; border-radius: 999px; font: 10px/1.6 var(--mono); white-space: nowrap; }
+  .ix-pending { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .ix-deprecated { background: #fbecec; color: #6d1717; border-color: #d9a3a3; }
+  .ix-cross { margin-top: var(--s-5); }
+  .ix-cross-table { min-width: 620px; }
+  .ix-cross-table td, .ix-cross-table th { font-size: 12px; }
+  .ix-cross-note { margin-top: var(--s-3); color: var(--text-dim); font-size: 12px; line-height: 1.7; }
+  @media (max-width: 720px) {
+    .ix-toc { padding: 10px; }
+    .ix-toc a { min-height: 40px; padding: 4px 8px; font-size: 10px; }
+    .ix-cat > summary { padding: 10px 12px; gap: 5px; }
+    .ix-cat-name { font-size: 14px; }
+    .ix-count { margin-left: 0; }
+    .ix-list { padding-inline: 12px; }
+    .ix-list li { font-size: 12px; }
+    .ix-list a { font-size: 11px; }
+    .ix-badge { display: inline-flex; margin: 2px 0 0; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">DOC / 全库速览</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 9 / 9 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="diagram-standards.html">← 上一页 · 配图标准(diagram-stand…</a><span class="disabled">下一页 →</span></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">文档 · 全库索引 · 离线阅读</p>
+      <h1>全库速览，<br>一篇一句。</h1>
+    </div>
+    <div>
+      <p class="lead">每篇文章一行，一句话概括就是该篇「简短回答」段的核心结论。扫一眼这份索引，就能了解全库 100 题各自讲了什么、当前的知识状态是什么。</p>
+      <p class="definition"><strong>更新日期：</strong>2026-08-12。<strong>收录：</strong>104 篇 / 11 个模块。<strong>链接规则：</strong>篇目映射到同名 HTML；目标未生成时标“待生成”且不提供 href，已废弃篇目标“已废弃 · 不纳入”。本页是 <code>docs/index.html</code>，不是根 <code>index.html</code>；它只转换 <code>docs/index.md</code>，不复制根索引的统计卡、状态徽标或脚本。</p>
+      <div class="hero-meta"><span class="pill">文档</span><span class="pill">全库索引</span><span class="pill">104 篇</span><span class="pill">11 个模块</span></div>
+    </div>
+  </header>
+
+  <p class="ix-boundary"><strong>文件边界：</strong>本页是 docs 目录下的全库速览，和根 <code>index.html</code> 是两个文件。根索引负责全站入口与整体状态；本页只负责按 11 个分类列出篇目和一句话结论，不复制根索引的统计卡、状态徽标或脚本。</p>
+  <p class="ix-readnote">本页是索引文档，不设算法或分步演示；分类折叠、目录跳转和篇目链接即全部交互。分类默认展开，点标题可折叠；点击目录会打开目标分类。</p>
+
+  <nav class="ix-toc" aria-label="11 个分类的阅读导航">
+    <p>阅读导航 · 11 个分类</p>
+    <ol>
+      <li><a href="#cat-01-agent-architecture"><span class="ix-toc-num">01</span>Agent 架构<span class="ix-toc-count">12</span></a></li>
+      <li><a href="#cat-02-rag"><span class="ix-toc-num">02</span>RAG<span class="ix-toc-count">9</span></a></li>
+      <li><a href="#cat-03-tool-use"><span class="ix-toc-num">03</span>工具使用<span class="ix-toc-count">10</span></a></li>
+      <li><a href="#cat-04-multi-agent"><span class="ix-toc-num">04</span>多 Agent<span class="ix-toc-count">10</span></a></li>
+      <li><a href="#cat-05-memory-and-state"><span class="ix-toc-num">05</span>记忆与状态<span class="ix-toc-count">7</span></a></li>
+      <li><a href="#cat-06-planning-and-reasoning"><span class="ix-toc-num">06</span>规划与推理<span class="ix-toc-count">9</span></a></li>
+      <li><a href="#cat-07-prompt-engineering"><span class="ix-toc-num">07</span>Prompt 工程<span class="ix-toc-count">10</span></a></li>
+      <li><a href="#cat-08-evaluation"><span class="ix-toc-num">08</span>评估<span class="ix-toc-count">9</span></a></li>
+      <li><a href="#cat-09-safety-and-alignment"><span class="ix-toc-num">09</span>安全与对齐<span class="ix-toc-count">9</span></a></li>
+      <li><a href="#cat-10-production-and-deployment"><span class="ix-toc-num">10</span>生产与部署<span class="ix-toc-count">13</span></a></li>
+      <li><a href="#cat-11-frameworks"><span class="ix-toc-num">11</span>框架<span class="ix-toc-count">6</span></a></li>
+    </ol>
+  </nav>
+
+  <section class="reading" aria-labelledby="ix-cats-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">按分类扫读</p><h2 id="ix-cats-title">11 个分类，<br>104 篇一句话。</h2></div>
+      <p class="reading-intro">分类、篇目顺序和一句话结论均按原文排列，没有重新排序，也没有合并或删减篇目。已废弃的 4 篇保留在原分类里，只去掉 href。</p>
+    </div>
+    <div class="prose">
+      <details class="ix-cat" id="cat-01-agent-architecture" open>
+        <summary>
+          <span class="ix-cat-id">01-agent-architecture</span>
+          <span class="ix-cat-name">Agent 架构</span>
+          <span class="ix-count">12 篇</span>
+        </summary>
+        <ul class="ix-list">
+          <li><a href="../01-agent-architecture/001-what-is-llm-agent.html"><code>001-what-is-llm-agent</code></a> — Agent 是有状态、目标驱动、能与外界交互的自主系统</li>
+          <li><a href="../01-agent-architecture/002-agent-core-components.html"><code>002-agent-core-components</code></a> — 感知、推理、行动、记忆四模块构成认知闭环</li>
+          <li><a href="../01-agent-architecture/003-agent-architecture-patterns.html"><code>003-agent-architecture-patterns</code></a> — ReAct/Plan-Execute/LATS 各有侧重，生产多用混合模式</li>
+          <li><a href="../01-agent-architecture/005-layered-agent-architecture.html"><code>005-layered-agent-architecture</code></a> — Orchestrator-Worker 分层实现可扩展的专业化分工</li>
+          <li><a href="../01-agent-architecture/006-agent-loop-and-error-recovery.html"><code>006-agent-loop-and-error-recovery</code></a> — 循环终止靠外部强制，容错用四层防御模型</li>
+          <li><a href="../01-agent-architecture/007-workflow-vs-agent.html"><code>007-workflow-vs-agent</code></a> — 工作流与 Agent 是连续光谱，生产常用混合架构</li>
+          <li><a href="../01-agent-architecture/009-self-reflection-correction.html"><code>009-self-reflection-correction</code></a> — Reflexion 把环境反馈化为语言化反思存入记忆</li>
+          <li><a href="../01-agent-architecture/010-production-agent-system-design.html"><code>010-production-agent-system-design</code></a> — 生产系统须解决五大挑战，架构要 right-size</li>
+          <li><a href="../01-agent-architecture/108-interview-deep-dive-chain.html"><code>108-interview-deep-dive-chain</code></a> — 追问链逐层深入，找候选人能力天花板</li>
+          <li><a href="../01-agent-architecture/109-what-is-agent-harness.html"><code>109-what-is-agent-harness</code></a> — Harness 是模型之外的一切，决定约七成实战表现</li>
+          <li><a href="../01-agent-architecture/113-computer-use-agent.html"><code>113-computer-use-agent</code></a> — 看屏操作 GUI 自动化任意软件，无契约、成本可靠性高</li>
+          <li><a href="../01-agent-architecture/114-deep-research-agent.html"><code>114-deep-research-agent</code></a> — 计划-检索-判充分-合成循环，产出带引用长报告</li>
+        </ul>
+      </details>
+      <details class="ix-cat" id="cat-02-rag" open>
+        <summary>
+          <span class="ix-cat-id">02-rag</span>
+          <span class="ix-cat-name">RAG</span>
+          <span class="ix-count">9 篇</span>
+        </summary>
+        <ul class="ix-list">
+          <li><a href="../02-rag/011-rag-overview-and-pipeline.html"><code>011-rag-overview-and-pipeline</code></a> — 检索注入外部知识解三大局限，三条流水线三段演进</li>
+          <li><a href="../02-rag/013-chunking-strategies.html"><code>013-chunking-strategies</code></a> — 递归分块是通用默认，核心权衡上下文与精度</li>
+          <li><a href="../02-rag/014-vector-database-comparison.html"><code>014-vector-database-comparison</code></a> — 选型看 Recall、尾延迟、过滤与运维，非 Benchmark</li>
+          <li><a href="../02-rag/015-embedding-model-selection.html"><code>015-embedding-model-selection</code></a> — Voyage 领先，OpenAI 3-large 是均衡生产默认</li>
+          <li><a href="../02-rag/016-hybrid-retrieval.html"><code>016-hybrid-retrieval</code></a> — 向量+BM25 经 RRF 融合，再加重排序两阶段</li>
+          <li><a href="../02-rag/017-reranking-strategies.html"><code>017-reranking-strategies</code></a> — Bi-Encoder 粗检 Top-100，Cross-Encoder 精排 Top-5</li>
+          <li><a href="../02-rag/018-agentic-rag.html"><code>018-agentic-rag</code></a> — 在检索生成流水线上加 Agent 控制循环，多轮自主决策</li>
+          <li><a href="../02-rag/019-advanced-rag-variants.html"><code>019-advanced-rag-variants</code></a> — Self-RAG/CRAG/Adaptive 各解一题，可组合多层防御</li>
+          <li><a href="../02-rag/020-rag-evaluation-metrics.html"><code>020-rag-evaluation-metrics</code></a> — 检索与生成双维度度量，RAGAS 整合为自动流水线</li>
+        </ul>
+      </details>
+      <details class="ix-cat" id="cat-03-tool-use" open>
+        <summary>
+          <span class="ix-cat-id">03-tool-use</span>
+          <span class="ix-cat-name">工具使用</span>
+          <span class="ix-count">10 篇</span>
+        </summary>
+        <ul class="ix-list">
+          <li><a href="../03-tool-use/021-function-calling-basics.html"><code>021-function-calling-basics</code></a> — LLM 只生成调用 JSON，实际执行由应用代码完成</li>
+          <li><a href="../03-tool-use/022-tool-schema-design.html"><code>022-tool-schema-design</code></a> — Schema 三要素中描述最关键，直接影响选择准确率</li>
+          <li><a href="../03-tool-use/023-common-tool-patterns.html"><code>023-common-tool-patterns</code></a> — 数据访问、代码执行、写操作三类，安全级别不同</li>
+          <li><a href="../03-tool-use/024-tool-gateway-permissions.html"><code>024-tool-gateway-permissions</code></a> — Gateway 中间层做鉴权限流审计，Agent 视为不可信</li>
+          <li><a href="../03-tool-use/025-tool-selection-strategy.html"><code>025-tool-selection-strategy</code></a> — 意图与描述语义匹配，描述质量是第一影响因素</li>
+          <li><a href="../03-tool-use/026-tool-failure-handling.html"><code>026-tool-failure-handling</code></a> — 超时+退避重试+断路器+降级分层防御，禁无限重试</li>
+          <li><a href="../03-tool-use/027-model-context-protocol.html"><code>027-model-context-protocol</code></a> — MCP 是 AI 界 USB-C，统一协议解决 N×M 集成问题</li>
+          <li><a href="../03-tool-use/028-parallel-vs-sequential-tools.html"><code>028-parallel-vs-sequential-tools</code></a> — 无依赖并行降延迟，有依赖顺序，生产用混合模式</li>
+          <li><a href="../03-tool-use/029-dynamic-tool-discovery.html"><code>029-dynamic-tool-discovery</code></a> — 运行时发现工具，解决上下文浪费与选择准确率下降</li>
+          <li><a href="../03-tool-use/030-tool-use-security.html"><code>030-tool-use-security</code></a> — 工具是最危险攻击面，纵深防御、不信任 LLM 输出</li>
+        </ul>
+      </details>
+      <details class="ix-cat" id="cat-04-multi-agent" open>
+        <summary>
+          <span class="ix-cat-id">04-multi-agent</span>
+          <span class="ix-cat-name">多 Agent</span>
+          <span class="ix-count">10 篇</span>
+        </summary>
+        <ul class="ix-list">
+          <li><a href="../04-multi-agent/031-what-is-multi-agent.html"><code>031-what-is-multi-agent</code></a> — 多 Agent 专精分工并行协作，代价是通信与复杂度</li>
+          <li><a href="../04-multi-agent/032-communication-patterns.html"><code>032-communication-patterns</code></a> — 消息传递、共享状态、黑板三模式，黑板效率更优</li>
+          <li><a href="../04-multi-agent/033-orchestration-patterns.html"><code>033-orchestration-patterns</code></a> — Pipeline/Hub-Spoke/层级三种编排，按依赖与并行度选</li>
+          <li><a href="../04-multi-agent/034-task-allocation-coordination.html"><code>034-task-allocation-coordination</code></a> — 任务拆分分配协调，明确角色边界与通信模式</li>
+          <li><a href="../04-multi-agent/035-conflict-resolution.html"><code>035-conflict-resolution</code></a> — 投票、共识、仲裁解冲突，警惕 Agent 趋同效应</li>
+          <li><a href="../04-multi-agent/036-multi-agent-frameworks.html"><code>036-multi-agent-frameworks</code></a> — CrewAI 角色、LangGraph 图控制，MAF 已取代 AutoGen</li>
+          <li><a href="../04-multi-agent/037-agent-handoff.html"><code>037-agent-handoff</code></a> — transfer_to 工具化交接，难点在上下文可靠传递</li>
+          <li><a href="../04-multi-agent/038-emergent-behavior.html"><code>038-emergent-behavior</code></a> — 涌现既是优势也是风险，需拓扑与监控做可控设计</li>
+          <li><a href="../04-multi-agent/039-debugging-monitoring-multi-agent.html"><code>039-debugging-monitoring-multi-agent</code></a> — 分布式追踪是核心方法，行业收敛到 OTel 标准</li>
+          <li><a href="../04-multi-agent/101-a2a-protocol.html"><code>101-a2a-protocol</code></a> — A2A 管 Agent 横向协作，与 MCP 互补成双层标准</li>
+        </ul>
+      </details>
+      <details class="ix-cat" id="cat-05-memory-and-state" open>
+        <summary>
+          <span class="ix-cat-id">05-memory-and-state</span>
+          <span class="ix-cat-name">记忆与状态</span>
+          <span class="ix-count">7 篇</span>
+        </summary>
+        <ul class="ix-list">
+          <li><a href="../05-memory-and-state/040-memory-types.html"><code>040-memory-types</code></a> — 短期/长期/工作记忆三类，LLM 无状态全靠外部工程</li>
+          <li><a href="../05-memory-and-state/041-context-window-management.html"><code>041-context-window-management</code></a> — 截断到分层摘要多种策略，简单策略常不逊于复杂</li>
+          <li><a href="../05-memory-and-state/043-persistent-memory.html"><code>043-persistent-memory</code></a> — 双层存储跨会话保留，关键挑战是选择性存储与遗忘</li>
+          <li><a href="../05-memory-and-state/044-state-management-patterns.html"><code>044-state-management-patterns</code></a> — LangGraph State+Reducer+Checkpoint 已成业界主流</li>
+          <li><span class="ix-slug"><code>045-cross-session-preferences</code></span> — 已废弃，独特内容迁入 #043 用户偏好学习小节 <span class="ix-badge ix-deprecated">已废弃 · 不纳入</span></li>
+          <li><a href="../05-memory-and-state/046-long-term-memory-storage.html"><code>046-long-term-memory-storage</code></a> — 向量语义、结构化精确、图谱关系推理，生产混合</li>
+          <li><a href="../05-memory-and-state/048-memory-forgetting-updating.html"><code>048-memory-forgetting-updating</code></a> — 时间衰减、频率淘汰、冲突更新，效用删除更优</li>
+        </ul>
+      </details>
+      <details class="ix-cat" id="cat-06-planning-and-reasoning" open>
+        <summary>
+          <span class="ix-cat-id">06-planning-and-reasoning</span>
+          <span class="ix-cat-name">规划与推理</span>
+          <span class="ix-count">9 篇</span>
+        </summary>
+        <ul class="ix-list">
+          <li><a href="../06-planning-and-reasoning/049-cot-and-tot.html"><code>049-cot-and-tot</code></a> — CoT 线性推理，ToT 探索回溯，按任务路径明确度选</li>
+          <li><a href="../06-planning-and-reasoning/050-task-decomposition.html"><code>050-task-decomposition</code></a> — LLM/程序化/HTN/ADaPT 分解，核心权衡拆分粒度</li>
+          <li><a href="../06-planning-and-reasoning/052-plan-and-solve-replanning.html"><code>052-plan-and-solve-replanning</code></a> — 先规划后执行，配合动态重规划形成完整闭环</li>
+          <li><a href="../06-planning-and-reasoning/053-llm-planning-limitations.html"><code>053-llm-planning-limitations</code></a> — LLM 不能真正规划，LLM-Modulo 外部验证器补救</li>
+          <li><a href="../06-planning-and-reasoning/055-reasoning-models.html"><code>055-reasoning-models</code></a> — 推理与通用模型合流，thinking 成旗舰内置可调模式</li>
+          <li><a href="../06-planning-and-reasoning/056-mcts-in-agent-planning.html"><code>056-mcts-in-agent-planning</code></a> — MCTS 四步循环补 LLM 无法回溯之短，LATS 为代表</li>
+          <li><span class="ix-slug"><code>057-reasoning-quality-evaluation</code></span> — 已废弃，独特内容迁入 #069 推理过程评估小节 <span class="ix-badge ix-deprecated">已废弃 · 不纳入</span></li>
+          <li><span class="ix-slug"><code>058-causal-reasoning</code></span> — 已废弃，主线相关度低、无生产落地，主题移除 <span class="ix-badge ix-deprecated">已废弃 · 不纳入</span></li>
+          <li><a href="../06-planning-and-reasoning/103-agentic-rl-grpo.html"><code>103-agentic-rl-grpo</code></a> — 任务完成度做奖励训 Agent，GRPO 免 Critic 降成本</li>
+        </ul>
+      </details>
+      <details class="ix-cat" id="cat-07-prompt-engineering" open>
+        <summary>
+          <span class="ix-cat-id">07-prompt-engineering</span>
+          <span class="ix-cat-name">Prompt 工程</span>
+          <span class="ix-count">10 篇</span>
+        </summary>
+        <ul class="ix-list">
+          <li><a href="../07-prompt-engineering/059-system-prompt-principles.html"><code>059-system-prompt-principles</code></a> — System Prompt 是宪法：角色、约束、示例、分层结构</li>
+          <li><a href="../07-prompt-engineering/060-few-shot-vs-zero-shot.html"><code>060-few-shot-vs-zero-shot</code></a> — 简单任务 Zero-shot，特定格式 Few-shot，边界在扩大</li>
+          <li><a href="../07-prompt-engineering/061-structured-output.html"><code>061-structured-output</code></a> — 四种实现，生产推荐 Function Calling+Pydantic 验证</li>
+          <li><a href="../07-prompt-engineering/062-agentic-prompting.html"><code>062-agentic-prompting</code></a> — 优化多步决策链而非单次输出，含工具描述与护栏</li>
+          <li><a href="../07-prompt-engineering/063-prompt-chaining.html"><code>063-prompt-chaining</code></a> — 任务拆为顺序 LLM 调用链，可控可靠可观测</li>
+          <li><a href="../07-prompt-engineering/064-prompt-injection-defense.html"><code>064-prompt-injection-defense</code></a> — 头号安全威胁，无银弹，必须多层纵深防御</li>
+          <li><a href="../07-prompt-engineering/065-programmatic-prompt-optimization.html"><code>065-programmatic-prompt-optimization</code></a> — DSPy 优化结构化组件，元提示流派直接优化字符串</li>
+          <li><a href="../07-prompt-engineering/066-prompt-versioning-ab-testing.html"><code>066-prompt-versioning-ab-testing</code></a> — Prompt 即代码：版本控制、A/B 测试、渐进发布</li>
+          <li><a href="../07-prompt-engineering/068-cross-model-prompt-portability.html"><code>068-cross-model-prompt-portability</code></a> — Prompt 高度模型特异，核心层+模型适配层解决</li>
+          <li><a href="../07-prompt-engineering/102-context-engineering.html"><code>102-context-engineering</code></a> — 从写好 Prompt 转向上下文的选择、组装与管理</li>
+        </ul>
+      </details>
+      <details class="ix-cat" id="cat-08-evaluation" open>
+        <summary>
+          <span class="ix-cat-id">08-evaluation</span>
+          <span class="ix-cat-name">评估</span>
+          <span class="ix-count">9 篇</span>
+        </summary>
+        <ul class="ix-list">
+          <li><a href="../08-evaluation/069-evaluation-methodology.html"><code>069-evaluation-methodology</code></a> — 自动指标、人工、Judge 混用；Agent 评估看多步轨迹</li>
+          <li><a href="../08-evaluation/071-llm-as-judge.html"><code>071-llm-as-judge</code></a> — 与人工一致性 80%+，需缓解位置、冗长等偏差</li>
+          <li><a href="../08-evaluation/072-agent-benchmarks.html"><code>072-agent-benchmarks</code></a> — SWE-bench/WebArena/GAIA 评完整任务执行过程</li>
+          <li><a href="../08-evaluation/073-regression-testing.html"><code>073-regression-testing</code></a> — Golden Dataset+Judge 评分+CI 集成防性能退化</li>
+          <li><a href="../08-evaluation/074-traces-and-spans.html"><code>074-traces-and-spans</code></a> — Trace/Span 树形结构展决策链，OTel 成行业标准</li>
+          <li><a href="../08-evaluation/075-evaluation-tools-comparison.html"><code>075-evaluation-tools-comparison</code></a> — Ragas 专 RAG，LangSmith 全栈，Langfuse 开源首选</li>
+          <li><a href="../08-evaluation/076-static-benchmark-trap.html"><code>076-static-benchmark-trap</code></a> — 高分不等于高能力，必须用自己的数据测试</li>
+          <li><a href="../08-evaluation/077-continuous-evaluation-pipeline.html"><code>077-continuous-evaluation-pipeline</code></a> — 评估贯穿开发、上线、运行期的持续闭环</li>
+          <li><a href="../08-evaluation/111-eval-harness-design.html"><code>111-eval-harness-design</code></a> — Harness 是考场非题库，先固定 harness 再换模型测</li>
+        </ul>
+      </details>
+      <details class="ix-cat" id="cat-09-safety-and-alignment" open>
+        <summary>
+          <span class="ix-cat-id">09-safety-and-alignment</span>
+          <span class="ix-cat-name">安全与对齐</span>
+          <span class="ix-count">9 篇</span>
+        </summary>
+        <ul class="ix-list">
+          <li><a href="../09-safety-and-alignment/078-agent-safety-risks.html"><code>078-agent-safety-risks</code></a> — 四类风险，Prompt Injection 居首，警惕致命三角</li>
+          <li><a href="../09-safety-and-alignment/079-guardrails-basics.html"><code>079-guardrails-basics</code></a> — 输入输出双侧护栏，规则型与模型型组合多层防御</li>
+          <li><a href="../09-safety-and-alignment/080-human-in-the-loop.html"><code>080-human-in-the-loop</code></a> — 审批、置信度路由等模式，平衡自动化与人类监督</li>
+          <li><a href="../09-safety-and-alignment/081-least-privilege-sandboxing.html"><code>081-least-privilege-sandboxing</code></a> — 最小权限+沙箱隔离，Agent 需动态运行时权限</li>
+          <li><a href="../09-safety-and-alignment/082-hallucination-detection.html"><code>082-hallucination-detection</code></a> — 不确定性估计、知识验证、一致性检查三类检测</li>
+          <li><span class="ix-slug"><code>083-content-filtering-toxicity</code></span> — 已废弃，独特内容迁入 #079 毒性检测小节 <span class="ix-badge ix-deprecated">已废弃 · 不纳入</span></li>
+          <li><a href="../09-safety-and-alignment/084-agent-alignment.html"><code>084-agent-alignment</code></a> — 对齐失败是做错事，防规格游戏与欺骗性规划</li>
+          <li><a href="../09-safety-and-alignment/085-red-teaming-agents.html"><code>085-red-teaming-agents</code></a> — 攻击者视角主动测漏洞，已从可选变为合规必需</li>
+          <li><a href="../09-safety-and-alignment/115-agent-compliance-eu-ai-act.html"><code>115-agent-compliance-eu-ai-act</code></a> — 风险分级、高风险义务 2026.8 生效，合规做成架构层</li>
+        </ul>
+      </details>
+      <details class="ix-cat" id="cat-10-production-and-deployment" open>
+        <summary>
+          <span class="ix-cat-id">10-production-and-deployment</span>
+          <span class="ix-cat-name">生产与部署</span>
+          <span class="ix-count">13 篇</span>
+        </summary>
+        <ul class="ix-list">
+          <li><a href="../10-production-and-deployment/086-llmops-and-deployment.html"><code>086-llmops-and-deployment</code></a> — LLMOps 以使用模型为核心，五层生产部署架构</li>
+          <li><a href="../10-production-and-deployment/088-cost-optimization.html"><code>088-cost-optimization</code></a> — 缓存、路由、批处理等六策略组合可省 80-90%</li>
+          <li><a href="../10-production-and-deployment/089-model-routing.html"><code>089-model-routing</code></a> — 按请求复杂度动态选模型，RouteLLM 省 85% 成本</li>
+          <li><a href="../10-production-and-deployment/090-latency-optimization.html"><code>090-latency-optimization</code></a> — 流式、多层缓存、批处理三大手段降感知延迟</li>
+          <li><a href="../10-production-and-deployment/091-prompt-drift-management.html"><code>091-prompt-drift-management</code></a> — Prompt 未改输出也会漂移，需版本控制+持续监控</li>
+          <li><a href="../10-production-and-deployment/092-logging-monitoring-alerting.html"><code>092-logging-monitoring-alerting</code></a> — 结构化日志、分布式追踪、多维指标三层可观测</li>
+          <li><a href="../10-production-and-deployment/093-canary-ab-testing.html"><code>093-canary-ab-testing</code></a> — 灰度小流量+自动回滚，A/B 测试数据驱动决策</li>
+          <li><a href="../10-production-and-deployment/094-scaling-strategies.html"><code>094-scaling-strategies</code></a> — 无状态设计、队列解耦、按队列深度智能扩缩容</li>
+          <li><a href="../10-production-and-deployment/095-disaster-recovery-ha.html"><code>095-disaster-recovery-ha</code></a> — 多提供商冗余、检查点恢复、优雅降级保高可用</li>
+          <li><a href="../10-production-and-deployment/104-agent-production-troubleshooting.html"><code>104-agent-production-troubleshooting</code></a> — Trace 驱动排查配 OODA 循环，用数据不猜测</li>
+          <li><a href="../10-production-and-deployment/107-agent-code-review.html"><code>107-agent-code-review</code></a> — 循环保护、超时、错误处理等六维度检查清单</li>
+          <li><a href="../10-production-and-deployment/112-agent-sandbox-runtime.html"><code>112-agent-sandbox-runtime</code></a> — 隔离强度三档，Egress 须 default-deny 三层防御</li>
+          <li><a href="../10-production-and-deployment/116-12-factor-agents.html"><code>116-12-factor-agents</code></a> — Agent 是 LLM 决策+确定性代码循环，12 原则收归己有</li>
+        </ul>
+      </details>
+      <details class="ix-cat" id="cat-11-frameworks" open>
+        <summary>
+          <span class="ix-cat-id">11-frameworks</span>
+          <span class="ix-cat-name">框架</span>
+          <span class="ix-count">6 篇</span>
+        </summary>
+        <ul class="ix-list">
+          <li><a href="../11-frameworks/096-framework-overview.html"><code>096-framework-overview</code></a> — LangChain 全能、LlamaIndex 专数据、Haystack 重生产</li>
+          <li><a href="../11-frameworks/097-langgraph-concepts.html"><code>097-langgraph-concepts</code></a> — State/Node/Edge 建模有状态工作流，1.0 GA 可恢复</li>
+          <li><a href="../11-frameworks/098-framework-vs-custom.html"><code>098-framework-vs-custom</code></a> — 框架价值=省的时间减绕限制的时间，渐进式演进</li>
+          <li><a href="../11-frameworks/099-assistants-api-vs-claude-sdk.html"><code>099-assistants-api-vs-claude-sdk</code></a> — OpenAI 走 SDK 轻云重，Claude SDK 绑 MCP 开放生态</li>
+          <li><a href="../11-frameworks/100-testable-extensible-framework.html"><code>100-testable-extensible-framework</code></a> — 端口-适配器+依赖注入+中间件实现可测可扩展</li>
+          <li><a href="../11-frameworks/110-coding-agent-harness-comparison.html"><code>110-coding-agent-harness-comparison</code></a> — 五大 harness 在 Context/工具/权限/沙箱四维各异</li>
+        </ul>
+      </details>
+      <div class="ix-cross">
+        <h3 id="ix-cross">废弃篇目与迁移去向</h3>
+        <p>下面 4 篇在原文中标记为已废弃。它们仍保留在上面的分类清单里，但不提供 href；迁移去向按原文描述整理。</p>
+        <div class="table-wrap">
+          <table class="data ix-cross-table">
+            <caption class="sr-only">四篇已废弃文章及其迁移去向</caption>
+            <thead><tr><th scope="col">已废弃篇目</th><th scope="col">迁移去向</th><th scope="col">原文说明</th></tr></thead>
+            <tbody>
+              <tr><th scope="row"><code>045-cross-session-preferences</code></th><td><a href="../05-memory-and-state/043-persistent-memory.html">043-persistent-memory</a></td><td>独特内容迁入 #043 用户偏好学习小节</td></tr>
+              <tr><th scope="row"><code>057-reasoning-quality-evaluation</code></th><td><a href="../08-evaluation/069-evaluation-methodology.html">069-evaluation-methodology</a></td><td>独特内容迁入 #069 推理过程评估小节</td></tr>
+              <tr><th scope="row"><code>058-causal-reasoning</code></th><td><span class="ix-badge ix-deprecated">主题移除</span></td><td>主线相关度低、无生产落地，主题移除</td></tr>
+              <tr><th scope="row"><code>083-content-filtering-toxicity</code></th><td><a href="../09-safety-and-alignment/079-guardrails-basics.html">079-guardrails-basics</a></td><td>独特内容迁入 #079 毒性检测小节</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="ix-cross-note">迁移去向来自原文条目里的一句话说明；本页没有另行考据这些小节当前是否仍在。三个迁移目标页面均已构建。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="ix-sources-title">
+    <p class="eyebrow">来源与映射</p>
+    <h2 class="source-heading" id="ix-sources-title">这份索引从哪里来</h2>
+    <p class="source-summary">本页只转换 <code>docs/index.md</code>，不引入原文之外的篇目、统计或状态。</p>
+    <details>
+      <summary>展开来源与链接映射说明</summary>
+      <div class="source-content">
+        <ul>
+          <li><strong>来源：</strong><code>docs/index.md</code>，更新日期 2026-08-12，收录 104 篇 / 11 个模块。</li>
+          <li><strong>链接映射：</strong>原文的 <code>../分类/篇目.md</code> 改为同名 <code>.html</code>；相对路径按本页所在的 <code>docs/</code> 目录解析。</li>
+          <li><strong>待生成：</strong>生成时目标文件不存在的篇目，标“待生成”且不提供 href；整批组装后再核。</li>
+          <li><strong>已废弃：</strong>045、057、058、083 保留清单和原文说明，标“已废弃 · 不纳入”，不提供 href。</li>
+          <li><strong>边界：</strong>本页不联网、不加载外部资源，也不复制根索引的统计卡、状态徽标或脚本。</li>
+        </ul>
+        <p class="source-footnote">如果篇目目标在本次生成之后才构建，条目仍会显示“待生成”；需要重新生成本页才能变成可点击链接。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>docs/index.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 7 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  function openHashTarget() {
+    if (!location.hash) return;
+    const target = document.getElementById(location.hash.slice(1));
+    if (target && target.tagName === "DETAILS") target.open = true;
+  }
+
+  window.addEventListener("hashchange", openHashTarget);
+  openHashTarget();
+</script>
+</body>
+</html>

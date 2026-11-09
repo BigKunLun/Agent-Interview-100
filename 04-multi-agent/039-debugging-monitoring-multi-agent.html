@@ -1,0 +1,1010 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>如何调试和监控多 Agent 系统？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .mo-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .mo-controls-row { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; padding: 0 var(--s-6); margin-top: var(--s-4); }
+  .mo-group { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .mo-group-label { font: 9px/1.5 var(--mono); color: var(--text-dim); margin-right: 2px; }
+  .mo-chip { min-height: 34px; padding: 4px 10px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font: 10px/1.4 var(--mono); color: var(--text-dim); }
+  .mo-chip:hover { border-color: var(--accent); }
+  .mo-chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+  .mo-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+  .mo-board, .mo-panel { min-width: 0; }
+  .mo-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; }
+  .mo-metric { padding: 5px 7px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); }
+  .mo-metric dt { font: 8px/1.4 var(--mono); color: var(--text-dim); }
+  .mo-metric dd { margin: 0; font: 600 14px/1.3 var(--mono); color: var(--ink); }
+  .mo-metric dd.bad { color: #7d1f1f; }
+  .mo-section { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3); }
+  .mo-section-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 5px; margin-bottom: var(--s-2); }
+  .mo-section-head b { font: 600 11px/1.5 var(--sans); }
+  .mo-section-head span { font: 8px/1.5 var(--mono); color: var(--text-dim); }
+  .mo-tree { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+  .mo-span { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) 56px 52px; gap: 5px; align-items: center; padding: 4px 5px; border: 1px solid transparent; border-radius: 3px; background: transparent; text-align: left; }
+  .mo-span:hover { background: var(--surface-soft); }
+  .mo-span.is-selected { border-color: var(--accent); background: var(--accent-dim); }
+  .mo-span-name { min-width: 0; font: 9px/1.45 var(--mono); color: var(--ink); overflow-wrap: anywhere; }
+  .mo-span-name .mo-indent { display: inline-block; }
+  .mo-span-name em { font-style: normal; color: var(--text-dim); }
+  .mo-span-dur, .mo-span-tokens { font: 8px/1.45 var(--mono); color: var(--text-dim); text-align: right; white-space: nowrap; }
+  .mo-status { display: inline-block; margin-right: 4px; padding: 0 4px; border-radius: 3px; border: 1px solid var(--border-bright); font: 8px/1.5 var(--mono); }
+  .mo-status.ok { border-color: #2e7d32; background: #eef7ee; color: #1b5e20; }
+  .mo-status.error { border-color: #a33a3a; background: #fdf0f0; color: #7d1f1f; }
+  .mo-status.retry { border-color: #b98a2f; background: #fffaf0; color: #5f430f; }
+  .mo-waterfall { display: grid; gap: 3px; margin-top: 2px; }
+  .mo-wf-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 5px; align-items: center; }
+  .mo-wf-label { font: 8px/1.35 var(--mono); color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mo-wf-track { position: relative; height: 16px; border-left: 1px solid var(--border); background: repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), #ecebe4 calc(25% - 1px) 25%); border-radius: 2px; }
+  .mo-wf-bar { position: absolute; top: 2px; height: 12px; border-radius: 2px; border: 1px solid #7d9dbb; background: #dce9f5; font: 7px/10px var(--mono); color: #194f87; overflow: hidden; white-space: nowrap; padding-left: 2px; }
+  .mo-wf-bar.refund { border-color: #9fc59f; background: #e3f1e3; color: #1b5e20; }
+  .mo-wf-bar.error { border-color: #a33a3a; background: #f7dcdc; color: #7d1f1f; font-weight: 600; }
+  .mo-wf-bar.retry { border-color: #b98a2f; background: #fbeccd; color: #5f430f; }
+  .mo-wf-bar.is-selected { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .mo-axis { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 5px; margin-top: 2px; }
+  .mo-axis-track { position: relative; height: 12px; font: 7px/1 var(--mono); color: var(--text-dim); }
+  .mo-axis-tick { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+  .mo-axis-tick:first-child { transform: none; }
+  .mo-axis-tick:last-child { transform: translateX(-100%); }
+  .mo-empty { padding: 10px; text-align: center; font: 9px/1.6 var(--mono); color: var(--text-dim); }
+  .mo-panel { border: 1px solid var(--border); border-radius: var(--r-1); background: #f7f6f1; padding: var(--s-4); }
+  .mo-panel h2 { font: 600 18px/1.45 var(--serif); overflow-wrap: anywhere; }
+  .mo-panel > p { margin-top: var(--s-2); font-size: 11px; line-height: 1.65; }
+  .mo-detail { margin-top: var(--s-3); border-top: 1px solid var(--border); }
+  .mo-detail div { display: grid; grid-template-columns: 66px minmax(0, 1fr); gap: 6px; padding: 4px 0; border-bottom: 1px solid var(--border); font-size: 9px; line-height: 1.55; }
+  .mo-detail dt { font: 8px/1.55 var(--mono); color: var(--text-dim); }
+  .mo-detail dd { margin: 0; overflow-wrap: anywhere; }
+  .mo-io { margin-top: var(--s-3); }
+  .mo-io pre { margin-top: 2px; font-size: 8px; line-height: 1.6; padding: 7px; }
+  .mo-teach { margin-top: var(--s-3); padding: 6px 8px; border: 1px solid #b98a2f; border-radius: 4px; background: #fffaf0; color: #5f430f; font: 9px/1.6 var(--mono); }
+  .mo-flow { margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .mo-flow-row { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+  .mo-flow-node { padding: 5px 8px; border: 1px solid #9eb4c9; border-radius: 4px; background: var(--accent-dim); font: 9px/1.45 var(--mono); color: var(--accent); }
+  .mo-flow-node.err { border-color: #a33a3a; background: #fdf0f0; color: #7d1f1f; }
+  .mo-flow-arrow { font: 10px/1 var(--mono); color: var(--text-dim); }
+  .mo-flow-loop { margin-top: 4px; padding-left: 12px; border-left: 2px solid #b98a2f; font: 8px/1.6 var(--mono); color: #6f4c0d; }
+  .mo-flow figcaption { margin-top: var(--s-3); font-size: 10px; line-height: 1.6; color: var(--text-dim); }
+  .mo-tree-static { margin-top: var(--s-3); border-left: 2px solid var(--border-bright); padding-left: 10px; }
+  .mo-tree-static p { font: 9px/1.7 var(--mono); color: var(--ink); margin-top: 2px; }
+  .mo-tree-static p span { color: var(--text-dim); }
+  .mo-workflow { counter-reset: mo-step; list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 6px; }
+  .mo-workflow li { counter-increment: mo-step; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 8px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); font-size: 10px; line-height: 1.6; }
+  .mo-workflow li::before { content: counter(mo-step); display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 9px/1 var(--mono); color: var(--accent); }
+  .mo-workflow b { display: block; font: 600 10px/1.5 var(--sans); }
+
+  @media (max-width: 1000px) { .mo-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 720px) {
+    .mo-stage { padding: var(--s-4); }
+    .mo-controls-row { padding: 0 var(--s-4); margin-top: var(--s-3); }
+    .mo-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .mo-panel { padding: var(--s-3); }
+    .mo-wf-row { grid-template-columns: 68px minmax(0, 1fr); }
+    .mo-axis { grid-template-columns: 68px minmax(0, 1fr); }
+    .mo-span { grid-template-columns: minmax(0, 1fr) 44px; }
+    .mo-span-tokens { display: none; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">039 / 调试与监控</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 14 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="038-emergent-behavior.html">← 上一页 · 多 Agent 系统中的涌现行为与可…</a><a href="101-a2a-protocol.html">下一页 → · A2A（Agent-to-Agent…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">高级 · Multi-Agent · 可交互讲解</p>
+      <h1>问题出在 C，<br>根因可能在 A。</h1>
+    </div>
+    <div>
+      <p class="lead">多 Agent 系统难调试，因为输出不确定、调用跨 Agent、依赖常是隐式的。核心方法是分布式追踪：用 Trace 记录一次完整请求，用 Span 记录每个 Agent、工具和 LLM 调用的耗时与输入输出。</p>
+      <p class="definition">关键边界：<strong>最终输出正确，不代表过程正确</strong>。Agent 可能靠错误路径碰巧得到正确结果；只有过程追踪才能看出工具选错、参数错误或 Handoff 丢字段。</p>
+      <div class="hero-meta"><span class="pill">高级</span><span class="pill">Multi-Agent</span><span class="pill">Trace / Span</span><span class="pill">固定教学 trace</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="mo-caption-title">
+    <div class="player-top">
+      <div class="player-label">固定 Trace 浏览器 <small>正常链路，或工具超时重试</small></div>
+      <div class="controls" role="group" aria-label="Trace 演示控制">
+        <button type="button" class="button button-quiet" id="mo-reset">重置</button>
+        <button type="button" class="button" id="mo-prev" disabled>上一条</button>
+        <button type="button" class="button button-primary" id="mo-next">下一条 →</button>
+      </div>
+    </div>
+    <div class="mo-controls-row">
+      <div class="mo-group" role="group" aria-label="切换 trace">
+        <span class="mo-group-label">Trace</span>
+        <button type="button" class="mo-chip" data-trace="normal" aria-pressed="true">正常</button>
+        <button type="button" class="mo-chip" data-trace="error" aria-pressed="false">工具超时重试</button>
+      </div>
+      <div class="mo-group" role="group" aria-label="按 Agent 过滤">
+        <span class="mo-group-label">Agent</span>
+        <button type="button" class="mo-chip" data-agent="all" aria-pressed="true">全部</button>
+        <button type="button" class="mo-chip" data-agent="triage" aria-pressed="false">Triage</button>
+        <button type="button" class="mo-chip" data-agent="refund" aria-pressed="false">Refund</button>
+      </div>
+      <div class="mo-group">
+        <button type="button" class="mo-chip" id="mo-error-only" aria-pressed="false">只看异常</button>
+      </div>
+    </div>
+    <div class="mo-stage scene" id="mo-scene" data-scene="trace">
+      <div class="mo-grid">
+        <section class="mo-board" aria-label="Trace 视图">
+          <dl class="mo-metrics" id="mo-metrics"></dl>
+          <div class="mo-section">
+            <div class="mo-section-head"><b>Span 树</b><span>点击任意 span 查看详情</span></div>
+            <ul class="mo-tree" id="mo-tree"></ul>
+          </div>
+          <div class="mo-section">
+            <div class="mo-section-head"><b>时间线</b><span id="mo-waterfall-note">固定教学 trace</span></div>
+            <div class="mo-axis"><span></span><div class="mo-axis-track" id="mo-axis"></div></div>
+            <div class="mo-waterfall" id="mo-waterfall"></div>
+          </div>
+        </section>
+        <aside class="mo-panel" aria-labelledby="mo-caption-title">
+          <p class="figure-index" id="mo-figure">图 1 · 正常 trace · 根 span</p>
+          <h2 id="mo-caption-title">Trace：订单退款。</h2>
+          <p id="mo-desc">一次完整请求，共 470ms、1,700 tokens、$0.012。根 span 包含 Triage 和 Refund 两个子 Agent。</p>
+          <dl class="mo-detail" id="mo-detail"></dl>
+          <div class="mo-io" id="mo-io"></div>
+          <div class="mo-teach">固定教学 trace：数值按原文示例整理，分段时间做了配平以便复算；不是真实监控数据，也不连接 Langfuse、LangSmith 或任何观测平台。</div>
+        </aside>
+      </div>
+      <p class="demo-note">固定教学数据：两条 trace、所有 span、耗时、token、成本和错误状态都是写死的；页面只做筛选和展示，不发起网络请求，也不读取任何真实日志。原文中的工具对比和 2026 SDK 版本只按原文呈现，未联网核实。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学 trace · 2 条 · 6 个监控指标</span><span id="mo-state-summary">正常 trace · 全部 Agent · 没有连接观测平台</span></div>
+  </section>
+  <p id="mo-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="challenge-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">独特挑战</p><h2 id="challenge-title">不是一条链，<br>是一张有环的图。</h2></div>
+      <p class="reading-intro">单 Agent 往往是一条链；多 Agent 有分流、循环和失败重试，调试复杂度随之上升。</p>
+    </div>
+    <div class="prose">
+      <figure class="mo-flow">
+        <div class="mo-flow-row">
+          <span class="mo-flow-node">Input</span><span class="mo-flow-arrow">→</span>
+          <span class="mo-flow-node">Agent A</span><span class="mo-flow-arrow">→</span>
+          <span class="mo-flow-node">Tool 1</span><span class="mo-flow-arrow">→</span>
+          <span class="mo-flow-node">Agent B</span><span class="mo-flow-arrow">→</span>
+          <span class="mo-flow-node">Tool 2</span>
+        </div>
+        <div class="mo-flow-row" style="margin-top:5px">
+          <span class="mo-flow-node">Agent A</span><span class="mo-flow-arrow">→</span>
+          <span class="mo-flow-node">Agent C</span><span class="mo-flow-arrow">→</span>
+          <span class="mo-flow-node">Tool 3</span><span class="mo-flow-arrow">→</span>
+          <span class="mo-flow-node err">失败</span><span class="mo-flow-arrow">→</span>
+          <span class="mo-flow-node">重试</span><span class="mo-flow-arrow">→</span>
+          <span class="mo-flow-node">Tool 3</span>
+        </div>
+        <p class="mo-flow-loop">Agent C 有一条“循环”边回到 Agent A；A 还直接连到 Agent D。<br>同一张图里同时存在分流、回路和失败重试。</p>
+        <figcaption>离线可读版：原图是 Mermaid 流程图。Mermaid 源码见下方折叠块。</figcaption>
+      </figure>
+      <details>
+        <summary>展开原文 Mermaid 源码</summary>
+        <pre><code>flowchart TD
+    IN["Input"] --&gt; A["Agent A"]
+    A --&gt; T1["Tool 1"]
+    T1 --&gt; B["Agent B"]
+    B --&gt; T2["Tool 2"]
+    A --&gt; C["Agent C"]
+    C -- "循环" --&gt; A
+    A --&gt; D["Agent D"]
+    C --&gt; T3["Tool 3"]
+    T3 -- "失败" --&gt; R["重试"]
+    R --&gt; T3</code></pre>
+      </details>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">多 Agent 调试的五类独特挑战</caption>
+          <thead><tr><th scope="col">挑战</th><th scope="col">说明</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">非确定性</th><td>同样的输入可能产生不同的执行路径</td></tr>
+            <tr><th scope="row">跨 Agent 交互</th><td>问题可能源于 Agent A 但表现在 Agent C</td></tr>
+            <tr><th scope="row">隐式依赖</th><td>Agent 间通过共享状态产生的隐式耦合</td></tr>
+            <tr><th scope="row">延迟叠加</th><td>多个 LLM 调用串联，延迟难以定位</td></tr>
+            <tr><th scope="row">上下文丢失</th><td>Handoff 过程中关键信息可能丢失</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="trace-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">核心方法</p><h2 id="trace-title">Trace 装请求，<br>Span 装步骤。</h2></div>
+      <p class="reading-intro">Trace 记录一次完整请求，Span 嵌套成执行树。每个 Agent、工具和 LLM 调用都是一个 span，带耗时、token 和状态。</p>
+    </div>
+    <div class="prose">
+      <figure class="mo-flow">
+        <div class="mo-flow-row">
+          <span class="mo-flow-node">Trace · 订单退款 · 470ms · 1,700 tokens · $0.012</span>
+        </div>
+        <div class="mo-tree-static">
+          <p>├─ Triage Agent · 120ms · 500 tokens</p>
+          <p>│  ├─ LLM 推理 · 80ms</p>
+          <p>│  └─ Handoff · 10ms</p>
+          <p>└─ Refund Agent · 350ms · 1,200 tokens</p>
+          <p>&nbsp;&nbsp;&nbsp;├─ LLM 推理 · 100ms</p>
+          <p>&nbsp;&nbsp;&nbsp;├─ Tool get_order_status · 150ms → 成功</p>
+          <p>&nbsp;&nbsp;&nbsp;├─ Tool process_refund · 80ms → 成功</p>
+          <p>&nbsp;&nbsp;&nbsp;└─ LLM 生成回复 · 50ms</p>
+        </div>
+        <figcaption>离线可读版：原图是 Mermaid 执行树。原文示例中 Refund 子 span 相加为 380ms，大于 350ms；本页互动的教学 trace 将生成回复配平为 20ms，使总和一致。Mermaid 源码见下方折叠块。</figcaption>
+      </figure>
+      <details>
+        <summary>展开原文 Mermaid 源码</summary>
+        <pre><code>flowchart TD
+    T["Trace：用户询问订单退款&lt;br/&gt;总计 470ms · 1700 tokens · $0.012"]
+    T --&gt; S1["Span：Triage Agent&lt;br/&gt;120ms · 500 tokens"]
+    T --&gt; S2["Span：Refund Agent&lt;br/&gt;350ms · 1200 tokens"]
+    S1 --&gt; A1["LLM 推理（80ms）"]
+    S1 --&gt; A2["Handoff（10ms）"]
+    S2 --&gt; B1["LLM 推理（100ms）"]
+    S2 --&gt; B2["Tool：get_order_status（150ms）→ 成功"]
+    S2 --&gt; B3["Tool：process_refund（80ms）→ 成功"]
+    S2 --&gt; B4["LLM 生成回复（50ms）"]</code></pre>
+      </details>
+      <p>Trace 解决“一次请求发生了什么”，Span 解决“哪一步慢、错在哪”。两者一起用，才能把“C 表现异常”追到“A 传错了字段”。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="impl-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">实现追踪</p><h2 id="impl-title">OpenTelemetry<br>或现成平台。</h2></div>
+      <p class="reading-intro">行业正在收敛到 OpenTelemetry（OTEL）作为标准遥测协议；也可以直接用 Langfuse 等 LLM 可观测性平台。下面两段都来自原文。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">方式 1：OpenTelemetry · 原文代码</p>
+      <pre><code>from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+
+tracer = trace.get_tracer("multi-agent-system")
+
+async def agent_execute(agent_name, task):
+    with tracer.start_as_current_span(f"agent.{agent_name}") as span:
+        span.set_attribute("agent.name", agent_name)
+        span.set_attribute("task", task)
+
+        with tracer.start_as_current_span("llm.invoke") as llm_span:
+            response = await llm.invoke(task)
+            llm_span.set_attribute("tokens.input", response.input_tokens)
+            llm_span.set_attribute("tokens.output", response.output_tokens)
+            llm_span.set_attribute("model", response.model)
+
+        for tool_call in response.tool_calls:
+            with tracer.start_as_current_span(f"tool.{tool_call.name}") as tool_span:
+                result = await execute_tool(tool_call)
+                tool_span.set_attribute("tool.success", result.success)
+
+        span.set_attribute("agent.status", "completed")
+        return response</code></pre>
+      <p class="code-label">方式 2：Langfuse · 原文代码</p>
+      <details>
+        <summary>展开 Langfuse 装饰器示例</summary>
+        <pre><code>from langfuse import Langfuse
+from langfuse.decorators import observe
+
+langfuse = Langfuse()
+
+@observe(name="triage-agent")
+async def triage_agent(user_message):
+    response = await llm.invoke(user_message)
+
+    if response.needs_handoff:
+        with langfuse.span(name="handoff", metadata={"to": response.target_agent}):
+            return await handoff(response.target_agent, response.context)
+
+    return response
+
+@observe(name="refund-agent")
+async def refund_agent(context):
+    order = await get_order(context["order_id"])
+    refund = await process_refund(order)
+    return refund</code></pre>
+      </details>
+      <p>OTEL 的好处是避免厂商锁定：同一套基础设施可以监控不同框架的 Agent。代价是属性命名要自己统一，否则跨 Agent 的查询仍然对不上。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="metrics-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">关键监控指标</p><h2 id="metrics-title">性能、成本、<br>质量、健康。</h2></div>
+      <p class="reading-intro">四类指标回答不同问题：慢不慢、贵不贵、对不对、稳不稳。原文把质量指标单列，强调工具和 Handoff 的成功率。</p>
+    </div>
+    <div class="prose">
+      <pre><code>monitoring_metrics = {
+    "latency": {
+        "per_agent": "每个 Agent 的处理时间",
+        "end_to_end": "用户请求到最终响应的总时间",
+        "tool_calls": "每次工具调用的延迟",
+    },
+    "tokens": {
+        "input_tokens": "每个 Agent 的输入 token 数",
+        "output_tokens": "每个 Agent 的输出 token 数",
+        "total_cost": "按模型定价计算的总成本",
+    },
+    "quality": {
+        "tool_call_success_rate": "工具调用成功率",
+        "handoff_success_rate": "Handoff 成功率（无上下文丢失）",
+        "task_completion_rate": "任务完成率",
+        "output_quality_score": "LLM-as-Judge 质量评分",
+    },
+    "health": {
+        "error_rate": "各 Agent 的错误率",
+        "retry_count": "重试次数",
+        "circuit_breaker_trips": "断路器触发次数",
+    },
+}</code></pre>
+      <p>Handoff 成功率要单独看：它衡量“上下文有没有完整过去”，不是“目标 Agent 有没有回话”。这两个数混在一起，会掩盖交接丢字段的问题。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="workflow-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">调试工作流</p><h2 id="workflow-title">发现、定位、<br>根因、验证。</h2></div>
+      <p class="reading-intro">先从告警或异常 Trace 进入，再展开 Span 树定位，最后用原始输入重放验证修复。顺序不能倒。</p>
+    </div>
+    <div class="prose">
+      <ol class="mo-workflow">
+        <li><div><b>问题发现</b>告警触发：延迟飙升、错误率上升、成本异常。</div></li>
+        <li><div><b>问题定位</b>查看 Trace 列表，筛选异常 Trace；展开 Span 树，定位到具体 Agent、工具或 LLM 调用。</div></li>
+        <li><div><b>根因分析</b>检查该 Span 的输入、输出和 prompt；判断是 LLM 选错工具、参数错误，还是工具超时。</div></li>
+        <li><div><b>修复验证</b>调整 prompt、工具描述或超时设置；在 Playground 用原始输入重放，确认修复后再部署。</div></li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="tips-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">多 Agent 特有技巧</p><h2 id="tips-title">断点、决策日志、<br>回放。</h2></div>
+      <p class="reading-intro">三个技巧分别补三类盲区：Handoff 时丢了什么、LLM 为什么选这个工具、线上问题能不能离线复现。</p>
+    </div>
+    <div class="prose">
+      <details open>
+        <summary>展开三段原文代码</summary>
+        <pre><code>class HandoffDebugger:
+    def on_handoff(self, from_agent, to_agent, context):
+        self.logger.info(
+            f"Handoff: {from_agent} → {to_agent}",
+            extra={
+                "context_size": len(json.dumps(context)),
+                "context_keys": list(context.keys()),
+                "messages_count": len(context.get("messages", [])),
+            }
+        )
+
+class DecisionLogger:
+    def log_decision(self, agent_name, prompt, response, chosen_tool):
+        self.store({
+            "agent": agent_name,
+            "input_summary": summarize(prompt),
+            "tool_chosen": chosen_tool,
+            "confidence": response.confidence,
+            "alternatives_considered": response.alternatives,
+        })
+
+class TraceReplayer:
+    def replay(self, trace_id):
+        trace = self.load_trace(trace_id)
+        for span in trace.spans:
+            print(f"[{span.agent}] {span.operation}: {span.input[:100]}...")
+            print(f"  → {span.output[:100]}...")
+            print(f"  ⏱ {span.duration_ms}ms, 💰 {span.cost}")</code></pre>
+      </details>
+      <p>回放的价值在于把“偶发”变成“可重复”：保存完整 Trace 后，用同一输入离线重跑，才能确认修复不是又一次运气。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="tools-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">主流工具对比</p><h2 id="tools-title">开源、SaaS、<br>已有 APM。</h2></div>
+      <p class="reading-intro">工具能力按原文表格呈现；版本和定价未更新，选型前查官方文档。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">六种主流多 Agent 可观测性工具的类型、最适合场景和特色</caption>
+          <thead><tr><th scope="col">工具</th><th scope="col">类型</th><th scope="col">最适合</th><th scope="col">特色</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Langfuse</th><td>开源</td><td>自托管 + 全面可观测性</td><td>Prompt 管理 + 追踪 + 评估一体</td></tr>
+            <tr><th scope="row">LangSmith</th><td>SaaS</td><td>LangChain / LangGraph 生态</td><td>与 LangGraph 深度集成</td></tr>
+            <tr><th scope="row">Arize AI</th><td>SaaS</td><td>企业级</td><td>统一 LLM + Agent 评估</td></tr>
+            <tr><th scope="row">Braintrust</th><td>SaaS</td><td>多步骤链调试</td><td>嵌套 Trace 可视化</td></tr>
+            <tr><th scope="row">Maxim AI</th><td>SaaS</td><td>多 Agent 专项</td><td>Agent 交互分析</td></tr>
+            <tr><th scope="row">Datadog LLM</th><td>SaaS</td><td>已有 Datadog 的团队</td><td>与 APM 统一监控</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="sdk-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">2026 落地信号</p><h2 id="sdk-title">子 Agent 嵌套，<br>不再全是黑箱。</h2></div>
+      <p class="reading-intro">原文记录 Claude Agent SDK 在 2026-08 补了四类嵌套可观测性盲区。版本号只按原文，未联网核实。</p>
+    </div>
+    <div class="prose">
+      <ul>
+        <li><strong>结构信息（TS v0.3.238）：</strong><code>task_started</code> 新增 <code>spawn_depth</code>（嵌套层数）和 <code>is_backgrounded</code>（是否后台执行）。</li>
+        <li><strong>失败路径的显式终态（TS v0.3.238）：</strong><code>command_lifecycle</code> 新增 <code>refused</code> 终态，跨会话 peer 消息被拒时明确上报，而不是静默无帧。</li>
+        <li><strong>节点内部的过程（Python v0.2.140）：</strong><code>forward_subagent_text</code> 把子 Agent 的 text / thinking block 转发进主消息流。</li>
+        <li><strong>结构化错误（Python v0.2.140）：</strong><code>ResultError</code> 取代裸 exit code，携带 subtype、errors、<code>api_error_status</code>、<code>terminal_reason</code>、<code>session_id</code> 等字段。</li>
+      </ul>
+      <p>原文说明：这是 SDK 层能力，不是 OTEL 标准扩展；接入统一可观测性设施仍需在导出时映射成 span attribute。它说明子 Agent 嵌套的可观测性正从“各家自己埋点”变成 SDK 默认提供。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">两个误区，<br>五个追问。</h2></div>
+      <p class="reading-intro">前两条是误区，后五条是面试追问，其中三条是场景题；答案来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“用 print / log 就够了。”</h3><p>多 Agent 系统的日志是分散的，无法从日志中重建 Agent 间的因果关系。需要结构化的 Trace + Span 来保留操作间的父子和时序关系。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“只监控最终输出质量。”</h3><p>最终输出正确不代表过程正确。Agent 可能通过错误的推理路径得到了正确结果（运气好），这类问题只有通过过程追踪才能发现。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>OpenTelemetry 在 LLM 领域的角色是什么？</h3><p>OTEL 正在成为 Agent 遥测的标准协议。多个框架（Pydantic AI、smolagents、Strands Agents）已原生支持 OTEL 导出。这避免了厂商锁定，允许用同一套基础设施监控不同框架的 Agent。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>如何测试多 Agent 系统？</h3><p>因为输出非确定性，不能用精确匹配断言。推荐：用评分标准评估输出质量；用 LLM-as-Judge 自动评估；构建场景级集成测试而非单元测试；用 Trace 回放做回归测试。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">场景 1</p>
+      <div><h3>高峰期 P99 从 2 秒飙到 15 秒，单个 Agent 测试都正常，怎么定位？</h3><p>检查 Trace 中的跨 Agent 通信延迟，可能是消息队列或网络瓶颈；分析依赖关系，找串行化热点；检查数据库、向量库等共享资源在高峰期的表现；查看是否有 Agent 触发过多重试，重试风暴会指数级放大延迟；实施 Agent 级熔断，某个 Agent 慢时快速失败而非等待。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">场景 2</p>
+      <div><h3>出现“幽灵 Agent”，偶尔执行预期外的操作，怎么排查？</h3><p>立即启用全量 Trace 记录，捕获完整路径；检查 System Prompt 是否有模糊指令；分析 Agent 间消息传递，排查上下文污染或消息篡改；检查配置漂移，确认生产与开发的 Prompt 版本一致；实施 Agent 白名单，明确允许的操作范围，超出即告警。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">场景 3</p>
+      <div><h3>Agent A 传给 B 的数据偶尔丢字段，B 因此做错决策，怎么解决？</h3><p>在 Handoff 接口实施 Schema 验证；设计标准化 Handoff 协议，明确输入输出格式；在交接点记录日志，对比发送和接收的数据；加入数据补全机制，B 检测到缺失字段时主动向 A 请求；构建专门的 Handoff 场景测试集。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《如何调试和监控多 Agent 系统？》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的八条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.getmaxim.ai/articles/agent-tracing-for-debugging-multi-agent-ai-systems/" target="_blank" rel="noopener noreferrer">Agent Tracing for Debugging Multi-Agent AI Systems (Maxim AI)</a></li>
+          <li><a href="https://langfuse.com/blog/2024-07-ai-agent-observability-with-langfuse" target="_blank" rel="noopener noreferrer">AI Agent Observability with Langfuse (Langfuse Blog)</a></li>
+          <li><a href="https://www.langchain.com/langsmith/observability" target="_blank" rel="noopener noreferrer">LangSmith: AI Agent Observability Platform (LangChain)</a></li>
+          <li><a href="https://www.langchain.com/articles/llm-observability-tools" target="_blank" rel="noopener noreferrer">8 LLM Observability Tools to Monitor AI Agents (LangChain)</a></li>
+          <li><a href="https://www.braintrust.dev/articles/best-llm-monitoring-tools-2026" target="_blank" rel="noopener noreferrer">5 Best Tools for Monitoring LLM Applications in 2026 (Braintrust)</a></li>
+          <li><a href="https://github.com/anthropics/claude-agent-sdk-typescript/releases/tag/v0.3.238" target="_blank" rel="noopener noreferrer">claude-agent-sdk-typescript v0.3.238 Release Notes</a></li>
+          <li><a href="https://github.com/anthropics/claude-agent-sdk-python/releases/tag/v0.2.140" target="_blank" rel="noopener noreferrer">claude-agent-sdk-python v0.2.140 Release Notes</a></li>
+          <li><a href="https://code.claude.com/docs/en/agent-sdk/overview" target="_blank" rel="noopener noreferrer">Claude Agent SDK Overview 官方文档 (Anthropic)</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>04-multi-agent/039-debugging-monitoring-multi-agent.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 4 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const MO_TRACES = Object.freeze({
+    normal: {
+      label: "正常 trace",
+      total: 470, tokens: 1700, cost: "$0.012", errors: 0,
+      spans: [
+        { id: "root", name: "Trace · 订单退款", agent: "trace", depth: 0, start: 0, dur: 470, tokens: 1700, status: "ok", note: "一次完整请求", input: "用户：订单 12345 退款", output: "退款已提交，预计 2 个工作日" },
+        { id: "triage", name: "Triage Agent", agent: "triage", depth: 1, start: 0, dur: 120, tokens: 500, status: "ok", note: "路由与交接", input: "用户：我想退货并查退款", output: "transfer_to_refund" },
+        { id: "t-llm", name: "LLM 推理", agent: "triage", depth: 2, start: 0, dur: 80, tokens: 500, status: "ok", note: "判断交给谁", input: "用户消息 + 路由 prompt", output: "选择 Refund Agent" },
+        { id: "t-handoff", name: "Handoff → Refund", agent: "triage", depth: 2, start: 80, dur: 10, tokens: 0, status: "ok", note: "上下文过滤后交接", input: "5 条上下文", output: "Refund Agent 接管" },
+        { id: "refund", name: "Refund Agent", agent: "refund", depth: 1, start: 120, dur: 350, tokens: 1200, status: "ok", note: "处理退货与退款", input: "退款意图 + 订单号", output: "退款已提交" },
+        { id: "r-llm", name: "LLM 推理", agent: "refund", depth: 2, start: 120, dur: 100, tokens: 600, status: "ok", note: "决定工具顺序", input: "退款上下文", output: "先查订单，再退款" },
+        { id: "r-order", name: "Tool get_order_status", agent: "refund", depth: 2, start: 220, dur: 150, tokens: 0, status: "ok", note: "查询订单状态", input: "order_id=12345", output: "delivered" },
+        { id: "r-refund", name: "Tool process_refund", agent: "refund", depth: 2, start: 370, dur: 80, tokens: 0, status: "ok", note: "提交退款", input: "order_id=12345, amount=299", output: "refund_id=R-8891" },
+        { id: "r-reply", name: "LLM 生成回复", agent: "refund", depth: 2, start: 450, dur: 20, tokens: 600, status: "ok", note: "面向用户总结", input: "工具结果", output: "预计 2 个工作日到账" }
+      ]
+    },
+    error: {
+      label: "工具超时重试",
+      total: 2150, tokens: 2300, cost: "$0.019", errors: 2,
+      spans: [
+        { id: "root", name: "Trace · 订单退款", agent: "trace", depth: 0, start: 0, dur: 2150, tokens: 2300, status: "ok", note: "含 1 次失败、1 次重试", input: "用户：订单 12345 退款", output: "退款已提交，延迟 2.15s" },
+        { id: "triage", name: "Triage Agent", agent: "triage", depth: 1, start: 0, dur: 120, tokens: 500, status: "ok", note: "路由与交接", input: "用户：我想退货并查退款", output: "transfer_to_refund" },
+        { id: "t-llm", name: "LLM 推理", agent: "triage", depth: 2, start: 0, dur: 80, tokens: 500, status: "ok", note: "判断交给谁", input: "用户消息 + 路由 prompt", output: "选择 Refund Agent" },
+        { id: "t-handoff", name: "Handoff → Refund", agent: "triage", depth: 2, start: 80, dur: 10, tokens: 0, status: "ok", note: "上下文交接", input: "5 条上下文", output: "Refund Agent 接管" },
+        { id: "refund", name: "Refund Agent", agent: "refund", depth: 1, start: 120, dur: 2030, tokens: 1800, status: "ok", note: "含超时重试", input: "退款意图 + 订单号", output: "退款已提交" },
+        { id: "r-llm", name: "LLM 推理", agent: "refund", depth: 2, start: 120, dur: 100, tokens: 600, status: "ok", note: "决定工具顺序", input: "退款上下文", output: "先查订单，再退款" },
+        { id: "r-order", name: "Tool get_order_status", agent: "refund", depth: 2, start: 220, dur: 150, tokens: 0, status: "ok", note: "查询订单状态", input: "order_id=12345", output: "delivered" },
+        { id: "r-refund1", name: "Tool process_refund #1", agent: "refund", depth: 2, start: 370, dur: 900, tokens: 0, status: "error", note: "超时 900ms", input: "order_id=12345, amount=299", output: "TimeoutError" },
+        { id: "r-retry", name: "重试退避", agent: "refund", depth: 2, start: 1270, dur: 200, tokens: 0, status: "retry", note: "等待 200ms 后重试", input: "retry_count=1", output: "准备第 2 次调用" },
+        { id: "r-refund2", name: "Tool process_refund #2", agent: "refund", depth: 2, start: 1470, dur: 550, tokens: 0, status: "ok", note: "第 2 次成功", input: "order_id=12345, amount=299", output: "refund_id=R-8892" },
+        { id: "r-reply", name: "LLM 生成回复", agent: "refund", depth: 2, start: 2020, dur: 130, tokens: 1200, status: "ok", note: "说明延迟原因", input: "工具结果 + 重试记录", output: "退款已提交，处理较慢" }
+      ]
+    }
+  });
+
+  const moState = { trace: "normal", agent: "all", errorOnly: false, selected: "root" };
+  const moById = (id) => document.getElementById(id);
+
+  function moVisibleSpans() {
+    const trace = MO_TRACES[moState.trace];
+    let spans = trace.spans;
+    if (moState.agent !== "all") {
+      spans = spans.filter((span) => span.agent === "trace" || span.agent === moState.agent);
+    }
+    if (moState.errorOnly) {
+      const errorIds = new Set(spans.filter((span) => span.status === "error" || span.status === "retry").map((span) => span.id));
+      if (!errorIds.size) return [];
+      // 保留异常 span 的祖先：根和 Refund Agent
+      const keep = new Set(["root", "refund"]);
+      spans.forEach((span) => { if (errorIds.has(span.id)) keep.add(span.id); });
+      spans = spans.filter((span) => keep.has(span.id));
+    }
+    return spans;
+  }
+
+  function moSelectedSpan() {
+    return MO_TRACES[moState.trace].spans.find((span) => span.id === moState.selected) || MO_TRACES[moState.trace].spans[0];
+  }
+
+  function moStatusLabel(status) {
+    if (status === "error") return "超时";
+    if (status === "retry") return "重试";
+    return "成功";
+  }
+
+  function moRenderMetrics() {
+    const trace = MO_TRACES[moState.trace];
+    const host = moById("mo-metrics");
+    host.textContent = "";
+    [["总耗时", trace.total + "ms", ""], ["Tokens", String(trace.tokens), ""], ["成本", trace.cost, ""], ["异常 span", String(trace.errors), trace.errors ? "bad" : ""]].forEach(([label, value, cls]) => {
+      const wrap = document.createElement("div");
+      wrap.className = "mo-metric";
+      const dt = document.createElement("dt");
+      dt.textContent = label;
+      const dd = document.createElement("dd");
+      if (cls) dd.className = cls;
+      dd.textContent = value;
+      wrap.append(dt, dd);
+      host.append(wrap);
+    });
+  }
+
+  function moRenderTree() {
+    const host = moById("mo-tree");
+    host.textContent = "";
+    const spans = moVisibleSpans();
+    if (!spans.length) {
+      const empty = document.createElement("li");
+      empty.className = "mo-empty";
+      empty.textContent = "这条 trace 没有异常 span；关掉“只看异常”可查看完整链路。";
+      host.append(empty);
+      return;
+    }
+    spans.forEach((span) => {
+      const li = document.createElement("li");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "mo-span" + (span.id === moState.selected ? " is-selected" : "");
+      button.setAttribute("aria-pressed", String(span.id === moState.selected));
+      const name = document.createElement("span");
+      name.className = "mo-span-name";
+      const indent = document.createElement("span");
+      indent.className = "mo-indent";
+      indent.style.width = (span.depth * 12) + "px";
+      indent.textContent = span.depth ? "└ " : "";
+      const status = document.createElement("span");
+      status.className = "mo-status " + span.status;
+      status.textContent = moStatusLabel(span.status);
+      name.append(indent, status, document.createTextNode(span.name));
+      if (span.agent !== "trace") {
+        const agent = document.createElement("em");
+        agent.textContent = " · " + (span.agent === "triage" ? "Triage" : "Refund");
+        name.append(agent);
+      }
+      const dur = document.createElement("span");
+      dur.className = "mo-span-dur";
+      dur.textContent = span.dur + "ms";
+      const tokens = document.createElement("span");
+      tokens.className = "mo-span-tokens";
+      tokens.textContent = span.tokens ? span.tokens + " tok" : "—";
+      button.append(name, dur, tokens);
+      button.addEventListener("click", () => {
+        moState.selected = span.id;
+        moRender();
+        moAnnounce("已选择 span：" + span.name + "。");
+      });
+      li.append(button);
+      host.append(li);
+    });
+  }
+
+  function moRenderAxis() {
+    const trace = MO_TRACES[moState.trace];
+    const axis = moById("mo-axis");
+    axis.textContent = "";
+    [0, 0.25, 0.5, 0.75, 1].forEach((ratio) => {
+      const mark = document.createElement("span");
+      mark.className = "mo-axis-tick";
+      mark.style.left = (ratio * 100) + "%";
+      mark.textContent = Math.round(trace.total * ratio) + "ms";
+      axis.append(mark);
+    });
+  }
+
+  function moRenderWaterfall() {
+    const host = moById("mo-waterfall");
+    host.textContent = "";
+    const trace = MO_TRACES[moState.trace];
+    moVisibleSpans().forEach((span) => {
+      const row = document.createElement("div");
+      row.className = "mo-wf-row";
+      const label = document.createElement("span");
+      label.className = "mo-wf-label";
+      label.style.paddingLeft = (span.depth * 6) + "px";
+      label.textContent = span.name;
+      const track = document.createElement("div");
+      track.className = "mo-wf-track";
+      const bar = document.createElement("button");
+      bar.type = "button";
+      bar.className = "mo-wf-bar" + (span.agent === "refund" ? " refund" : "") + (span.status === "error" ? " error" : "") + (span.status === "retry" ? " retry" : "") + (span.id === moState.selected ? " is-selected" : "");
+      bar.style.left = (span.start / trace.total) * 100 + "%";
+      bar.style.width = Math.max((span.dur / trace.total) * 100, 0.8) + "%";
+      bar.title = `${span.name} · ${span.start}–${span.start + span.dur}ms`;
+      bar.setAttribute("aria-label", `${span.name}，${span.start} 到 ${span.start + span.dur} 毫秒`);
+      bar.addEventListener("click", () => {
+        moState.selected = span.id;
+        moRender();
+        moAnnounce("已选择 span：" + span.name + "。");
+      });
+      track.append(bar);
+      row.append(label, track);
+      host.append(row);
+    });
+    moById("mo-waterfall-note").textContent = `固定教学 trace · 总长 ${trace.total}ms`;
+  }
+
+  function moRenderDetail() {
+    const span = moSelectedSpan();
+    moById("mo-figure").textContent = `图 1 · ${MO_TRACES[moState.trace].label} · ${span.id === "root" ? "根 span" : span.name}`;
+    moById("mo-caption-title").textContent = span.name;
+    moById("mo-desc").textContent = span.note + "。耗时 " + span.dur + "ms，起始于 +" + span.start + "ms" + (span.tokens ? `，${span.tokens} tokens` : "") + "。";
+    const detail = moById("mo-detail");
+    detail.textContent = "";
+    [["Agent", span.agent === "trace" ? "trace" : span.agent === "triage" ? "Triage Agent" : "Refund Agent"], ["状态", moStatusLabel(span.status)], ["起始", "+" + span.start + "ms"], ["耗时", span.dur + "ms"], ["Tokens", span.tokens ? String(span.tokens) : "—"]].forEach(([label, value]) => {
+      const row = document.createElement("div");
+      const dt = document.createElement("dt");
+      dt.textContent = label;
+      const dd = document.createElement("dd");
+      dd.textContent = value;
+      row.append(dt, dd);
+      detail.append(row);
+    });
+    const io = moById("mo-io");
+    io.textContent = "";
+    const label = document.createElement("p");
+    label.className = "code-label";
+    label.textContent = "输入 / 输出 · 固定教学文本";
+    const pre = document.createElement("pre");
+    const code = document.createElement("code");
+    code.textContent = "input:  " + span.input + "\noutput: " + span.output;
+    pre.append(code);
+    io.append(label, pre);
+  }
+
+  function moRender() {
+    const trace = MO_TRACES[moState.trace];
+    moRenderMetrics();
+    moRenderTree();
+    moRenderAxis();
+    moRenderWaterfall();
+    if (!trace.spans.some((span) => span.id === moState.selected)) moState.selected = "root";
+    moRenderDetail();
+
+    document.querySelectorAll("#explainer [data-trace]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.trace === moState.trace));
+    });
+    document.querySelectorAll("#explainer [data-agent]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.agent === moState.agent));
+    });
+    moById("mo-error-only").setAttribute("aria-pressed", String(moState.errorOnly));
+    moById("mo-state-summary").textContent = `${trace.label} · ${moState.agent === "all" ? "全部 Agent" : moState.agent === "triage" ? "Triage" : "Refund"} · ${moState.errorOnly ? "只看异常" : "全部 span"} · 没有连接观测平台`;
+    const order = ["normal", "error"];
+    const index = order.indexOf(moState.trace);
+    moById("mo-prev").disabled = index === 0;
+    moById("mo-next").disabled = index === order.length - 1;
+  }
+
+  function moAnnounce(prefix) {
+    const trace = MO_TRACES[moState.trace];
+    moById("mo-announcement").textContent = `${prefix}${trace.label}，总耗时 ${trace.total} 毫秒，${trace.tokens} tokens，成本 ${trace.cost}。当前筛选：${moState.agent === "all" ? "全部 Agent" : moState.agent}${moState.errorOnly ? "，只看异常" : ""}。`;
+  }
+
+  function moSetTrace(key) {
+    moState.trace = key;
+    moState.agent = "all";
+    moState.errorOnly = false;
+    moState.selected = "root";
+    moRender();
+    moAnnounce("");
+  }
+
+  document.querySelectorAll("#explainer [data-trace]").forEach((button) => {
+    button.addEventListener("click", () => moSetTrace(button.dataset.trace));
+  });
+  document.querySelectorAll("#explainer [data-agent]").forEach((button) => {
+    button.addEventListener("click", () => {
+      moState.agent = button.dataset.agent;
+      moRender();
+      moAnnounce("");
+    });
+  });
+  moById("mo-error-only").addEventListener("click", () => {
+    moState.errorOnly = !moState.errorOnly;
+    moRender();
+    moAnnounce(moState.errorOnly ? "已开启只看异常。" : "已关闭只看异常。");
+  });
+  moById("mo-prev").addEventListener("click", () => {
+    const order = ["normal", "error"];
+    const index = order.indexOf(moState.trace);
+    if (index > 0) moSetTrace(order[index - 1]);
+  });
+  moById("mo-next").addEventListener("click", () => {
+    const order = ["normal", "error"];
+    const index = order.indexOf(moState.trace);
+    if (index < order.length - 1) moSetTrace(order[index + 1]);
+  });
+  moById("mo-reset").addEventListener("click", () => {
+    moState.trace = "normal";
+    moState.agent = "all";
+    moState.errorOnly = false;
+    moState.selected = "root";
+    moRender();
+    moAnnounce("已重置。");
+  });
+  moRender();
+</script>
+</body>
+</html>

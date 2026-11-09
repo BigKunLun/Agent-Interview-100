@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>记忆的遗忘与更新机制：如何处理过时信息？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .sim-banner { display: flex; align-items: flex-start; gap: 9px; margin: var(--s-4) var(--s-6) 0; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .sim-banner strong { color: #4d3000; }
+  .sim-banner::before { content: "模拟"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .badge-neutral { background: #eef1ee; color: #3f463f; border-color: #c9cec9; }
+  .badge-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .badge-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .badge-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .badge-bad { background: #fbecec; color: #8a1f1f; border-color: #d9a3a3; }
+  .badge-solid { background: #194f87; color: #fff; border-color: #194f87; }
+  .toggle-row { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; margin-top: var(--s-4); padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .toggle-row .label { font: 11px/1.6 var(--mono); color: var(--text-dim); margin-right: 4px; }
+  .toggle { padding: 7px 12px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: 12px; }
+  .toggle[aria-pressed="true"] { background: #194f87; border-color: #194f87; color: #fff; }
+  .toggle small { margin-left: 5px; font-size: 10px; opacity: .85; }
+  .memory-table td, .memory-table th { vertical-align: top; }
+  .memory-table .content { min-width: 14em; }
+  .memory-table th[scope="row"], .score-table th[scope="row"], .ttl-table th[scope="row"], .amacc-table th[scope="row"] { white-space: nowrap; }
+  .ttl-table td.num, .ttl-table th.num { font-family: var(--mono); }
+  .expired-line { margin-top: var(--s-3); padding: 9px 11px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; }
+  .truth-table { margin-top: var(--s-3); }
+  .rec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); margin-top: var(--s-4); }
+  .rec-cell { padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .rec-cell b { display: block; font: 600 11px/1.6 var(--mono); color: var(--text-dim); margin-bottom: 3px; }
+  .rec-cell ul { margin: 0; padding-left: 1.1em; }
+  .rec-cell li { margin-block: 4px; }
+  .four-state { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); margin-top: var(--s-4); }
+  .state-card { padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .state-card.on { border-color: #194f87; background: #eaf1f8; box-shadow: inset 0 0 0 1px #194f87; }
+  .state-card b { display: block; font: 600 12px/1.6 var(--mono); color: #194f87; }
+  .state-card span { display: block; margin-top: 3px; color: var(--text-dim); }
+  .decision-note { margin-top: var(--s-3); padding: 9px 11px; border-left: 3px solid #194f87; background: #eaf1f8; font-size: 12px; }
+  .score-table td.num, .score-table th.num { font-family: var(--mono); }
+  .amacc-table td.num, .amacc-table th.num { font-family: var(--mono); }
+  .amacc-total { display: flex; flex-wrap: wrap; justify-content: space-between; gap: var(--s-2); margin-top: var(--s-3); padding: 9px 11px; border: 1px solid #d9a3a3; border-radius: var(--r-1); background: #fbecec; color: #8a1f1f; font-size: 12px; }
+  .amacc-total strong { font-family: var(--mono); }
+  .event-log { margin: var(--s-4) 0 0; padding: 0; list-style: none; border-top: 1px solid var(--border); }
+  .event-log li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: var(--s-2); align-items: start; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .event-log li:last-child { border-bottom: 0; }
+  .event-log .n { font: 11px/1.7 var(--mono); color: var(--text-dim); }
+  .fixed-note { display: inline-block; margin-top: var(--s-3); padding: 3px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  .numeric-note { margin-top: var(--s-3); padding: 8px 11px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; }
+  @media (max-width: 720px) {
+    .sim-banner { margin-inline: var(--s-4); }
+    .table-wrap table.data.wide { min-width: 720px; }
+    .table-wrap table.ttl-table { min-width: 680px; }
+    .table-wrap table.score-table { min-width: 600px; }
+    .table-wrap table.amacc-table { min-width: 480px; }
+    .truth-table table { min-width: 560px; }
+    .rec-grid, .four-state { grid-template-columns: 1fr; }
+    .event-log li { grid-template-columns: 24px minmax(0, 1fr); }
+    .event-log li .badge { grid-column: 1 / -1; justify-self: start; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">048 / 遗忘与更新</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 20 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="046-long-term-memory-storage.html">← 上一页 · 长期记忆存储介质选型</a><span class="disabled">下一页 →</span></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">高级 · Memory &amp; State · 可交互讲解</p>
+      <h1>忘不掉旧偏好，<br>就会一直推荐错。</h1>
+    </div>
+    <div>
+      <p class="lead">记忆系统不仅要能记住，还要能忘记和更新。时间衰减、频率淘汰、容量限制、TTL 解决“什么时候删”；冲突检测与四态更新解决“新旧矛盾听谁的”。</p>
+      <p class="definition"><strong>关键边界：</strong>TTL 配了不等于记忆真的消失。过期要在读路径上过滤，不能只靠后台清扫；否则两次清扫之间的过期记忆仍会被检索，访问续期还可能把它“复活”。</p>
+      <div class="hero-meta"><span class="pill">高级</span><span class="pill">Memory &amp; State</span><span class="pill">TTL</span><span class="pill">冲突更新</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="forget-title">
+    <div class="player-top">
+      <div class="player-label">记忆过期与冲突更新 <small>固定记忆集 · 本地模拟</small></div>
+      <div class="controls" role="group" aria-label="遗忘与更新演示控制">
+        <button type="button" class="button button-quiet" id="reset-button">重置</button>
+        <button type="button" class="button" id="back-button" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="next-button">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="遗忘与更新阶段">
+      <ol style="--stages: 5">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>记忆集</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>TTL</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>冲突检索</button></li>
+        <li><button type="button" class="stage-button" data-stage="3"><span class="stage-number">4</span>四态更新</button></li>
+        <li><button type="button" class="stage-button" data-stage="4"><span class="stage-number">5</span>准入复查</button></li>
+      </ol>
+    </nav>
+    <p class="sim-banner"><span><strong>本页只做固定记忆集的 TTL / 冲突 / 更新模拟，不读写真实用户数据、不连接数据库。</strong>记忆内容、时间、过期状态、相似度和 A-MAC 权重都是预设的教学数据。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="scene-index">阶段 1 / 5 · 固定记忆集</p>
+      <h2 id="forget-title">五条记忆，两条已经过期</h2>
+      <p id="scene-subtitle">固定场景：一个前端技术助手的长期记忆。用户 90 天前说喜欢 React，30 天前开始学 Vue，5 天前说现在全部用 Vue。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="forget-scene"></div>
+      <p class="demo-note" id="scene-note">固定教学数据：记忆内容、创建时间、TTL 和访问次数均为本页预设，不代表任何真实用户或线上数据库。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定记忆集 · 不连接数据库 · 不访问网络</span><span id="state-summary">阶段 1 / 5 · 5 条记忆 · 2 条已过期</span></div>
+  </section>
+  <p id="forget-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">为什么遗忘</p><h2 id="why-title">全留着，<br>检索就会被旧信息污染。</h2></div>
+      <p class="reading-intro">第 1 天“用户喜欢 React”，第 30 天“开始学 Vue”，第 90 天“现在全部用 Vue”。三条都留着，查询“推荐前端框架”会检索到两条指向 React 的旧信息，Agent 可能推荐错。</p>
+    </div>
+    <div class="prose">
+      <p>问题不在存储容量，而在检索质量。LLM 无法仅凭内容判断哪条检索结果最新，它会把所有记忆同等对待。没有遗忘机制，存储会膨胀、检索噪声增加、过时信息误导决策。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="strategies-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">遗忘策略</p><h2 id="strategies-title">四种删法，<br>各有各的坑。</h2></div>
+      <p class="reading-intro">时间衰减按年龄降权；频率淘汰清理长期没人访问的记忆；容量限制在满时淘汰最低价值；TTL 靠过期时间，但工程上最容易踩坑。</p>
+    </div>
+    <div class="prose">
+      <h3>1. 时间衰减</h3>
+      <p>原文用 Ebbinghaus 遗忘曲线：<code>R = e^(-t/S)</code>，其中稳定性 <code>S = 1.0 + access_count × 0.5</code>。访问越多，记忆越稳定；强度低于 0.05 时归档或删除。</p>
+      <h3>2. 基于检索频率的淘汰</h3>
+      <p>存在超过 30 天且从未被检索 → 价值低；最近 30 天未访问且总访问少于 3 次 → 淘汰。</p>
+      <h3>3. 容量限制淘汰</h3>
+      <p>达到上限时，淘汰价值最低的记忆。原文的价值函数：<code>0.4 × access_count / max_access + 0.3 × strength + 0.3 × confidence</code>。</p>
+      <h3>4. TTL 的实现陷阱</h3>
+      <p>TTL 通常由后台清扫任务周期性删除，两次清扫之间存在窗口期：已过期的记忆仍然躺在库里，检索照样能命中。更糟的是，很多实现带 <code>refresh_ttl</code>（访问即续期），一次检索命中就把本该死掉的行“复活”。</p>
+      <p>LangGraph 在 checkpoint v4.2.0（2026-08）给 <code>TTLConfig</code> 加了 <code>omit_expired</code>（默认 <code>False</code>）：查询层直接过滤过期行，并阻止 <code>refresh_ttl</code> 给已过期的行续命。结论：遗忘要在读路径上生效，不能只挂在写路径和后台清扫上。</p>
+      <details>
+        <summary>查看 TTLConfig 的原文代码</summary>
+        <pre><code>from langgraph.store.base import TTLConfig
+
+ttl_config = TTLConfig(
+    default_ttl=60,        # 分钟
+    refresh_on_read=True,
+    omit_expired=True,     # v4.2.0 新增，默认 False
+)
+# omit_expired=True 的两个效果：
+# 1. get / search / list_namespaces 在查询层过滤已过期行，
+#    不再依赖后台 TTL 清扫周期
+# 2. 阻止 refresh_ttl 给已过期的行续命</code></pre>
+      </details>
+      <p class="numeric-note">版本号与默认值按原文 2026 年表述，本页未联网核实。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="update-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">更新策略</p><h2 id="update-title">新事实来了，<br>旧事实怎么办？</h2></div>
+      <p class="reading-intro">先检索相似记忆（阈值约 0.85），没有就存；有相似就让 LLM 判四态：UPDATE / CONTRADICT 失效旧存新，SUPPLEMENT 共存，DUPLICATE 忽略。</p>
+    </div>
+    <div class="prose">
+      <div class="four-state">
+        <div class="state-card"><b>UPDATE</b><span>新信息是旧记忆的更新版本，例如偏好变化 → 旧记忆失效，存新事实</span></div>
+        <div class="state-card"><b>CONTRADICT</b><span>新信息与旧记忆矛盾 → 旧记忆失效，存新事实</span></div>
+        <div class="state-card"><b>SUPPLEMENT</b><span>新信息是补充，两者可以共存 → 新旧都保留</span></div>
+        <div class="state-card"><b>DUPLICATE</b><span>新信息是重复 → NOOP，忽略</span></div>
+      </div>
+      <p>知识图谱里的更新不是删除，而是时间失效：找到当前有效的旧事实，把它的 <code>valid_to</code> 设为现在；再创建 <code>valid_from=now</code>、<code>valid_to=None</code> 的新事实。历史保留，支持时间旅行查询。</p>
+      <details>
+        <summary>查看四态冲突检测的原文代码</summary>
+        <pre><code>class ConflictAwareUpdater:
+    """检测新旧信息冲突并智能更新"""
+
+    async def process_new_fact(self, user_id, new_fact):
+        similar = await self.retrieve_similar(
+            user_id, new_fact, threshold=0.85)
+
+        if not similar:
+            await self.store(user_id, new_fact)
+            return "STORE"
+
+        decision = await self.llm.invoke(f"""
+        已有记忆: {similar[0]['content']}
+        新信息: {new_fact}
+        判断关系：
+        - UPDATE: 新信息是更新版本
+        - CONTRADICT: 两者矛盾，需要替换
+        - SUPPLEMENT: 新信息是补充，两者共存
+        - DUPLICATE: 新信息是重复，忽略
+        """)
+
+        if decision in ["UPDATE", "CONTRADICT"]:
+            await self.invalidate(similar[0])
+            await self.store(user_id, new_fact)
+            return decision
+        elif decision == "SUPPLEMENT":
+            await self.store(user_id, new_fact)
+            return "SUPPLEMENT"
+        else:
+            return "NOOP"</code></pre>
+      </details>
+      <details>
+        <summary>查看知识图谱时间失效的原文代码</summary>
+        <pre><code>class TemporalFactUpdate:
+    async def update_fact(self, subject, predicate, new_object):
+        old_fact = await self.graph.find(
+            subject=subject, predicate=predicate,
+            valid_to=None  # 当前有效
+        )
+        if old_fact:
+            old_fact.valid_to = datetime.now()  # 失效，不删除
+            await self.graph.update(old_fact)
+
+        await self.graph.add(
+            subject=subject, predicate=predicate, object=new_object,
+            valid_from=datetime.now(), valid_to=None
+        )</code></pre>
+      </details>
+      <details>
+        <summary>查看原文 Mermaid 源码（冲突检测流程）</summary>
+        <pre><code>flowchart TD
+    A["新事实"] --&gt; B["检索相似记忆&lt;br/&gt;（阈值 ~0.85）"]
+    B --&gt; C{"有相似记忆？"}
+    C -- "无" --&gt; S["直接存储"]
+    C -- "有" --&gt; D{"LLM 判四态"}
+    D -- "UPDATE / CONTRADICT" --&gt; U["旧记忆失效&lt;br/&gt;存入新事实"]
+    D -- "SUPPLEMENT" --&gt; P["新旧共存"]
+    D -- "DUPLICATE" --&gt; N["NOOP，忽略"]</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="amac-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">前沿研究</p><h2 id="amac-title">存之前先问：<br>这条值不值得记？</h2></div>
+      <p class="reading-intro">A-MAC（自适应记忆准入控制）把记忆存储视为结构化决策问题，从五个维度评估价值：未来效用、事实置信度、语义新颖性、时间新近性、内容类型先验。</p>
+    </div>
+    <div class="prose">
+      <p>原文称实验表明：基于效用的删除策略比朴素策略（FIFO / 随机）性能提升 10%。A-MAC 的“事实置信度”维度还能拦住幻觉信息：存入前先评估可靠性，低于阈值就不存。</p>
+      <p class="fixed-note">原文只给出五个维度和加权求和的框架；本页后续演示里的权重、分值和阈值是固定教学假设，不是论文参数。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="bench-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">评估维度</p><h2 id="bench-title">记得准，<br>不等于记得对。</h2></div>
+      <p class="reading-intro">MemoryAgentBench 评四个能力：准确检索、测试时学习、长程理解、选择性遗忘。MemTrapBench 又补了一个维度：记忆本身没错，仍可能把推理带偏。</p>
+    </div>
+    <div class="prose">
+      <h3>MemoryAgentBench 的四个能力</h3>
+      <ul>
+        <li><strong>Accurate Retrieval：</strong>能否准确检索出相关记忆？</li>
+        <li><strong>Test-Time Learning：</strong>能否从交互中学习新知识？</li>
+        <li><strong>Long-Range Understanding：</strong>能否在长时间跨度中保持理解？</li>
+        <li><strong>Selective Forgetting：</strong>能否智能地遗忘过时信息？</li>
+      </ul>
+      <h3>MemTrapBench：记忆诱发的认知陷阱</h3>
+      <p>记忆内容本身没有任何问题，既被忠实记录、也与当前问题语义相关，但进入上下文后仍扭曲了模型的推理过程或信念状态。它分两类：<strong>Reasoning Fixation</strong>（推理固着，旧解法被复用到表面相似、实质不同的新问题上）和 <strong>Belief 类</strong>（信念扭曲，曾经成立的判断被当作无需校验的“已知前提”）。</p>
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">遗忘机制与 MemTrapBench 解决的是两类不同失效</caption>
+          <thead><tr><th scope="col">视角</th><th scope="col">解决什么</th><th scope="col">失效长什么样</th><th scope="col">对策</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">前文的遗忘 / 更新机制</th><td>记错、记多、记旧</td><td>检索到过时或错误的记忆</td><td>衰减、淘汰、冲突覆盖、准入控制</td></tr>
+            <tr><th scope="row">MemTrapBench 揭示的</th><td>记对了仍有害</td><td>检索到正确且相关的记忆，推理照样跑偏</td><td>不在写入侧，得在使用侧</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>两者正交而非替代：遗忘做得越干净，剩下的记忆越“可信”，被无条件采信的风险反而越高。工程含义：记忆质量不能只用“检索准确率”单指标验收——一条记忆该不该留（写入侧）和它进入上下文后会不会被误用（使用侧）要分别评估。</p>
+      <p class="numeric-note">MemTrapBench 为原文 2026-08 版本表述，本页未联网核实。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="impact-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">实际影响</p><h2 id="impact-title">遗忘不是清理，<br>是可靠性的一部分。</h2></div>
+      <p class="reading-intro">原文的三条结论：效用删除比朴素策略性能提升 10%；无差别存储会导致错误传播和长期性能退化；幻觉信息一旦存入，会在后续交互中反复出现。</p>
+    </div>
+    <div class="prose">
+      <p class="numeric-note">以上数字与结论按原文版本呈现，本页未联网核实。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">六个问题，<br>从容量问到 GDPR。</h2></div>
+      <p class="reading-intro">前两个是误区，后四个是追问。TTL 和失效/删除的区别是高频考点。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <div class="misconception-label">误区 01</div>
+        <div><h3>“只要存储空间够大，就不需要遗忘”</h3><p>记忆系统的问题不是存储容量，而是检索质量。过时和错误的记忆会污染检索结果，导致 Agent 做出错误决策。“智能遗忘是可靠记忆的前提条件”。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 02</div>
+        <div><h3>“删除旧记忆就是遗忘”</h3><p>更好的做法是“失效”而非“删除”：标记旧事实为过期但保留历史，支持时间旅行查询。知识图谱的 <code>valid_from</code> / <code>valid_to</code> 模型是最佳实践。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 03</div>
+        <div><h3>如何防止幻觉信息被存入记忆？</h3><p>A-MAC 的“事实置信度”维度正是解决这个问题：存入前评估信息可靠性。还可以对 LLM 提取的事实做交叉验证；设置置信度阈值，低于阈值的信息不存储。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 04</div>
+        <div><h3>给记忆加了 TTL，是不是就实现遗忘了？</h3><p>不够。TTL 一般靠后台清扫兑现，清扫周期之间过期记忆仍会被检索到；如果还开了“访问即续期”，一次命中就把它续活，等于永不过期。正确做法是让过期在读路径生效：查询时直接过滤过期行，并禁止续期作用于已过期数据。LangGraph checkpoint v4.2.0 的 <code>TTLConfig.omit_expired</code> 就是这个语义，默认关闭，需要显式开。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 05</div>
+        <div><h3>把该遗忘的都遗忘干净了，记忆系统是不是就没问题了？</h3><p>不是。遗忘机制解决“记错 / 记多 / 记旧”，判据是存取正确率。MemTrapBench 度量的是另一类失效：记忆被忠实记录、且与当前问题语义相关，仍可能扭曲推理或信念。Reasoning Fixation 是沿用旧解法解表面相似的新问题，Belief 类是曾经成立的判断被当作无需校验的前提。两者正交，验收不能只看检索准确率。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 06</div>
+        <div><h3>记忆遗忘和 GDPR 的“被遗忘权”有什么关系？</h3><p>GDPR 要求系统能完全删除用户数据。Agent 记忆系统必须支持彻底的物理删除，不只是逻辑失效，包括向量存储、知识图谱和所有备份中的数据。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="sources-title">
+    <p class="eyebrow">参考资料</p>
+    <h2 class="source-heading" id="sources-title">原文引用与延伸阅读</h2>
+    <p class="source-summary">以下链接来自原文。只有主动点击外链才会离开本页；本页不加载任何外部资源。</p>
+    <details>
+      <summary>展开 7 条参考资料</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://dl.acm.org/doi/10.1145/3748302" rel="noreferrer noopener">A Survey on the Memory Mechanism of LLM-based Agents (ACM TOIS)</a></li>
+          <li><a href="https://arxiv.org/html/2603.04549" rel="noreferrer noopener">Adaptive Memory Admission Control for LLM Agents (arXiv)</a></li>
+          <li><a href="https://medium.com/@DanGiannone/the-problem-with-ai-agent-memory-9d47924e7975" rel="noreferrer noopener">The Problem with AI Agent “Memory” (Medium)</a></li>
+          <li><a href="https://arxiv.org/abs/2305.10250" rel="noreferrer noopener">MemoryBank: Enhancing Large Language Models with Long-Term Memory (arXiv)</a></li>
+          <li><a href="https://www.leoniemonigatti.com/blog/memory-in-ai-agents.html" rel="noreferrer noopener">Making Sense of Memory in AI Agents (Leonie Monigatti)</a></li>
+          <li><a href="https://github.com/langchain-ai/langgraph/releases/tag/checkpoint%3D%3D4.2.0" rel="noreferrer noopener">LangGraph checkpoint v4.2.0 Release Notes: TTLConfig.omit_expired (GitHub)</a></li>
+          <li><a href="https://arxiv.org/abs/2608.20202" rel="noreferrer noopener">MemTrapBench: Benchmarking Cognitive Traps in LLM Memory Use (arXiv)</a></li>
+        </ul>
+        <p class="source-footnote">版本、论文数字和默认值均按原文 2026 年表述呈现，本页未联网核实。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>05-memory-and-state/048-memory-forgetting-updating.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 4 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const MEMORIES = Object.freeze([
+    { id: "mem_r1", content: "用户喜欢 React", age: 90, lastAccess: 45, access: 12, ttl: 30, state: "active" },
+    { id: "mem_v1", content: "用户开始学 Vue", age: 30, lastAccess: 2, access: 4, ttl: 90, state: "active" },
+    { id: "mem_v2", content: "用户现在全部用 Vue", age: 5, lastAccess: 1, access: 6, ttl: 180, state: "active" },
+    { id: "mem_py", content: "用户是 Python 开发者", age: 120, lastAccess: 3, access: 20, ttl: null, state: "active" },
+    { id: "mem_trip", content: "用户计划去东京", age: 200, lastAccess: 150, access: 0, ttl: 60, state: "active" }
+  ]);
+
+  const SCORES = Object.freeze({
+    mem_r1: 0.86, mem_v2: 0.84, mem_v1: 0.82, mem_py: 0.31, mem_trip: 0.12
+  });
+
+  const STAGES = Object.freeze([
+    { nav: "记忆集", title: "五条记忆，两条已经过期", subtitle: "固定场景：一个前端技术助手的长期记忆。用户 90 天前说喜欢 React，30 天前开始学 Vue，5 天前说现在全部用 Vue。", summary: "阶段 1 / 5 · 5 条记忆 · 2 条已过期" },
+    { nav: "TTL", title: "TTL 配了，不等于记忆真的消失", subtitle: "两条记忆的 TTL 已经到期，但它们还躺在库里。切换两个开关，看读路径到底会不会放过它们。", summary: "阶段 2 / 5 · 查看 TTL 读路径行为" },
+    { nav: "冲突检索", title: "查询“推荐前端框架”，旧 React 还排在前面吗？", subtitle: "固定查询下，React 的向量分 0.86 排第一，当前在用的 Vue 0.84 排第二。过滤过期行后，排序才合理。", summary: "阶段 3 / 5 · 查看冲突检索结果" },
+    { nav: "四态更新", title: "新事实来了：LLM 判四态", subtitle: "“用户现在全部用 Vue，不再用 React”同时命中两条记忆：对旧 React 是 CONTRADICT，对当前 Vue 是 DUPLICATE。", summary: "阶段 4 / 5 · 失效 1 条 · 更新 1 条" },
+    { nav: "准入复查", title: "再查一次，并决定新记忆要不要收", subtitle: "更新后查询不再返回 React。新候选“用户今天喝了咖啡”走 A-MAC 五维评分，低于阈值就不入库。", summary: "阶段 5 / 5 · 检索已清理 · 候选被拒" }
+  ]);
+
+  const state = { stage: 0, omitExpired: false, refreshTtl: true };
+  const byId = (id) => document.getElementById(id);
+
+  function isExpired(mem) {
+    return mem.ttl !== null && mem.age > mem.ttl;
+  }
+
+  function statusBadge(mem, opts) {
+    if (mem.state === "invalidated") return '<span class="badge badge-bad">已失效</span>';
+    if (mem.state === "deleted") return '<span class="badge badge-bad">已删除</span>';
+    if (mem.state === "updated") return '<span class="badge badge-info">已更新</span>';
+    if (isExpired(mem)) {
+      if (opts && opts.omitExpired) return '<span class="badge badge-neutral">查询时过滤</span>';
+      if (opts && opts.refreshTtl) return '<span class="badge badge-info">过期 · 命中可续期</span>';
+      return '<span class="badge badge-warn">已过期 · 仍可检索</span>';
+    }
+    return '<span class="badge badge-ok">生效</span>';
+  }
+
+  function memoryTable(memories, opts) {
+    const showTtl = opts && opts.showTtl;
+    const rows = memories.map((m) => `<tr>
+      <th scope="row"><code>${m.id}</code></th>
+      <td class="content">${m.content}</td>
+      <td class="num">${m.age} 天</td>
+      <td class="num">${m.access}</td>
+      ${showTtl ? `<td class="num">${m.ttl === null ? "永久" : m.ttl + " 天"}</td><td class="num">${m.ttl === null ? "—" : (m.ttl - m.age > 0 ? (m.ttl - m.age) + " 天" : "过期 " + (m.age - m.ttl) + " 天")}</td>` : ""}
+      <td>${statusBadge(m, opts)}</td>
+    </tr>`).join("");
+    return `<div class="table-wrap"><table class="data memory-table ttl-table">
+      <caption class="sr-only">固定记忆集的内容、年龄、访问次数、TTL 与状态</caption>
+      <thead><tr><th scope="col">ID</th><th scope="col">内容</th><th scope="col" class="num">年龄</th><th scope="col" class="num">访问</th>${showTtl ? '<th scope="col" class="num">TTL</th><th scope="col" class="num">剩余</th>' : ""}<th scope="col">读路径状态</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
+  }
+
+  function initialScene() {
+    return `
+      ${memoryTable(MEMORIES, { showTtl: true, omitExpired: false, refreshTtl: false })}
+      <div class="expired-line"><strong>两条已过期：</strong><code>mem_r1</code>（90 天 > 30 天 TTL，过期 60 天）和 <code>mem_trip</code>（200 天 > 60 天 TTL，过期 140 天）。它们仍在库里，下一阶段看读路径怎么处理。</div>
+      <p class="demo-note">固定教学数据：五条记忆与 TTL 均为本页预设；真实系统的过期判断会按写入时间和具体时钟计算。</p>`;
+  }
+
+  function ttlScene() {
+    const omit = state.omitExpired;
+    const refresh = state.refreshTtl;
+    const status = omit
+      ? "过期行在查询层被过滤；即使 refresh_ttl 开启，读取也不会给已过期行续命。"
+      : refresh
+        ? "过期行仍可被检索；一旦命中，refresh_ttl 会把它续期，过期记忆被“复活”。"
+        : "过期行仍可被检索，但命中不会续期；它仍是过期状态，只是没被查询层挡住。";
+    return `
+      <div class="toggle-row" role="group" aria-label="TTL 读路径开关">
+        <span class="label">读路径开关</span>
+        <button type="button" class="toggle" data-toggle="omit" aria-pressed="${omit}">omit_expired<small>${omit ? "开" : "关"}</small></button>
+        <button type="button" class="toggle" data-toggle="refresh" aria-pressed="${refresh}">refresh_ttl<small>${refresh ? "开" : "关"}</small></button>
+      </div>
+      ${memoryTable(MEMORIES, { showTtl: true, omitExpired: omit, refreshTtl: refresh })}
+      <div class="expired-line"><strong>当前行为：</strong>${status}</div>
+      <div class="table-wrap truth-table">
+        <table class="data">
+          <caption class="sr-only">omit_expired 与 refresh_ttl 的四种组合</caption>
+          <thead><tr><th scope="col">omit_expired</th><th scope="col">refresh_ttl</th><th scope="col">过期行检索</th><th scope="col">是否会被续期</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">关</th><td>关</td><td>能命中</td><td>否，仍是过期</td></tr>
+            <tr><th scope="row">关</th><td>开</td><td>能命中</td><td>是，命中即复活</td></tr>
+            <tr><th scope="row">开</th><td>关</td><td>被过滤</td><td>否</td></tr>
+            <tr><th scope="row">开</th><td>开</td><td>被过滤</td><td>否，读路径先挡掉</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="demo-note">开关只改变本页的内存状态，不连接任何存储。TTLConfig 的默认值与版本号按原文表述，未联网核实。</p>`;
+  }
+
+  function retrievalScene() {
+    const available = MEMORIES.filter((m) => m.state === "active" && !(state.omitExpired && isExpired(m)));
+    const ranked = available.map((m) => ({ ...m, score: SCORES[m.id] })).sort((a, b) => b.score - a.score);
+    const top = ranked.slice(0, 2);
+    const rows = ranked.map((m) => {
+      const isTop = top.some((t) => t.id === m.id);
+      return `<tr>
+        <th scope="row"><code>${m.id}</code></th>
+        <td class="content">${m.content}</td>
+        <td class="num">${m.score.toFixed(2)}</td>
+        <td>${isExpired(m) ? (state.omitExpired ? '<span class="badge badge-neutral">过期 · 已过滤</span>' : '<span class="badge badge-warn">过期 · 参与排序</span>') : '<span class="badge badge-ok">生效</span>'}</td>
+        <td>${isTop ? '<span class="badge badge-info">Top-2</span>' : '<span class="badge badge-neutral">未入选</span>'}</td>
+      </tr>`;
+    }).join("");
+    const stale = top.some((m) => isExpired(m));
+    return `
+      <div class="toggle-row" role="group" aria-label="TTL 读路径开关">
+        <span class="label">当前开关</span>
+        <button type="button" class="toggle" data-toggle="omit" aria-pressed="${state.omitExpired}">omit_expired<small>${state.omitExpired ? "开" : "关"}</small></button>
+        <button type="button" class="toggle" data-toggle="refresh" aria-pressed="${state.refreshTtl}">refresh_ttl<small>${state.refreshTtl ? "开" : "关"}</small></button>
+      </div>
+      <div class="table-wrap">
+        <table class="data score-table wide">
+          <caption class="sr-only">固定查询“推荐前端框架”的向量相似度与读路径状态</caption>
+          <thead><tr><th scope="col">ID</th><th scope="col">内容</th><th scope="col" class="num">向量分</th><th scope="col">读路径状态</th><th scope="col">结果</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="expired-line"><strong>${stale ? "旧 React 仍在上下文里。" : "旧 React 已被过滤。"}</strong>${stale ? "它 90 天前写入、TTL 只有 30 天，却因为读路径没过滤而排在第一位；LLM 很可能据此推荐 React。" : "Top-2 变成当前 Vue（0.84）和“开始学 Vue”（0.82），上下文里不再出现旧偏好。"}</div>
+      <p class="demo-note">固定教学数据：向量分为预设值，不代表任何真实 embedding 模型；排序只用于演示读路径过滤的影响。</p>`;
+  }
+
+  function updateScene() {
+    return `
+      <div class="rec-grid">
+        <div class="rec-cell"><b>新事实</b>“用户现在全部用 Vue，不再用 React。”<br>与 <code>mem_r1</code> 相似度 <strong>0.88</strong>；与 <code>mem_v2</code> 相似度 <strong>0.93</strong>。阈值 0.85。</div>
+        <div class="rec-cell"><b>LLM 判定</b>对 <code>mem_r1</code>：<strong>CONTRADICT</strong>；对 <code>mem_v2</code>：<strong>DUPLICATE</strong>。</div>
+      </div>
+      <div class="four-state">
+        <div class="state-card on"><b>UPDATE / CONTRADICT</b><span>旧记忆失效，存入新事实。本页固定走 CONTRADICT 分支：mem_r1 标记失效。</span></div>
+        <div class="state-card"><b>SUPPLEMENT</b><span>新旧共存。本例不适用：新事实直接否定了旧偏好。</span></div>
+        <div class="state-card"><b>DUPLICATE</b><span>NOOP，忽略。mem_v2 已经表达“现在用 Vue”，不重复写入。</span></div>
+        <div class="state-card"><b>UPDATE</b><span>新信息是旧信息的更新版本。本例也可以理解为把 mem_v2 的确认时间刷新到今天。</span></div>
+      </div>
+      <div class="decision-note"><strong>固定判定：</strong><code>mem_r1</code> → 已失效（<code>valid_to</code> = 今天）；<code>mem_v2</code> → 已更新（访问 +1，置信度刷新）；不新增重复记忆。</div>
+      ${memoryTable(MEMORIES.map((m) => {
+        if (m.id === "mem_r1") return { ...m, state: "invalidated" };
+        if (m.id === "mem_v2") return { ...m, state: "updated", access: m.access + 1 };
+        return m;
+      }), { showTtl: false })}
+      <p class="demo-note">固定教学数据：相似度与四态判定是本页预设，没有调用任何模型。失效不删除历史，GDPR 的删除请求才会物理删除。</p>`;
+  }
+
+  function admissionScene() {
+    const available = MEMORIES.filter((m) => m.state === "active" && !(m.id === "mem_r1") && !(state.omitExpired && isExpired(m)));
+    const ranked = available.map((m) => ({ ...m, score: SCORES[m.id] })).sort((a, b) => b.score - a.score);
+    const top = ranked.slice(0, 2);
+    const dims = [
+      { key: "future_utility", name: "未来效用", score: 0.10, weight: 0.30 },
+      { key: "factual_confidence", name: "事实置信度", score: 0.90, weight: 0.20 },
+      { key: "semantic_novelty", name: "语义新颖性", score: 0.20, weight: 0.15 },
+      { key: "temporal_recency", name: "时间新近性", score: 1.00, weight: 0.10 },
+      { key: "content_type_prior", name: "内容类型先验", score: 0.10, weight: 0.25 }
+    ];
+    const total = dims.reduce((sum, d) => sum + d.score * d.weight, 0);
+    const rows = dims.map((d) => `<tr><th scope="row">${d.name}</th><td class="num">${d.score.toFixed(2)}</td><td class="num">${d.weight.toFixed(2)}</td><td class="num">${(d.score * d.weight).toFixed(3)}</td></tr>`).join("");
+    return `
+      <div class="rec-grid">
+        <div class="rec-cell"><b>更新后的检索</b>${top.map((m) => `<code>${m.id}</code> ${m.content}（${m.score.toFixed(2)}）`).join("<br>")}<br><span style="color:#14532d">React 已失效，不再进入上下文。</span></div>
+        <div class="rec-cell"><b>新候选</b>“用户今天喝了咖啡。”<br>五维评分见下表；低于阈值 0.60 就不入库。</div>
+      </div>
+      <div class="table-wrap">
+        <table class="data amacc-table">
+          <caption class="sr-only">A-MAC 五维评分：固定教学权重与分值</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col" class="num">分值</th><th scope="col" class="num">权重</th><th scope="col" class="num">加权</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="amacc-total"><span>加权总分</span><strong>${total.toFixed(3)}</strong><span>阈值 0.60</span><span>结论：NOOP，不写入</span></div>
+      <ul class="event-log">
+        <li><span class="n">01</span><span>TTL 检查：<code>mem_r1</code> 过期 60 天，<code>mem_trip</code> 过期 140 天</span><span class="badge badge-warn">过期</span></li>
+        <li><span class="n">02</span><span>${state.omitExpired ? "读路径过滤后，检索返回当前 Vue 与“开始学 Vue”，不再返回旧 React" : "omit_expired 关闭：过期行仍参与检索；React 因冲突失效，东京记忆分数低未入选"}</span><span class="badge badge-ok">已清理</span></li>
+        <li><span class="n">03</span><span>冲突更新：<code>mem_r1</code> 失效，<code>mem_v2</code> 更新，重复事实 NOOP</span><span class="badge badge-info">已更新</span></li>
+        <li><span class="n">04</span><span>A-MAC 拒绝“用户今天喝了咖啡”，不写入噪声</span><span class="badge badge-neutral">NOOP</span></li>
+      </ul>
+      <p class="demo-note">固定教学假设：五维权重、分值和 0.60 阈值均为本页设定，只用于演示准入计算；A-MAC 原文未给出这组数字。所有操作只作用于本页数组。</p>`;
+  }
+
+  const SCENES = [initialScene, ttlScene, retrievalScene, updateScene, admissionScene];
+
+  function renderStage(stage) {
+    state.stage = stage;
+    const meta = STAGES[stage];
+    byId("forget-scene").innerHTML = SCENES[stage]();
+    byId("scene-index").textContent = `阶段 ${stage + 1} / 5 · 固定记忆集`;
+    byId("forget-title").textContent = meta.title;
+    byId("scene-subtitle").textContent = meta.subtitle;
+    byId("state-summary").textContent = meta.summary;
+    byId("back-button").disabled = stage === 0;
+    byId("next-button").disabled = stage === STAGES.length - 1;
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      const active = Number(button.dataset.stage) === stage;
+      if (active) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    document.querySelectorAll("[data-toggle]").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (button.dataset.toggle === "omit") state.omitExpired = !state.omitExpired;
+        else state.refreshTtl = !state.refreshTtl;
+        renderStage(state.stage);
+        byId("forget-announcement").textContent = `omit_expired ${state.omitExpired ? "开" : "关"}，refresh_ttl ${state.refreshTtl ? "开" : "关"}`;
+      });
+    });
+    byId("forget-announcement").textContent = `${meta.title}。${meta.subtitle}`;
+  }
+
+  byId("reset-button").addEventListener("click", () => {
+    state.omitExpired = false; state.refreshTtl = true;
+    renderStage(0);
+  });
+  byId("back-button").addEventListener("click", () => renderStage(Math.max(0, state.stage - 1)));
+  byId("next-button").addEventListener("click", () => renderStage(Math.min(STAGES.length - 1, state.stage + 1)));
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+
+  renderStage(0);
+</script>
+</body>
+</html>

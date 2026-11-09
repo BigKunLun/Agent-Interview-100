@@ -1,0 +1,889 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>高级 RAG 变体：Corrective RAG、Self-RAG、Adaptive RAG · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  /* 019 三种 RAG 变体 */
+  .vr-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .vr-query-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: var(--s-4); }
+  .vr-query-label { font-size: var(--t-label); color: var(--text-dim); }
+  .vr-query-text { font: 500 20px/1.6 var(--mono); margin-top: var(--s-3); overflow-wrap: anywhere; }
+  .vr-traits { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--s-3); }
+  .vr-trait { font: 10px/1.6 var(--mono); padding: 2px 8px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); color: var(--text-dim); }
+  .vr-trait b { color: var(--ink); font-weight: 600; }
+  .vr-trait.warn { border-color: #d8b36a; background: #fffaf0; color: #7a4a00; }
+  .vr-trait.high { border-color: #c9a5d9; background: #faf3fd; color: #5b2a6e; }
+  .vr-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.25fr); gap: var(--s-5); align-items: start; }
+  .vr-grid > * { min-width: 0; }
+  .vr-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .vr-card h2 { font-size: 16px; line-height: 1.5; font-weight: 600; }
+  .vr-card .figure-index { margin-bottom: 3px; }
+  .vr-branch { list-style: none; margin: var(--s-4) 0 0; padding: 0; display: grid; gap: 0; }
+  .vr-node { position: relative; display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 9px; padding: 8px 0 12px; }
+  .vr-node::before { content: ""; position: absolute; left: 14px; top: 34px; bottom: 0; border-left: 1px dashed var(--border-bright); }
+  .vr-node:last-child::before { display: none; }
+  .vr-node-num { display: inline-grid; place-items: center; width: 28px; height: 28px; border: 1px solid var(--border-bright); border-radius: 50%; background: var(--surface); font: 11px/1 var(--mono); color: var(--text-dim); z-index: 1; }
+  .vr-node-body { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 9px 11px; }
+  .vr-node-head { display: flex; justify-content: space-between; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .vr-node-head strong { font-size: 13px; line-height: 1.5; font-weight: 600; }
+  .vr-tag { display: inline-flex; align-items: center; min-height: 21px; padding: 1px 7px; border-radius: 4px; border: 1px solid var(--border-bright); font: 9px/1.5 var(--mono); letter-spacing: .03em; white-space: nowrap; }
+  .vr-tag.adaptive { color: #194f87; border-color: #9eb4c9; background: var(--accent-dim); }
+  .vr-tag.crag { color: #8a3a00; border-color: #d8a06a; background: #fff4ea; }
+  .vr-tag.selfrag { color: #5b2a6e; border-color: #c9a5d9; background: #faf3fd; }
+  .vr-tag.standard { color: #1b5e20; border-color: #9bc59b; background: #f1f8f1; }
+  .vr-tag.llm { color: #4a4f4a; border-color: var(--border-bright); background: var(--surface-soft); }
+  .vr-node-body p { font-size: 12px; line-height: 1.65; color: var(--text-dim); margin-top: 4px; }
+  .vr-decision { display: inline-block; margin-top: 6px; padding: 2px 8px; border: 1px dashed #d8b36a; border-radius: 4px; background: #fffaf0; color: #7a4a00; font: 10px/1.6 var(--mono); }
+  .vr-outcome { margin-top: var(--s-4); border: 1px solid #9eb4c9; border-radius: var(--r-1); background: var(--accent-dim); padding: var(--s-3) var(--s-4); font-size: 12px; line-height: 1.7; }
+  .vr-outcome strong { display: block; font-size: 13px; color: var(--ink); }
+  .vr-not { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: var(--s-3) var(--s-4); font-size: 12px; line-height: 1.7; }
+  .vr-not strong { display: block; color: var(--ink); }
+  .vr-not ul { margin: 4px 0 0; padding-left: 1.2em; color: var(--text-dim); }
+  .vr-not li { margin-block: 3px; }
+  .vr-cost { margin-top: var(--s-3); font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .vr-note { margin-top: var(--s-3); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .vr-caption { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border); }
+  .vr-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; }
+  .vr-caption p:not(.figure-index):not(.vr-action) { margin-top: var(--s-2); font-size: var(--t-small); color: var(--text-dim); max-width: 66em; }
+  .vr-action { display: inline-block; margin-top: var(--s-3); padding: 4px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font: 11px/1.6 var(--mono); color: var(--accent); background: var(--accent-dim); }
+  .vr-timeline { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: var(--s-4); }
+  .vr-timeline th, .vr-timeline td { border: 1px solid var(--border); padding: 9px 7px; text-align: center; vertical-align: middle; }
+  .vr-timeline thead th { color: var(--text-dim); font-size: 10px; font-weight: 500; background: var(--surface-soft); }
+  .vr-timeline tbody th { text-align: left; font-size: 12px; font-weight: 600; white-space: nowrap; }
+  .vr-dot { display: inline-block; width: 11px; height: 11px; border-radius: 50%; background: var(--series-1); }
+  .vr-dot.crag { background: var(--series-2); }
+  .vr-dot.selfrag { background: var(--series-4); }
+  .vr-dot-none { color: #a0a49f; font: 10px/1 var(--mono); }
+  .vr-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: var(--s-3); font-size: 11px; color: var(--text-dim); }
+  .vr-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .vr-fork { margin-top: var(--s-4); }
+  .vr-fork-top { border: 1px solid var(--border-bright); border-radius: 5px; background: var(--surface); padding: 8px 10px; text-align: center; font-size: 12px; }
+  .vr-fork-arrow { text-align: center; color: var(--text-dim); font-size: 15px; line-height: 1.8; }
+  .vr-fork-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); }
+  .vr-fork-cell { border: 1px solid var(--border); border-radius: 5px; background: var(--surface); padding: 8px 10px; font-size: 11px; line-height: 1.65; min-width: 0; }
+  .vr-fork-cell strong { display: block; font-size: 12px; }
+  .vr-fork-cell span { color: var(--text-dim); }
+  .vr-fork-foot { margin-top: var(--s-2); border: 1px solid var(--border-bright); border-radius: 5px; background: var(--surface-soft); padding: 7px 10px; text-align: center; font-size: 11px; }
+  .vr-layers { display: grid; gap: 7px; margin-top: var(--s-4); }
+  .vr-layer { display: grid; grid-template-columns: 78px minmax(0, 1fr) auto; gap: 10px; align-items: center; border: 1px solid var(--border); border-radius: var(--r-1); padding: 8px 11px; background: var(--surface); font-size: 12px; }
+  .vr-layer small { color: var(--text-dim); font-size: 10px; }
+  .vr-layer-optional { font: 9px/1.5 var(--mono); padding: 1px 6px; border: 1px dashed #d8b36a; border-radius: 4px; color: #7a4a00; background: #fffaf0; white-space: nowrap; }
+  .vr-layer-required { font: 9px/1.5 var(--mono); padding: 1px 6px; border: 1px solid #9bc59b; border-radius: 4px; color: #1b5e20; background: #f1f8f1; white-space: nowrap; }
+  .vr-type-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .vr-type-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .vr-type-card h3 { font-size: 14px; line-height: 1.5; font-weight: 600; }
+  .vr-type-card p { font-size: 12px; line-height: 1.7; color: var(--text-dim); margin-top: 5px; }
+  .vr-type-card .vr-tag { margin-top: 8px; }
+  @media (max-width: 1000px) {
+    .vr-type-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 900px) {
+    .vr-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .vr-stage { padding: var(--s-4); }
+    .vr-card { padding: var(--s-3); }
+    .vr-query-text { font-size: 16px; }
+    .vr-caption h2 { font-size: 22px; }
+    .vr-fork-row { grid-template-columns: 1fr; }
+    .vr-layer { grid-template-columns: 1fr; gap: 4px; }
+    .vr-timeline { font-size: 11px; }
+    .vr-timeline th, .vr-timeline td { padding: 7px 4px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">019 / 高级 RAG 变体</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 17 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="018-agentic-rag.html">← 上一页 · 什么是 Agentic RAG？它与…</a><a href="../03-tool-use/022-tool-schema-design.html">下一页 → · 如何为 LLM 定义和描述工具（To…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">高级 · RAG · 可交互讲解</p>
+      <h1>三种变体，<br>各管一段。</h1>
+    </div>
+    <div>
+      <p class="lead">Self-RAG 管输出：用反思 token 决定是否检索，并在生成后评估相关性、支撑度和有用性；Corrective RAG 管检索结果：评估文档质量，不够好就精炼知识并补 Web 搜索；Adaptive RAG 管入口：先判断查询复杂度，再决定不检索、单次检索还是多跳检索。</p>
+      <p class="definition">关键边界：<strong>它们不是固定串行的三段流水线</strong>。每个查询通常只走其中一条主分支；只有复杂、知识库部分过期、精度要求又高的查询，才值得把三层叠加起来。</p>
+      <div class="hero-meta"><span class="pill">高级</span><span class="pill">RAG</span><span class="pill">Self-RAG / CRAG / Adaptive</span><span class="pill">固定教学数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-label="RAG 变体分支选择器">
+    <div class="player-top">
+      <div class="player-label">变体选择器 <small>五个固定查询，按查询特征走不同分支</small></div>
+      <div class="controls" role="group" aria-label="变体选择器控制">
+        <button type="button" class="button button-quiet" id="vr-reset">重置</button>
+        <button type="button" class="button" id="vr-prev" disabled>上一个</button>
+        <button type="button" class="button button-primary" id="vr-next">下一个 →</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="五个固定查询场景">
+      <ol style="--stages: 5">
+        <li><button type="button" class="stage-button" data-scenario="0" aria-current="step" aria-controls="vr-scene" aria-label="场景 1：常识问题"><span class="stage-number">1</span><span>常识</span></button></li>
+        <li><button type="button" class="stage-button" data-scenario="1" aria-controls="vr-scene" aria-label="场景 2：单跳事实"><span class="stage-number">2</span><span>单跳</span></button></li>
+        <li><button type="button" class="stage-button" data-scenario="2" aria-controls="vr-scene" aria-label="场景 3：时效缺口"><span class="stage-number">3</span><span>时效</span></button></li>
+        <li><button type="button" class="stage-button" data-scenario="3" aria-controls="vr-scene" aria-label="场景 4：高精度"><span class="stage-number">4</span><span>高精度</span></button></li>
+        <li><button type="button" class="stage-button" data-scenario="4" aria-controls="vr-scene" aria-label="场景 5：复杂混合"><span class="stage-number">5</span><span>混合</span></button></li>
+      </ol>
+    </nav>
+    <div class="vr-stage scene" id="vr-scene" data-scene="rag-variants">
+      <div class="vr-grid">
+        <div class="vr-query-card">
+          <p class="vr-query-label">固定教学查询</p>
+          <p class="vr-query-text" id="vr-query"></p>
+          <div class="vr-traits" id="vr-traits" aria-label="查询特征"></div>
+          <div class="vr-cost" id="vr-cost"></div>
+          <div class="vr-not" id="vr-not"><strong>这个场景的边界</strong><ul id="vr-not-list"></ul></div>
+        </div>
+        <div class="vr-card">
+          <p class="figure-index">分支轨迹</p>
+          <h2 id="vr-branch-title">走哪条路，由查询特征决定。</h2>
+          <ol class="vr-branch" id="vr-branch"></ol>
+          <div class="vr-outcome" id="vr-outcome"><strong></strong></div>
+        </div>
+      </div>
+      <div class="vr-caption">
+        <p class="figure-index" id="vr-caption-index">图 1 · 第 1 / 5 个场景</p>
+        <h2 id="vr-caption-title"></h2>
+        <p id="vr-caption-desc"></p>
+        <p class="vr-action" id="vr-action"></p>
+      </div>
+      <p class="demo-note">固定教学数据：五个查询、特征标签、分支路径、评估结论和代价说明都是写死的；切换场景只改变展示内容，不调用模型、检索服务或网络。查询与来源均为演示编写。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 分支由页面脚本切换</span><span id="vr-state-summary">场景 1 / 5 · 没有连接模型</span></div>
+  </section>
+  <p id="vr-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="position-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">先看位置</p><h2 id="position-title">它们插在 RAG 的<br>不同环节。</h2></div>
+      <p class="reading-intro">把一次 RAG 拆成“检索前、检索、检索后/生成前、生成、生成后”五段，三种变体各占不同位置。位置不同，解决的问题也不同。</p>
+    </div>
+    <div class="prose">
+      <table class="vr-timeline">
+        <caption class="sr-only">三种 RAG 变体在检索前、检索、检索后生成前、生成、生成后五个环节中的作用位置</caption>
+        <thead><tr><th scope="col">变体</th><th scope="col">检索前</th><th scope="col">检索</th><th scope="col">检索后 / 生成前</th><th scope="col">生成</th><th scope="col">生成后</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">Adaptive RAG</th><td><span class="vr-dot" aria-hidden="true"></span><span class="sr-only">作用于此</span></td><td><span class="vr-dot-none">—</span></td><td><span class="vr-dot-none">—</span></td><td><span class="vr-dot-none">—</span></td><td><span class="vr-dot-none">—</span></td></tr>
+          <tr><th scope="row">Corrective RAG</th><td><span class="vr-dot-none">—</span></td><td><span class="vr-dot-none">—</span></td><td><span class="vr-dot crag" aria-hidden="true"></span><span class="sr-only">作用于此</span></td><td><span class="vr-dot-none">—</span></td><td><span class="vr-dot-none">—</span></td></tr>
+          <tr><th scope="row">Self-RAG</th><td><span class="vr-dot selfrag" aria-hidden="true"></span><span class="sr-only">作用于此</span></td><td><span class="vr-dot-none">—</span></td><td><span class="vr-dot-none">—</span></td><td><span class="vr-dot-none">—</span></td><td><span class="vr-dot selfrag" aria-hidden="true"></span><span class="sr-only">作用于此</span></td></tr>
+        </tbody>
+      </table>
+      <div class="vr-legend"><span><i class="vr-dot"></i>Adaptive 作用点</span><span><i class="vr-dot crag"></i>CRAG 作用点</span><span><i class="vr-dot selfrag"></i>Self-RAG 作用点</span></div>
+      <p class="vr-note">固定示意。Self-RAG 的“检索前”是反思 token 决定要不要检索，“生成后”是 critique token 评估输出；它不负责改写检索文档本身。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="selfrag-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">1. Self-RAG</p><h2 id="selfrag-title">让模型自己<br>批评自己。</h2></div>
+      <p class="reading-intro">核心思想是训练 LLM 生成特殊的反思 token，用它管理“要不要检索”和“输出质量够不够”，不满意就重新检索或修改回答。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文工作流程 · 纯文本示意</p>
+      <pre><code>Query → LLM 判断是否需要检索？
+              ├── 不需要 → 直接生成（简单问题，如常识）
+              └── 需要   → 检索文档
+                          → 生成回答
+                          → [反思 token] 评估：
+                              ├── 检索结果是否相关？（Relevance）
+                              ├── 回答是否基于检索内容？（Support）
+                              └── 回答是否有用？（Utility）
+                          → 如果不满意 → 重新检索或修改回答</code></pre>
+      <p>两种特殊 token 分工不同：<strong>Reflection Token</strong> 决定是否需要检索；<strong>Critique Token</strong> 评估检索结果和生成内容的质量。</p>
+      <p class="code-label">原文代码 · SelfRAG</p>
+      <pre><code>class SelfRAG:
+    def answer(self, query: str) -&gt; str:
+        # 1. 决定是否需要检索
+        need_retrieval = self.llm.predict_retrieval_need(query)
+
+        if not need_retrieval:
+            return self.llm.generate(query)
+
+        # 2. 检索并生成
+        docs = self.retriever.search(query)
+        response = self.llm.generate_with_context(query, docs)
+
+        # 3. 自我批评
+        relevance_score = self.llm.critique_relevance(docs, query)
+        support_score = self.llm.critique_support(response, docs)
+        utility_score = self.llm.critique_utility(response, query)
+
+        # 4. 如果质量不够，迭代改进
+        if min(relevance_score, support_score, utility_score) &lt; THRESHOLD:
+            return self.retry_with_refined_query(query)
+
+        return response</code></pre>
+      <p>原文给出的优势依据是 Asai et al. (2023) 的论文（ICLR 2024 Oral）：在 Open-domain QA、推理和事实验证等六类任务上，Self-RAG（7B/13B）显著优于 ChatGPT 和 retrieval-augmented Llama2-chat，事实性指标在多个任务上取得 SOTA。它在医疗、法律、金融等高精度需求场景尤其有价值。</p>
+      <div class="callout"><p class="callout-label">关键限制</p><p>原始 Self-RAG 需要用特殊 token 对模型进行微调，不能直接用于现有 API 模型。用 Prompt Engineering 可以模拟类似效果，但原文明确说效果不如原版。</p></div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="crag-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">2. Corrective RAG</p><h2 id="crag-title">检索结果不好，<br>就去网上补。</h2></div>
+      <p class="reading-intro">在检索之后、生成之前加一个轻量级评估器，逐篇评估文档质量；质量不足时启用 Web 搜索作为补救。</p>
+    </div>
+    <div class="prose">
+      <div class="vr-fork" aria-label="CRAG 三分支离线示意">
+        <div class="vr-fork-top">Query → 检索文档 → 检索评估器逐篇打分</div>
+        <div class="vr-fork-arrow" aria-hidden="true">↓</div>
+        <div class="vr-fork-row">
+          <div class="vr-fork-cell"><strong>相关</strong><span>直接使用这些文档，进入生成。</span></div>
+          <div class="vr-fork-cell"><strong>模糊</strong><span>先做知识精炼，再补 Web 搜索，合并上下文。</span></div>
+          <div class="vr-fork-cell"><strong>不相关</strong><span>整组换成 Web 搜索得到的新文档。</span></div>
+        </div>
+        <div class="vr-fork-arrow" aria-hidden="true">↓</div>
+        <div class="vr-fork-foot">三条分支都汇合到“生成最终回答”</div>
+      </div>
+      <p class="vr-note">离线可读示意：评估器在检索之后分出三条路，不是所有查询都会走 Web。原图是 Mermaid，源码见下方折叠块。</p>
+      <details>
+        <summary>查看原文 CRAG Mermaid 源码（需在支持 Mermaid 的编辑器中渲染）</summary>
+        <pre><code>flowchart TD
+    Q["Query"] --&gt; R["检索文档"]
+    R --&gt; E{"检索评估器&lt;br/&gt;对每个文档打分"}
+    E --&gt;|"相关"| A["直接使用"]
+    E --&gt;|"模糊"| B["知识精炼 + Web 搜索"]
+    E --&gt;|"不相关"| C["Web 搜索&lt;br/&gt;获取新文档"]
+    A --&gt; G["生成最终回答"]
+    B --&gt; G
+    C --&gt; G
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class E decision
+    class Q,R,A,B,G proc
+    class C err</code></pre>
+      </details>
+      <p class="code-label">原文代码 · CorrectiveRAG</p>
+      <pre><code>class CorrectiveRAG:
+    def answer(self, query: str) -&gt; str:
+        # 1. 标准检索
+        docs = self.retriever.search(query)
+
+        # 2. 评估检索质量
+        evaluations = []
+        for doc in docs:
+            score = self.evaluator.grade(query, doc)
+            evaluations.append((doc, score))
+
+        # 3. 根据评估结果分类处理
+        relevant_docs = [d for d, s in evaluations if s == "relevant"]
+        ambiguous_docs = [d for d, s in evaluations if s == "ambiguous"]
+
+        if not relevant_docs:
+            # 所有文档都不相关 → Web 搜索补救
+            web_results = self.web_search(query)
+            context = web_results
+        elif ambiguous_docs:
+            # 部分模糊 → 知识精炼 + Web 补充
+            refined = self.knowledge_refine(relevant_docs)
+            web_supplement = self.web_search(query)
+            context = refined + web_supplement
+        else:
+            # 文档质量好 → 直接使用
+            context = relevant_docs
+
+        # 4. 生成回答
+        return self.llm.generate(query, context)</code></pre>
+      <p>原文强调它轻量：评估器可以是小模型，甚至规则引擎，不需要微调主 LLM；Web 搜索兜底则保证知识库不完善时也能给出有用回答。适用场景是法律研究、学术写作、政策分析这类准确性至关重要、且允许稍高延迟的场景。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="adaptive-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">3. Adaptive RAG</p><h2 id="adaptive-title">先判断难不难，<br>再决定查不查。</h2></div>
+      <p class="reading-intro">在检索之前，用分类器分析查询复杂度，然后动态选择最合适的检索策略：简单不检索，中等单次 RAG，复杂多跳检索加验证。</p>
+    </div>
+    <div class="prose">
+      <div class="vr-fork" aria-label="Adaptive RAG 三分支离线示意">
+        <div class="vr-fork-top">Query → 查询复杂度分类器</div>
+        <div class="vr-fork-arrow" aria-hidden="true">↓</div>
+        <div class="vr-fork-row">
+          <div class="vr-fork-cell"><strong>简单</strong><span>不检索，LLM 直接回答。</span></div>
+          <div class="vr-fork-cell"><strong>中等</strong><span>标准 RAG：单次检索 + 生成。</span></div>
+          <div class="vr-fork-cell"><strong>复杂</strong><span>多跳检索，并加 Self-RAG 验证。</span></div>
+        </div>
+        <div class="vr-fork-arrow" aria-hidden="true">↓</div>
+        <div class="vr-fork-foot">三条分支各自结束，不需要汇合后再走其他变体</div>
+      </div>
+      <p class="vr-note">离线可读示意：Adaptive 是前置路由，三条分支互斥；它不是“先跑一遍再决定”，而是在检索前就分流。原图是 Mermaid，源码见下方折叠块。</p>
+      <details>
+        <summary>查看原文 Adaptive RAG Mermaid 源码（需在支持 Mermaid 的编辑器中渲染）</summary>
+        <pre><code>flowchart TD
+    Q["Query"] --&gt; C{"查询复杂度分类器"}
+    C --&gt;|"简单"| A["不检索&lt;br/&gt;LLM 直接答"]
+    C --&gt;|"中等"| B["标准 RAG&lt;br/&gt;单次检索 + 生成"]
+    C --&gt;|"复杂"| D["多跳检索&lt;br/&gt;+ Self-RAG 验证"]
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class C decision
+    class Q,A,B,D proc</code></pre>
+      </details>
+      <p class="code-label">原文代码 · AdaptiveRAG</p>
+      <pre><code>class AdaptiveRAG:
+    def answer(self, query: str) -&gt; str:
+        # 1. 分析查询复杂度
+        complexity = self.classifier.predict(query)
+
+        if complexity == "simple":
+            # 常识问题 → 不需要检索
+            return self.llm.generate(query)
+
+        elif complexity == "moderate":
+            # 标准问题 → 单次 RAG
+            docs = self.retriever.search(query)
+            return self.llm.generate(query, docs)
+
+        elif complexity == "complex":
+            # 复杂多跳问题 → 多轮检索 + 验证
+            sub_queries = self.decompose(query)
+            all_docs = []
+            for sq in sub_queries:
+                docs = self.retriever.search(sq)
+                # 用 CRAG 的评估器验证质量
+                verified = self.evaluator.filter(sq, docs)
+                all_docs.extend(verified)
+            return self.llm.generate(query, all_docs)</code></pre>
+      <p>优势是通过避免对简单问题过度检索来优化效率和成本，同时让复杂问题得到更深入的处理。适用场景是查询复杂度差异大的系统，例如客服和通用助手：简单 FAQ 不需要检索，复杂分析需要多轮检索。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="compare-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三者对比</p><h2 id="compare-title">关注点、时机<br>和代价都不同。</h2></div>
+      <p class="reading-intro">不要把它们当成同一件事的三个版本；它们分别盯输出、盯检索结果、盯入口路由。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">Self-RAG、Corrective RAG、Adaptive RAG 在核心关注、决策时机、纠错机制、模型要求、额外成本和最佳场景上的对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">Self-RAG</th><th scope="col">Corrective RAG</th><th scope="col">Adaptive RAG</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">核心关注</th><td>输出质量自我评估</td><td>检索结果质量纠正</td><td>查询复杂度适配</td></tr>
+            <tr><th scope="row">决策时机</th><td>检索前 + 生成后</td><td>检索后 + 生成前</td><td>检索前</td></tr>
+            <tr><th scope="row">纠错机制</th><td>反思 token + 重试</td><td>评估器 + Web 搜索</td><td>路由到合适策略</td></tr>
+            <tr><th scope="row">模型要求</th><td>需要微调</td><td>轻量级评估器</td><td>分类器</td></tr>
+            <tr><th scope="row">额外成本</th><td>中：多轮生成</td><td>低到中：评估 + Web</td><td>低：分类器</td></tr>
+            <tr><th scope="row">最佳场景</th><td>高精度需求</td><td>知识库不完善时</td><td>混合复杂度查询</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="combine-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">组合使用</p><h2 id="combine-title">可以叠加，<br>但不是默认全串。</h2></div>
+      <p class="reading-intro">原文说三者可以组合构成多层防御。组合的前提是查询真的需要每一层：从前置路由开始，检索质量不足才纠正，输出精度要求高才做 critique。</p>
+    </div>
+    <div class="prose">
+      <div class="vr-layers" aria-label="多层防御的可选叠加示意">
+        <div class="vr-layer"><span class="vr-tag adaptive">Adaptive</span><div>复杂度路由<small>简单查询直接结束，不进入后面的层</small></div><span class="vr-layer-required">前置门</span></div>
+        <div class="vr-layer"><span class="vr-tag standard">标准 RAG</span><div>检索 + 生成初稿<small>中等查询到这里就可以结束</small></div><span class="vr-layer-required">基础层</span></div>
+        <div class="vr-layer"><span class="vr-tag crag">CRAG</span><div>评估并纠正检索结果<small>知识库可靠时跳过，不触发 Web</small></div><span class="vr-layer-optional">按需叠加</span></div>
+        <div class="vr-layer"><span class="vr-tag selfrag">Self-RAG</span><div>生成后自我批评<small>普通精度要求时跳过，避免多轮生成</small></div><span class="vr-layer-optional">按需叠加</span></div>
+      </div>
+      <p class="vr-note">固定示意：Adaptive 是入口门，标准检索是基础层；CRAG 和 Self-RAG 是否叠加，取决于知识库质量和输出精度要求。把四层无条件串起来会放大延迟和成本。</p>
+      <p class="code-label">原文代码 · CombinedAdvancedRAG</p>
+      <pre><code>class CombinedAdvancedRAG:
+    def answer(self, query: str) -&gt; str:
+        # Layer 1: Adaptive RAG — 路由到合适策略
+        complexity = self.classifier.predict(query)
+
+        if complexity == "simple":
+            return self.llm.generate(query)
+
+        # Layer 2: 标准检索
+        docs = self.retriever.search(query)
+
+        # Layer 3: Corrective RAG — 评估并纠正检索质量
+        verified_docs = self.evaluator.filter_and_correct(query, docs)
+
+        # Layer 4: Self-RAG — 生成并自我评估
+        response = self.self_rag.generate_with_critique(query, verified_docs)
+
+        return response</code></pre>
+      <p>注意原文代码里的 <code>filter_and_correct</code> 和 <code>generate_with_critique</code> 是组合层的接口名，不是标准库方法；真实实现要把各变体的输入输出对齐，并给每一层设置跳过条件和超时。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">四个容易<br>被追问的点。</h2></div>
+      <p class="reading-intro">前两条是误区，后两条是面试追问；答案都来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“这些变体互相替代。”</h3><p>它们解决不同环节的问题，完全可以组合使用。Adaptive RAG 做前端路由，CRAG 做检索质量控制，Self-RAG 做输出质量保证。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“Self-RAG 可以用任何 LLM。”</h3><p>原始 Self-RAG 需要用反思 token 微调模型。也可以用 Prompt Engineering 模拟类似效果，让 LLM 在 Prompt 中评估自己的输出，但原文明确说效果不如原版。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>GraphRAG 属于哪个类别？</h3><p>GraphRAG 是另一种独立变体，用知识图谱代替或补充向量检索，适合实体关系密集的场景，例如组织架构、产品关系网络。它与上述三种变体正交，可以并行使用。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>实际生产中最常用的是哪种？</h3><p>Corrective RAG 因为实现简单、不需要微调且效果显著而最常被采用。Adaptive RAG 在成本敏感场景也很流行。Self-RAG 因为需要微调，更多出现在研究中。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《高级 RAG 变体：Corrective RAG、Self-RAG、Adaptive RAG》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://pub.towardsai.net/advanced-rag-comparing-graphrag-corrective-rag-and-self-rag-00491de494e4" target="_blank" rel="noopener noreferrer">Advanced RAG: Comparing GraphRAG, Corrective RAG, and Self-RAG · Towards AI</a></li>
+          <li><a href="https://www.meilisearch.com/blog/rag-types" target="_blank" rel="noopener noreferrer">14 Types of RAG · Meilisearch</a></li>
+          <li><a href="https://langchain-ai.github.io/langgraph/tutorials/rag/langgraph_adaptive_rag/" target="_blank" rel="noopener noreferrer">Adaptive RAG Tutorial · LangGraph</a></li>
+          <li><a href="https://medium.com/ai-agent-insider/rag-vs-self-rag-vs-agentic-rag-which-one-is-right-for-you-3d233ef42cac" target="_blank" rel="noopener noreferrer">RAG vs Self-RAG vs Agentic RAG · Medium</a></li>
+          <li><a href="https://dev.to/naresh_007/beyond-vanilla-rag-the-7-modern-rag-architectures-every-ai-engineer-must-know-4l0c" target="_blank" rel="noopener noreferrer">Beyond Vanilla RAG: 7 Modern RAG Architectures · DEV Community</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>02-rag/019-advanced-rag-variants.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 3 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const VR_SCENARIOS = Object.freeze([
+    {
+      label: "常识",
+      query: "法国的首都是哪里？",
+      traits: [["复杂度", "简单"], ["知识库", "不需要", "ok"], ["精度", "普通", "ok"], ["检索", "0 次", "ok"]],
+      branchTitle: "Adaptive 在入口把这次查询拦下。",
+      nodes: [
+        { tag: "adaptive", name: "Adaptive", title: "复杂度分类器：simple", text: "查询是常识问题，不需要外部知识库。" , decision: "→ 不检索" },
+        { tag: "llm", name: "LLM", title: "直接生成", text: "模型用自己的参数回答；不触发检索、CRAG 或 Self-RAG。" }
+      ],
+      outcome: "Adaptive 单独生效 · 0 次检索",
+      not: ["CRAG：没有检索结果可评估", "Self-RAG：没有高精度校验要求，不值得多轮生成"],
+      why: "简单问题检索反而增加延迟和成本。这条分支的主要风险是分类器误判：把需要事实核查的问题判成 simple。",
+      cost: "代价：最低延迟、最低成本；错误时没有检索兜底。",
+      caption: "简单查询在入口就被分流，后面两层根本不会启动。",
+      desc: "这是“不是无条件全部串行”的最直接例子：Adaptive 判为 simple 后，流程直接生成，CRAG 和 Self-RAG 都不参与。",
+      action: "分支：Adaptive / simple · 0 次检索"
+    },
+    {
+      label: "单跳",
+      query: "我们产品的退款期限是多久？",
+      traits: [["复杂度", "中等", "warn"], ["知识库", "可靠", "ok"], ["精度", "普通", "ok"], ["检索", "1 次", "warn"]],
+      branchTitle: "Adaptive 路由到标准 RAG，就此结束。",
+      nodes: [
+        { tag: "adaptive", name: "Adaptive", title: "复杂度分类器：moderate", text: "单跳事实问题，知识库里有明确答案。", decision: "→ 标准 RAG" },
+        { tag: "standard", name: "标准 RAG", title: "单次检索", text: "从内部知识库取回退款政策文档。" },
+        { tag: "llm", name: "LLM", title: "带上下文生成", text: "直接回答，不触发 CRAG 评估器，也不做 Self-RAG 的 critique。" }
+      ],
+      outcome: "Adaptive 路由到单次 RAG · CRAG / Self-RAG 不参与",
+      not: ["CRAG：知识库可靠且文档相关，没有需要纠正的检索结果", "Self-RAG：普通精度要求，多轮生成不划算"],
+      why: "中等复杂度、知识库可靠时，标准 RAG 足够。加评估器会多一次模型调用，加 critique 会多一轮生成。",
+      cost: "代价：1 次检索 + 1 次生成；没有额外质量控制。",
+      caption: "中等复杂度只走单次检索，不自动升级成 CRAG。",
+      desc: "Adaptive 的 moderate 分支输出就是最终路径。CRAG 和 Self-RAG 在这里是可选能力，不是必经步骤。",
+      action: "分支：Adaptive / moderate → 标准 RAG"
+    },
+    {
+      label: "时效",
+      query: "最新的竞品定价是多少？",
+      traits: [["复杂度", "中等", "warn"], ["知识库", "部分过期", "warn"], ["精度", "较高", "warn"], ["检索", "1 次 + Web", "warn"]],
+      branchTitle: "检索结果不可靠，CRAG 接手纠正。",
+      nodes: [
+        { tag: "standard", name: "标准 RAG", title: "检索内部文档", text: "返回 3 篇文档，其中 2 篇是旧定价。" },
+        { tag: "crag", name: "CRAG", title: "评估器逐篇打分", text: "1 篇 relevant，2 篇 ambiguous，触发知识精炼 + Web 搜索。", decision: "→ 模糊分支" },
+        { tag: "crag", name: "CRAG", title: "知识精炼 + Web 补充", text: "保留相关文档，补充最新公开定价。" },
+        { tag: "llm", name: "LLM", title: "用纠正后的上下文生成", text: "回答标注价格来源和时间。" }
+      ],
+      outcome: "CRAG 单独生效（Adaptive 可作为可选前置）· 1 次检索 + 1 次 Web",
+      not: ["Self-RAG：没有要求逐项自我批评；CRAG 已处理检索质量", "Adaptive：如果系统没有复杂度分流，直接走 CRAG 也可以"],
+      why: "知识库不完善、时效敏感时，CRAG 的评估器和 Web 兜底最直接。它只改检索上下文，不改生成后的自我评估。",
+      cost: "代价：评估器 + Web 搜索；延迟中等。",
+      caption: "CRAG 只在评估器判定“模糊”或“不相关”时才补 Web。",
+      desc: "这条分支里 Adaptive 不是必需的；如果系统默认每次都检索，CRAG 可以单独接在检索和生成之间。",
+      action: "分支：CRAG / ambiguous → 精炼 + Web"
+    },
+    {
+      label: "高精度",
+      query: "这份医疗指南的剂量建议适用于肾功能不全患者吗？",
+      traits: [["复杂度", "复杂", "high"], ["知识库", "可靠", "ok"], ["精度", "很高", "high"], ["检索", "2 轮", "high"]],
+      branchTitle: "知识库没问题，但输出必须逐项校验。",
+      nodes: [
+        { tag: "selfrag", name: "Self-RAG", title: "反思 token：需要检索", text: "医疗剂量问题不能只靠参数记忆，先检索指南。" },
+        { tag: "standard", name: "标准 RAG", title: "检索并生成初稿", text: "取回指南段落，生成剂量建议。" },
+        { tag: "selfrag", name: "Self-RAG", title: "Critique：relevance / support / utility", text: "support 低：回答超出指南原文；utility 中：没有区分肾功能分期。", decision: "→ 不满意，重试" },
+        { tag: "selfrag", name: "Self-RAG", title: "改写查询并重试", text: "补充“肾功能不全分期”后重新检索和生成。" },
+        { tag: "selfrag", name: "Self-RAG", title: "再次 Critique", text: "三项达标，返回回答。", decision: "→ 通过" }
+      ],
+      outcome: "Self-RAG 单独生效 · 2 轮生成",
+      not: ["CRAG：知识库本身可靠，问题在生成是否忠于证据", "Adaptive：问题已明确需要检索和多轮校验，不需要再分类"],
+      why: "高精度场景值得多轮生成。代价是需要微调模型或 Prompt 模拟，且延迟最高；不是所有 Query 都值得这样做。",
+      cost: "代价：2 轮检索 / 生成 + 多次批评调用。",
+      caption: "Self-RAG 的 critique 把“生成得对不对”变成可检查的三项。",
+      desc: "这条分支没有触发 CRAG，因为检索文档本身可靠；Self-RAG 校验的是生成内容是否被证据支撑。",
+      action: "分支：Self-RAG / critique → 重试一次"
+    },
+    {
+      label: "混合",
+      query: "对比我们和竞品近两年的定价变化，并判断哪类客户更划算。",
+      traits: [["复杂度", "复杂", "high"], ["知识库", "部分过期", "warn"], ["精度", "很高", "high"], ["检索", "多次 + Web", "high"]],
+      branchTitle: "只有这种查询，才值得叠加三层。",
+      nodes: [
+        { tag: "adaptive", name: "Adaptive", title: "复杂度分类器：complex", text: "进入多跳分支。", decision: "→ 分解" },
+        { tag: "adaptive", name: "Adaptive", title: "查询分解", text: "拆成“我方定价变化”“竞品定价变化”“客户类型对比”三个子问题。" },
+        { tag: "standard", name: "标准 RAG", title: "多跳检索", text: "三个子问题分别检索内部文档和公开资料。" },
+        { tag: "crag", name: "CRAG", title: "评估器过滤", text: "竞品定价文档过期，判为 ambiguous，补 Web 搜索。", decision: "→ 模糊" },
+        { tag: "crag", name: "CRAG", title: "知识精炼 + Web 补充", text: "替换过期价格，保留可追溯来源。" },
+        { tag: "selfrag", name: "Self-RAG", title: "生成 + Critique", text: "support 检查发现一处结论没有引用，补充证据后重写。", decision: "→ 重写一次" },
+        { tag: "selfrag", name: "Self-RAG", title: "再次 Critique 通过", text: "输出带来源的对比结论。" }
+      ],
+      outcome: "三层叠加（可选组合）· Adaptive → 标准 RAG → CRAG → Self-RAG",
+      not: ["不是所有查询都这样走：只有复杂、知识库部分过期、精度要求高的查询才值得叠加", "简单和中等查询在前面的场景里已经结束，不会进入这一条"],
+      why: "组合不是固定流水线：Adaptive 先决定是否值得进入复杂分支，CRAG 只在检索质量不足时介入，Self-RAG 只在需要输出校验时介入。",
+      cost: "代价：最高延迟和成本；每一层都必须有跳过条件。",
+      caption: "叠加发生在同一张查询上，但每一层都带条件。",
+      desc: "这是五个场景里唯一叠加三层的一条。它说明组合是可选能力，而不是所有查询的默认路径。",
+      action: "分支：Adaptive → CRAG → Self-RAG · 可选叠加"
+    }
+  ]);
+
+  const vrState = { index: 0 };
+  const vrById = (id) => document.getElementById(id);
+
+  function vrRenderTraits(scenario) {
+    const host = vrById("vr-traits");
+    host.textContent = "";
+    scenario.traits.forEach(([key, value, tone]) => {
+      const span = document.createElement("span");
+      span.className = "vr-trait" + (tone ? " " + tone : "");
+      span.innerHTML = `${key} <b>${value}</b>`;
+      host.append(span);
+    });
+  }
+
+  function vrRenderBranch(scenario) {
+    vrById("vr-branch-title").textContent = scenario.branchTitle;
+    const list = vrById("vr-branch");
+    list.textContent = "";
+    scenario.nodes.forEach((node, index) => {
+      const li = document.createElement("li");
+      li.className = "vr-node";
+      const num = document.createElement("span");
+      num.className = "vr-node-num";
+      num.textContent = String(index + 1);
+      const body = document.createElement("div");
+      body.className = "vr-node-body";
+      const head = document.createElement("div");
+      head.className = "vr-node-head";
+      const title = document.createElement("strong");
+      title.textContent = node.title;
+      const tag = document.createElement("span");
+      tag.className = "vr-tag " + node.tag;
+      tag.textContent = node.name;
+      head.append(title, tag);
+      const text = document.createElement("p");
+      text.textContent = node.text;
+      body.append(head, text);
+      if (node.decision) {
+        const decision = document.createElement("span");
+        decision.className = "vr-decision";
+        decision.textContent = node.decision;
+        body.append(decision);
+      }
+      li.append(num, body);
+      list.append(li);
+    });
+    const outcome = vrById("vr-outcome");
+    outcome.textContent = "";
+    const strong = document.createElement("strong");
+    strong.textContent = "本场景结论";
+    outcome.append(strong, document.createTextNode(scenario.outcome));
+  }
+
+  function vrRender(announce = true) {
+    const scenario = VR_SCENARIOS[vrState.index];
+    vrById("vr-query").textContent = scenario.query;
+    vrRenderTraits(scenario);
+    vrRenderBranch(scenario);
+    vrById("vr-cost").textContent = scenario.cost;
+    const notList = vrById("vr-not-list");
+    notList.textContent = "";
+    scenario.not.forEach((item) => {
+      const li = document.createElement("li");
+      li.textContent = item;
+      notList.append(li);
+    });
+    vrById("vr-caption-index").textContent = `图 ${vrState.index + 1} · 第 ${vrState.index + 1} / ${VR_SCENARIOS.length} 个场景`;
+    vrById("vr-caption-title").textContent = scenario.caption;
+    vrById("vr-caption-desc").textContent = scenario.desc;
+    vrById("vr-action").textContent = scenario.action;
+    vrById("vr-state-summary").textContent = `场景 ${vrState.index + 1} / ${VR_SCENARIOS.length} · 没有连接模型`;
+
+    document.querySelectorAll("#explainer [data-scenario]").forEach((button) => {
+      if (Number(button.dataset.scenario) === vrState.index) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    vrById("vr-prev").disabled = vrState.index === 0;
+    vrById("vr-next").disabled = vrState.index === VR_SCENARIOS.length - 1;
+    vrById("vr-next").textContent = vrState.index === VR_SCENARIOS.length - 1 ? "已到最后" : "下一个 →";
+
+    if (announce) {
+      vrById("vr-announcement").textContent = `场景 ${vrState.index + 1}，共 ${VR_SCENARIOS.length} 个。${scenario.caption}${scenario.action}`;
+    }
+  }
+
+  function vrGoto(index) {
+    vrState.index = Math.max(0, Math.min(VR_SCENARIOS.length - 1, index));
+    vrRender(true);
+  }
+
+  vrById("vr-prev").addEventListener("click", () => vrGoto(vrState.index - 1));
+  vrById("vr-next").addEventListener("click", () => vrGoto(vrState.index + 1));
+  vrById("vr-reset").addEventListener("click", () => vrGoto(0));
+  document.querySelectorAll("#explainer [data-scenario]").forEach((button) => {
+    button.addEventListener("click", () => vrGoto(Number(button.dataset.scenario)));
+  });
+
+  vrRender(false);
+</script>
+</body>
+</html>

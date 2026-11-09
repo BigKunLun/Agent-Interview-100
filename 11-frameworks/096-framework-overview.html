@@ -1,0 +1,1045 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>主流 Agent 框架概览：LangChain、LlamaIndex、Haystack · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .snap-tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface-soft); color: #4c524c; font: 11px/1.5 var(--mono); letter-spacing: .02em; }
+  .snap-tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--series-2); flex: 0 0 auto; }
+  .snap-row { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; margin-top: var(--s-3); }
+  .stage-panel { padding: var(--s-4) var(--s-6) var(--s-5); }
+  .stage-kicker { font: 11px/1.6 var(--mono); letter-spacing: .06em; color: var(--text-dim); margin-bottom: 4px; }
+  .stage-panel h2 { font-size: var(--t-h2); line-height: 1.35; font-weight: 600; }
+  .stage-help { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 62em; }
+  .task-fieldset, .check-fieldset { border: 0; padding: 0; margin: var(--s-4) 0 0; }
+  .task-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .task-card { position: relative; display: flex; gap: 11px; align-items: flex-start; min-height: 76px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); cursor: pointer; transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease); }
+  .task-card:hover { border-color: var(--border-bright); }
+  .task-card input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  .task-card:has(input:checked) { border-color: var(--accent); background: var(--accent-dim); box-shadow: inset 0 0 0 1px var(--accent); }
+  .task-card:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .task-mark { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 2px; border: 1px solid var(--border-bright); border-radius: 50%; background: var(--surface); }
+  .task-card:has(input:checked) .task-mark { border: 5px solid var(--accent); background: var(--surface); }
+  .task-copy strong { display: block; font-size: var(--t-small); line-height: 1.5; }
+  .task-copy small { display: block; margin-top: 3px; color: var(--text-dim); font-size: 12px; line-height: 1.55; }
+  .check-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .check-card { position: relative; display: flex; gap: 10px; align-items: flex-start; padding: 10px 13px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); cursor: pointer; }
+  .check-card:hover { border-color: var(--border-bright); }
+  .check-card input { margin: 3px 0 0; width: 17px; height: 17px; accent-color: var(--accent); flex: 0 0 auto; }
+  .check-card:has(input:checked) { border-color: var(--accent); background: var(--accent-dim); }
+  .check-card:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .check-copy strong { display: block; font-size: var(--t-small); line-height: 1.45; }
+  .check-copy small { display: block; margin-top: 2px; color: var(--text-dim); font-size: 11px; line-height: 1.5; }
+  .constraint-note { margin-top: var(--s-3); color: var(--text-dim); font-size: 12px; }
+  .result-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-4); align-items: start; border-bottom: 1px solid var(--border); padding-bottom: var(--s-4); }
+  .result-kicker { font: 11px/1.6 var(--mono); letter-spacing: .06em; color: var(--text-dim); }
+  .result-name { font: 600 clamp(30px, 4vw, 46px)/1.15 var(--serif); letter-spacing: -.02em; margin-top: 2px; }
+  .result-sub { color: var(--text-dim); font-size: var(--t-small); margin-top: 5px; }
+  .result-why { margin-top: var(--s-4); font-size: var(--t-small); max-width: 62em; }
+  .verdict { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 1.5; white-space: nowrap; border: 1px solid transparent; }
+  .verdict.good { background: #e4f1e6; color: #175c25; border-color: #9ec5a5; }
+  .verdict.warn { background: #fbefd9; color: #6f4108; border-color: #d8b477; }
+  .verdict.bad { background: #f9e5e2; color: #7d2018; border-color: #d5a39c; }
+  .verdict.info { background: #e8f0f8; color: #174a7a; border-color: #9db8d0; }
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-5); margin-top: var(--s-4); }
+  .result-grid h3, .result-alt h3 { font-size: 12px; font-weight: 600; color: var(--text-dim); letter-spacing: .03em; }
+  .spec-list, .check-list, .alt-list { list-style: none; margin: var(--s-2) 0 0; padding: 0; display: grid; gap: 5px; }
+  .spec-list li { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: var(--s-2); font-size: 12px; padding: 6px 0; border-bottom: 1px dashed var(--border); }
+  .spec-list b { color: var(--text-dim); font-weight: 500; }
+  .check-list li { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; line-height: 1.55; padding: 5px 0; }
+  .check-list .mark { flex: 0 0 auto; width: 18px; height: 18px; display: inline-grid; place-items: center; border-radius: 50%; font: 700 11px/1 var(--mono); }
+  .check-list .mark.ok { background: #e4f1e6; color: #175c25; }
+  .check-list .mark.no { background: #f9e5e2; color: #7d2018; }
+  .result-alt { margin-top: var(--s-5); border-top: 1px solid var(--border); padding-top: var(--s-4); }
+  .alt-list li { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: var(--s-3); font-size: 12px; line-height: 1.55; padding: 6px 0; }
+  .alt-list b { font-weight: 600; }
+  .alt-list span { color: var(--text-dim); }
+  .result-combo { margin-top: var(--s-4); padding: 11px 14px; border: 1px dashed var(--border-bright); border-radius: var(--r-1); background: var(--surface-soft); font-size: 12px; color: var(--text-dim); }
+  .result-combo strong { color: var(--ink); }
+  .matrix-block { margin-top: var(--s-5); }
+  .matrix-block h3 { font-size: 12px; font-weight: 600; color: var(--text-dim); }
+  .candidate-table { min-width: 720px; }
+  .candidate-table td:last-child { min-width: 180px; }
+  .candidate-table .verdict { margin-right: 6px; }
+  .matrix-reason { color: var(--text-dim); font-size: 11px; }
+  .compare-table { min-width: 760px; }
+  .compare-table td:first-child { white-space: nowrap; font-weight: 600; }
+  .code-card { border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+  .code-card h3 { margin-top: 0; font-size: var(--t-h3); }
+  .pro-con { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); margin-top: var(--s-3); }
+  .pro-con div { border: 1px solid var(--border); border-radius: var(--r-1); padding: 9px 11px; background: var(--surface-soft); }
+  .pro-con h4 { font-size: 11px; font-weight: 600; color: var(--text-dim); letter-spacing: .04em; }
+  .pro-con ul { margin: 4px 0 0; padding-left: 1.1em; }
+  .pro-con li { font-size: 12px; margin-block: 4px; }
+  .route { display: grid; gap: 7px; margin-top: var(--s-4); }
+  .route-row { display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: var(--s-3); padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .route-row b { font-weight: 600; color: var(--accent); }
+  .route-row span { color: var(--text-dim); }
+  .emerging { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; margin-top: var(--s-4); }
+  .emerging div { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px 13px; }
+  .emerging b { display: block; font-size: 13px; }
+  .emerging span { display: block; color: var(--text-dim); font-size: 12px; margin-top: 2px; line-height: 1.55; }
+  .source-content h3 { margin-top: var(--s-3); }
+  .source-content ul { margin-top: var(--s-2); padding-left: 1.2em; }
+  .source-content li { font-size: 12px; margin-block: 5px; }
+  .source-footnote { font-size: 11px; color: var(--text-dim); margin-top: var(--s-3); }
+  .link-list { margin-top: var(--s-3); padding-left: 1.2em; }
+  .link-list li { font-size: 12px; margin-block: 4px; }
+  @media (max-width: 1000px) {
+    .stage-panel { padding-inline: var(--s-5); }
+    .result-grid { grid-template-columns: 1fr; gap: var(--s-4); }
+    .pro-con { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .stage-panel { padding: var(--s-4); }
+    .task-grid, .check-grid, .emerging { grid-template-columns: 1fr; }
+    .result-head { grid-template-columns: 1fr; }
+    .alt-list li { grid-template-columns: 1fr; gap: 1px; }
+    .candidate-table { min-width: 660px; }
+    .candidate-table th[scope="row"], .candidate-table td:first-child { position: sticky; left: 0; background: var(--surface); z-index: 1; }
+    .candidate-table thead th:first-child { background: var(--surface-soft); z-index: 2; }
+    .compare-table { min-width: 760px; }
+    .prose .table-wrap table.data.wide { min-width: 760px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .task-card, .check-card { transition: none; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">096 / 主流框架概览</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 3 / 9 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="../10-production-and-deployment/116-12-factor-agents.html">← 上一页 · 什么是 12-Factor Agen…</a><a href="097-langgraph-concepts.html">下一页 → · LangGraph 的核心概念</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">基础 · Frameworks · 可交互讲解</p>
+      <h1>三个框架，<br>三种取舍。</h1>
+    </div>
+    <div>
+      <p class="lead">LangChain 全能、LlamaIndex 专攻数据、Haystack 强调生产。原文的结论不是选一个“最强的”，而是按任务类型、数据量和生产要求选最合适的，必要时混用。</p>
+      <p class="definition"><strong>关键边界：</strong>所有 star 数、版本、能力评级均为原文 2025 年时点快照，未联网核实，不更新排名。本页不安装、不运行任何框架代码。</p>
+      <div class="hero-meta"><span class="pill">基础</span><span class="pill">Frameworks</span><span class="pill">选型路径</span><span class="pill">原文快照</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="explainer-title">
+    <div class="player-top">
+      <div class="player-label" id="explainer-title">框架选型：任务 → 约束 → 推荐 <small>固定教学数据 · 本地匹配</small></div>
+      <div class="controls" role="group" aria-label="框架选型演示控制">
+        <button type="button" class="button button-quiet" id="reset-button">重置</button>
+        <button type="button" class="button" id="prev-button" disabled>← 上一步</button>
+        <button type="button" class="button button-primary" id="next-button" disabled>下一步 →</button>
+      </div>
+    </div>
+    <div class="stage-nav">
+      <ol style="--stages: 3">
+        <li><button type="button" class="stage-button" data-stage="1" aria-current="step"><span class="stage-number">1</span>选任务</button></li>
+        <li><button type="button" class="stage-button" data-stage="2" disabled><span class="stage-number">2</span>定要求</button></li>
+        <li><button type="button" class="stage-button" data-stage="3" disabled><span class="stage-number">3</span>看推荐</button></li>
+      </ol>
+    </div>
+
+    <div class="stage-panel" data-stage="1">
+      <p class="stage-kicker">STEP 1 / 3</p>
+      <h2>你要构建什么类型的应用？</h2>
+      <p class="stage-help">先按原文的决策树选主任务。选择后会预选一条硬要求，下一步可以改。固定教学数据，不读取你的真实项目。</p>
+      <fieldset class="task-fieldset">
+        <legend class="sr-only">选择应用类型</legend>
+        <div class="task-grid" id="task-grid"></div>
+      </fieldset>
+    </div>
+
+    <div class="stage-panel" data-stage="2" hidden>
+      <p class="stage-kicker">STEP 2 / 3</p>
+      <h2>哪些要求不能妥协？</h2>
+      <p class="stage-help">勾选表示“必须满足”。约束越多，能同时满足的框架越少；原文也提醒，不要为了全能而选一个过重的框架。</p>
+      <fieldset class="check-fieldset">
+        <legend class="sr-only">勾选硬要求</legend>
+        <div class="check-grid" id="check-grid"></div>
+      </fieldset>
+      <p class="constraint-note" id="constraint-note">尚未选择任务；先回到上一步选择任务。</p>
+    </div>
+
+    <div class="stage-panel" data-stage="3" hidden>
+      <p class="stage-kicker">STEP 3 / 3</p>
+      <div class="result-head">
+        <div>
+          <p class="result-kicker">首选框架</p>
+          <h2 class="result-name" id="result-name" tabindex="-1">—</h2>
+          <p class="result-sub" id="result-sub"></p>
+        </div>
+        <span class="verdict info" id="result-verdict">等待选择</span>
+      </div>
+      <p class="result-why" id="result-why"></p>
+      <div class="result-grid">
+        <div>
+          <h3>关键事实 · 原文 2025 快照</h3>
+          <ul class="spec-list" id="result-specs"></ul>
+        </div>
+        <div>
+          <h3>硬要求核对</h3>
+          <ul class="check-list" id="result-checks"></ul>
+        </div>
+      </div>
+      <div class="result-alt">
+        <h3>次选与排除</h3>
+        <ul class="alt-list" id="result-alts"></ul>
+      </div>
+      <p class="result-combo" id="result-combo" hidden></p>
+      <div class="matrix-block">
+        <h3>六个候选在当前任务与要求下的位置</h3>
+        <div class="table-wrap">
+          <table class="data candidate-table">
+            <caption class="sr-only">六个 Agent 框架在当前任务与硬要求下的匹配结论</caption>
+            <thead><tr><th scope="col">框架</th><th scope="col">定位</th><th scope="col">GitHub Stars（2025）</th><th scope="col">任务匹配</th><th scope="col">结论</th></tr></thead>
+            <tbody id="candidate-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="walkthrough-foot">
+      <span>固定教学数据 · 原文 2025 时点快照 · 不安装 / 不运行框架</span>
+      <span id="state-summary">未选择任务</span>
+    </div>
+  </section>
+  <p id="fw-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="compare-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三大框架对比</p><h2 id="compare-title">全能、数据、生产，<br>各占一头。</h2></div>
+      <p class="reading-intro">原文用 13 个维度对比 LangChain、LlamaIndex、Haystack。星数和能力评级都停在 2025 年；这张表适合看定位差异，不适合当今天的排行榜。</p>
+    </div>
+    <div class="prose">
+      <div class="snap-row"><span class="snap-tag">GitHub Stars 截至 2025 年 · 未联网核实</span><span class="snap-tag">能力星级为原文定性</span></div>
+      <div class="table-wrap">
+        <table class="data compare-table">
+          <caption class="sr-only">LangChain、LlamaIndex、Haystack 的 13 维对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">LangChain</th><th scope="col">LlamaIndex</th><th scope="col">Haystack</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">定位</th><td>通用 LLM 编排</td><td>数据 + RAG 专家</td><td>生产级 NLP</td></tr>
+            <tr><th scope="row">GitHub Stars（截至 2025 年）</th><td>100k+</td><td>40k+</td><td>18k+</td></tr>
+            <tr><th scope="row">语言</th><td>Python + TS</td><td>Python + TS</td><td>Python</td></tr>
+            <tr><th scope="row">核心抽象</th><td>Chain / Agent / Tool</td><td>Index / Query Engine</td><td>Pipeline / Component</td></tr>
+            <tr><th scope="row">Agent 能力</th><td>★★★★★</td><td>★★★☆☆</td><td>★★★★☆</td></tr>
+            <tr><th scope="row">RAG 能力</th><td>★★★★☆</td><td>★★★★★</td><td>★★★★☆</td></tr>
+            <tr><th scope="row">生产就绪</th><td>★★★☆☆</td><td>★★★☆☆</td><td>★★★★★</td></tr>
+            <tr><th scope="row">学习曲线</th><td>陡峭</td><td>中等</td><td>平缓</td></tr>
+            <tr><th scope="row">灵活性</th><td>极高</td><td>高</td><td>中高</td></tr>
+            <tr><th scope="row">数据连接器</th><td>多（社区驱动）</td><td>160+ 官方</td><td>少（精选）</td></tr>
+            <tr><th scope="row">模型支持</th><td>最广泛</td><td>广泛</td><td>广泛</td></tr>
+            <tr><th scope="row">监控 / 追踪</th><td>LangSmith</td><td>内置追踪</td><td>Pipeline 日志</td></tr>
+            <tr><th scope="row">部署方式</th><td>LangServe</td><td>自行部署</td><td>Hayhooks API</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <p class="callout-label">原文的选型结论</p>
+        <p>快速原型 + 复杂 Agent → LangChain；数据密集型 RAG → LlamaIndex；生产稳定性优先 → Haystack。实际项目中三者并非互斥：LlamaIndex 可作为 LangChain 的检索后端，Haystack 的 Pipeline 可集成 LangChain 组件。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="langchain-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">LangChain</p><h2 id="langchain-title">生态最大，<br>抽象也最多。</h2></div>
+      <p class="reading-intro">原文把 LangChain 定位为通用 LLM 编排：生态最大、功能最全、社区最活跃，适合快速原型和复杂 Agent 编排；代价是抽象层多、学习曲线陡。</p>
+    </div>
+    <div class="prose">
+      <div class="snap-row"><span class="snap-tag">LangChain 1.0 于 2025-10 GA · 原文版本，未联网核实</span></div>
+      <div class="code-card">
+        <h3>核心架构与 1.0 API</h3>
+        <p>原文特别提醒：LangChain 1.0 已 GA（2025-10），官方推荐用 <code>langchain.agents.create_agent</code> 构建 Agent；旧版 <code>create_tool_calling_agent</code> + <code>AgentExecutor</code> 以及 LangGraph 的 <code>create_react_agent</code> 都已 deprecated。下方示例使用 1.0 API。</p>
+        <details>
+          <summary>查看原文 LangChain 1.0 示例代码</summary>
+          <pre><code>from langchain.agents import create_agent
+from langchain_openai import ChatOpenAI
+from langchain_core.tools import tool
+
+@tool
+def search_database(query: str) -&gt; str:
+    """搜索产品数据库"""
+    return f"找到关于 {query} 的 3 条结果"
+
+agent = create_agent(
+    model=ChatOpenAI(model="gpt-4o"),
+    tools=[search_database],
+    system_prompt="你是一个智能助手。",
+)
+
+result = agent.invoke({"messages": [("human", "搜索 RAG 框架")]})</code></pre>
+        </details>
+        <div class="pro-con">
+          <div><h4>优势</h4><ul><li>生态最大，几乎所有 LLM、向量数据库、工具都有集成。</li><li>LangGraph 扩展，支持复杂的有状态 Agent 工作流。</li><li>LangSmith 提供完整的追踪、评估、监控。</li><li>社区活跃，问题和示例最多。</li></ul></div>
+          <div><h4>劣势</h4><ul><li>抽象层过多，调试困难（原文称“框架深度”问题）。</li><li>API 变更频繁，升级成本高。</li><li>过度封装导致性能损耗。</li><li>简单任务也需要理解大量概念。</li></ul></div>
+        </div>
+      </div>
+      <p>原文的提醒很具体：LangChain 适合快速原型，但“能跑”不等于“好维护”。抽象层多意味着出问题时要在框架内部找原因；API 频繁变更意味着升级可能变成返工。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="llamaindex-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">LlamaIndex</p><h2 id="llamaindex-title">数据连接，<br>是它的主场。</h2></div>
+      <p class="reading-intro">原文把 LlamaIndex 定位为数据 + RAG 专家：160+ 数据连接器、多种索引类型、检索场景性能最优，适合知识密集型应用。</p>
+    </div>
+    <div class="prose">
+      <div class="code-card">
+        <h3>核心架构：数据连接 → 索引 → 查询引擎</h3>
+        <p>LlamaIndex 的主线是“把数据接进来，建索引，再把查询引擎包装成工具交给 Agent”。原文示例用 <code>VectorStoreIndex</code>、<code>QueryEngineTool</code> 和 <code>ReActAgent</code> 串起这条链路。</p>
+        <details>
+          <summary>查看原文 LlamaIndex 示例代码</summary>
+          <pre><code>from llama_index.core import VectorStoreIndex, SimpleDirectoryReader
+from llama_index.core.agent import ReActAgent
+from llama_index.core.tools import QueryEngineTool
+
+documents = SimpleDirectoryReader("./data").load_data()
+index = VectorStoreIndex.from_documents(documents)
+
+query_engine = index.as_query_engine(similarity_top_k=5)
+
+tool = QueryEngineTool.from_defaults(
+    query_engine=query_engine,
+    name="knowledge_base",
+    description="搜索内部知识库",
+)
+
+agent = ReActAgent.from_tools([tool], verbose=True)
+response = agent.chat("最新的产品定价是多少？")</code></pre>
+        </details>
+        <div class="pro-con">
+          <div><h4>优势</h4><ul><li>160+ 数据连接器（PDF、数据库、API、Notion 等）。</li><li>多种索引类型（向量、关键词、知识图谱、树状）。</li><li>检索性能最优，专为数据查询场景优化。</li><li>与 LangChain 互操作，可作为其检索后端。</li></ul></div>
+          <div><h4>劣势</h4><ul><li>Agent 能力相对弱，依赖外部框架。</li><li>复杂编排能力不如 LangChain。</li><li>社区规模较小。</li></ul></div>
+        </div>
+      </div>
+      <p>原文的判断是：如果你的核心问题是“把知识找出来并回答”，LlamaIndex 的抽象更贴近问题；如果核心问题是“让 Agent 做多步决策”，它的 Agent 能力就不是强项。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="haystack-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">Haystack</p><h2 id="haystack-title">Pipeline 清楚，<br>生产优先。</h2></div>
+      <p class="reading-intro">原文把 Haystack 定位为生产级 NLP：由 deepset 开发，Pipeline 架构清晰、模块化程度高，适合需要稳定运行的企业级生产部署。</p>
+    </div>
+    <div class="prose">
+      <div class="code-card">
+        <h3>核心架构：DAG Pipeline + 类型安全组件</h3>
+        <p>Haystack 用 <code>Pipeline</code> 把 retriever、prompt、llm 等组件连成 DAG，组件之间的输入输出有类型检查；Pipeline 还能导出 YAML，便于版本控制。</p>
+        <details>
+          <summary>查看原文 Haystack 示例代码</summary>
+          <pre><code>from haystack import Pipeline
+from haystack.components.generators import OpenAIGenerator
+from haystack.components.builders import PromptBuilder
+from haystack.components.retrievers.in_memory import InMemoryBM25Retriever
+
+pipeline = Pipeline()
+pipeline.add_component("retriever", InMemoryBM25Retriever(document_store=store))
+pipeline.add_component("prompt", PromptBuilder(template=template))
+pipeline.add_component("llm", OpenAIGenerator(model="gpt-4o"))
+
+pipeline.connect("retriever", "prompt")
+pipeline.connect("prompt", "llm")
+
+result = pipeline.run({"retriever": {"query": "什么是 RAG？"}})</code></pre>
+        </details>
+        <div class="pro-con">
+          <div><h4>优势</h4><ul><li>Pipeline 架构清晰，DAG 图式编排，易于理解和调试。</li><li>类型安全，组件间输入输出有严格类型检查。</li><li>生产成熟，deepset Cloud 提供企业级托管。</li><li>Pipeline 可导出 YAML，支持版本控制。</li></ul></div>
+          <div><h4>劣势</h4><ul><li>生态较小，第三方集成少。</li><li>仅支持 Python。</li><li>Agent 能力发展较晚。</li></ul></div>
+        </div>
+      </div>
+      <p>原文的取舍很清楚：Haystack 用生态规模换生产可控性。连接器少、只支持 Python，是代价；换来的是清晰 DAG、类型安全和可序列化的 Pipeline。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="tree-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">选择决策树</p><h2 id="tree-title">先问应用，<br>再问生态。</h2></div>
+      <p class="reading-intro">原文的决策树按应用类型分叉，新兴框架也在这棵树里。它不是打分表，而是第一轮筛选。</p>
+    </div>
+    <div class="prose">
+      <div class="route">
+        <div class="route-row"><b>复杂 Agent</b><span>多步推理、工具编排 → LangChain + LangGraph。</span></div>
+        <div class="route-row"><b>知识密集型</b><span>RAG、文档问答、数据检索 → LlamaIndex（可搭配 LangChain）。</span></div>
+        <div class="route-row"><b>生产部署优先</b><span>企业级、高可用 → Haystack。</span></div>
+        <div class="route-row"><b>多 Agent 协作</b><span>→ CrewAI 或 AutoGen。</span></div>
+        <div class="route-row"><b>微软生态</b><span>→ Semantic Kernel。</span></div>
+        <div class="route-row"><b>极致性能 + 轻量</b><span>→ Agno（前 Phidata，号称最快）。</span></div>
+      </div>
+      <h3>2025 年新兴框架（原文名单）</h3>
+      <div class="emerging">
+        <div><b>CrewAI</b><span>多 Agent 角色扮演，简单直观。</span></div>
+        <div><b>Agno</b><span>前 Phidata，号称最快的 Agent 框架，模型无关。</span></div>
+        <div><b>Semantic Kernel</b><span>微软出品，企业级 .NET / Python 支持。</span></div>
+        <div><b>Google ADK</b><span>Google Agent Development Kit，集成 Gemini 生态。</span></div>
+        <div><b>OpenAI Agents SDK</b><span>轻量级，原生 OpenAI 集成。</span></div>
+      </div>
+      <p>这张名单停在原文的 2025 年时点，本页不更新排名，也不补充原文没有的能力或版本信息。新兴框架在对比表里没有 star、语言等数据，本页统一标“原文未列”，不替它们补。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myth-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myth-title">四个容易被追问的点。</h2></div>
+      <p class="reading-intro">前两项是误区，后两项是面试追问；答案与数字都来自原文，未联网更新。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“LangChain 是唯一选择。”</h3><p>LangChain 生态最大但不一定最适合。对于 RAG 专项任务，LlamaIndex 更专业；对于生产稳定性，Haystack 更成熟。框架选择应该基于具体需求，而不是社区热度。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“框架越全能越好。”</h3><p>全能框架意味着更多抽象层和更高复杂度。如果只需要一个 RAG Pipeline，使用 LangChain 全家桶就是杀鸡用牛刀。选择最小够用的框架可以降低维护成本。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>这些框架可以混用吗？</h3><p>可以，且原文推荐。典型组合：LlamaIndex 处理数据索引和检索 → LangChain / LangGraph 编排 Agent 逻辑 → Haystack Pipeline 处理特定流程。框架间通常通过工具接口互操作。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>2025 年有什么新兴框架值得关注？</h3><p>原文列了五个：CrewAI（多 Agent 角色扮演，简单直观）、Agno（号称最快的 Agent 框架，模型无关）、Semantic Kernel（微软出品，企业级 .NET / Python）、Google ADK（Google Agent Development Kit，集成 Gemini 生态）、OpenAI Agents SDK（轻量级，原生 OpenAI 集成）。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《主流 Agent 框架概览：LangChain、LlamaIndex、Haystack》。框架版本、star 数、能力评级按原文 2025 年时点保留，本页未联网核实。</p>
+    <details>
+      <summary>展开原文列出的 5 条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://mayur-ds.medium.com/langchain-vs-haystack-vs-llamaindex-rag-showdown-2025-28c222d34b0a" target="_blank" rel="noopener noreferrer">LangChain vs Haystack vs LlamaIndex: RAG Showdown 2025（Medium）</a></li>
+          <li><a href="https://softcery.com/lab/top-14-ai-agent-frameworks-of-2025-a-founders-guide-to-building-smarter-systems" target="_blank" rel="noopener noreferrer">We Tested 14 AI Agent Frameworks. Here's How to Choose（Softcery）</a></li>
+          <li><a href="https://deepchecks.com/best-ai-agent-frameworks/" target="_blank" rel="noopener noreferrer">Best 10 AI Agent Frameworks for 2025（Deepchecks）</a></li>
+          <li><a href="https://arsum.com/blog/posts/ai-agent-frameworks/" target="_blank" rel="noopener noreferrer">AI Agent Frameworks Compared: LangChain, CrewAI, and More（Arsum）</a></li>
+          <li><a href="https://pathway.com/rag-frameworks" target="_blank" rel="noopener noreferrer">Compare the Top 7 RAG Frameworks in 2025（Pathway）</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+    <h3 class="source-heading" style="margin-top: var(--s-5); font-size: 17px;">相关阅读</h3>
+    <ul class="link-list">
+      <li><a href="098-framework-vs-custom.html">098 框架 vs 自研</a> — 什么时候该自己构建 Agent 框架。</li>
+      <li><a href="097-langgraph-concepts.html">097 LangGraph 核心概念</a> — LangChain 生态里的图状态机与 checkpointer。</li>
+      <li><a href="099-assistants-api-vs-claude-sdk.html">099 OpenAI Responses / Agents SDK vs Claude Agent SDK</a> — 另一组框架选型对照。</li>
+      <li><a href="../04-multi-agent/036-multi-agent-frameworks.html">036 多 Agent 框架对比</a> — CrewAI、LangGraph 等在多 Agent 场景的差异。</li>
+      <li><a href="../02-rag/018-agentic-rag.html">018 Agentic RAG</a> — 检索与 Agent 编排结合后的设计问题。</li>
+      <li><a href="../02-rag/011-rag-overview-and-pipeline.html">011 RAG 概览与流水线</a> — 先理解 RAG 的完整链路，再选框架。</li>
+    </ul>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>11-frameworks/096-framework-overview.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 7 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const TASKS = [
+    { id: "complex_agent", label: "复杂 Agent", desc: "多步推理、工具编排", preset: [], base: "LangChain + LangGraph" },
+    { id: "rag", label: "知识密集型 RAG", desc: "文档问答、数据检索", preset: ["connectors"], base: "LlamaIndex（可搭配 LangChain）" },
+    { id: "production", label: "生产部署优先", desc: "企业级、高可用", preset: ["production"], base: "Haystack" },
+    { id: "multi_agent", label: "多 Agent 协作", desc: "角色分工、协作完成任务", preset: ["multi_agent"], base: "CrewAI 或 AutoGen" },
+    { id: "microsoft", label: "微软生态", desc: ".NET / Azure / Microsoft 技术栈", preset: ["microsoft"], base: "Semantic Kernel" },
+    { id: "lightweight", label: "极致性能 + 轻量", desc: "轻依赖、快速启动", preset: ["lightweight"], base: "Agno（前 Phidata）" }
+  ];
+
+  const CONSTRAINTS = [
+    { id: "production", short: "生产稳定", label: "生产稳定性优先", hint: "企业级、高可用" },
+    { id: "connectors", short: "数据连接", label: "需要大量数据连接器", hint: "160+ 官方连接器" },
+    { id: "tracing", short: "追踪", label: "需要内置追踪 / 监控", hint: "可观测性内置" },
+    { id: "ts", short: "TypeScript", label: "需要 TypeScript", hint: "前端或 Node 侧接入" },
+    { id: "enterprise", short: "企业支持", label: "需要企业级托管 / 支持", hint: "商业支持或托管云" },
+    { id: "multi_agent", short: "多 Agent", label: "多 Agent 角色协作", hint: "角色分工与协作" },
+    { id: "microsoft", short: "微软生态", label: "微软生态", hint: ".NET / Azure" },
+    { id: "lightweight", short: "轻量", label: "极致轻量 / 性能", hint: "轻依赖、快启动" }
+  ];
+
+  const PRODUCTS = [
+    {
+      id: "langchain", name: "LangChain", position: "通用 LLM 编排", stars: "100k+（2025）",
+      language: "Python + TS", core: "Chain / Agent / Tool", agent: "★★★★★", rag: "★★★★☆",
+      production: "★★★☆☆", connectors: "多（社区驱动）", tracing: "LangSmith", deploy: "LangServe",
+      caps: { production: false, connectors: true, tracing: true, ts: true, enterprise: false, multi_agent: false, microsoft: false, lightweight: false },
+      fit: { complex_agent: 2, rag: 1, production: 1, multi_agent: 1, microsoft: 0, lightweight: 0 }
+    },
+    {
+      id: "llamaindex", name: "LlamaIndex", position: "数据 + RAG 专家", stars: "40k+（2025）",
+      language: "Python + TS", core: "Index / Query Engine", agent: "★★★☆☆", rag: "★★★★★",
+      production: "★★★☆☆", connectors: "160+ 官方", tracing: "内置追踪", deploy: "自行部署",
+      caps: { production: false, connectors: true, tracing: true, ts: true, enterprise: false, multi_agent: false, microsoft: false, lightweight: false },
+      fit: { complex_agent: 1, rag: 2, production: 1, multi_agent: 0, microsoft: 0, lightweight: 0 }
+    },
+    {
+      id: "haystack", name: "Haystack", position: "生产级 NLP", stars: "18k+（2025）",
+      language: "Python", core: "Pipeline / Component", agent: "★★★★☆", rag: "★★★★☆",
+      production: "★★★★★", connectors: "少（精选）", tracing: "Pipeline 日志", deploy: "Hayhooks API",
+      caps: { production: true, connectors: false, tracing: true, ts: false, enterprise: true, multi_agent: false, microsoft: false, lightweight: false },
+      fit: { complex_agent: 1, rag: 1, production: 2, multi_agent: 0, microsoft: 0, lightweight: 0 }
+    },
+    {
+      id: "crewai", name: "CrewAI", position: "多 Agent 角色扮演", stars: "原文未列",
+      language: "原文未列", core: "原文未列", agent: "原文未列", rag: "原文未列",
+      production: "原文未列", connectors: "原文未列", tracing: "原文未列", deploy: "原文未列",
+      caps: { production: false, connectors: false, tracing: false, ts: false, enterprise: false, multi_agent: true, microsoft: false, lightweight: false },
+      fit: { complex_agent: 0, rag: 0, production: 0, multi_agent: 2, microsoft: 0, lightweight: 0 }
+    },
+    {
+      id: "semantickernel", name: "Semantic Kernel", position: "微软企业级", stars: "原文未列",
+      language: ".NET / Python（原文）", core: "原文未列", agent: "原文未列", rag: "原文未列",
+      production: "原文未列", connectors: "原文未列", tracing: "原文未列", deploy: "原文未列",
+      caps: { production: false, connectors: false, tracing: false, ts: false, enterprise: true, multi_agent: false, microsoft: true, lightweight: false },
+      fit: { complex_agent: 0, rag: 0, production: 0, multi_agent: 0, microsoft: 2, lightweight: 0 }
+    },
+    {
+      id: "agno", name: "Agno（前 Phidata）", position: "极速轻量", stars: "原文未列",
+      language: "原文未列", core: "原文未列", agent: "原文未列", rag: "原文未列",
+      production: "原文未列", connectors: "原文未列", tracing: "原文未列", deploy: "原文未列",
+      caps: { production: false, connectors: false, tracing: false, ts: false, enterprise: false, multi_agent: false, microsoft: false, lightweight: true },
+      fit: { complex_agent: 0, rag: 0, production: 0, multi_agent: 0, microsoft: 0, lightweight: 2 }
+    }
+  ];
+
+  const state = { task: null, selected: new Set(), stage: 1 };
+  const byId = (id) => document.getElementById(id);
+  const taskGrid = byId("task-grid");
+  const checkGrid = byId("check-grid");
+  const stageButtons = Array.from(document.querySelectorAll(".stage-button"));
+  const panels = Array.from(document.querySelectorAll(".stage-panel"));
+
+  function announce(text) {
+    const node = byId("fw-announcement");
+    node.textContent = "";
+    window.setTimeout(() => { node.textContent = text; }, 30);
+  }
+
+  function taskById(id) { return TASKS.find((task) => task.id === id); }
+  function constraintById(id) { return CONSTRAINTS.find((item) => item.id === id); }
+
+  function buildTasks() {
+    TASKS.forEach((task) => {
+      const label = document.createElement("label");
+      label.className = "task-card";
+      label.innerHTML = '<input type="radio" name="fw-task" value="' + task.id + '"><span class="task-mark" aria-hidden="true"></span><span class="task-copy"><strong>' + task.label + '</strong><small>' + task.desc + '</small></span>';
+      taskGrid.append(label);
+    });
+    taskGrid.addEventListener("change", (event) => {
+      if (event.target.name !== "fw-task") return;
+      const task = taskById(event.target.value);
+      state.task = task.id;
+      state.selected = new Set(task.preset);
+      syncChecks();
+      updateConstraintNote();
+      updateChrome();
+      announce("已选择" + task.label + "，预选 " + task.preset.length + " 项硬要求。");
+      if (state.stage === 3) renderResult();
+    });
+  }
+
+  function buildChecks() {
+    CONSTRAINTS.forEach((item) => {
+      const label = document.createElement("label");
+      label.className = "check-card";
+      label.innerHTML = '<input type="checkbox" value="' + item.id + '"><span class="check-copy"><strong>' + item.label + '</strong><small>' + item.hint + '</small></span>';
+      checkGrid.append(label);
+    });
+    checkGrid.addEventListener("change", (event) => {
+      const id = event.target.value;
+      if (event.target.checked) state.selected.add(id);
+      else state.selected.delete(id);
+      updateConstraintNote();
+      updateChrome();
+      if (state.stage === 3) renderResult();
+      announce((event.target.checked ? "已勾选 " : "已取消 ") + constraintById(id).label + "。当前硬要求 " + state.selected.size + " 项。");
+    });
+  }
+
+  function syncChecks() {
+    checkGrid.querySelectorAll("input").forEach((input) => {
+      input.checked = state.selected.has(input.value);
+    });
+  }
+
+  function updateConstraintNote() {
+    const note = byId("constraint-note");
+    if (!state.task) {
+      note.textContent = "尚未选择任务；先回到上一步选择任务。";
+      return;
+    }
+    const names = CONSTRAINTS.filter((item) => state.selected.has(item.id)).map((item) => item.label);
+    note.textContent = names.length
+      ? "当前硬要求（" + names.length + " 项）：" + names.join("、") + "。可在本步增删。"
+      : "当前没有硬要求。结果只按任务匹配推荐，不排除任何框架。";
+  }
+
+  function updateChrome() {
+    const stage = state.stage;
+    panels.forEach((panel) => { panel.hidden = Number(panel.dataset.stage) !== stage; });
+    stageButtons.forEach((button) => {
+      const n = Number(button.dataset.stage);
+      if (n === stage) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+      button.disabled = n > 1 && !state.task;
+    });
+    byId("prev-button").disabled = stage === 1;
+    byId("next-button").disabled = stage === 1 ? !state.task : stage === 3;
+    byId("next-button").textContent = stage === 3 ? "已到推荐" : "下一步 →";
+    const task = state.task ? taskById(state.task) : null;
+    byId("state-summary").textContent = (task ? task.label : "未选择任务") + " · 硬要求 " + state.selected.size + " 项 · 第 " + stage + " / 3 步";
+  }
+
+  function setStage(n) {
+    if (n > 1 && !state.task) {
+      announce("请先选择任务。");
+      return;
+    }
+    state.stage = n;
+    updateChrome();
+    if (n === 3) {
+      renderResult();
+      window.requestAnimationFrame(() => {
+        const heading = byId("result-name");
+        if (heading) heading.focus({ preventScroll: true });
+      });
+      announce("推荐结果已生成：" + byId("result-name").textContent + "。");
+    } else {
+      announce(n === 1 ? "第 1 步，选择任务。" : "第 2 步，勾选硬要求。");
+    }
+  }
+
+  function evaluate() {
+    const task = taskById(state.task);
+    const rows = PRODUCTS.map((product) => {
+      const missing = CONSTRAINTS.filter((item) => state.selected.has(item.id) && !product.caps[item.id]);
+      return { product, missing, fit: product.fit[task.id] };
+    });
+    rows.sort((a, b) => a.missing.length - b.missing.length || b.fit - a.fit);
+    const passing = rows.filter((row) => row.missing.length === 0);
+    const primary = (passing.length ? passing : rows)[0];
+    return { task, rows, passing, primary };
+  }
+
+  function verdictFor(row, primaryId) {
+    if (row.product.id === primaryId) {
+      return row.missing.length === 0
+        ? { cls: "good", text: "首选" }
+        : { cls: "warn", text: "最接近，但缺要求" };
+    }
+    if (row.missing.length === 0) {
+      return row.fit > 0 ? { cls: "info", text: "次选" } : { cls: "info", text: "要求满足" };
+    }
+    return { cls: "bad", text: "缺 " + row.missing.map((item) => item.short).join("、") };
+  }
+
+  function comboFor(missing) {
+    if (missing.length === 0) return "";
+    if (state.selected.has("production") && state.selected.has("multi_agent")) {
+      return "原文把多 Agent 协作指向 CrewAI 或 AutoGen，把生产稳定指向 Haystack，但没有给出两者的现成集成方案。可行路径是分层：CrewAI 管角色协作，Haystack 管生产管线，接口需自行验证。";
+    }
+    if (state.selected.has("production") && state.selected.has("connectors")) {
+      return "原文明确说三者可混用：LlamaIndex 做数据索引和检索，Haystack 处理生产流程；框架间通常通过工具接口互操作。";
+    }
+    if (state.selected.has("production") && state.task === "complex_agent") {
+      return "LangChain / LangGraph 负责复杂流程编排，Haystack 承担生产管线；原文说框架间通常通过工具接口互操作。";
+    }
+    if (state.selected.has("production") && state.selected.has("microsoft")) {
+      return "Semantic Kernel 负责微软生态集成，Haystack 负责生产管线；原文没有给出两者的具体集成细节。";
+    }
+    return "先放宽一条硬要求，再在候选里选。原文的决策树也是先定应用类型，再看数据和生产要求。";
+  }
+
+  function renderResult() {
+    if (!state.task) return;
+    const result = evaluate();
+    const primary = result.primary;
+    const product = primary.product;
+    const task = result.task;
+    const satisfiable = primary.missing.length === 0;
+
+    byId("result-name").textContent = product.name;
+    byId("result-sub").textContent = product.position + " · " + product.stars;
+    const verdict = byId("result-verdict");
+    verdict.className = "verdict " + (satisfiable ? "good" : "warn");
+    verdict.textContent = satisfiable
+      ? (state.selected.size ? "满足全部 " + state.selected.size + " 项硬要求" : "按任务匹配推荐")
+      : "缺 " + primary.missing.length + " 项硬要求";
+
+    const fitText = primary.fit === 2
+      ? "与原文决策树的推荐方向一致"
+      : primary.fit === 1
+        ? "在原文里是可用的备选"
+        : "不是该任务的首选，但它是当前最接近的候选";
+    const constraintText = !satisfiable
+      ? "它未能满足 " + primary.missing.map((item) => item.label).join("、") + "；下面的组合建议说明了原文怎么拆。"
+      : state.selected.size
+        ? "你勾选的硬要求它全部满足。"
+        : "当前没有勾选硬要求，结果只按任务匹配。";
+    byId("result-why").textContent = "在“" + task.label + "”任务下，" + product.name + " 的定位是" + product.position + "，" + fitText + "。" + constraintText + " 原文基线建议：" + task.base + "。";
+
+    const specs = byId("result-specs");
+    specs.textContent = "";
+    [
+      ["定位", product.position],
+      ["GitHub Stars", product.stars],
+      ["语言", product.language],
+      ["核心抽象", product.core],
+      ["Agent 能力", product.agent],
+      ["RAG 能力", product.rag],
+      ["生产就绪", product.production],
+      ["数据连接器", product.connectors],
+      ["追踪", product.tracing],
+      ["部署", product.deploy]
+    ].forEach((pair) => {
+      const li = document.createElement("li");
+      const b = document.createElement("b");
+      b.textContent = pair[0];
+      const span = document.createElement("span");
+      span.textContent = pair[1];
+      li.append(b, span);
+      specs.append(li);
+    });
+
+    const checks = byId("result-checks");
+    checks.textContent = "";
+    if (state.selected.size === 0) {
+      const li = document.createElement("li");
+      li.textContent = "未勾选硬要求。结果只按任务匹配，不代表框架在生产或数据能力上更优。";
+      checks.append(li);
+    } else {
+      CONSTRAINTS.filter((item) => state.selected.has(item.id)).forEach((item) => {
+        const li = document.createElement("li");
+        const mark = document.createElement("span");
+        const pass = product.caps[item.id];
+        mark.className = "mark " + (pass ? "ok" : "no");
+        mark.textContent = pass ? "✓" : "×";
+        mark.setAttribute("aria-hidden", "true");
+        const text = document.createElement("span");
+        text.textContent = (pass ? "满足：" : "未满足：") + item.label + "（" + item.hint + "）";
+        li.append(mark, text);
+        checks.append(li);
+      });
+    }
+
+    const alts = byId("result-alts");
+    alts.textContent = "";
+    const passOthers = result.rows.filter((row) => row.missing.length === 0 && row.product.id !== product.id).slice(0, 2);
+    const nearOthers = result.rows.filter((row) => row.missing.length > 0 && row.product.id !== product.id).slice(0, 2);
+    const picked = passOthers.length ? passOthers : nearOthers;
+    if (!picked.length) {
+      const li = document.createElement("li");
+      li.textContent = "没有其他满足全部硬要求的框架。";
+      alts.append(li);
+    }
+    picked.forEach((row) => {
+      const li = document.createElement("li");
+      const name = document.createElement("b");
+      name.textContent = row.product.name;
+      const span = document.createElement("span");
+      if (row.missing.length === 0) {
+        span.textContent = row.fit > 0 ? "满足全部要求，可作为次选。" : "满足全部要求，但不是该任务的首选方向。";
+      } else {
+        span.textContent = "缺 " + row.missing.map((item) => item.label).join("、") + "；定位是" + row.product.position + "。";
+      }
+      li.append(name, span);
+      alts.append(li);
+    });
+
+    const combo = byId("result-combo");
+    const comboText = comboFor(primary.missing);
+    if (comboText) {
+      combo.hidden = false;
+      combo.innerHTML = "<strong>组合建议：</strong>" + comboText;
+    } else {
+      combo.hidden = true;
+      combo.textContent = "";
+    }
+
+    const body = byId("candidate-body");
+    body.textContent = "";
+    result.rows.forEach((row) => {
+      const tr = document.createElement("tr");
+      const th = document.createElement("th");
+      th.scope = "row";
+      th.textContent = row.product.name;
+      const position = document.createElement("td");
+      position.textContent = row.product.position;
+      const stars = document.createElement("td");
+      stars.textContent = row.product.stars;
+      const fit = document.createElement("td");
+      fit.textContent = row.fit === 2 ? "首选方向" : row.fit === 1 ? "可用备选" : "不匹配";
+      const conclusion = document.createElement("td");
+      const badge = document.createElement("span");
+      const v = verdictFor(row, product.id);
+      badge.className = "verdict " + v.cls;
+      badge.textContent = v.text;
+      const reason = document.createElement("span");
+      reason.className = "matrix-reason";
+      reason.textContent = row.missing.length === 0
+        ? "硬要求全过"
+        : "缺 " + row.missing.map((item) => item.short).join("、");
+      conclusion.append(badge, reason);
+      tr.append(th, position, stars, fit, conclusion);
+      body.append(tr);
+    });
+  }
+
+  byId("reset-button").addEventListener("click", () => {
+    state.task = null;
+    state.selected = new Set();
+    state.stage = 1;
+    taskGrid.querySelectorAll("input").forEach((input) => { input.checked = false; });
+    syncChecks();
+    updateConstraintNote();
+    updateChrome();
+    announce("已重置。请选择任务。");
+  });
+  byId("prev-button").addEventListener("click", () => { if (state.stage > 1) setStage(state.stage - 1); });
+  byId("next-button").addEventListener("click", () => { if (state.stage < 3) setStage(state.stage + 1); });
+  stageButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const n = Number(button.dataset.stage);
+      if (n > 1 && !state.task) {
+        announce("请先选择任务。");
+        return;
+      }
+      setStage(n);
+    });
+  });
+
+  buildTasks();
+  buildChecks();
+  updateConstraintNote();
+  updateChrome();
+</script>
+</body>
+</html>

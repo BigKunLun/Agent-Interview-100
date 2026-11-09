@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Agent 系统的日志、监控与告警设计 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .lg-banner { display: flex; align-items: flex-start; gap: 9px; margin: var(--s-4) var(--s-6) 0; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .lg-banner::before { content: "教学"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .lg-banner strong { color: #4d3000; }
+  .lg-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid transparent; border-radius: 999px; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .lg-neutral { background: #eef1ee; color: #3f463f; border-color: #c9cec9; }
+  .lg-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .lg-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .lg-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .lg-bad { background: #fbecec; color: #8a1f1f; border-color: #d9a3a3; }
+  .lg-topbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: var(--s-3); }
+  .lg-toggle { min-height: 40px; padding: 7px 12px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: 11px; color: var(--text-dim); }
+  .lg-toggle[aria-pressed="true"] { border-color: #194f87; background: #eaf1f8; color: #194f87; font-weight: 600; }
+  .lg-conclusion { padding: 9px 12px; border: 1px solid #9cc39e; border-radius: var(--r-1); background: #f4faf4; font-size: 11px; line-height: 1.7; color: #14532d; }
+  .lg-conclusion.is-bad { border-color: #d9a3a3; background: #fdf6f6; color: #6d1717; }
+  .lg-conclusion b { display: block; font: 600 12px/1.5 var(--sans); }
+  .lg-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: var(--s-4); align-items: start; }
+  .lg-panel { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3); }
+  .lg-panel-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 5px; margin-bottom: var(--s-2); }
+  .lg-panel-head b { font: 600 12px/1.5 var(--sans); }
+  .lg-panel-head span { font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .lg-log { border-top: 1px solid var(--border); }
+  .lg-row { display: grid; grid-template-columns: 148px minmax(0, 1fr); gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 10px; line-height: 1.65; }
+  .lg-row dt { font: 9px/1.7 var(--mono); color: var(--text-dim); overflow-wrap: anywhere; }
+  .lg-row dd { margin: 0; overflow-wrap: anywhere; }
+  .lg-row.semantic { background: #fdf3e3; }
+  .lg-row.semantic dt { color: #6b4300; }
+  .lg-row.semantic dd { color: #5b3a05; }
+  .lg-group { padding: 6px 0 2px; font: 600 10px/1.5 var(--mono); color: #194f87; letter-spacing: .04em; }
+  .lg-side-card { margin-top: var(--s-3); padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); font-size: 11px; line-height: 1.7; }
+  .lg-side-card b { display: block; font: 600 12px/1.5 var(--sans); margin-bottom: 3px; }
+  .lg-side-card p + p { margin-top: 5px; }
+  .lg-trace { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+  .lg-span { width: 100%; display: grid; grid-template-columns: 22px minmax(0, 1fr) 55px; gap: 6px; align-items: center; padding: 5px 6px; border: 1px solid transparent; border-radius: 4px; background: transparent; text-align: left; }
+  .lg-span:hover { background: var(--surface-soft); }
+  .lg-span[aria-pressed="true"] { border-color: #194f87; background: #eaf1f8; }
+  .lg-span-num { display: inline-grid; place-items: center; width: 20px; height: 20px; border: 1px solid var(--border-bright); border-radius: 50%; font: 9px/1 var(--mono); color: var(--text-dim); }
+  .lg-span-name { min-width: 0; font: 10px/1.5 var(--mono); overflow-wrap: anywhere; }
+  .lg-span-name small { display: block; color: var(--text-dim); font-size: 9px; }
+  .lg-span-dur { font: 9px/1.4 var(--mono); color: var(--text-dim); text-align: right; }
+  .lg-waterfall { display: grid; gap: 4px; margin-top: var(--s-3); }
+  .lg-wf-row { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 6px; align-items: center; }
+  .lg-wf-label { font: 9px/1.4 var(--mono); color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .lg-wf-track { position: relative; height: 16px; border-left: 1px solid var(--border); border-radius: 2px; background: repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), #ecebe4 calc(25% - 1px) 25%); }
+  .lg-wf-bar { position: absolute; top: 2px; height: 12px; border: 1px solid #7d9dbb; border-radius: 2px; background: #dce9f5; color: #194f87; font: 7px/10px var(--mono); overflow: hidden; white-space: nowrap; padding-left: 2px; }
+  .lg-wf-bar.tool { border-color: #b98a2f; background: #fbeccd; color: #5f430f; }
+  .lg-wf-bar.is-hot { outline: 2px solid #b98a2f; outline-offset: 1px; }
+  .lg-detail h3 { font: 600 17px/1.4 var(--serif); margin-top: var(--s-2); overflow-wrap: anywhere; }
+  .lg-detail > p { margin-top: var(--s-2); font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .lg-attrs { margin-top: var(--s-3); border-top: 1px solid var(--border); }
+  .lg-attr { display: grid; grid-template-columns: 82px minmax(0, 1fr); gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 10px; line-height: 1.65; }
+  .lg-attr dt { font: 9px/1.7 var(--mono); color: var(--text-dim); }
+  .lg-attr dd { margin: 0; overflow-wrap: anywhere; }
+  .lg-why { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-3); }
+  .lg-why div { padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface-soft); font-size: 10px; line-height: 1.65; }
+  .lg-why b { display: block; font: 600 11px/1.5 var(--sans); }
+  .lg-chart-wrap { margin-top: var(--s-3); }
+  .lg-chart { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; align-items: end; height: 150px; padding: 8px 8px 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .lg-bar-col { display: flex; flex-direction: column; justify-content: flex-end; height: 100%; min-width: 0; text-align: center; }
+  .lg-bar { position: relative; min-height: 3px; border: 1px solid #9eb4c9; border-radius: 3px 3px 0 0; background: #dce9f5; }
+  .lg-bar.is-past { background: #dce9f5; }
+  .lg-bar.is-current { background: #194f87; border-color: #194f87; }
+  .lg-bar.is-warn { background: #fbeccd; border-color: #b98a2f; }
+  .lg-bar.is-bad { background: #f7dcdc; border-color: #a33a3a; }
+  .lg-bar.is-future { background: transparent; border: 1px dashed var(--border-bright); min-height: 8px; }
+  .lg-bar-value { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font: 9px/1.3 var(--mono); color: var(--ink); white-space: nowrap; }
+  .lg-bar-col small { display: block; margin-top: 4px; font: 9px/1.4 var(--mono); color: var(--text-dim); }
+  .lg-chart-axis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin-top: 3px; font: 9px/1.4 var(--mono); color: var(--text-dim); text-align: center; }
+  .lg-alert { margin-top: var(--s-3); padding: 10px 12px; border: 1px solid #9cc39e; border-radius: var(--r-1); background: #f4faf4; }
+  .lg-alert.is-warn { border-color: #d9b47a; background: #fdf3e3; }
+  .lg-alert.is-bad { border-color: #d9a3a3; background: #fbecec; }
+  .lg-alert-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; }
+  .lg-alert-head b { font: 600 13px/1.5 var(--sans); }
+  .lg-alert p { margin-top: 3px; font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .lg-alert.is-warn p { color: #5b3a05; }
+  .lg-alert.is-bad p { color: #6d1717; }
+  .lg-rules { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 9px 11px; }
+  .lg-rules b { font: 600 11px/1.5 var(--sans); }
+  .lg-rule { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 10px; line-height: 1.6; }
+  .lg-rule:last-child { border-bottom: 0; }
+  .lg-rule span:first-child { color: var(--text-dim); }
+  .lg-fixed-note { display: inline-block; margin-top: var(--s-3); padding: 3px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  .lg-layers { display: grid; gap: 7px; margin-top: var(--s-4); }
+  .lg-layer { display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid #9eb4c9; border-radius: var(--r-1); background: #eaf1f8; }
+  .lg-layer b { font: 600 12px/1.5 var(--sans); color: #123c67; }
+  .lg-layer span { font-size: 11px; line-height: 1.65; color: #2c4a66; }
+  .lg-layer.is-third { border-color: #9cc39e; background: #f4faf4; }
+  .lg-layer.is-third b { color: #14532d; }
+  .lg-layer.is-third span { color: #3d463d; }
+  .lg-layer-arrow { text-align: center; font: 11px/1.4 var(--mono); color: var(--text-dim); }
+  .lg-table-wide { min-width: 640px; }
+  .lg-table td:first-child, .lg-table th:first-child { min-width: 6.5em; }
+  .lg-code-note { margin-top: var(--s-3); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .lg-pillars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-4); }
+  .lg-pillar { min-width: 0; padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 10px; line-height: 1.65; }
+  .lg-pillar b { display: block; margin-bottom: 2px; font: 600 12px/1.5 var(--sans); }
+  .lg-pillar span { display: block; color: var(--text-dim); }
+  @media (max-width: 1000px) {
+    .lg-grid { grid-template-columns: 1fr; }
+    .lg-pillars { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px) {
+    .lg-banner { margin-inline: var(--s-4); }
+    .lg-row { grid-template-columns: 1fr; gap: 1px; }
+    .lg-attr { grid-template-columns: 1fr; gap: 2px; }
+    .lg-why { grid-template-columns: 1fr; }
+    .lg-layer { grid-template-columns: 1fr; gap: 3px; }
+    .lg-pillars { grid-template-columns: 1fr; }
+    .lg-wf-row { grid-template-columns: 62px minmax(0, 1fr); }
+    .lg-chart { height: 130px; gap: 3px; padding-inline: 5px; }
+    .lg-bar-value { font-size: 8px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">092 / 日志监控告警</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 15 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="091-prompt-drift-management.html">← 上一页 · Prompt Drift 管理</a><a href="093-canary-ab-testing.html">下一页 → · 如何实现 Agent 的灰度发布和 …</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Production &amp; Deployment · 可交互讲解</p>
+      <h1>它没报错，<br>但答案已经错了。</h1>
+    </div>
+    <div>
+      <p class="lead">Agent 的失败常常不是崩溃，而是质量退化：HTTP 200、输出看起来合理，实际不准确或不安全。所以要三层一起看：结构化日志记内容，分布式追踪记路径，指标加告警盯趋势。</p>
+      <p class="definition"><strong>关键边界：</strong>本页的请求日志、Trace、质量分和告警都是固定教学数据，不连接任何观测平台，也不读取真实日志。告警阈值按原文示例；真实系统要按自己的基线设定。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Production</span><span class="pill">可观测性</span><span class="pill">固定教学数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="lg-title">
+    <div class="player-top">
+      <div class="player-label">可观测台 <small>日志 · Trace · 指标告警</small></div>
+      <div class="controls" role="group" aria-label="可观测性演示控制">
+        <button type="button" class="button button-quiet" id="lg-reset">重置</button>
+        <button type="button" class="button" id="lg-back" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="lg-next">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="可观测性演示阶段">
+      <ol style="--stages: 3">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>结构化日志</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>分布式追踪</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>指标与告警</button></li>
+      </ol>
+    </nav>
+    <p class="lg-banner"><span><strong>本页是固定教学观测台，不连接任何日志、Trace 或告警平台。</strong>请求、Span、质量分和告警状态都是预设；页面不发起网络请求，也不调用任何真实模型。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="lg-index">阶段 1 / 3 · 固定教学数据</p>
+      <h2 id="lg-title">同一条请求，传统监控看不出问题。</h2>
+      <p id="lg-subtitle">固定请求 req_7f3c91：HTTP 200、延迟 3.2s、没有异常堆栈。打开 Agent 语义字段后，质量分只有 2.4，幻觉标记为 true。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="lg-scene"></div>
+      <p class="demo-note" id="lg-note">固定教学数据：请求、字段、Span、质量分与告警均为本页预设；不读取真实日志，不连接观测平台。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学观测台 · 三层可观测性 · 3 个阶段</span><span id="lg-summary">阶段 1 / 3 · 传统字段 · 判为健康</span></div>
+  </section>
+  <p id="lg-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">为什么不够</p><h2 id="why-title">传统监控看服务，<br>Agent 还要看语义。</h2></div>
+      <p class="reading-intro">HTTP 200、CPU、内存、错误率能说明服务活着，但说明不了回答对不对、安不安全、贵不贵。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data lg-table-wide">
+          <caption class="sr-only">原文的传统 Web 监控与 Agent 监控对比</caption>
+          <thead><tr><th scope="col">传统 Web 服务监控</th><th scope="col">Agent 系统需要的监控</th></tr></thead>
+          <tbody>
+            <tr><td>HTTP 状态码（200 / 500）</td><td>输出质量评分（语义层面）</td></tr>
+            <tr><td>响应时间</td><td>多步执行的完整轨迹</td></tr>
+            <tr><td>CPU / 内存使用率</td><td>Token 消耗和成本</td></tr>
+            <tr><td>错误率</td><td>幻觉检测</td></tr>
+            <tr><td>吞吐量</td><td>安全护栏触发率</td></tr>
+            <tr><td>—</td><td>Prompt 漂移检测</td></tr>
+            <tr><td>—</td><td>工具调用成功率</td></tr>
+            <tr><td>—</td><td>模型版本变化追踪</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>核心区别：Agent 的“失败”通常不是崩溃，而是质量退化。API 返回 200，输出看似合理，但实际不准确或不安全。这种“静默失败”只有通过语义级别的监控才能发现。</p>
+      <div class="callout">
+        <p class="callout-label">原文的原则</p>
+        <p>“存储很便宜，事故中缺少数据很贵”——宁可多记少用。原文举例：S3 存储约 $0.023/GB/月，一天 10 万请求的完整日志约 1–5GB。价格按原文示例，未联网更新。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="layers-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三层架构</p><h2 id="layers-title">日志记内容，<br>Trace 记路径，指标盯趋势。</h2></div>
+      <p class="reading-intro">原文的三层可观测性：Layer 1 结构化日志，Layer 2 分布式追踪，Layer 3 指标加智能告警。三层不是替代关系。</p>
+    </div>
+    <div class="prose">
+      <div class="lg-layers" role="list" aria-label="三层可观测性架构">
+        <div class="lg-layer" role="listitem"><b>Layer 1 · 结构化日志</b><span>记内容：输入 / 输出、工具调用、Token 与成本、护栏触发。回答“这个请求到底说了什么”。</span></div>
+        <div class="lg-layer-arrow" aria-hidden="true">↓ 同一 request_id 串起来</div>
+        <div class="lg-layer" role="listitem"><b>Layer 2 · 分布式追踪</b><span>记路径：Trace / Span 树，每步推理、工具调用、LLM 交互。回答“为什么慢、错在哪一步”。</span></div>
+        <div class="lg-layer-arrow" aria-hidden="true">↓ 聚合成趋势</div>
+        <div class="lg-layer is-third" role="listitem"><b>Layer 3 · 指标 + 告警</b><span>盯趋势：质量、性能、成本、安全，偏离基线自动告警。回答“现在整体是否健康”。</span></div>
+      </div>
+      <p class="lg-fixed-note">三层职责与顺序来自原文 Mermaid；本页用结构化卡片离线呈现</p>
+      <details>
+        <summary>查看原文 Mermaid 源码（三层可观测性）</summary>
+        <pre><code>flowchart TD
+    subgraph L1["Layer 1 · 结构化日志"]
+        A["记内容：输入/输出、工具调用、&lt;br/&gt;Token 与成本、护栏触发"]
+    end
+    subgraph L2["Layer 2 · 分布式追踪"]
+        B["记路径：Trace/Span 树，&lt;br/&gt;每步推理 · 工具调用 · LLM 交互"]
+    end
+    subgraph L3["Layer 3 · 指标 + 智能告警"]
+        C["盯趋势：质量 / 性能 / 成本 / 安全，&lt;br/&gt;偏离基线自动告警"]
+    end
+    L1 --- L2
+    L2 --- L3
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class A,B store
+    class C proc</code></pre>
+      </details>
+      <p class="lg-code-note">原文的示例代码里，<code>AgentLogger</code> 负责 Layer 1，<code>AgentTracer</code> 负责 Layer 2，<code>AgentMetrics</code> 负责 Layer 3。三者通过 request_id / trace_id 关联，字段名要统一，否则同一请求在三层里对不上。</p>
+      <details>
+        <summary>查看原文的三层示例代码</summary>
+        <pre><code># Layer 1: 结构化日志
+class AgentLogger:
+    """Agent 专用的结构化日志"""
+
+    def log_request(self, request_id, data):
+        """记录完整的请求-响应对"""
+        log_entry = {
+            "request_id": request_id,
+            "timestamp": datetime.utcnow().isoformat(),
+            "user_id": data["user_id"],
+
+            # 输入
+            "input": data["user_message"],
+            "system_prompt_version": data["prompt_version"],
+
+            # 模型信息
+            "model": data["model"],
+            "model_version": data["model_version"],
+            "temperature": data["temperature"],
+
+            # 输出
+            "output": data["response"],
+            "tool_calls": data.get("tool_calls", []),
+
+            # 资源消耗
+            "input_tokens": data["usage"]["input_tokens"],
+            "output_tokens": data["usage"]["output_tokens"],
+            "cost_usd": data["cost"],
+            "latency_ms": data["latency_ms"],
+            "ttft_ms": data.get("ttft_ms"),
+
+            # 安全
+            "guardrail_triggered": data.get("guardrail_triggered", False),
+            "guardrail_details": data.get("guardrail_details"),
+        }
+        self.store.write(log_entry)
+
+
+# Layer 2: 分布式追踪
+class AgentTracer:
+    """Agent 执行的分布式追踪"""
+
+    def trace_agent_execution(self, task):
+        """追踪 Agent 的完整执行路径"""
+        with self.tracer.start_trace("agent_execution") as trace:
+            trace.set_attribute("task", task)
+
+            # Span 1: 规划
+            with trace.span("planning") as span:
+                span.set_attribute("model", "gpt-4o")
+                plan = self.agent.plan(task)
+                span.set_attribute("steps_count", len(plan.steps))
+
+            # Span 2-N: 每步执行
+            for i, step in enumerate(plan.steps):
+                with trace.span(f"step_{i}") as span:
+                    span.set_attribute("step_name", step.name)
+
+                    if step.tool_call:
+                        # 工具调用子 Span
+                        with trace.span("tool_call") as tool_span:
+                            tool_span.set_attribute("tool", step.tool_name)
+                            result = self.execute_tool(step)
+                            tool_span.set_attribute("success", result.success)
+
+            # 记录总体指标
+            trace.set_attribute("total_cost", trace.total_cost)
+            trace.set_attribute("total_steps", len(plan.steps))
+
+
+# Layer 3: 指标和告警
+class AgentMetrics:
+    """Agent 系统的核心监控指标"""
+
+    metrics = {
+        "质量指标": {
+            "quality_score": "LLM Judge 自动评分（0-5）",
+            "hallucination_rate": "幻觉检测率",
+            "task_success_rate": "任务完成率",
+            "user_satisfaction": "用户反馈（点赞/点踩）",
+        },
+        "性能指标": {
+            "ttft_ms": "首 Token 时间（感知延迟）",
+            "latency_p50": "P50 延迟",
+            "latency_p95": "P95 延迟",
+            "latency_p99": "P99 延迟",
+            "throughput_qps": "每秒请求数",
+        },
+        "成本指标": {
+            "cost_per_request": "每请求平均成本",
+            "cost_per_user_day": "每用户日均成本",
+            "total_daily_cost": "每日总成本",
+            "token_usage": "Token 消耗趋势",
+        },
+        "安全指标": {
+            "guardrail_trigger_rate": "护栏触发率",
+            "injection_detection_rate": "注入检测率",
+            "pii_leak_rate": "PII 泄露率",
+            "blocked_request_rate": "被拦截的请求比例",
+        },
+    }</code></pre>
+      </details>
+      <p class="lg-code-note">原文示例里的用户反馈用点赞/点踩符号；本页改为文字，避免符号在表格里误读。代码只展示，不执行。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="metrics-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">指标分类</p><h2 id="metrics-title">质量、性能、成本、安全，<br>四类都要有。</h2></div>
+      <p class="reading-intro">原文的 AgentMetrics 把指标分成四类。只看其中一类，都会漏掉另一种“静默失败”。</p>
+    </div>
+    <div class="prose">
+      <div class="lg-pillars">
+        <div class="lg-pillar"><b>质量</b><span>quality_score、hallucination_rate、task_success_rate、user_satisfaction</span></div>
+        <div class="lg-pillar"><b>性能</b><span>ttft_ms、latency_p50 / p95 / p99、throughput_qps</span></div>
+        <div class="lg-pillar"><b>成本</b><span>cost_per_request、cost_per_user_day、total_daily_cost、token_usage</span></div>
+        <div class="lg-pillar"><b>安全</b><span>guardrail_trigger_rate、injection_detection_rate、pii_leak_rate、blocked_request_rate</span></div>
+      </div>
+      <p class="lg-fixed-note">指标清单来自原文；本页未采集任何真实指标</p>
+      <p>质量指标回答“答得对不对”，性能指标回答“用户等得久不久”，成本指标回答“每次值不值”，安全指标回答“有没有越界”。原文的场景追问也围绕这四类展开：成本异常激增、质量规律性下降、监控平台自身故障。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="alerts-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">告警规则</p><h2 id="alerts-title">先定严重度，<br>再定动作。</h2></div>
+      <p class="reading-intro">原文的告警规则分成本、质量、性能、安全和可用性。warning 发 Slack，critical 发 PagerDuty 或触发自动动作。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data lg-table-wide">
+          <caption class="sr-only">原文的告警规则示例</caption>
+          <thead><tr><th scope="col">规则</th><th scope="col">条件</th><th scope="col">严重度</th><th scope="col">动作</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">预算警告</th><td>daily_cost &gt; budget × 0.8</td><td><span class="lg-badge lg-warn">warning</span></td><td>通知 Slack + 考虑模型降级</td></tr>
+            <tr><th scope="row">预算严重</th><td>daily_cost &gt; budget</td><td><span class="lg-badge lg-bad">critical</span></td><td>PagerDuty + 切换低成本模型</td></tr>
+            <tr><th scope="row">质量退化</th><td>quality_score 连续 3 天低于基线 5%</td><td><span class="lg-badge lg-warn">warning</span></td><td>触发漂移检查 + 通知团队</td></tr>
+            <tr><th scope="row">质量严重</th><td>quality_score 低于基线 15%</td><td><span class="lg-badge lg-bad">critical</span></td><td>自动回滚到上个稳定版本</td></tr>
+            <tr><th scope="row">延迟高</th><td>p95_latency &gt; 5000ms</td><td><span class="lg-badge lg-warn">warning</span></td><td>检查模型提供商 + 缓存优化</td></tr>
+            <tr><th scope="row">注入突增</th><td>injection_detection_rate &gt; 正常值 3 倍</td><td><span class="lg-badge lg-bad">critical</span></td><td>通知安全团队 + 增强护栏</td></tr>
+            <tr><th scope="row">错误率高</th><td>error_rate &gt; 5% 持续 5 分钟</td><td><span class="lg-badge lg-bad">critical</span></td><td>故障转移到备用模型</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="lg-fixed-note">规则、阈值与动作来自原文；本页不连接任何告警或值班系统</p>
+      <p>告警分级的目的是减少疲劳：critical 才叫醒人，warning 进频道；相同告警 1 小时内合并；短暂波动自动取消；每月审查规则，删掉长期不触发的无效告警。</p>
+      <details>
+        <summary>查看原文的 alert_rules 代码</summary>
+        <pre><code>alert_rules = {
+    # 成本告警
+    "budget_warning": {
+        "condition": "daily_cost &gt; budget * 0.8",
+        "severity": "warning",
+        "action": "通知 Slack + 考虑启用模型降级",
+    },
+    "budget_critical": {
+        "condition": "daily_cost &gt; budget",
+        "severity": "critical",
+        "action": "PagerDuty + 自动切换到低成本模型",
+    },
+
+    # 质量告警
+    "quality_degradation": {
+        "condition": "quality_score 连续 3 天低于基线 5%",
+        "severity": "warning",
+        "action": "触发漂移检查 + 通知团队",
+    },
+    "quality_critical": {
+        "condition": "quality_score 低于基线 15%",
+        "severity": "critical",
+        "action": "自动回滚到上个稳定版本",
+    },
+
+    # 性能告警
+    "latency_high": {
+        "condition": "p95_latency &gt; 5000ms",
+        "severity": "warning",
+        "action": "检查模型提供商状态 + 考虑缓存优化",
+    },
+
+    # 安全告警
+    "injection_spike": {
+        "condition": "injection_detection_rate &gt; 正常值 3x",
+        "severity": "critical",
+        "action": "通知安全团队 + 增强护栏",
+    },
+
+    # 可用性告警
+    "error_rate_high": {
+        "condition": "error_rate &gt; 5% 持续 5 分钟",
+        "severity": "critical",
+        "action": "触发故障转移到备用模型",
+    },
+}</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="platform-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">平台选择</p><h2 id="platform-title">先看部署方式，<br>再看生态。</h2></div>
+      <p class="reading-intro">原文按开源 / 商业和适用场景对比七个平台。选择建议：小团队起步用 Langfuse，LangChain 栈用 LangSmith，已有 Datadog 用 Datadog LLM，专注评估质量用 Braintrust。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data lg-table-wide">
+          <caption class="sr-only">原文的监控平台对比</caption>
+          <thead><tr><th scope="col">平台</th><th scope="col">类型</th><th scope="col">适用场景</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Langfuse</th><td>开源</td><td>预算有限 + 需要自部署</td></tr>
+            <tr><th scope="row">LangSmith</th><td>商业</td><td>LangChain / LangGraph 生态</td></tr>
+            <tr><th scope="row">Datadog LLM</th><td>企业级</td><td>已有 Datadog + 需要统一监控</td></tr>
+            <tr><th scope="row">Braintrust</th><td>商业</td><td>评估 + 监控一体化</td></tr>
+            <tr><th scope="row">Maxim AI</th><td>商业</td><td>Agent 评估 + 可观测全栈</td></tr>
+            <tr><th scope="row">Opik (Comet)</th><td>开源 / 商业</td><td>多 Agent 工作流监控</td></tr>
+            <tr><th scope="row">LangWatch</th><td>商业</td><td>实时评估 + 监控 + 告警</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="lg-fixed-note">平台类型与场景按原文，未联网核实；本页不推荐也不背书任何平台</p>
+      <p>选型时先确定数据能不能自部署、是否已有统一监控、团队是否用 LangChain 生态。价格和功能会变，原文没有给出价格对比，本页也不补。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">两个误区，<br>五个追问。</h2></div>
+      <p class="reading-intro">存储成本、Trace 与日志的关系、监控粒度、告警疲劳，以及三个固定场景追问。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <div class="misconception-label">误区 01</div>
+        <div><h3>“记录所有请求太贵了”</h3><p>日志存储远比想象的便宜。原文举例：S3 存储约 $0.023/GB/月，一天 10 万请求的完整日志约 1–5GB；而一次线上事故排查时缺少日志的代价远高于此。原则：宁可多记少用。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 02</div>
+        <div><h3>“有了 Trace 就不需要日志了”</h3><p>Trace 和日志互补。Trace 展示请求的执行路径和时间分布，日志记录详细的输入输出内容。排查“为什么这个请求输出了错误答案”需要日志；排查“为什么这个请求很慢”需要 Trace。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 03</div>
+        <div><h3>如何平衡监控粒度和性能开销？</h3><p>日志：全量记录元数据（Token 数、延迟），抽样记录完整内容（10–20% 的请求记录完整 Prompt / Response）；评估：抽样评估（5–10% 的请求做 LLM Judge 评分）；Trace：全量记录 Span 结构，按需记录详细属性。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 04</div>
+        <div><h3>告警太多导致疲劳怎么办？</h3><p>分级：只有 critical 发 PagerDuty，warning 发 Slack；聚合：相同告警在 1 小时内合并；自动恢复：短暂指标波动自动取消告警；定期回顾：每月审查告警规则，删除无效告警。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">场景 05</div>
+        <div><h3>成本异常激增，预算下午 4 点就用完，怎么快速定位并止损？</h3><p>先查 Token 消耗详情，找出消耗激增的接口或功能模块；对比异常与正常请求，可能是查询触发无限循环或过度检索；检查模型降级是否失效；立即熔断问题接口。长期加单请求 Token 上限、预算熔断和成本预测。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">场景 06</div>
+        <div><h3>质量评分每天下午 2–4 点规律下降，如何分析根因？</h3><p>按时间、资源、模型三个维度查：该时段是否对应特定业务场景；是否有批处理任务竞争资源；模型轮换或限流是否在此时段生效。再对比降分请求和正常请求的 Trace 路径。长期做高负载时段优化、智能扩容和分时模型路由。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">场景 07</div>
+        <div><h3>监控平台无响应，但 Agent 本身正常，如何恢复并防止再发生？</h3><p>先查监控平台存储是否满、依赖的向量库或消息队列是否正常；临时降级监控，只保留核心指标；重启监控组件。长期做元监控、数据保留策略、多副本部署，并定期演练监控系统自身的故障恢复。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="sources-title">
+    <p class="eyebrow">参考资料</p>
+    <h2 class="source-heading" id="sources-title">原文引用与延伸阅读</h2>
+    <p class="source-summary">以下链接来自原文。只有主动点击外链才会离开本页；本页不加载任何外部资源。</p>
+    <details>
+      <summary>展开 5 条参考资料</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.braintrust.dev/articles/top-10-llm-observability-tools-2025" rel="noreferrer noopener">Top 10 LLM Observability Tools: Complete Guide for 2025 (Braintrust)</a></li>
+          <li><a href="https://www.getmaxim.ai/articles/llm-observability-best-practices-for-2025/" rel="noreferrer noopener">LLM Observability: Best Practices for 2025 (Maxim AI)</a></li>
+          <li><a href="https://www.braintrust.dev/articles/best-ai-observability-platforms-2025" rel="noreferrer noopener">7 Best AI Observability Platforms for LLMs in 2025 (Braintrust)</a></li>
+          <li><a href="https://langwatch.ai/blog/top-10-llm-observability-tools-complete-guide-for-2025" rel="noreferrer noopener">Top 8 LLM Observability Tools: Complete Guide for 2025 (LangWatch)</a></li>
+          <li><a href="https://www.braintrust.dev/articles/best-llm-monitoring-tools-2026" rel="noreferrer noopener">5 Best Tools for Monitoring LLM Applications in 2026 (Braintrust)</a></li>
+        </ul>
+        <p class="source-footnote">平台能力、价格示例与告警阈值均按原文版本呈现，本页未联网核实。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>10-production-and-deployment/092-logging-monitoring-alerting.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 6 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const SPANS = Object.freeze([
+    { id: "root", name: "agent_execution", sub: "完整请求", start: 0, dur: 3200, kind: "root", attrs: [["task", "退款政策第 3 条是什么？"], ["user_id", "u_2048"], ["total_steps", "3"], ["status", "OK"]] },
+    { id: "plan", name: "llm_call · planning", sub: "理解问题并规划", start: 0, dur: 800, kind: "llm", attrs: [["gen_ai.request.model", "gpt-4o"], ["input_tokens", "180"], ["output_tokens", "240"], ["finish_reason", "tool_calls"]] },
+    { id: "retrieve", name: "tool_call · search_docs", sub: "检索退款政策", start: 800, dur: 600, kind: "tool", attrs: [["tool.name", "search_docs"], ["query", "退款政策 第3条"], ["top_k", "5"], ["status", "OK"]] },
+    { id: "answer", name: "llm_call · answer", sub: "生成最终回答", start: 1400, dur: 1400, kind: "llm", attrs: [["gen_ai.request.model", "gpt-4o"], ["input_tokens", "1460"], ["output_tokens", "300"], ["output", "退款需在 45 天内申请……"]] },
+    { id: "format", name: "span · output_format", sub: "格式化输出", start: 2800, dur: 400, kind: "proc", attrs: [["format", "markdown"], ["status", "OK"], ["note", "只检查格式，不检查事实"]] }
+  ]);
+
+  const DAYS = Object.freeze([
+    { day: 0, score: 4.60, label: "基线" },
+    { day: 1, score: 4.48, label: "Day 1" },
+    { day: 2, score: 4.25, label: "Day 2" },
+    { day: 3, score: 4.10, label: "Day 3" },
+    { day: 4, score: 3.95, label: "Day 4" },
+    { day: 5, score: 3.72, label: "Day 5" }
+  ]);
+
+  const BASELINE = 4.60;
+  const WARN_LINE = BASELINE * 0.95;
+  const CRIT_LINE = BASELINE * 0.85;
+
+  const STAGES = Object.freeze([
+    { nav: "结构化日志", title: "同一条请求，传统监控看不出问题。", subtitle: "固定请求 req_7f3c91：HTTP 200、延迟 3.2s、没有异常堆栈。打开 Agent 语义字段后，质量分只有 2.4，幻觉标记为 true。" },
+    { nav: "分布式追踪", title: "Trace 告诉你它走了哪条路。", subtitle: "五个固定 Span：规划、检索、生成回答、格式化输出。点任意 Span 看属性；这条 trace 看不出回答错了。" },
+    { nav: "指标与告警", title: "一天看不出问题，连续三天才触发告警。", subtitle: "固定质量趋势：基线 4.60。推进一天，看连续低于 5% 和低于 15% 两条规则何时触发。" }
+  ]);
+
+  const state = { stage: 0, semantic: false, span: "root", day: 0 };
+  const byId = (id) => document.getElementById(id);
+
+  function logScene() {
+    const semanticRows = state.semantic ? `
+      <div class="lg-group">Agent 语义字段 · 本页补</div>
+      <div class="lg-row semantic"><dt>quality_score</dt><dd>2.4 / 5（LLM Judge 评分）</dd></div>
+      <div class="lg-row semantic"><dt>hallucination</dt><dd>true · 引用了文档中不存在的“45 天”退款期限</dd></div>
+      <div class="lg-row semantic"><dt>task_success</dt><dd>false · 用户反馈“答错了”</dd></div>
+      <div class="lg-row semantic"><dt>guardrail_triggered</dt><dd>false · 护栏没有拦截语义错误</dd></div>` : "";
+    return `
+      <div class="lg-topbar">
+        <button type="button" class="lg-toggle" id="lg-semantic" aria-pressed="${state.semantic}">${state.semantic ? "隐藏 Agent 语义字段" : "显示 Agent 语义字段"}</button>
+        <span class="lg-badge ${state.semantic ? "lg-bad" : "lg-ok"}">${state.semantic ? "语义层：静默失败" : "传统层：判为健康"}</span>
+      </div>
+      <div class="lg-conclusion${state.semantic ? " is-bad" : ""}"><b>${state.semantic ? "结论：HTTP 200 不等于任务成功" : "结论：HTTP 200、延迟 3.2s、无异常"}</b>${state.semantic ? "质量分 2.4，幻觉标记 true；传统监控只看到服务健康，看不到答案错了。" : "传统监控只覆盖状态码、延迟、错误率和资源；它不会判断回答是否准确。"}</div>
+      <div class="lg-grid" style="margin-top:var(--s-3)">
+        <section class="lg-panel" aria-label="结构化日志">
+          <div class="lg-panel-head"><b>结构化日志 · req_7f3c91</b><span>固定教学请求</span></div>
+          <dl class="lg-log">
+            <div class="lg-group">请求与模型</div>
+            <div class="lg-row"><dt>request_id</dt><dd>req_7f3c91</dd></div>
+            <div class="lg-row"><dt>timestamp</dt><dd>2026-10-12T14:03:07Z（固定教学时间）</dd></div>
+            <div class="lg-row"><dt>user_id</dt><dd>u_2048</dd></div>
+            <div class="lg-row"><dt>model / version</dt><dd>gpt-4o / gpt-4-0613（固定值）</dd></div>
+            <div class="lg-row"><dt>prompt_version</dt><dd>support-v7</dd></div>
+            <div class="lg-row"><dt>temperature</dt><dd>0.2</dd></div>
+            <div class="lg-group">输入与输出</div>
+            <div class="lg-row"><dt>input</dt><dd>退款政策第 3 条是什么？</dd></div>
+            <div class="lg-row"><dt>output</dt><dd>退款需在 45 天内申请……（检索文档写的是 30 天）</dd></div>
+            <div class="lg-row"><dt>tool_calls</dt><dd>search_docs ×1（成功，Top-5）</dd></div>
+            <div class="lg-group">资源与状态</div>
+            <div class="lg-row"><dt>input_tokens</dt><dd>1,640</dd></div>
+            <div class="lg-row"><dt>output_tokens</dt><dd>540</dd></div>
+            <div class="lg-row"><dt>cost_usd</dt><dd>$0.021</dd></div>
+            <div class="lg-row"><dt>latency_ms / ttft_ms</dt><dd>3,200 / 620</dd></div>
+            <div class="lg-row"><dt>HTTP status</dt><dd>200</dd></div>
+            <div class="lg-row"><dt>guardrail_triggered</dt><dd>false</dd></div>
+            ${semanticRows}
+          </dl>
+        </section>
+        <aside aria-label="日志层的作用">
+          <div class="lg-side-card"><b>日志回答什么</b><p>这个请求的输入、输出、工具参数、Token 和成本；排查“为什么这个请求答错了”要靠它。</p></div>
+          <div class="lg-side-card"><b>传统监控漏了什么</b><p>状态码只说明服务返回了，不说明内容正确。语义质量、幻觉、任务成功都需要单独字段。</p></div>
+          <div class="lg-side-card"><b>固定教学数据</b><p>请求、字段值与“45 天 / 30 天”的差异都是本页预设，不对应任何真实用户或文档。</p></div>
+        </aside>
+      </div>
+      <p class="lg-fixed-note">固定教学日志：字段名按原文 AgentLogger 示例，字段值为本页预设；不读取真实日志</p>`;
+  }
+
+  function waterfall() {
+    const total = 3200;
+    return SPANS.filter((span) => span.id !== "root").map((span) => {
+      const left = (span.start / total) * 100;
+      const width = (span.dur / total) * 100;
+      const cls = span.kind === "tool" ? " tool" : "";
+      const hot = span.id === state.span ? " is-hot" : "";
+      return `<div class="lg-wf-row"><span class="lg-wf-label">${span.name.replace("llm_call · ", "").replace("tool_call · ", "")}</span><span class="lg-wf-track"><span class="lg-wf-bar${cls}${hot}" style="left:${left.toFixed(3)}%;width:${width.toFixed(3)}%">${(span.dur / 1000).toFixed(1)}s</span></span></div>`;
+    }).join("");
+  }
+
+  function traceScene() {
+    const selected = SPANS.find((span) => span.id === state.span) || SPANS[0];
+    const rows = SPANS.map((span, index) => `<li><button type="button" class="lg-span" data-span="${span.id}" aria-pressed="${span.id === state.span}"><span class="lg-span-num">${index + 1}</span><span class="lg-span-name">${span.name}<small>${span.sub}</small></span><span class="lg-span-dur">${(span.dur / 1000).toFixed(1)}s</span></button></li>`).join("");
+    const attrs = selected.attrs.map(([key, value]) => `<div class="lg-attr"><dt>${key}</dt><dd>${value}</dd></div>`).join("");
+    return `
+      <div class="lg-grid">
+        <section class="lg-panel" aria-label="Trace 树与时间线">
+          <div class="lg-panel-head"><b>Trace · req_7f3c91</b><span>固定 5 个 Span · 总耗时 3.2s</span></div>
+          <ol class="lg-trace">${rows}</ol>
+          <div class="lg-waterfall">${waterfall()}</div>
+        </section>
+        <section class="lg-panel lg-detail" aria-label="Span 详情">
+          <div class="lg-badge lg-info">${selected.kind === "root" ? "根 Span" : selected.kind === "tool" ? "工具 Span" : selected.kind === "llm" ? "LLM Span" : "处理 Span"}</div>
+          <h3>${selected.name}</h3>
+          <p>${selected.sub} · 耗时 ${(selected.dur / 1000).toFixed(1)}s · 起点 ${(selected.start / 1000).toFixed(1)}s</p>
+          <dl class="lg-attrs">${attrs}</dl>
+          <div class="lg-why">
+            <div><b>Trace 能回答</b>走了哪几步、每步多久、工具返回了什么、输出格式是否处理。</div>
+            <div><b>Trace 不能回答</b>答案是否准确。这条 trace 全绿，但 answer Span 的 output 已经写错了。</div>
+          </div>
+        </section>
+      </div>
+      <p class="lg-fixed-note">固定教学 Trace：Span 起止、属性与耗时为本页预设；不查询任何 Trace 后端</p>`;
+  }
+
+  function streak() {
+    let count = 0;
+    for (let i = 1; i <= state.day; i += 1) {
+      if (DAYS[i].score < WARN_LINE) count += 1;
+      else count = 0;
+    }
+    return count;
+  }
+
+  function alertState() {
+    const score = DAYS[state.day].score;
+    if (score < CRIT_LINE) {
+      return { level: "critical", cls: "is-bad", badge: "lg-bad", title: "CRITICAL · 质量严重告警", text: `质量分 ${score.toFixed(2)}，低于基线 15%（阈值 ${CRIT_LINE.toFixed(2)}）。按原文动作：自动回滚到上个稳定版本。` };
+    }
+    if (streak() >= 3) {
+      return { level: "warning", cls: "is-warn", badge: "lg-warn", title: "WARNING · 质量退化告警", text: `质量分已连续 ${streak()} 天低于基线 5%（阈值 ${WARN_LINE.toFixed(2)}）。按原文动作：触发漂移检查 + 通知团队。` };
+    }
+    if (score < WARN_LINE) {
+      return { level: "watch", cls: "", badge: "lg-neutral", title: `观察中 · 连续 ${streak()} 天低于基线 5%`, text: "还没到连续 3 天，暂不告警；继续观察，避免单日波动触发疲劳。" };
+    }
+    return { level: "ok", cls: "", badge: "lg-ok", title: "未触发告警", text: "质量分仍在基线 5% 以内；继续观察趋势。" };
+  }
+
+  function chartBars() {
+    return DAYS.map((item, index) => {
+      if (index > state.day) {
+        return `<div class="lg-bar-col"><div class="lg-bar is-future" aria-label="${item.label} 未到"></div><small>${item.label}</small></div>`;
+      }
+      const height = Math.max(6, ((item.score - 3.4) / 1.2) * 100);
+      let cls = "is-past";
+      if (index === state.day) cls = item.score < CRIT_LINE ? "is-current is-bad" : item.score < WARN_LINE ? "is-current is-warn" : "is-current";
+      return `<div class="lg-bar-col"><div class="lg-bar ${cls}" style="height:${height.toFixed(1)}%" aria-label="${item.label} 质量 ${item.score.toFixed(2)}"><span class="lg-bar-value">${item.score.toFixed(2)}</span></div><small>${item.label}</small></div>`;
+    }).join("");
+  }
+
+  function alertScene() {
+    const alert = alertState();
+    const score = DAYS[state.day].score;
+    return `
+      <div class="lg-topbar"><div class="lg-badge lg-info">质量趋势 · 基线 ${BASELINE.toFixed(2)}</div><button type="button" class="lg-toggle" id="lg-day-next">${state.day >= 5 ? "重新演练" : "推进一天"}</button></div>
+      <div class="lg-chart-wrap">
+        <div class="lg-chart" role="img" aria-label="固定质量趋势图，已显示到 ${DAYS[state.day].label}">${chartBars()}</div>
+        <div class="lg-chart-axis" aria-hidden="true">${DAYS.map((item) => `<span>${item.label}</span>`).join("")}</div>
+      </div>
+      <div class="lg-alert ${alert.cls}">
+        <div class="lg-alert-head"><b>${alert.title}</b><span class="lg-badge ${alert.badge}">${alert.level === "critical" ? "critical" : alert.level === "warning" ? "warning" : alert.level === "watch" ? "观察" : "正常"}</span></div>
+        <p>${alert.text}</p>
+      </div>
+      <div class="lg-rules">
+        <b>当前质量分</b>
+        <div class="lg-rule"><span>质量分 / 基线</span><span>${score.toFixed(2)} / ${BASELINE.toFixed(2)}（${(((score - BASELINE) / BASELINE) * 100).toFixed(1)}%）</span></div>
+        <div class="lg-rule"><span>warning 阈值 · 连续 3 天低于基线 5%</span><span>${WARN_LINE.toFixed(2)}</span></div>
+        <div class="lg-rule"><span>critical 阈值 · 低于基线 15%</span><span>${CRIT_LINE.toFixed(2)}</span></div>
+        <div class="lg-rule"><span>当前连续低于 5% 的天数</span><span>${streak()} 天</span></div>
+      </div>
+      <p class="lg-fixed-note">固定教学数据：五天质量分与告警状态为本页预设；阈值来自原文示例，不连接告警平台</p>`;
+  }
+
+  const SCENES = [logScene, traceScene, alertScene];
+
+  function bindSceneControls() {
+    const toggle = byId("lg-semantic");
+    if (toggle) {
+      toggle.addEventListener("click", () => {
+        state.semantic = !state.semantic;
+        renderStage(0);
+        byId("lg-announcement").textContent = state.semantic ? "已显示 Agent 语义字段：质量分 2.4，幻觉 true" : "已隐藏语义字段，只保留传统监控字段";
+      });
+    }
+    document.querySelectorAll("[data-span]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.span = button.dataset.span;
+        renderStage(1);
+        byId("lg-announcement").textContent = `已选择 Span：${state.span}`;
+      });
+    });
+    const dayButton = byId("lg-day-next");
+    if (dayButton) {
+      dayButton.addEventListener("click", () => {
+        state.day = state.day >= 5 ? 0 : state.day + 1;
+        renderStage(2);
+        byId("lg-announcement").textContent = state.day === 0 ? "已重置到基线" : `已推进到 Day ${state.day}：质量 ${DAYS[state.day].score.toFixed(2)}`;
+      });
+    }
+  }
+
+  function summaryFor(stage) {
+    if (stage === 0) return `阶段 1 / 3 · ${state.semantic ? "语义字段 · 静默失败" : "传统字段 · 判为健康"}`;
+    if (stage === 1) return `阶段 2 / 3 · 已选 Span：${state.span}`;
+    const alert = alertState();
+    return `阶段 3 / 3 · Day ${state.day} · ${alert.level === "critical" ? "critical" : alert.level === "warning" ? "warning" : "未告警"}`;
+  }
+
+  function renderStage(stage) {
+    state.stage = stage;
+    const meta = STAGES[stage];
+    byId("lg-scene").innerHTML = SCENES[stage]();
+    byId("lg-index").textContent = `阶段 ${stage + 1} / 3 · 固定教学数据`;
+    byId("lg-title").textContent = meta.title;
+    byId("lg-subtitle").textContent = meta.subtitle;
+    byId("lg-note").textContent = "固定教学数据：请求、字段、Span、质量分与告警均为本页预设；不读取真实日志，不连接观测平台。";
+    byId("lg-summary").textContent = summaryFor(stage);
+    byId("lg-back").disabled = stage === 0;
+    byId("lg-next").disabled = stage === STAGES.length - 1;
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      if (Number(button.dataset.stage) === stage) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    bindSceneControls();
+    byId("lg-announcement").textContent = `${meta.title}。${meta.subtitle}`;
+  }
+
+  byId("lg-reset").addEventListener("click", () => {
+    state.semantic = false;
+    state.span = "root";
+    state.day = 0;
+    renderStage(0);
+  });
+  byId("lg-back").addEventListener("click", () => renderStage(Math.max(0, state.stage - 1)));
+  byId("lg-next").addEventListener("click", () => renderStage(Math.min(STAGES.length - 1, state.stage + 1)));
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+
+  renderStage(0);
+</script>
+</body>
+</html>

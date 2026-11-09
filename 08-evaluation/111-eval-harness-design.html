@@ -1,0 +1,1019 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Eval Harness 设计与生态选型：lm-evaluation-harness / Inspect AI / HELM / METR · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+    .button:disabled, .button[disabled] { color: var(--text-dim); }
+/* 111 Eval Harness */
+  .hw-stage { padding: var(--s-5) var(--s-6); }
+  .hw-source { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; padding: var(--s-3) var(--s-4); border: 1px dashed var(--border-bright); border-radius: var(--r-1); background: var(--surface-soft); font-size: 12px; color: var(--text-dim); }
+  .hw-source b { color: var(--ink); font-weight: 600; font-size: 13px; }
+  .hw-rail { display: flex; align-items: stretch; gap: 4px; margin-top: var(--s-4); overflow-x: auto; padding-bottom: 4px; }
+  .hw-node { flex: 1 1 0; min-width: 112px; padding: 10px 11px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); text-align: left; font-size: 12px; line-height: 1.5; color: var(--text-dim); transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease); }
+  .hw-node b { display: block; color: var(--ink); font-size: 13px; font-weight: 600; }
+  .hw-node small { display: block; margin-top: 2px; font-size: 10px; line-height: 1.5; }
+  .hw-node:hover { background: var(--surface-soft); }
+  .hw-node[aria-current="step"] { border-color: var(--accent); background: var(--accent-dim); box-shadow: inset 0 0 0 1px var(--accent); }
+  .hw-node[aria-current="step"] b { color: var(--accent); }
+  .hw-node.is-visited:not([aria-current="step"]) { border-color: var(--border-bright); }
+  .hw-arrow { align-self: center; flex: 0 0 auto; color: var(--text-dim); font: 12px/1 var(--mono); }
+  .hw-detail { margin-top: var(--s-4); border: 1px solid var(--border-bright); border-left: 4px solid var(--accent); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4) var(--s-5); animation: arrive var(--med) var(--ease); }
+  .hw-detail-top { display: flex; align-items: center; gap: var(--s-3); flex-wrap: wrap; }
+  .hw-detail h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; }
+  .hw-badge { display: inline-flex; align-items: center; min-height: 24px; padding: 1px 9px; border-radius: 999px; background: var(--accent); color: #fff; font-size: 11px; letter-spacing: .04em; }
+  .hw-role { margin-top: var(--s-3); font-size: var(--t-small); max-width: 50em; }
+  .hw-facts { display: grid; grid-template-columns: 8.5em 1fr; gap: 2px var(--s-4); margin: var(--s-4) 0 0; font-size: 13px; }
+  .hw-facts dt { color: var(--text-dim); padding-block: 6px; border-top: 1px solid var(--border); }
+  .hw-facts dd { margin: 0; padding-block: 6px; border-top: 1px solid var(--border); max-width: 52em; }
+  .hw-score { margin-top: var(--s-4); padding: var(--s-3) var(--s-4); border-radius: var(--r-1); background: var(--surface-soft); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .hw-score b { color: var(--ink); }
+  .hs-stage { padding: var(--s-5) var(--s-6); }
+  .hs-card { border: 1px solid var(--border); border-radius: var(--r-1); padding: var(--s-5); background: var(--surface-soft); }
+  .hs-card h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; }
+  .hs-note { margin-top: var(--s-3); font-size: var(--t-small); color: var(--text-dim); max-width: 48em; }
+  .hs-actions { display: flex; gap: var(--s-2); margin-top: var(--s-5); flex-wrap: wrap; }
+  .hs-actions .button { min-width: 108px; }
+  .hs-result { border: 1px solid var(--border-bright); border-left: 4px solid var(--accent); border-radius: var(--r-1); padding: var(--s-5); background: var(--surface); animation: arrive var(--med) var(--ease); }
+  .hs-result-level { font: 12px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .hs-result h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; margin-top: 4px; }
+  .hs-result p { margin-top: var(--s-3); font-size: var(--t-small); max-width: 50em; }
+  .hs-result ul { margin: var(--s-3) 0 0; padding-left: 1.25em; font-size: var(--t-small); max-width: 50em; }
+  .hs-result li { margin-block: 5px; }
+  .hs-result-foot { padding-top: var(--s-3); border-top: 1px solid var(--border); margin-top: var(--s-4) !important; font-size: 11px; color: var(--text-dim); }
+  .hs-path { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; margin-bottom: var(--s-3); }
+  .hs-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: 11px; color: var(--text-dim); }
+  .hs-chip b { color: var(--accent); }
+  .hw-compare td, .hw-compare th { vertical-align: top; }
+  .hw-compare td:first-child, .hw-compare th:first-child { min-width: 8.5em; }
+  .hw-tools td, .hw-tools th { vertical-align: top; }
+  .hw-sandbox td, .hw-sandbox th { vertical-align: top; }
+  .hw-sandbox { min-width: 640px; }
+  .hw-agent { min-width: 760px; }
+  .hw-agent td:first-child, .hw-agent th:first-child { min-width: 8em; }
+  .hw-report { min-width: 600px; }
+  .hw-flow { margin-top: var(--s-3); padding-left: 1.3em; font-size: var(--t-small); max-width: 48em; }
+  .hw-flow li { margin-block: 5px; }
+  .hw-callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+  .hw-callout p { font-size: var(--t-small); max-width: 52em; }
+  .hw-callout p + p { margin-top: var(--s-2); }
+  .hw-callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; }
+  .hw-warn { border-color: #b45309; background: #fff8ec; }
+  .hw-warn .hw-callout-label { color: #8a4708; }
+  .hw-tool-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .hw-tool { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .hw-tool h3 { margin-top: 0; font-size: 16px; }
+  .hw-tool p { margin-top: var(--s-2); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .hw-tool .hw-tag { display: inline-block; font: 10px/1.5 var(--mono); color: var(--accent); letter-spacing: .04em; }
+  .hw-mis-note { font-size: 11px; color: var(--text-dim); margin-top: var(--s-2); }
+  @media (max-width: 900px) {
+    .hw-tool-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 760px) {
+    .hw-stage, .hs-stage { padding: var(--s-4); }
+    .hw-rail { flex-direction: column; align-items: stretch; overflow: visible; }
+    .hw-arrow { align-self: center; transform: rotate(90deg); }
+    .hw-node { min-width: 0; }
+    .hw-facts { grid-template-columns: 1fr; }
+    .hw-facts dt { border-top: 1px solid var(--border); padding-bottom: 0; }
+    .hw-facts dd { border-top: 0; padding-top: 2px; }
+    .hw-card, .hw-detail, .hs-card, .hs-result { padding: var(--s-4); }
+    .hw-detail h2, .hs-card h2, .hs-result h2 { font-size: 22px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">111 / Eval Harness 选型</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 3 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="077-continuous-evaluation-pipeline.html">← 上一页 · 如何构建持续评估（Continuou…</a><a href="../09-safety-and-alignment/078-agent-safety-risks.html">下一页 → · LLM Agent 的主要安全风险有…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Evaluation · 可交互讲解</p>
+      <h1>模型没变，<br>分数为什么变了？</h1>
+    </div>
+    <div>
+      <p class="lead">因为分数是 harness 跑出来的。Benchmark 只是题库，Task Loader、Solver、Sandbox、Scorer 和日志一起决定最后那个数。</p>
+      <p class="definition">原文的核心判断：<strong>Eval Harness 是考场，不是题库</strong>。同一个 benchmark 换一套 harness，跑出 20+ 分差距是工程必然，不是 bug。本页的分数、版本、日期与事故均按<strong>原文 2026-10 口径</strong>保留，标“原文版本、未联网核实”；不更新榜单。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Evaluation</span><span class="pill">Eval Harness</span><span class="pill">原文 2026-10 快照</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-label="Harness 组件图：从题库到报告">
+    <div class="player-top">
+      <div class="player-label">Harness 组件图 <small>点组件，看它在哪一步改变分数</small></div>
+      <div class="controls" role="group" aria-label="组件图控制">
+        <button type="button" class="button button-quiet" id="hw-reset">回到起点</button>
+        <button type="button" class="button" id="hw-prev">上一个</button>
+        <button type="button" class="button" id="hw-next">下一个</button>
+      </div>
+    </div>
+    <div class="stage-nav">
+      <ol style="--stages: 6">
+        <li><button type="button" class="stage-button" data-comp="0"><span class="stage-number">1</span>题库</button></li>
+        <li><button type="button" class="stage-button" data-comp="1"><span class="stage-number">2</span>加载</button></li>
+        <li><button type="button" class="stage-button" data-comp="2"><span class="stage-number">3</span>作答</button></li>
+        <li><button type="button" class="stage-button" data-comp="3"><span class="stage-number">4</span>沙箱</button></li>
+        <li><button type="button" class="stage-button" data-comp="4"><span class="stage-number">5</span>判分</button></li>
+        <li><button type="button" class="stage-button" data-comp="5"><span class="stage-number">6</span>报告</button></li>
+      </ol>
+    </div>
+    <div class="hw-stage scene" data-scene="harness-map">
+      <div class="hw-source"><b>Benchmark 题库</b><span>数据集 + 评分标准，例如 SWE-bench Verified、GAIA、τ²-bench。它只是输入，不是考场本身。</span></div>
+      <div class="hw-rail" role="group" aria-label="Harness 数据流，可点选组件">
+        <button type="button" class="hw-node" data-comp="1"><b>Task Loader</b><small>加载样本 · 组装 prompt</small></button>
+        <span class="hw-arrow" aria-hidden="true">→</span>
+        <button type="button" class="hw-node" data-comp="2"><b>Solver</b><small>如何作答 · 工具循环</small></button>
+        <span class="hw-arrow" aria-hidden="true">→</span>
+        <button type="button" class="hw-node" data-comp="3"><b>Sandbox</b><small>隔离执行 · 资源配额</small></button>
+        <span class="hw-arrow" aria-hidden="true">→</span>
+        <button type="button" class="hw-node" data-comp="4"><b>Scorer</b><small>判分 · 最终状态比对</small></button>
+        <span class="hw-arrow" aria-hidden="true">→</span>
+        <button type="button" class="hw-node" data-comp="5"><b>日志与报告</b><small>轨迹 · 条件 · 可复现</small></button>
+      </div>
+      <div class="hw-detail" id="hw-detail">
+        <div class="hw-detail-top">
+          <p class="figure-index" id="hw-index">组件 1 / 6</p>
+          <span class="hw-badge">当前组件</span>
+        </div>
+        <h2 id="hw-name">Benchmark 题库</h2>
+        <p class="hw-role" id="hw-role"></p>
+        <dl class="hw-facts">
+          <dt>职责</dt><dd id="hw-duty"></dd>
+          <dt>代表实现</dt><dd id="hw-impl"></dd>
+          <dt>怎么改变分数</dt><dd id="hw-score"></dd>
+          <dt>报告里要写</dt><dd id="hw-report"></dd>
+        </dl>
+        <p class="hw-score" id="hw-note"></p>
+      </div>
+    </div>
+    <div class="walkthrough-foot"><span>固定组件模型 · 本页不运行 harness</span><span id="hw-state">正在查看 1 / 6</span></div>
+  </section>
+  <p id="hw-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="hw-layer-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">一 · 先分清三层</p><h2 id="hw-layer-title">题库、考场、成绩单，<br>是三件事。</h2></div>
+      <p class="reading-intro">日常说“跑个 benchmark”常把三层混在一起。Inspect AI 的设计把评测显式拆成四个独立原语，正是为了让每一层可替换、可追踪。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data hw-compare">
+          <caption class="sr-only">Benchmark、Eval Harness 与评估报告三层职责</caption>
+          <thead><tr><th scope="col">层</th><th scope="col">是什么</th><th scope="col">例子</th><th scope="col">换掉它会怎样</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Benchmark</th><td>题库 + 评分标准。定义题目、输入格式、什么算对。</td><td>SWE-bench Verified、GAIA、τ²-bench</td><td>题目和难度变了，分数不可直接横比。</td></tr>
+            <tr><th scope="row">Eval Harness</th><td>运行时框架：加载题目、让模型作答、提供工具环境、判分、记录。</td><td>Inspect AI、lm-evaluation-harness、HELM</td><td>同一个题库也能跑出不同分数，因为 prompt、工具、资源和判分都变了。</td></tr>
+            <tr><th scope="row">评估报告</th><td>分数 + 产生分数的条件：harness 版本、sandbox、配额、scaffold、重试策略。</td><td>系统卡、leaderboard 提交、内部 eval 记录</td><td>只留一个标量分数，别人无法复现，也无法判断可比性。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文给的关键洞见是责任分离：<strong>Solver 负责怎么答、Scorer 负责怎么判分、Sandbox 是 Solver 调用工具时的隔离层</strong>。分离之后，“同 SWE-bench Verified 不同 harness 跑出不同分数”既是必然，也是合理的。</p>
+      <div class="hw-callout">
+        <p class="hw-callout-label">原文数据、未联网核实</p>
+        <p>Anthropic Terminal-Bench 2.0 在同模型、同任务、仅变更 pod 资源预算的条件下，实测 <strong>5.8% 的任务因 pod / infrastructure 错误失败（p&lt;0.01）</strong>。这说明资源预算本身就是分数的一部分，不是环境噪声。</p>
+      </div>
+
+      <h3>四个原语各管什么</h3>
+      <div class="table-wrap">
+        <table class="data hw-compare">
+          <caption class="sr-only">Harness 四原语的职责与代表实现</caption>
+          <thead><tr><th scope="col">组件</th><th scope="col">职责</th><th scope="col">代表实现</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Task Loader</th><td>从数据集加载样本、组装 prompt、注入 few-shot。</td><td>lm-eval-harness 的 YAML：<code>doc_to_text</code> / <code>doc_to_target</code> / <code>filters</code></td></tr>
+            <tr><th scope="row">Solver</th><td>让模型作答的 scaffold：单轮生成、ReAct、多轮 critique。</td><td>Inspect AI 的 <code>generate → prompt → react → multi_turn</code> 链式组合</td></tr>
+            <tr><th scope="row">Sandbox</th><td>隔离代码执行与工具调用，限定资源。</td><td>Docker（主流）/ k8s（大规模）/ Proxmox VM（高风险）/ Daytona / Modal / EC2</td></tr>
+            <tr><th scope="row">Scorer</th><td>判分：精确匹配、单元测试、LLM Judge、数据库状态比对。</td><td>SWE-bench 的 fail→pass 测试套件、τ²-bench 的 DB diff、<code>model_graded_qa</code> 多 judge 投票</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>还有一个常被忽略的第五件事：日志。没有完整轨迹、token 用量和失败原因，分数就只是一句无法复核的结论。</p>
+
+      <details>
+        <summary>查看原文 Harness 架构 Mermaid 源码（离线仅作文本）</summary>
+        <pre><code>flowchart TD
+    B["Benchmark&lt;br/&gt;题库 + 评分标准"]
+    subgraph H["Eval Harness（考场）"]
+        T["Task Loader&lt;br/&gt;加载样本 + 组装 prompt"] --&gt; S["Solver&lt;br/&gt;如何作答（ReAct / 多智能体）"]
+        S --&gt; X["Sandbox&lt;br/&gt;Docker / k8s / Proxmox"]
+        X --&gt; C["Scorer&lt;br/&gt;精确匹配 / 单元测试 / LLM Judge"]
+    end
+    B --&gt; T
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class B store
+    class T,X,C proc
+    class S agent</code></pre>
+        <p class="source-footnote">源码按原文保留，仅做 HTML 转义；上方组件图是同一流程的离线可读呈现。</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="hw-tools-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">二 · 四个生态</p><h2 id="hw-tools-title">三足鼎立，<br>加一个 METR 范式。</h2></div>
+      <p class="reading-intro">原文把主流 harness 分成 lm-evaluation-harness、Inspect AI、HELM 三家，再加 METR 的 Time Horizon 度量。它们解决的问题不同，不是同一张榜单上的竞品。</p>
+    </div>
+    <div class="prose">
+      <div class="hw-tool-grid">
+        <div class="hw-tool">
+          <span class="hw-tag">EleutherAI · 2021</span>
+          <h3>lm-evaluation-harness</h3>
+          <p>model eval 的行业标杆，Hugging Face Open LLM Leaderboard 的后端。核心是单轮 logprob / 生成 + 打分，适合学术 benchmark 和模型横评。</p>
+        </div>
+        <div class="hw-tool">
+          <span class="hw-tag">UK AISI · 2024-05</span>
+          <h3>Inspect AI</h3>
+          <p>Agent eval 的事实标准。把评测显式拆成 dataset → Task → Solver → Scorer，内置多种 sandbox，Agent Bridge 可接 Claude Code、Codex CLI 等。</p>
+        </div>
+        <div class="hw-tool">
+          <span class="hw-tag">Stanford CRFM · 2022</span>
+          <h3>HELM</h3>
+          <p>多维度全景评测：准确率之外，同时测校准、鲁棒性、公平性、偏差、毒性和效率。强调公开原始输入与输出，任何研究者都能重跑。</p>
+        </div>
+        <div class="hw-tool">
+          <span class="hw-tag">METR · Time Horizon</span>
+          <h3>METR 范式</h3>
+          <p>不直接比准确率，而是测“AI 能以 50% 成功率独立完成多长的任务”。用人类完成时间标定，形成可外推的连续度量。</p>
+        </div>
+      </div>
+
+      <h3>lm-evaluation-harness：单轮评测的默认选项</h3>
+      <p>它的任务定义是 YAML，把 prompt 模板、目标字段和指标解耦。贡献新任务不需要写 Python，这也是它能积累 60+ 标准学术 benchmark、数百个子任务的原因。</p>
+      <p class="code-label">原文任务定义示例（YAML，仅展示）</p>
+      <pre><code>task: mmlu_abstract_algebra
+dataset_path: hails/mmlu_no_train
+dataset_name: abstract_algebra
+output_type: multiple_choice
+doc_to_text: "{{question.strip()}}\nA. {{choices[0]}}\nB. {{choices[1]}}\nC. {{choices[2]}}\nD. {{choices[3]}}\nAnswer:"
+doc_to_target: answer
+metric_list:
+  - metric: acc
+    aggregation: mean
+    higher_is_better: true
+version: 1.0</code></pre>
+      <p>统一后端覆盖 HF transformers、vLLM、SGLang、OpenAI、Anthropic、LiteLLM 等 100+ providers；输出类型分 <code>generate_until</code>、<code>loglikelihood</code>、<code>loglikelihood_rolling</code>、<code>multiple_choice</code>，对应不同评分语义。</p>
+      <p>可复现性靠四个开关：<code>--use_cache</code> 跳过已评样本、<code>--log_samples</code> 保留完整响应、<code>--check_integrity</code> 校验数据、任务 <code>version</code> 字段防止静默变更。局限也明确：它面向单轮模型评测，没有 sandbox、没有多轮 solver、没有轨迹 scorer。</p>
+
+      <h3>Inspect AI：把 Agent 评测拆开</h3>
+      <p class="code-label">原文核心抽象示例（Python，仅展示，不执行）</p>
+      <pre><code>from inspect_ai import Task, task, eval
+from inspect_ai.dataset import Sample
+from inspect_ai.solver import generate, system_message, use_tools
+from inspect_ai.scorer import includes, model_graded_qa
+from inspect_ai.tool import bash, python
+
+@task
+def swe_bench_lite():
+    return Task(
+        dataset=swe_bench_dataset(),
+        solver=[
+            system_message("You are an expert software engineer..."),
+            use_tools([bash(timeout=180), python(timeout=180)]),
+            generate(max_messages=50),  # ReAct loop
+        ],
+        scorer=swe_bench_scorer(),       # fail→pass 测试套件
+        sandbox=("docker", "compose.yaml"),  # 每 sample 独立 sandbox
+    )</code></pre>
+      <div class="table-wrap">
+        <table class="data hw-compare">
+          <caption class="sr-only">Inspect AI 的架构特性</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">实现</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Solver 库</th><td>ReAct / Multi-Agent / Human Agent / Agent Bridge，可桥接 LangChain、OpenAI Agents SDK、Pydantic AI、Claude Code、Codex CLI。</td></tr>
+            <tr><th scope="row">Sandbox</th><td>内置 <code>docker</code> / <code>local</code>，扩展支持 <code>k8s</code> / <code>proxmox</code> / <code>daytona</code> / <code>modal</code> / <code>ec2</code>；每个 sample 独立实例，避免交叉污染。</td></tr>
+            <tr><th scope="row">Scorer</th><td>可进入 sandbox 读文件、跑命令验证最终状态；<code>model_graded_qa</code> 支持多 judge 投票。</td></tr>
+            <tr><th scope="row">inspect_evals</th><td>社区贡献 GAIA、SWE-bench、Cybench、GDM CTF、SciCode 等 200+ agent benchmark，50+ 贡献者。</td></tr>
+            <tr><th scope="row">资源管理</th><td><code>max_sandboxes = 2 × cpu_count</code>、<code>max_subprocesses = cpu_count</code>、<code>max_samples = max_connections + 1</code>。sandbox 是 Agent eval 的并发瓶颈。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>生态收敛的信号是 METR：2026-01 发布 Time Horizon 1.1 时，完成从自研 Vivaria 到 Inspect 的迁移，并用 Inspect 重跑全部数据，验证“7 个月翻倍”的趋势在迁移后仍成立。</p>
+
+      <h3>HELM 与 METR：两种不同的“全景”</h3>
+      <p>HELM 的经典 7 大度量是 accuracy、calibration、robustness、fairness、bias、toxicity、efficiency，每个 scenario 同时测。2025-03 的 Capabilities 版本引入 MMLU-Pro / GPQA / IFEval / WildBench / Omni-MATH 五个能力切面，每个 scenario 采样 1000 实例，并用 <strong>mean score 取代 mean win rate</strong>，因为 win rate 对小幅波动太敏感。</p>
+      <p>METR 的 Time Horizon 用“50% 成功率对应的任务时长”做度量。原文称过去 6 年该指标约每 7 个月翻一番；GPT-5.1-Codex-Max（2025-11）的 50% time horizon 约为 2 小时 40 分钟，80% 约为 30 分钟。它天然抗污染、抗饱和，也能给出可外推的趋势。</p>
+      <div class="hw-callout">
+        <p class="hw-callout-label">原文版本、未联网核实</p>
+        <p>以上工具版本、发布日期、200+ 评测数量、7 个月翻倍与 2 小时 40 分钟均按原文 2026-10 口径保留。本页未联网核对，不保证这些版本与数字仍然有效。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="hw-sandbox-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三 · 沙箱与事故</p><h2 id="hw-sandbox-title">沙箱既保安全，<br>也保可复现。</h2></div>
+      <p class="reading-intro">原文强调：sandbox 不只是技术参数，它同时决定评测能不能复现、会不会越界。两起跨厂商事故说明，prompt 里写的隔离不算隔离。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data hw-sandbox">
+          <caption class="sr-only">四类 sandbox 的隔离强度、启动成本与适用场景</caption>
+          <thead><tr><th scope="col">Sandbox 类型</th><th scope="col">隔离强度</th><th scope="col">启动成本</th><th scope="col">适用场景</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><code>local</code></th><td>无</td><td>0</td><td>信任的题目：纯算术、文本生成。</td></tr>
+            <tr><th scope="row"><code>docker</code></th><td>进程级</td><td>约 1 秒</td><td>主流：代码执行、shell 工具（SWE-bench、Terminal-Bench）。</td></tr>
+            <tr><th scope="row"><code>k8s</code></th><td>进程级 + 资源调度</td><td>约 5–30 秒</td><td>大规模并行（WebArena 多服务 compose）。</td></tr>
+            <tr><th scope="row">Proxmox / VM</th><td>内核级</td><td>分钟级</td><td>高风险评测（Cyber CTF、sandbox escape）。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>WebArena 是可复现性的教科书案例：5 个 Docker 服务（电商 / CMS / GitLab / 论坛 / 地图）打包成 AMI，拉取后可完全 reset。2025 年的 WebArena-Verified 把镜像体积压缩 92%，删除 LLM-as-judge 改为确定性评分，并提供 258 题 Hard 子集降低成本。</p>
+      <p>反面教材同样有：2025 年 Zhu et al. 审计 37 个公开 agent benchmark suite，普遍存在“成功标准未充分定义”和“低精度评估器”的问题。这正是 τ²-bench 强调比对数据库最终状态、而不是听 agent 说了什么的原因。</p>
+
+      <h3>两起事故：声明的隔离 ≠ 实际拓扑</h3>
+      <div class="hw-callout hw-warn">
+        <p class="hw-callout-label">安全边界 · 仅复述结论</p>
+        <p>本页只转述原文公开的事故结论，不提供任何攻击步骤或可执行载荷。真实评测环境请由网络层独立验证隔离。</p>
+      </div>
+      <p><strong>Anthropic（2026-07 复盘）：</strong>三起网络安全评测事故中，本应完全隔离的环境实际连着真实互联网，而 prompt 告诉 Claude“你处在模拟环境、没有网络访问”。模型于是对真实系统执行了本以为是演习的操作。原文的归因是：模型并未失准，目标对齐、行为符合任务描述，有害结果来自被喂了错误的世界模型；新模型识破环境为真实后主动中止，旧版本继续执行。结论是把 defense-in-depth 延伸到评测基础设施本身。</p>
+      <p><strong>OpenAI（第三方网安评测）：</strong>在与 UK AISI、Irregular 合作的评测中，安全护栏放宽加环境配置失当两件事叠加，模型访问公网、超出预定测试边界。原文列表页标注 2026-08-04，正文页未渲染日期，这条日期未做正文交叉验证。随后收紧的协议有三条：识别高风险评测、事前约定测试范围、联网请求需经审批。</p>
+      <p>两例合起来证明这是模式而非个例。可直接落到 harness 设计上的两条原则：</p>
+      <ul>
+        <li><strong>隔离必须由外部证明。</strong>无论承诺写在 prompt 还是配置里，只要没有独立的网络层验证，它就只是一句话。出口规则、DNS 策略、代理白名单要能拿出来对账。</li>
+        <li><strong>第三方评测的边界责任要写进协议。</strong>评测方搭环境、模型方放护栏，两边都容易默认对方兜底。网安评测又必须放宽护栏才测得出上限，所以隔离不能靠模型侧克制。</li>
+      </ul>
+      <p>实操推论：eval 报告的 <code>sandbox</code> 字段之外，还要记录“这套隔离是谁、用什么方式验证过的”。“我们用了 Docker”和“我们验证过容器出网被 deny-by-default 拦住”是两个强度完全不同的声明。</p>
+      <p class="source-footnote">事故日期、厂商结论均按原文 2026-10 口径，未联网核实。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="hw-agent-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四 · Agent Eval 与污染</p><h2 id="hw-agent-title">一次成功，<br>说明不了什么。</h2></div>
+      <p class="reading-intro">Model Eval 评的是单次回答，Agent Eval 评的是一条轨迹加最终环境状态。非确定性来源更多，ground truth 也不再唯一。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data hw-agent">
+          <caption class="sr-only">Model Eval 与 Agent Eval 的七维差异</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">Model Eval</th><th scope="col">Agent Eval</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">评估对象</th><td>单 prompt → 单 response</td><td>多轮 workflow + 工具 + 环境</td></tr>
+            <tr><th scope="row">关注点</th><td>输出质量：正确性、流畅度</td><td>任务完成 + 推理链 + 工具使用 + 错误恢复</td></tr>
+            <tr><th scope="row">评分对象</th><td>最终答案</td><td>轨迹 + 最终状态</td></tr>
+            <tr><th scope="row">非确定性来源</th><td>仅采样温度</td><td>采样 + 工具执行 + 环境响应 + 时序</td></tr>
+            <tr><th scope="row">Ground truth</th><td>参考答案，通常单一</td><td>多条有效轨迹同时存在</td></tr>
+            <tr><th scope="row">统计设计</th><td>单次足够（high pass@1）</td><td>必须多 trial，pass@k 与 pass^k 双侧</td></tr>
+            <tr><th scope="row">典型基准</th><td>MMLU / GSM8K / HumanEval</td><td>SWE-bench / GAIA / τ²-bench / WebArena</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Anthropic 推荐的四个独立评估维度是：<strong>Outcomes</strong>（最终环境状态，例如数据库里是否真有这条预订）、<strong>Transcripts</strong>（turn 数、token 用量、行为 rubric）、<strong>Tool Calls</strong>（是否按合适参数调用，但别过度规定顺序）、<strong>Cost &amp; Latency</strong>（与正确性并列报告）。原话是 “grade what agent produced, not the path it took”。</p>
+      <p>只看终态也不够。arXiv 2510.02837 的结论是：trajectory-opaque eval 会漏掉 <strong>44% 的安全违规</strong>和 <strong>13% 的鲁棒性失败</strong>。解法是 hybrid pipeline：outcome check + trajectory check + tool sequence check 联合判定。</p>
+
+      <h3>Contamination：榜单信任为什么塌了</h3>
+      <p>原文记录：2026-02 OpenAI 主导的 SWE-bench Verified 污染审计发现，受测的前沿模型都能逐字复现某些任务的 gold patch；<strong>59.4% 的最难未解题</strong>测试用例有缺陷；部分模型只给文件结构、不给 issue 描述，也能定位要改的文件。OpenAI 随后宣布停报 SWE-bench Verified，转向 SWE-bench Pro。</p>
+      <p>Scale AI 的 SWE-bench Pro 有 1865 个多语言任务和严格污染控制：在 Verified 上 80%+ 的模型，在 Pro 上只能拿 46–57%，原文称其中包含 22pp 的 scaffold-induced 差距。</p>
+      <div class="table-wrap">
+        <table class="data hw-report">
+          <caption class="sr-only">三种污染检测方法的原理与局限</caption>
+          <thead><tr><th scope="col">方法</th><th scope="col">原理</th><th scope="col">局限</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Watermarking</th><td>用 Llama-3 instruct 重写题目并嵌入红 / 绿 list 水印，5% 污染即可在 p&lt;10⁻³ 显著性下检出。</td><td>只能检出“重写后被训练”的情形。</td></tr>
+            <tr><th scope="row">Question variant testing</th><td>生成变体题，检查模型在变体上是否退化。</td><td>reformulated 题本身就足以提升原题分数，相关性不强。</td></tr>
+            <tr><th scope="row">Loss-based detection</th><td>比较训练集与测试集上的 loss 分布。</td><td>在推理模型上失效：RL 阶段会掩盖 SFT 阶段污染。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文的实操建议：公开 benchmark 只做初筛；必须准备“训练截止日期之后”的私有 holdout；关注持续收题的动态 benchmark，例如 SWE-MERA 和每月更新的 LiveCodeBench。</p>
+      <p class="source-footnote">59.4%、46–57%、22pp、44%、13% 均为原文 2026-10 引用值，未联网核实。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="hs-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">五 · 选型路径</p><h2 id="hs-title">先看评什么，<br>再看要什么全景。</h2></div>
+      <p class="reading-intro">下面的路径只走原文的选型逻辑：单轮模型评测、Agent 多轮、多维全景、能力外推四条分支。它是判断框架的演示，不是当前工具排名。</p>
+    </div>
+    <div class="prose">
+      <section class="walkthrough" id="selector" aria-labelledby="hs-q-title">
+        <div class="player-top">
+          <div class="player-label">选型决策 <small>三个问题，落到一条分支</small></div>
+          <div class="controls" role="group" aria-label="选型决策控制">
+            <button type="button" class="button button-quiet" id="hs-reset">重新开始</button>
+            <button type="button" class="button" id="hs-back" disabled>返回上一步</button>
+          </div>
+        </div>
+        <div class="hs-stage scene" data-scene="harness-choice">
+          <div class="hs-path" id="hs-path" aria-label="已经过的判断"></div>
+          <div class="hs-card" id="hs-question">
+            <p class="figure-index" id="hs-index">问题 1 / 3</p>
+            <h2 id="hs-q-title">评测对象是多轮 Agent 吗？</h2>
+            <p class="hs-note" id="hs-q-note">需要工具调用、sandbox、轨迹评分，就走 Agent eval 分支。</p>
+            <div class="hs-actions" role="group" aria-labelledby="hs-q-title">
+              <button type="button" class="button" data-answer="no">否，单轮模型输出</button>
+              <button type="button" class="button button-primary" data-answer="yes">是</button>
+            </div>
+          </div>
+          <div class="hs-result" id="hs-result" hidden>
+            <p class="hs-result-level" id="hs-result-level"></p>
+            <h2 id="hs-result-title"></h2>
+            <p id="hs-result-summary"></p>
+            <ul id="hs-result-points"></ul>
+            <p class="hs-result-foot">固定选型逻辑来自原文决策树；工具版本与生态按原文 2026-10 口径，未联网核实。</p>
+          </div>
+        </div>
+        <div class="walkthrough-foot"><span>固定决策路径 · 本页不安装、不运行任何工具</span><span id="hs-state">尚未作答 · 共 3 个判断问题</span></div>
+      </section>
+      <p id="hs-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+      <h3>评估报告至少写清这些</h3>
+      <div class="table-wrap">
+        <table class="data hw-report">
+          <caption class="sr-only">可复现评估报告应记录的字段</caption>
+          <thead><tr><th scope="col">字段</th><th scope="col">为什么必须写</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Benchmark 与版本</th><td>题目会更新、会被污染；“SWE-bench”不是一个稳定对象。</td></tr>
+            <tr><th scope="row">Harness 与版本</th><td>同一个 benchmark 换 harness 会有 20+ 分差距。</td></tr>
+            <tr><th scope="row">Sandbox 类型与资源</th><td>pod 资源预算本身就能造成 5.8% 的失败差异。</td></tr>
+            <tr><th scope="row">Scaffold 版本</th><td>Solver 链、工具集、最大轮数决定模型怎么答。</td></tr>
+            <tr><th scope="row">重试与评分策略</th><td>retry 次数、judge 模型、是否多次投票都会改变分数。</td></tr>
+            <tr><th scope="row">隔离验证方式</th><td>“用了 Docker”不等于“验证过出网被拦住”。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>第 1 层原则是：<strong>先固定 production harness，只让模型变化</strong>。第 2 层把 sandbox、配额、scaffold、retry 写进报告。第 3 层同时报 pass@1（多 trial 估计）、pass@k（乐观上界）、pass^k（悲观下界）。第 4 层把 capability eval（目标低通过率，找能力边界）和 regression eval（目标接近 100%，防退步）分开。</p>
+
+      <h3>2026-08 的前沿动向（社区单次实验）</h3>
+      <ul>
+        <li>HarnessEval-W（arXiv 2608.16859，2026-08-17）把 harness 范式搬进评分环节：不套固定 rubric，让 agent 按上下文自行组织判据，并留下可审查的推理链。输出从标量分数变成“判据 + 推理过程 + 结论”。</li>
+        <li>Beyond Final Scores（arXiv 2608.13417）用规则指标把一次 run 拆成 Solution Framing / Execution / Feedback Control 三个维度，覆盖 7 个前沿模型 × 36 个长时程任务。</li>
+      </ul>
+      <p>原文明确标注这两项为社区单次实验、尚无独立复现。它们不推翻“先固定 harness”，反而加强：标量分数还能勉强跨 harness 比，过程记录的粒度与字段完全由 harness 决定，不固定就无从对齐。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="hw-mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="hw-mis-title">四个误区，<br>六个追问。</h2></div>
+      <p class="reading-intro">按原文顺序保留 10 条。其中第 1、2、3、8 条是误区，其余是面试追问；答案均按原文 2026-10 口径。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“Eval Harness 和 Benchmark 是一回事。”</h3><p>这是 Agent 评测领域最大的概念混淆。Benchmark 是题库加评分标准，Harness 是运行时框架。同一个 benchmark 在不同 harness 上跑出 20+ 分差距是工程常态，这正是 Inspect AI 显式拆四个原语的原因。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“SWE-bench 80% 就是 SOTA。”</h3><p>2026-02 之后这个说法已经过时。OpenAI 宣布 Verified 污染严重（59.4% 最难题测试有缺陷），转向 SWE-bench Pro。Verified 上 80%+ 的模型在 Pro 上只能拿 46–57%。引用 SOTA 时必须问：哪个 harness、哪个版本、是否私有 holdout。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 3</p>
+      <div><h3>“Inspect AI 是 UK 政府的玩具，主流不会用。”</h3><p>METR 在 2026-01 Time Horizon 1.1 发布时弃用自研 Vivaria、全面迁移到 Inspect，是生态收敛的标志。200+ inspect_evals、50+ 贡献者、Agent Bridge 接 Claude Code / Codex CLI，它已是 Agent eval 的事实标准。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>“为什么 lm-eval-harness 对 Agent 评测无能为力？”</h3><p>它的核心抽象是“单轮 logprob / 生成 → 匹配”，没有 sandbox、没有 multi-turn solver、没有轨迹 scorer。Agent 需要的“调用 bash → 看输出 → 决定下一步”闭环，只能由 Inspect 的 Solver 链或专用 harness 提供。加一个 OpenAI provider 也只是包了一层 API 调用。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>“如何设计 provider-agnostic 的 harness 给团队选模型？”</h3><p>四层：先固定 production harness，只让模型变化；把 sandbox、配额、scaffold、retry 写进报告；同时报 pass@1、pass@k、pass^k；capability eval 与 regression eval 分离。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 3</p>
+      <div><h3>“Sandbox 类型怎么选？”</h3><p>代码生成 + shell 用 Docker（启动约 1 秒）；大规模并行（100+ sample）用 k8s；高风险评测（Cyber CTF、sandbox escape）用 Proxmox / VM；纯文本生成用 local。关键准则：sandbox 是 Agent eval 真正的并发瓶颈。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 4</p>
+      <div><h3>“如何应对 Benchmark Contamination？”</h3><p>不依赖单一公开 benchmark，准备训练截止日期之后的私有 holdout；使用动态 benchmark；用 Time Horizon 这类连续度量；用 watermarking 检测（5% 污染可在 p&lt;10⁻³ 下检出）。警惕“只给文件结构也能定位文件”这类信号。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 4</p>
+      <div><h3>“评测跑在沙箱里，最坏也就是结果不准。”</h3><p>Anthropic 2026-07 复盘的三起网安评测事故是反例：环境自称隔离、实际连着公网，模型按 prompt 描述行动，操作了真实系统。模型本身没有失准，错的是被喂的世界模型。隔离必须由网络拓扑保证并定期对账。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 5</p>
+      <div><h3>“第三方评测出了越界事故，责任在谁？”</h3><p>责任真空来自默认对方兜底。评测方搭环境、模型方放护栏，而网安评测必须放宽护栏才测得出上限。OpenAI 收紧协议的三条措施就是显式化归属：高风险评测识别、测试范围事前约定、联网请求审批。落到 harness 上：隔离要有一个独立于评测方声明的验证方。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 6</p>
+      <div><h3>“评测只输出一个分数够不够？”</h3><p>2026-08 两篇工作给出的答案是不够，方向是“留下可审查的过程记录”。但两篇都是社区单次实验、未经独立复现，引用时要连出处和日期一起标。这不推翻“先固定 harness”，反而让固定更重要。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="hw-related-title">
+    <p class="eyebrow">相关阅读与参考</p>
+    <h2 class="source-heading" id="hw-related-title">继续深入</h2>
+    <p class="source-summary">相关页面按当前仓库进度列出；本批同组页面会在组装后存在。外链只有主动点击才会离开本页。</p>
+    <details>
+      <summary>展开相关阅读（5 条）</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="072-agent-benchmarks.html">072 Agent Benchmark 设计</a>：数据集层面的 SWE-bench / GAIA / LoCoMo / LongMemEval。</li>
+          <li><a href="075-evaluation-tools-comparison.html">075 评估工具对比</a>：Ragas、LangSmith、Braintrust、Langfuse 等商业平台。</li>
+          <li><a href="076-static-benchmark-trap.html">076 静态 Benchmark 陷阱</a>：Benchmark 失效与“大脱钩”现象。</li>
+          <li><a href="077-continuous-evaluation-pipeline.html">077 持续评估流水线</a>：把 eval 从一次性变成 always-on。</li>
+          <li><a href="../01-agent-architecture/109-what-is-agent-harness.html">109 Agent Harness 三层抽象</a>：注意这里是 coding agent 的 scaffold，与评测 harness 同名不同义。</li>
+        </ul>
+        <p class="source-footnote">109 的“harness”指 Agent 运行时脚手架；本页的“Eval Harness”指评测运行时。两者概念不同，别混用。</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>展开原文参考链接（17 条）</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://github.com/EleutherAI/lm-evaluation-harness" target="_blank" rel="noopener noreferrer">EleutherAI · lm-evaluation-harness</a> — 行业 model eval 标杆，HF Open LLM Leaderboard 后端。</li>
+          <li><a href="https://inspect.aisi.org.uk/" target="_blank" rel="noopener noreferrer">Inspect AI 官方站（UK AISI）</a> — 2025–2026 agent eval 事实标准。</li>
+          <li><a href="https://inspect.aisi.org.uk/sandboxing.html" target="_blank" rel="noopener noreferrer">Inspect AI · Sandboxing 指南</a> — Docker / k8s / Proxmox 三套 sandbox 策略。</li>
+          <li><a href="https://github.com/UKGovernmentBEIS/inspect_evals" target="_blank" rel="noopener noreferrer">Inspect Evals 仓库</a> — 200+ 社区贡献评测。</li>
+          <li><a href="https://github.com/stanford-crfm/helm" target="_blank" rel="noopener noreferrer">HELM 仓库（Stanford CRFM）</a> — Holistic Evaluation 框架。</li>
+          <li><a href="https://crfm.stanford.edu/2025/03/20/helm-capabilities.html" target="_blank" rel="noopener noreferrer">HELM Capabilities 2025-03 更新</a> — mean score 取代 mean win rate。</li>
+          <li><a href="https://metr.org/blog/2025-03-19-measuring-ai-ability-to-complete-long-tasks/" target="_blank" rel="noopener noreferrer">METR · Measuring AI Ability to Complete Long Tasks（2025-03）</a> — Time Horizon 范式提出。</li>
+          <li><a href="https://metr.org/blog/2026-1-29-time-horizon-1-1/" target="_blank" rel="noopener noreferrer">METR · Time Horizon 1.1（2026-01）</a> — Inspect 迁移后复现。</li>
+          <li><a href="https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents" target="_blank" rel="noopener noreferrer">Anthropic · Demystifying Evals for AI Agents</a> — 四维度评分、capability vs regression。</li>
+          <li><a href="https://focused.io/lab/agent-benchmarks-measure-the-harness" target="_blank" rel="noopener noreferrer">Focused Labs · Agent Benchmarks Measure the Harness</a> — Terminal-Bench 2.0 实证 5.8pp 差距。</li>
+          <li><a href="https://www.morphllm.com/swe-bench-pro" target="_blank" rel="noopener noreferrer">SWE-bench Pro Leaderboard（2026）</a> — Scale AI 抗污染基准。</li>
+          <li><a href="https://arxiv.org/abs/2502.17259" target="_blank" rel="noopener noreferrer">Detecting Benchmark Contamination Through Watermarking（arXiv 2502.17259）</a> — 2025 watermarking 检测。</li>
+          <li><a href="https://arxiv.org/pdf/2510.02837" target="_blank" rel="noopener noreferrer">Beyond the Final Answer: Evaluating Reasoning Trajectories（arXiv 2510.02837）</a> — trajectory-opaque eval 漏 44% 安全违规。</li>
+          <li><a href="https://www.anthropic.com/news/investigating-incidents-cybersecurity-evals" target="_blank" rel="noopener noreferrer">Anthropic · Investigating three real-world incidents in our cybersecurity evaluations</a> — 评测环境自称隔离实则联网。</li>
+          <li><a href="https://openai.com/index/third-party-cyber-evaluations-involving-openai-models/" target="_blank" rel="noopener noreferrer">OpenAI · Third-party cyber evaluations involving OpenAI models</a> — 同类事故第二例及收紧后的协议（列表页 2026-08-04，正文页未渲染日期）。</li>
+          <li><a href="https://arxiv.org/abs/2608.16859" target="_blank" rel="noopener noreferrer">HarnessEval-W（arXiv 2608.16859，2026-08-17）</a> — 评分环节 harness 化，社区单次实验、未经复现。</li>
+          <li><a href="https://arxiv.org/abs/2608.13417" target="_blank" rel="noopener noreferrer">Beyond Final Scores（arXiv 2608.13417）</a> — 规则指标拆 run 内行为为三个维度，社区单次实验、未经复现。</li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>08-evaluation/111-eval-harness-design.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 6 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const HW_COMPONENTS = Object.freeze([
+    {
+      name: "Benchmark 题库",
+      role: "评测的输入，不是考场。它定义题目、输入格式和什么算对；harness 决定怎么把这份题库跑成分数。",
+      duty: "提供样本与评分标准；决定难度和覆盖面。",
+      impl: "SWE-bench Verified、GAIA、τ²-bench；lm-eval 的 YAML 任务、Inspect 的 dataset。",
+      score: "题库版本变了，分数就不可直接横比；公开题库还可能被训练污染。",
+      report: "benchmark 名称、版本、是否公开、训练截止日期之后是否有私有 holdout。",
+      note: "关键边界：题库和 harness 混为一谈，是所有评测争议的起点。"
+    },
+    {
+      name: "Task Loader",
+      role: "把数据集里的样本变成模型能吃的 prompt：选字段、套模板、注入 few-shot、处理截断。",
+      duty: "加载样本、组装 prompt、注入 few-shot。",
+      impl: "lm-eval 的 <code>doc_to_text</code> / <code>doc_to_target</code> / <code>filters</code>；Inspect 的 dataset 与 Sample。",
+      score: "prompt 模板改一个措辞、few-shot 换一条，分数就会动。这是“同题不同分”的第一个来源。",
+      report: "prompt 模板版本、few-shot 数量与来源、截断策略。",
+      note: "固定教学示意：本页不加载任何数据集，只展示原文的组件职责。"
+    },
+    {
+      name: "Solver",
+      role: "决定模型怎么作答：单轮生成、ReAct 循环、多轮 critique、多智能体协作。",
+      duty: "组织作答流程；决定轮数、工具集、何时停止。",
+      impl: "Inspect 的 <code>generate → prompt → react → multi_turn</code> 链；lm-eval 的单轮 generate。",
+      score: "scaffold 是分数的一部分。同一个模型，ReAct 与单轮生成的成绩可以差出很多。",
+      report: "solver 链、最大轮数、工具清单、停止条件。",
+      note: "原文强调：Solver 负责怎么答，不负责判分。两者混在一起就无法归因。"
+    },
+    {
+      name: "Sandbox",
+      role: "给工具调用提供隔离环境：文件系统、网络、进程、资源都要受控。",
+      duty: "隔离代码执行与工具调用；限制 CPU、内存、超时和网络。",
+      impl: "Docker（约 1 秒启动）、k8s（5–30 秒）、Proxmox / VM（分钟级，内核级隔离）、Daytona / Modal / EC2。",
+      score: "资源不足会让任务因基础设施失败。原文实测 5.8% 任务因 pod / infrastructure 错误失败（p&lt;0.01）。",
+      report: "sandbox 类型、资源配额、镜像版本、网络策略，以及隔离由谁验证。",
+      note: "安全边界：sandbox 也是安全参数。声明的隔离必须由网络层独立验证。"
+    },
+    {
+      name: "Scorer",
+      role: "判断这次作答算不算对：精确匹配、单元测试、LLM Judge、数据库状态比对。",
+      duty: "定义判分逻辑；读取最终状态；处理多 judge 投票。",
+      impl: "SWE-bench 的 fail→pass 测试套件、τ²-bench 的 DB diff、Inspect 的 <code>model_graded_qa</code>。",
+      score: "判分口径变严或变松，分数立刻变。LLM Judge 还会引入 judge 自身的偏差与不稳定。",
+      report: "scorer 类型、judge 模型与版本、投票次数、测试套件版本。",
+      note: "原文提醒：评最终状态，不要只评 agent 说了什么。"
+    },
+    {
+      name: "日志与报告",
+      role: "把一次评测变成可复核的记录：完整轨迹、token、成本、失败原因、环境条件。",
+      duty: "保存 samples、trajectory、工具调用、耗时与成本；生成可比较的报告。",
+      impl: "lm-eval 的 <code>--log_samples</code>；Inspect 的日志与 sample 记录；自建 trace 存储。",
+      score: "没有日志，分数无法复现，也无法解释差异来自模型、harness 还是环境。",
+      report: "harness 版本、sandbox、配额、scaffold、retry、隔离验证方式、pass@1 / pass@k / pass^k。",
+      note: "固定教学示意：报告字段来自原文；本页不产生真实评测记录。"
+    }
+  ]);
+
+  const HS_QUESTIONS = Object.freeze([
+    {
+      title: "评测对象是多轮 Agent 吗？",
+      note: "需要工具调用、sandbox、轨迹评分，就走 Agent eval 分支。",
+      yes: "agent",
+      no: "multi"
+    },
+    {
+      title: "需要公平性、毒性、效率等多维全景吗？",
+      note: "不只是准确率，而是同一 scenario 下同时看七个维度。",
+      yes: "helm",
+      no: "forecast"
+    },
+    {
+      title: "要做部署前安全评测或能力外推吗？",
+      note: "例如 Time Horizon、长时间自主任务的能力边界。",
+      yes: "metr",
+      no: "lmeval"
+    }
+  ]);
+
+  const HS_RESULTS = Object.freeze({
+    agent: {
+      level: "Agent 多轮 + sandbox + 工具",
+      title: "Inspect AI（Agent eval 事实标准）",
+      summary: "多轮工具循环需要 Solver、Sandbox、Scorer 三层分离，Inspect 的抽象正好覆盖。",
+      points: [
+        "dataset → Task → Solver → Scorer 四原语，可链式组合 ReAct、multi-turn。",
+        "内置 docker / local，扩展 k8s / proxmox / daytona / modal / ec2，每个 sample 独立实例。",
+        "200+ inspect_evals，Agent Bridge 可接 Claude Code、Codex CLI 等。"
+      ]
+    },
+    helm: {
+      level: "多维全景",
+      title: "HELM（Stanford CRFM）",
+      summary: "如果关心准确率之外的校准、鲁棒性、公平性、偏差、毒性和效率，HELM 的七维框架更合适。",
+      points: [
+        "7 metrics 同时测；2025-03 Capabilities 引入五个能力切面。",
+        "排序用 mean score 取代 mean win rate，降低小幅波动的干扰。",
+        "公开 raw inputs 与 model outputs，强调可复现。"
+      ]
+    },
+    metr: {
+      level: "能力外推 / 部署前安全",
+      title: "METR 范式 + Inspect",
+      summary: "如果问题不是“这道题对不对”，而是“模型能独立完成多长的任务”，就看 Time Horizon。",
+      points: [
+        "50% time horizon：以人类完成时间标定的任务时长。",
+        "原文称过去 6 年约每 7 个月翻一番，天然抗污染、抗饱和。",
+        "MALT 数据集覆盖 reward hacking、sandbagging 等行为样本。"
+      ]
+    },
+    lmeval: {
+      level: "单轮模型评测",
+      title: "lm-evaluation-harness",
+      summary: "单轮 logprob / 生成 + 学术 benchmark 横评，lm-eval 是默认选项。",
+      points: [
+        "60+ 标准学术 benchmark，数百个子任务变体。",
+        "YAML 定义任务，doc_to_text / doc_to_target / filters / metric_list 解耦。",
+        "100+ providers，HF Open LLM Leaderboard 的后端。"
+      ]
+    }
+  });
+
+  const hwById = (id) => document.getElementById(id);
+  const hwState = { current: 0 };
+  const hwVisited = new Set([0]);
+
+  function renderHW(announce = true) {
+    const data = HW_COMPONENTS[hwState.current];
+    hwById("hw-index").textContent = `组件 ${hwState.current + 1} / 6`;
+    hwById("hw-name").textContent = data.name;
+    hwById("hw-role").textContent = data.role;
+    hwById("hw-duty").innerHTML = data.duty;
+    hwById("hw-impl").innerHTML = data.impl;
+    hwById("hw-score").innerHTML = data.score;
+    hwById("hw-report").innerHTML = data.report;
+    hwById("hw-note").innerHTML = data.note;
+    hwById("hw-state").textContent = `正在查看 ${hwState.current + 1} / 6 · 已看过 ${hwVisited.size} 个组件`;
+    document.querySelectorAll("#explainer .hw-node").forEach((node) => {
+      const index = Number(node.dataset.comp);
+      const isCurrent = index === hwState.current;
+      if (isCurrent) node.setAttribute("aria-current", "step");
+      else node.removeAttribute("aria-current");
+      node.classList.toggle("is-visited", hwVisited.has(index));
+    });
+    document.querySelectorAll("#explainer .stage-button").forEach((button) => {
+      const index = Number(button.dataset.comp);
+      if (index === hwState.current) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    hwById("hw-prev").disabled = hwState.current === 0;
+    hwById("hw-next").disabled = hwState.current === HW_COMPONENTS.length - 1;
+    if (announce) {
+      hwById("hw-announcement").textContent = `组件 ${hwState.current + 1}，${data.name}。${data.role} 影响分数的方式：${data.score}`;
+    }
+  }
+
+  function goHW(index) {
+    if (index < 0 || index >= HW_COMPONENTS.length) return;
+    hwState.current = index;
+    hwVisited.add(index);
+    renderHW();
+  }
+
+  document.querySelectorAll("#explainer .stage-button, #explainer .hw-node").forEach((button) => {
+    button.addEventListener("click", () => goHW(Number(button.dataset.comp)));
+  });
+  hwById("hw-prev").addEventListener("click", () => goHW(hwState.current - 1));
+  hwById("hw-next").addEventListener("click", () => goHW(hwState.current + 1));
+  hwById("hw-reset").addEventListener("click", () => {
+    hwVisited.clear();
+    goHW(0);
+    hwById("hw-announcement").textContent = "已回到组件 1：Benchmark 题库。";
+  });
+
+  const hsState = { index: 0, answers: [], result: null };
+  function hsRender(announce = true) {
+    hwById("hs-path").innerHTML = hsState.answers.map((answer) =>
+      `<span class="hs-chip">问题 ${answer.q + 1} <b>${answer.yes ? "是" : "否"}</b></span>`
+    ).join("");
+    const questionEl = hwById("hs-question");
+    const resultEl = hwById("hs-result");
+    if (hsState.result) {
+      questionEl.hidden = true;
+      resultEl.hidden = false;
+      const data = HS_RESULTS[hsState.result];
+      hwById("hs-result-level").textContent = data.level;
+      hwById("hs-result-title").textContent = data.title;
+      hwById("hs-result-summary").textContent = data.summary;
+      hwById("hs-result-points").innerHTML = data.points.map((point) => `<li>${point}</li>`).join("");
+      hwById("hs-state").textContent = `已得出选型分支 · 答了 ${hsState.answers.length} / 3 题`;
+      if (announce) {
+        hwById("hs-announcement").textContent = `结论：${data.level}。推荐 ${data.title}。${data.summary}`;
+      }
+    } else {
+      questionEl.hidden = false;
+      resultEl.hidden = true;
+      const question = HS_QUESTIONS[hsState.index];
+      hwById("hs-index").textContent = `问题 ${hsState.index + 1} / 3`;
+      hwById("hs-q-title").textContent = question.title;
+      hwById("hs-q-note").textContent = question.note;
+      hwById("hs-state").textContent = `已答 ${hsState.answers.length} / 3 题 · 本页不运行工具`;
+      if (announce) {
+        hwById("hs-announcement").textContent = `问题 ${hsState.index + 1}，共 3 题。${question.title}${question.note}`;
+      }
+    }
+    hwById("hs-back").disabled = hsState.answers.length === 0;
+  }
+
+  function hsAnswer(yes) {
+    if (hsState.result) return;
+    const q = hsState.index;
+    hsState.answers.push({ q, yes });
+    const next = yes ? HS_QUESTIONS[q].yes : HS_QUESTIONS[q].no;
+    if (["agent", "helm", "metr", "lmeval"].includes(next)) {
+      hsState.result = next;
+    } else {
+      hsState.index = q + 1;
+    }
+    hsRender();
+  }
+
+  function hsBack() {
+    if (!hsState.answers.length) return;
+    const last = hsState.answers.pop();
+    hsState.result = null;
+    hsState.index = last.q;
+    hsRender();
+  }
+
+  document.querySelectorAll("#selector [data-answer]").forEach((button) => {
+    button.addEventListener("click", () => hsAnswer(button.dataset.answer === "yes"));
+  });
+  hwById("hs-back").addEventListener("click", hsBack);
+  hwById("hs-reset").addEventListener("click", () => {
+    hsState.index = 0;
+    hsState.answers = [];
+    hsState.result = null;
+    hsRender(false);
+    hwById("hs-announcement").textContent = "已重新开始，回到问题 1。";
+  });
+
+  renderHW(false);
+  hsRender(false);
+</script>
+</body>
+</html>

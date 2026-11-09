@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Embedding 模型选择与微调策略 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .emb-scene { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .emb-grid { display: grid; grid-template-columns: minmax(0, 1.14fr) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+  .emb-question { min-width: 0; }
+  .emb-question h2 { font: 600 23px/1.45 var(--serif); letter-spacing: -.015em; }
+  .emb-note { margin-top: var(--s-2); font-size: 12px; line-height: 1.7; color: var(--text-dim); max-width: 42em; }
+  .emb-options { display: grid; gap: var(--s-2); margin-top: var(--s-4); }
+  .emb-option { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 10px; align-items: start; width: 100%; padding: 11px 12px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface-soft); text-align: left; }
+  .emb-option:hover { border-color: var(--accent); background: var(--accent-dim); }
+  .emb-option-key { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 11px/1 var(--mono); color: var(--text-dim); background: var(--surface); }
+  .emb-option b { display: block; font-size: 13px; line-height: 1.55; font-weight: 600; }
+  .emb-option small { display: block; margin-top: 2px; font-size: 11px; line-height: 1.55; color: var(--text-dim); }
+  .emb-result { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: #f7f6f1; padding: var(--s-4); }
+  .emb-result-title { display: flex; align-items: center; gap: 9px; margin-top: 2px; }
+  .emb-badge { display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: 7px; background: var(--accent); color: #fff; font: 600 12px/1 var(--mono); flex: 0 0 auto; }
+  .emb-result-title h2 { font: 600 19px/1.4 var(--serif); }
+  .emb-type { margin-top: 3px; font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .emb-specs { display: flex; flex-wrap: wrap; gap: 5px; margin-top: var(--s-3); }
+  .emb-specs span { padding: 2px 7px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font: 9px/1.5 var(--mono); }
+  .emb-rule { margin-top: var(--s-3); padding: 6px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; background: var(--surface); font: 10px/1.65 var(--mono); color: var(--ink); overflow-wrap: anywhere; }
+  .emb-result p { margin-top: var(--s-2); font-size: 11px; line-height: 1.7; }
+  .emb-result p strong { font-weight: 600; }
+  .emb-boundary { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px dashed var(--border-bright); font-size: 10px !important; color: var(--text-dim); }
+  .emb-stamp { display: inline-block; margin-top: var(--s-3); padding: 2px 8px; border: 1px solid #b98a2f; border-radius: 999px; background: #fffaf0; color: #7a5512; font: 9px/1.6 var(--mono); }
+  .emb-strip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: var(--s-4); }
+  .emb-chip { border: 1px dashed var(--border); border-radius: 5px; padding: 6px 7px; background: var(--surface); font-size: 9px; line-height: 1.5; text-align: left; transition: opacity var(--fast) var(--ease), border-color var(--fast) var(--ease); }
+  .emb-chip b { display: block; font-size: 10px; }
+  .emb-chip span { display: block; color: var(--text-dim); font: 8px/1.5 var(--mono); }
+  .emb-chip.is-on { border-style: solid; border-color: var(--accent); background: var(--accent-dim); }
+  .emb-chip.is-on b { color: var(--accent); }
+  .emb-chip.is-off { opacity: .42; }
+  .emb-state { margin-top: var(--s-3); font: 10px/1.6 var(--mono); color: var(--text-dim); }
+  .emb-constraint { margin-top: var(--s-3); padding: 7px 9px; border-left: 3px solid #b98a2f; background: #fffaf0; font-size: 10px; line-height: 1.65; color: #6b4c0e; }
+
+  /* 阅读 */
+  .emb-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .emb-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); border-top: 4px solid var(--series-1); }
+  .emb-card.openai { border-top-color: var(--series-2); }
+  .emb-card.cohere { border-top-color: var(--series-3); }
+  .emb-card h3 { margin-top: 0; font-size: 17px; }
+  .emb-card .kicker { font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .emb-card p { font-size: 12px; }
+  .emb-card ul { margin: var(--s-2) 0 0; padding-left: 1.1em; font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .emb-card li { margin-block: 2px; }
+  .emb-fine { display: grid; grid-template-columns: 1.15fr 1fr; gap: var(--s-4); margin-top: var(--s-4); }
+  .emb-tree { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .emb-tree-root { width: max-content; max-width: 100%; margin-inline: auto; padding: 7px 14px; border: 1px solid var(--ink); border-radius: 999px; background: var(--surface-soft); font-size: 12px; font-weight: 600; text-align: center; }
+  .emb-tree-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); margin-top: var(--s-4); }
+  .emb-tree-branch { position: relative; padding: 9px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .emb-tree-branch::before { content: ""; position: absolute; top: -16px; left: 50%; width: 1px; height: 16px; background: var(--border-bright); }
+  .emb-tree-branch b { display: block; font-size: 11px; line-height: 1.55; }
+  .emb-tree-branch span { display: block; margin-top: 3px; font-size: 10px; line-height: 1.6; color: var(--text-dim); }
+  .emb-tree-branch em { display: inline-block; margin-top: 4px; font: 9px/1.5 var(--mono); font-style: normal; color: var(--accent); }
+  .emb-finetune { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .emb-finetune h3 { margin-top: 0; font-size: 15px; }
+  .emb-finetune ol { margin: 0; padding-left: 1.2em; font-size: 12px; line-height: 1.7; }
+  .emb-source-note { font-size: 11px; line-height: 1.7; color: #7a5512; background: #fffaf0; border: 1px solid #e3c277; border-radius: var(--r-1); padding: 8px 10px; margin-top: var(--s-3); }
+  .emb-principles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); margin-top: var(--s-4); }
+  .emb-principles .quote { margin-top: 0; font-size: 17px; }
+
+  @media (max-width: 960px) {
+    .emb-grid { grid-template-columns: 1fr; }
+    .emb-cards { grid-template-columns: 1fr; }
+    .emb-fine { grid-template-columns: 1fr; }
+    .emb-strip { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .emb-principles { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .emb-scene { padding: var(--s-4); }
+    .emb-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .emb-tree-row { grid-template-columns: 1fr; row-gap: 18px; }
+    .emb-tree-branch::before { top: -12px; height: 12px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">015 / Embedding 模型选择</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 14 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="014-vector-database-comparison.html">← 上一页 · 向量数据库选型</a><a href="017-reranking-strategies.html">下一页 → · Re-ranking 的原理与实现</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · RAG · 可交互讲解</p>
+      <h1>向量选错，<br>检索全废。</h1>
+    </div>
+    <div>
+      <p class="lead">Embedding 模型把文本映射成向量，决定语义相似度能不能被检索到。索引时和查询时必须用同一个模型；换模型就要重建全部向量。商业模型看 Voyage / OpenAI / Cohere，开源看 BGE-M3 / Qwen3 Embedding。</p>
+      <p class="definition">关键边界：<strong>模型对比只按原文版本呈现</strong>。MTEB 名次随子任务和数据分布变化，价格是原文快照；本页未联网核验榜单，也不运行任何模型。选型必须在你自己的数据上测。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">RAG</span><span class="pill">Embedding</span><span class="pill">原文版本</span><span class="pill">未联网核实</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="emb-question-title">
+    <div class="player-top">
+      <div class="player-label">按原文选型框架走一遍 <small>固定决策条件 · 不下载、不调用模型</small></div>
+      <div class="controls" role="group" aria-label="Embedding 选型控制">
+        <button type="button" class="button button-quiet" id="emb-reset">重新开始</button>
+        <button type="button" class="button" id="emb-back" disabled>返回上一步</button>
+      </div>
+    </div>
+    <div class="emb-scene scene" id="emb-scene">
+      <div class="emb-grid">
+        <div class="emb-question">
+          <p class="figure-index" id="emb-position">判断 1 · 最多 6 步</p>
+          <h2 id="emb-question-title">现在还是 MVP 阶段吗？</h2>
+          <p class="emb-note" id="emb-question-note">原文的第一条分支：MVP 优先免费、快、够用，直接看轻量开源模型。</p>
+          <div class="emb-options" id="emb-options" role="group" aria-labelledby="emb-question-title"></div>
+        </div>
+        <aside class="emb-result" aria-labelledby="emb-result-title">
+          <p class="figure-index">选型结果</p>
+          <div class="emb-result-title"><span class="emb-badge" id="emb-badge">?</span><h2 id="emb-result-title">还没有选择</h2></div>
+          <p class="emb-type" id="emb-type">原文条件未命中</p>
+          <div id="emb-result-body">
+            <p>从左侧回答问题。页面按原文 `choose_embedding_model` 的判断顺序给出建议，并显示命中的条件。</p>
+          </div>
+          <div class="emb-constraint"><strong>始终成立：</strong>索引和查询必须使用同一个 Embedding 模型，否则向量空间不一致，检索完全失效。</div>
+        </aside>
+      </div>
+      <div class="emb-strip" id="emb-strip">
+        <span class="emb-chip" data-model="minilm"><b>MiniLM-L6</b><span>384 维 · 轻量</span></span>
+        <span class="emb-chip" data-model="bge"><b>BGE-M3</b><span>1024 维 · MIT</span></span>
+        <span class="emb-chip" data-model="voyage"><b>Voyage-3-large</b><span>1024 维 · 性价比</span></span>
+        <span class="emb-chip" data-model="openai"><b>OpenAI 3-large</b><span>3072 维 · 默认</span></span>
+        <span class="emb-chip" data-model="cohere"><b>Cohere v4</b><span>1536 维 · 多语言</span></span>
+        <span class="emb-chip" data-model="finetune"><b>微调 BGE-M3</b><span>领域定制</span></span>
+        <span class="emb-chip" data-model="voyageDomain"><b>Voyage 领域</b><span>法律 / 代码 / 金融</span></span>
+      </div>
+      <p class="emb-state" id="emb-state">尚未选择 · 七个候选都未命中</p>
+      <p class="demo-note">固定教学场景：条件与结果来自原文决策框架，不是模型排名。维度、价格、MTEB 描述均为原文版本（2025–2026 快照），本页未联网核验，也不执行 Embedding。</p>
+    </div>
+    <div class="walkthrough-foot"><span>原文决策框架演示 · 不是绝对排名</span><span>模型与价格可能已变化</span></div>
+  </section>
+  <p id="emb-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="role-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">一 · 作用与硬约束</p><h2 id="role-title">索引和查询，<br>必须同一个模型。</h2></div>
+      <p class="reading-intro">Embedding 模型把文本转成高维向量，让语义相似的文本在向量空间里更近。它在 RAG 里出现两次：索引时把文档块转成向量，查询时把用户问题转成向量。</p>
+    </div>
+    <div class="prose">
+      <div class="callout">
+        <p class="callout-label">关键约束</p>
+        <p><strong>索引和查询必须使用同一个 Embedding 模型。</strong>否则向量空间不一致，检索完全失效；换模型时，所有已索引向量都必须重新生成。</p>
+      </div>
+      <p>这也是为什么“换一个榜单更高的模型”不是零成本操作：模型一换，索引就要重建，成本与数据量成正比。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="commercial-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">二 · 商业模型</p><h2 id="commercial-title">Voyage、OpenAI、<br>Cohere。</h2></div>
+      <p class="reading-intro">原文的对比是：Voyage 性价比最高，OpenAI 最均衡，Cohere 多语言 / 多模态最强。MTEB 名次取决于子任务，不能只看一个总分。</p>
+    </div>
+    <div class="prose">
+      <p class="emb-source-note">原文版本，未联网核实：下表中的价格、维度和 MTEB 描述均按原文保留，可能已经变化；具体名次也随子任务不同。</p>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">四个商业 Embedding 模型的原文对比</caption>
+          <thead><tr><th scope="col">模型</th><th scope="col">维度</th><th scope="col">MTEB 表现</th><th scope="col">价格（$/M tokens）</th><th scope="col">特色</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Voyage AI voyage-3-large</th><td class="num">1024</td><td>综合前列</td><td class="num">$0.06</td><td>性价比最高，多领域领先</td></tr>
+            <tr><th scope="row">OpenAI text-embedding-3-large</th><td class="num">3072（可缩）</td><td>前列</td><td class="num">$0.13</td><td>最均衡，支持维度缩减</td></tr>
+            <tr><th scope="row">Cohere embed-v4</th><td class="num">1536</td><td>多语言 / 多模态前列</td><td class="num">~$0.10</td><td>100+ 语言，多模态</td></tr>
+            <tr><th scope="row">OpenAI text-embedding-3-small</th><td class="num">1536</td><td>中上</td><td class="num">$0.02</td><td>最便宜，适合成本敏感场景</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="emb-cards">
+        <article class="emb-card">
+          <p class="kicker">VOYAGE AI</p>
+          <h3>性价比之王</h3>
+          <p>voyage-3-large 在多项 MTEB 子任务上超越 OpenAI text-embedding-3-large 与 Cohere embed-v3（幅度因数据集而异）。1024 维比 OpenAI 的 3072 维节省约 3 倍存储，价格约为 OpenAI 的一半。</p>
+          <ul>
+            <li>领域模型：voyage-law-3（法律）</li>
+            <li>voyage-code-3（代码）</li>
+            <li>voyage-finance-2（金融，原文称 v3 未发布）</li>
+          </ul>
+        </article>
+        <article class="emb-card openai">
+          <p class="kicker">OPENAI</p>
+          <h3>最均衡的默认</h3>
+          <p>原文引用 Agentset 评测，称它在更多直接对比中胜出，是最稳定的生产选择。支持 <code>dimensions</code> 参数把 3072 维缩到 1536 或 256，在精度和存储间权衡。</p>
+          <ul>
+            <li>3072 维：最高精度</li>
+            <li>1024 / 1536：省存储，轻微精度损失</li>
+            <li>适合没有强领域偏好的默认场景</li>
+          </ul>
+        </article>
+        <article class="emb-card cohere">
+          <p class="kicker">COHERE</p>
+          <h3>多语言 / 多模态</h3>
+          <p>MTEB 多语言子任务排名前列，支持 100+ 语言的跨语言检索，能在同一语义空间嵌入文本和图像，支持 128K token 超长输入。</p>
+          <ul>
+            <li>跨语言检索</li>
+            <li>文本 + 图像</li>
+            <li>长文档输入</li>
+          </ul>
+        </article>
+      </div>
+      <details>
+        <summary>展开原文代码：OpenAI 维度缩减</summary>
+        <pre><code>from openai import OpenAI
+client = OpenAI()
+
+# 全维度：最高精度
+full = client.embeddings.create(
+    model="text-embedding-3-large",
+    input="查询文本"
+)  # 3072 维
+
+# 缩减维度：节省存储，轻微精度损失
+compact = client.embeddings.create(
+    model="text-embedding-3-large",
+    input="查询文本",
+    dimensions=1024  # 从 3072 缩减到 1024
+)</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="open-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三 · 开源模型</p><h2 id="open-title">隐私、成本、<br>离线与可控。</h2></div>
+      <p class="reading-intro">开源模型适合数据不能出内网、数据量大、需要离线部署或想完全控制的场景。原文给出四个候选：BGE-M3、Qwen3 Embedding、Jina v3、MiniLM。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">四个开源 Embedding 模型的原文对比</caption>
+          <thead><tr><th scope="col">模型</th><th scope="col">维度</th><th scope="col">许可证</th><th scope="col">特色</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">BAAI/bge-m3</th><td class="num">1024</td><td>MIT</td><td>多语言，自托管首选</td></tr>
+            <tr><th scope="row">Qwen3 Embedding (4B/8B)</th><td>可变</td><td>Apache 2.0</td><td>原文称最新 SOTA，32K 上下文</td></tr>
+            <tr><th scope="row">Jina Embeddings v3</th><td class="num">1024</td><td>Apache 2.0</td><td>多语言，任务特定适配</td></tr>
+            <tr><th scope="row">all-MiniLM-L6-v2</th><td class="num">384</td><td>Apache 2.0</td><td>极轻量，MVP 首选</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <p class="callout-label">为什么选自托管</p>
+        <p><strong>数据隐私</strong>：文档不发给第三方 API；<strong>成本控制</strong>：大量数据时自托管更经济；<strong>离线部署</strong>：无网络环境；<strong>完全可控</strong>：可以微调和定制。</p>
+      </div>
+      <p class="emb-source-note">“最新 SOTA”“32K 上下文”等描述按原文保留，本页未联网核验模型能力或榜单。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="finetune-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四 · 微调策略</p><h2 id="finetune-title">先测通用模型，<br>再决定要不要微调。</h2></div>
+      <p class="reading-intro">领域特定微调可带来 10–30% 的检索质量提升，但前提是通用模型确实不满意，且问题出在领域术语或检索逻辑，而不是数据质量。</p>
+    </div>
+    <div class="prose">
+      <div class="emb-fine">
+        <figure class="emb-tree" aria-labelledby="emb-tree-caption">
+          <div class="emb-tree-root">通用 Embedding 在你的数据上满意？</div>
+          <div class="emb-tree-row">
+            <div class="emb-tree-branch"><b>满意</b><span>不需要微调</span><em>先上线</em></div>
+            <div class="emb-tree-branch"><b>不满意 · 数据质量问题</b><span>先修数据，不是换模型</span><em>清洗 / 分块 / 标注</em></div>
+            <div class="emb-tree-branch"><b>不满意 · 领域术语或检索逻辑</b><span>领域术语不理解，或检索逻辑需要定制</span><em>微调</em></div>
+          </div>
+          <figcaption class="emb-source-note" id="emb-tree-caption">图 1 · 原文微调决策树的离线呈现：先判断满意度，再区分原因，只有第三类才进入微调。</figcaption>
+        </figure>
+        <div class="emb-finetune">
+          <h3>微调前先算清成本</h3>
+          <ol>
+            <li><strong>必须重新索引</strong>：微调改变 Embedding 空间，所有已索引向量都要重新生成。</li>
+            <li><strong>数据量要求</strong>：至少 1000 个标注样本，理想 5000–10000 个。</li>
+            <li><strong>评估闭环</strong>：用 Recall@k、MRR 对比微调前后。</li>
+            <li><strong>基础模型</strong>：选与领域最接近的基础模型，效果更好。</li>
+          </ol>
+        </div>
+      </div>
+      <details>
+        <summary>查看原文微调决策 Mermaid 源码</summary>
+        <pre><code>flowchart TD
+    A{"通用 Embedding&lt;br/&gt;在你的数据上满意？"}
+    A --&gt;|"满意"| B["不需要微调"]
+    A --&gt;|"不满意"| C{"原因是什么？"}
+    C --&gt;|"数据质量问题"| D["先优化数据，不是模型"]
+    C --&gt;|"领域术语不理解"| E["微调"]
+    C --&gt;|"检索逻辑需要定制"| F["微调"]
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class A,C decision
+    class B,D,E,F proc</code></pre>
+        <p class="source-footnote">源码按原文保留，仅做 HTML 转义；图 1 用同一判断关系做离线呈现。</p>
+      </details>
+      <details>
+        <summary>展开原文代码：三元组与对比学习微调</summary>
+        <pre><code># 1. 准备训练数据：(query, positive_doc, negative_doc) 三元组
+training_data = [
+    {
+        "query": "RLHF 的奖励模型如何训练？",
+        "positive": "奖励模型通过人类偏好标注数据训练...",
+        "negative": "强化学习是一种机器学习方法..."
+    },
+    # ... 至少 1000 个样本
+]
+
+# 2. 使用对比学习进行微调
+from sentence_transformers import SentenceTransformer, losses
+
+model = SentenceTransformer("BAAI/bge-base-en-v1.5")
+train_loss = losses.TripletLoss(model)
+model.fit(
+    train_objectives=[(train_dataloader, train_loss)],
+    epochs=3
+)</code></pre>
+        <p class="source-footnote">基础模型 <code>BAAI/bge-base-en-v1.5</code> 按原文代码保留，是示例，不是本页对基础模型的推荐。</p>
+      </details>
+      <p>原文强调：微调不是默认动作。先修数据、先测通用模型；只有领域术语或检索逻辑确实不匹配，才值得付出重新索引的成本。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="framework-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">五 · 决策框架</p><h2 id="framework-title">按顺序排除，<br>最后落到默认。</h2></div>
+      <p class="reading-intro">原文的 choose_embedding_model 先看 MVP，再看多语言、隐私、预算、领域，最后默认 OpenAI text-embedding-3-large。</p>
+    </div>
+    <div class="prose">
+      <details>
+        <summary>展开原文决策代码</summary>
+        <pre><code>def choose_embedding_model(requirements: dict) -&gt; str:
+    if requirements["stage"] == "mvp":
+        return "all-MiniLM-L6-v2"        # 免费、快、够用
+
+    if requirements["multilingual"]:
+        return "cohere-embed-v4"          # 100+ 语言
+
+    if requirements["privacy_critical"]:
+        return "bge-m3 (self-hosted)"     # MIT 许可，完全可控
+
+    if requirements["budget"] == "tight":
+        return "voyage-3-large"           # 最高性价比
+
+    if requirements["domain_specific"]:
+        if requirements["domain"] in ["legal", "code", "finance"]:
+            return f"voyage-{domain}-2"   # 领域特化模型
+        else:
+            return "fine-tune bge-m3"     # 自定义微调
+
+    return "openai-text-embedding-3-large"  # 最均衡的默认选择</code></pre>
+      </details>
+      <div class="callout">
+        <p class="callout-label">原文的一处版本不一致</p>
+        <p>正文列出的领域模型是 <code>voyage-law-3</code>、<code>voyage-code-3</code>、<code>voyage-finance-2</code>，但决策代码返回 <code>voyage-{domain}-2</code>。两者版本号不一致，本页不替原文做选择；实际选型时以官方文档的当前模型名为准。</p>
+      </div>
+      <div class="emb-principles">
+        <p class="quote">“在你的数据上做 Benchmark——通用分数不一定适用于你的领域。”</p>
+        <p class="quote">“价格更高的模型不一定准确率更高。最佳模型是在准确率和成本之间取得最好平衡的模型。”</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">MTEB 第一，<br>不等于你的第一。</h2></div>
+      <p class="reading-intro">两条误区覆盖榜单和维度；两条追问覆盖换模型与 Embedding / LLM 的厂商关系。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <p class="misconception-label">误区 1</p>
+        <div><h3>“选 MTEB 排名第一的就对了。”</h3><p>MTEB 是通用基准，你的领域数据分布可能完全不同。必须在自己的数据集上评估。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">误区 2</p>
+        <div><h3>“维度越高越好。”</h3><p>3072 维比 1024 维精度更高，但存储 3 倍、检索更慢。很多场景下 1024 维甚至 768 维就足够。OpenAI 的维度缩减功能正是为此设计。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 1</p>
+        <div><h3>如果换了 Embedding 模型怎么办？</h3><p>必须重新索引所有文档。索引和查询必须使用完全相同的模型。这是换模型的最大成本。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 2</p>
+        <div><h3>Embedding 和 LLM 需要来自同一家吗？</h3><p>不需要。Embedding 模型和 LLM 是独立组件。可以用 Voyage 的 Embedding + Anthropic 的 Claude 生成，完全没问题。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《Embedding 模型选择与微调策略》。价格、维度、MTEB 描述与模型状态均为原文版本，本页未联网核验。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://app.ailog.fr/en/blog/guides/choosing-embedding-models" target="_blank" rel="noopener noreferrer">Best Embedding Models 2025: MTEB Scores &amp; Leaderboard · Ailog</a></li>
+          <li><a href="https://artsmart.ai/blog/top-embedding-models-in-2025/" target="_blank" rel="noopener noreferrer">Top Embedding Models 2026: Complete Guide · ArtSmart</a></li>
+          <li><a href="https://reintech.io/blog/embedding-models-comparison-2026-openai-cohere-voyage-bge" target="_blank" rel="noopener noreferrer">Embedding Models Comparison 2026 · Reintech</a></li>
+          <li><a href="https://www.zenml.io/blog/best-embedding-models-for-rag" target="_blank" rel="noopener noreferrer">9 Best Embedding Models for RAG · ZenML</a></li>
+          <li><a href="https://agentset.ai/embeddings" target="_blank" rel="noopener noreferrer">Embedding Model Leaderboard · Agentset</a></li>
+        </ul>
+        <p class="source-footnote">以上链接按原文保留，不表示本页已核验。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>02-rag/015-embedding-model-selection.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 3 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  (() => {
+    const byId = (id) => document.getElementById(id);
+
+    const QUESTIONS = {
+      start: {
+        title: "现在还是 MVP 阶段吗？",
+        note: "原文的第一条分支：MVP 优先免费、快、够用，直接看轻量开源模型。",
+        position: "判断 1 · 最多 6 步",
+        options: [
+          { label: "是，先快速验证", sub: "免费、快、够用优先", next: "minilm" },
+          { label: "不是，已经要上生产", sub: "继续看语言、隐私和预算", next: "multilingual" }
+        ]
+      },
+      multilingual: {
+        title: "需要跨语言检索吗？",
+        note: "原文第二条分支：multilingual 指向 Cohere embed-v4（100+ 语言）。",
+        position: "判断 2 · 最多 6 步",
+        options: [
+          { label: "需要，覆盖 100+ 语言", sub: "跨语言检索或多模态", next: "cohere" },
+          { label: "不需要，单一语言为主", sub: "继续看数据能否出内网", next: "privacy" }
+        ]
+      },
+      privacy: {
+        title: "数据不能出内网，必须自托管吗？",
+        note: "原文第三条分支：privacy_critical 指向 BGE-M3 自托管（MIT 许可）。",
+        position: "判断 3 · 最多 6 步",
+        options: [
+          { label: "必须自托管，数据不出内网", sub: "隐私 / 离线 / 完全可控", next: "bge" },
+          { label: "可以调用第三方 API", sub: "继续看预算", next: "budget" }
+        ]
+      },
+      budget: {
+        title: "预算紧吗？",
+        note: "原文第四条分支：budget == 'tight' 指向 voyage-3-large。",
+        position: "判断 4 · 最多 6 步",
+        options: [
+          { label: "紧，优先性价比", sub: "同等效果下选更便宜的", next: "voyage" },
+          { label: "不紧，先看领域匹配", sub: "继续看是否需要定制", next: "domain" }
+        ]
+      },
+      domain: {
+        title: "有明确的领域术语或检索逻辑需要定制吗？",
+        note: "原文第五条分支：domain_specific 为真时，再分领域特化模型或自定义微调。",
+        position: "判断 5 · 最多 6 步",
+        options: [
+          { label: "有，通用模型不够", sub: "领域术语或检索逻辑不匹配", next: "domainType" },
+          { label: "没有，通用模型够用", sub: "走原文默认选择", next: "openai" }
+        ]
+      },
+      domainType: {
+        title: "领域是法律、代码或金融吗？",
+        note: "原文决策代码只对 legal / code / finance 返回 Voyage 领域模型，其他领域走微调。",
+        position: "判断 6 · 最多 6 步",
+        options: [
+          { label: "是：法律 / 代码 / 金融", sub: "优先看 Voyage 领域特化模型", next: "voyageDomain" },
+          { label: "不是，是其他领域", sub: "微调 BGE-M3", next: "finetune" }
+        ]
+      }
+    };
+
+    const RESULTS = {
+      minilm: {
+        name: "all-MiniLM-L6-v2",
+        letter: "ML",
+        type: "开源 · 384 维 · Apache 2.0 · 原文命中 stage == 'mvp'",
+        specs: ["384 维", "Apache 2.0", "极轻量"],
+        rule: "if stage == \"mvp\": return \"all-MiniLM-L6-v2\"",
+        body: "<p><strong>为什么：</strong>原文把它列为“极轻量，MVP 首选”——免费、快、够用，适合快速验证检索链路。</p><p><strong>适合：</strong>原型、个人项目、学习实验。</p>",
+        boundary: "边界：384 维、轻量，适合 MVP；进入生产、需要多语言或更高召回时，应在自有数据上重新评估更大的模型。",
+        model: "minilm"
+      },
+      cohere: {
+        name: "Cohere embed-v4",
+        letter: "Co",
+        type: "商业 · 1536 维 · 原文命中 multilingual",
+        specs: ["1536 维", "100+ 语言", "多模态", "128K 输入"],
+        rule: "if multilingual: return \"cohere-embed-v4\"",
+        body: "<p><strong>为什么：</strong>原文称它在 MTEB 多语言子任务排名前列，支持 100+ 语言的跨语言检索，能在同一语义空间嵌入文本和图像，支持 128K token 超长输入。</p><p><strong>适合：</strong>跨语言检索、多模态数据、长文档。</p>",
+        boundary: "边界：原文价格 ~$0.10/M tokens，未联网核验；跨语言能力仍建议用你的语言对做实测。",
+        model: "cohere"
+      },
+      bge: {
+        name: "BAAI/bge-m3",
+        letter: "BG",
+        type: "开源 · 1024 维 · MIT · 原文命中 privacy_critical",
+        specs: ["1024 维", "MIT", "自托管", "多语言"],
+        rule: "if privacy_critical: return \"bge-m3 (self-hosted)\"",
+        body: "<p><strong>为什么：</strong>原文把 BGE-M3 列为“多语言，自托管首选”，MIT 许可、完全可控；数据不需要发送到第三方 API。</p><p><strong>适合：</strong>数据不能出内网、需要离线部署、数据量大到自托管更经济、需要微调定制的场景。</p>",
+        boundary: "边界：自托管要自己承担 GPU / 推理基础设施和运维；大规模时可能更经济，但要先把硬件和人力算进去。",
+        model: "bge"
+      },
+      voyage: {
+        name: "Voyage AI voyage-3-large",
+        letter: "V",
+        type: "商业 · 1024 维 · 原文命中 budget == 'tight'",
+        specs: ["1024 维", "$0.06/M tokens（原文）", "性价比"],
+        rule: "if budget == \"tight\": return \"voyage-3-large\"",
+        body: "<p><strong>为什么：</strong>原文称 voyage-3-large 在多项 MTEB 子任务上表现靠前，1024 维比 OpenAI 的 3072 维节省约 3 倍存储，价格约为 OpenAI 的一半。</p><p><strong>适合：</strong>预算敏感、追求性价比、没有强隐私 / 多语言约束的团队。</p>",
+        boundary: "边界：价格 $0.06/M tokens 为原文版本，未核验；具体 MTEB 名次随子任务变化。",
+        model: "voyage"
+      },
+      voyageDomain: {
+        name: "Voyage 领域特化模型",
+        letter: "VD",
+        type: "商业 · 原文命中 domain ∈ {legal, code, finance}",
+        specs: ["领域模型", "法律 / 代码 / 金融", "原文版本"],
+        rule: "if domain in [\"legal\", \"code\", \"finance\"]: return f\"voyage-{domain}-2\"",
+        body: "<p><strong>为什么：</strong>原文称领域特化模型在对应领域检索上优于通用模型：法律（voyage-law-3）、代码（voyage-code-3）、金融（voyage-finance-2）。</p><p><strong>注意版本冲突：</strong>正文列的是 -3 / -3 / -2，决策代码写的是 <code>voyage-{domain}-2</code>。本页不替原文统一版本号，实际以官方文档为准。</p>",
+        boundary: "边界：领域模型仍是通用模型的领域版本，不保证覆盖你的全部术语；上线前用领域 query 集测 Recall@k。",
+        model: "voyageDomain"
+      },
+      finetune: {
+        name: "微调 BGE-M3",
+        letter: "FT",
+        type: "开源 + 自建 · 原文命中的 else 分支",
+        specs: ["自定义微调", "≥1000 样本", "10–30% 提升（原文）"],
+        rule: "else: return \"fine-tune bge-m3\"",
+        body: "<p><strong>为什么：</strong>通用模型在领域术语或检索逻辑上不匹配，且问题不是数据质量时，微调可带来原文所称 10–30% 的领域特定提升。</p><p><strong>做法：</strong>准备 (query, positive, negative) 三元组，用对比学习微调；至少 1000 个标注样本，理想 5000–10000 个。</p>",
+        boundary: "边界：微调改变 Embedding 空间，所有已索引向量必须重新生成；用 Recall@k、MRR 对比微调前后。先修数据，再微调。",
+        model: "finetune"
+      },
+      openai: {
+        name: "OpenAI text-embedding-3-large",
+        letter: "OA",
+        type: "商业 · 3072 维（可缩）· 原文默认分支",
+        specs: ["3072 维（可缩）", "$0.13/M tokens（原文）", "最均衡"],
+        rule: "return \"openai-text-embedding-3-large\"",
+        body: "<p><strong>为什么：</strong>原文称它是最均衡的生产默认选择，在更多直接对比中胜出；支持用 <code>dimensions</code> 参数把 3072 维缩到 1536 或 256，在精度和存储间权衡。</p><p><strong>适合：</strong>没有强领域、多语言或隐私约束的通用生产场景。</p>",
+        boundary: "边界：3072 维存储和检索成本更高；缩减维度会有轻微精度损失。价格 $0.13/M tokens 为原文版本，未核验。",
+        model: "openai"
+      }
+    };
+
+    const state = { history: [], current: "start", result: null };
+
+    function setStrip(model, name) {
+      document.querySelectorAll("[data-model]").forEach((chip) => {
+        const on = chip.dataset.model === model;
+        chip.classList.toggle("is-on", on);
+        chip.classList.toggle("is-off", Boolean(model) && !on);
+      });
+      byId("emb-state").textContent = model
+        ? `原文条件命中：${name}`
+        : "尚未选择 · 七个候选都未命中";
+    }
+
+    function renderQuestion(key, announce) {
+      const q = QUESTIONS[key];
+      byId("emb-position").textContent = q.position;
+      byId("emb-question-title").textContent = q.title;
+      byId("emb-question-note").textContent = q.note;
+      const host = byId("emb-options");
+      host.textContent = "";
+      q.options.forEach((opt, index) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "emb-option";
+        const keyEl = document.createElement("span");
+        keyEl.className = "emb-option-key";
+        keyEl.textContent = String(index + 1);
+        const text = document.createElement("span");
+        const label = document.createElement("b");
+        label.textContent = opt.label;
+        const sub = document.createElement("small");
+        sub.textContent = opt.sub;
+        text.append(label, sub);
+        button.append(keyEl, text);
+        button.addEventListener("click", () => choose(opt.next));
+        host.append(button);
+      });
+      byId("emb-back").disabled = state.history.length === 0;
+      if (announce) {
+        byId("emb-announcement").textContent = `${q.title} 共 ${q.options.length} 个选项。`;
+      }
+    }
+
+    function renderResult(key, announce) {
+      const result = RESULTS[key];
+      byId("emb-result-title").textContent = result.name;
+      byId("emb-badge").textContent = result.letter;
+      byId("emb-type").textContent = result.type;
+      const body = byId("emb-result-body");
+      body.innerHTML = "";
+      const specs = document.createElement("div");
+      specs.className = "emb-specs";
+      result.specs.forEach((spec) => {
+        const item = document.createElement("span");
+        item.textContent = spec;
+        specs.append(item);
+      });
+      const rule = document.createElement("div");
+      rule.className = "emb-rule";
+      rule.textContent = result.rule;
+      const text = document.createElement("div");
+      text.innerHTML = result.body;
+      const boundary = document.createElement("p");
+      boundary.className = "emb-boundary";
+      boundary.textContent = result.boundary;
+      const stamp = document.createElement("span");
+      stamp.className = "emb-stamp";
+      stamp.textContent = "原文版本 · 未联网核实";
+      body.append(specs, rule, text, boundary, stamp);
+      setStrip(result.model, result.name);
+      byId("emb-question-title").textContent = "决策完成";
+      byId("emb-question-note").textContent = "可以返回上一步改条件，或重新开始。结果只代表原文决策框架。";
+      byId("emb-position").textContent = "结果";
+      byId("emb-options").textContent = "";
+      byId("emb-back").disabled = state.history.length === 0;
+      if (announce) {
+        byId("emb-announcement").textContent = `原文框架建议：${result.name}。${result.boundary}`;
+      }
+    }
+
+    function choose(next) {
+      state.history.push({ current: state.current, result: state.result });
+      if (QUESTIONS[next]) {
+        state.current = next;
+        state.result = null;
+        renderQuestion(next, true);
+      } else {
+        state.current = null;
+        state.result = next;
+        renderResult(next, true);
+      }
+    }
+
+    function back() {
+      const prev = state.history.pop();
+      if (!prev) return;
+      if (prev.result) {
+        state.current = null;
+        state.result = prev.result;
+        renderResult(prev.result, true);
+      } else {
+        state.current = prev.current;
+        state.result = null;
+        renderQuestion(prev.current, true);
+      }
+    }
+
+    function reset() {
+      state.history = [];
+      state.current = "start";
+      state.result = null;
+      byId("emb-result-title").textContent = "还没有选择";
+      byId("emb-badge").textContent = "?";
+      byId("emb-type").textContent = "原文条件未命中";
+      byId("emb-result-body").innerHTML = '<p>从左侧回答问题。页面按原文 choose_embedding_model 的判断顺序给出建议，并显示命中的条件。</p>';
+      setStrip(null, "");
+      renderQuestion("start", true);
+      byId("emb-announcement").textContent = "已重置，回到第一个判断。";
+    }
+
+    byId("emb-back").addEventListener("click", back);
+    byId("emb-reset").addEventListener("click", reset);
+    renderQuestion("start", false);
+  })();
+</script>
+</body>
+</html>

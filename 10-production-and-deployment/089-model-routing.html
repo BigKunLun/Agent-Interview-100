@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>模型路由（Model Routing）：如何根据任务复杂度选择模型？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .mr-stage { padding-top: var(--s-2); }
+  .mr-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: var(--s-6); align-items: start; }
+  .mr-main { min-width: 0; }
+  .mr-side { min-width: 0; border-left: 1px solid var(--border); padding-left: var(--s-5); }
+  .mr-side h2 { font: 600 24px/1.4 var(--serif); margin: 2px 0 var(--s-2); }
+  .mr-side > p { color: var(--text-dim); font-size: var(--t-small); }
+  .mr-facts { display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; margin: var(--s-4) 0 0; font-size: 12px; }
+  .mr-facts dt { color: var(--text-dim); }
+  .mr-facts dd { margin: 0; font-family: var(--mono); font-size: 11px; text-align: right; }
+  .mr-note { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px dashed var(--border); color: var(--text-dim); font-size: 11px; line-height: 1.7; }
+  .mr-modes { display: flex; flex-wrap: wrap; gap: 6px; padding: var(--s-4) var(--s-6) 0; }
+  .mr-mode { min-height: 36px; padding: 4px 12px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: 12px; color: var(--text-dim); }
+  .mr-mode:hover { border-color: var(--accent); }
+  .mr-mode[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+  .mr-kicker { font: 10px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .08em; text-transform: uppercase; }
+  .mr-h3 { font: 600 21px/1.4 var(--serif); margin: 3px 0 var(--s-2); }
+  .mr-lede { font-size: 13px; color: var(--text-dim); max-width: 58em; }
+  .mr-request { margin-top: var(--s-3); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 var(--r-1) var(--r-1) 0; background: var(--surface); padding: 11px 13px; }
+  .mr-request b { display: block; font: 600 17px/1.55 var(--serif); }
+  .mr-request p { margin-top: 4px; font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .mr-meta { margin: var(--s-3) 0 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); overflow: hidden; }
+  .mr-meta-row { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 10px; padding: 7px 10px; border-bottom: 1px solid var(--border); font-size: 11.5px; line-height: 1.65; }
+  .mr-meta-row:last-child { border-bottom: 0; }
+  .mr-meta-row dt { color: var(--text-dim); font-size: 10.5px; }
+  .mr-meta-row dd { margin: 0; }
+  .mr-callout { margin-top: var(--s-3); border: 1px solid #9eb4c9; background: var(--accent-dim); border-radius: var(--r-1); padding: 9px 11px; font-size: 11.5px; line-height: 1.7; }
+  .mr-callout b { color: var(--accent); }
+  .mr-callout.warn { border-color: #e4c98f; background: #fdf9ef; }
+  .mr-callout.warn b { color: #7a4a00; }
+  .mr-strategies { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: var(--s-3); }
+  .mr-strategy { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 9px 11px; min-width: 0; }
+  .mr-strategy.picked { border-width: 2px; border-color: var(--accent); background: var(--accent-dim); padding: 8px 10px; }
+  .mr-strategy h3 { margin: 0; font-size: 12px; line-height: 1.5; }
+  .mr-strategy .tag { display: inline-block; margin-top: 2px; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .mr-strategy p { margin-top: 3px; font-size: 10px; line-height: 1.65; color: var(--text-dim); }
+  .mr-strategy.picked h3 { color: var(--accent); }
+  .mr-picked { display: inline-flex; align-items: center; min-height: 19px; padding: 1px 6px; border-radius: 999px; border: 1px solid #b9cbdd; background: var(--surface); color: #194f87; font: 600 9px/1.4 var(--mono); }
+  .mr-models { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: var(--s-3); }
+  .mr-model { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 9px 10px; min-width: 0; }
+  .mr-model.picked { border-width: 2px; border-color: var(--accent); background: var(--accent-dim); padding: 8px 9px; }
+  .mr-model b { display: block; font-size: 12px; line-height: 1.5; }
+  .mr-model .price { display: block; margin-top: 2px; font: 600 12px/1.4 var(--mono); color: var(--accent); }
+  .mr-model span { display: block; margin-top: 2px; font-size: 9.5px; line-height: 1.5; color: var(--text-dim); }
+  .mr-model.picked b { color: var(--accent); }
+  .mr-reason { margin-top: var(--s-3); border: 1px solid var(--border); border-left: 3px solid #2e7d32; border-radius: 0 var(--r-1) var(--r-1) 0; background: var(--surface); padding: 9px 11px; }
+  .mr-reason b { font-size: 12px; }
+  .mr-reason p { margin-top: 2px; font-size: 10.5px; line-height: 1.7; color: var(--text-dim); }
+  .mr-cost { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: var(--s-3); }
+  .mr-cost-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 9px 11px; min-width: 0; }
+  .mr-cost-card span { display: block; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .mr-cost-card b { display: block; margin-top: 2px; font: 600 18px/1.3 var(--mono); }
+  .mr-cost-card small { display: block; margin-top: 2px; font-size: 10px; line-height: 1.5; color: var(--text-dim); }
+  .mr-cost-card.routed { border-color: #9eb4c9; background: var(--accent-dim); }
+  .mr-cost-card.routed b { color: var(--accent); }
+  .mr-bars { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px 11px; }
+  .mr-bar-row { display: grid; grid-template-columns: 86px minmax(0, 1fr) 68px; gap: 7px; align-items: center; padding: 3px 0; }
+  .mr-bar-label { font: 9px/1.4 var(--mono); color: var(--text-dim); }
+  .mr-bar-track { height: 12px; background: var(--surface-soft); border-radius: 999px; overflow: hidden; }
+  .mr-bar { height: 100%; width: var(--w, 0%); min-width: 3px; border-radius: 999px; background: #8aa8c4; }
+  .mr-bar-row.routed .mr-bar { background: var(--accent); }
+  .mr-bar-row.hot .mr-bar { background: #b03a3a; }
+  .mr-bar-value { font: 9px/1.4 var(--mono); color: var(--text-dim); text-align: right; white-space: nowrap; }
+  .mr-verdict { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); padding: 9px 11px; background: var(--surface); font-size: 11.5px; line-height: 1.7; }
+  .mr-verdict b { display: block; font-size: 13px; }
+  .mr-verdict p { margin-top: 2px; color: var(--text-dim); }
+  .mr-verdict.save { border-color: #b9d8b7; background: #eef5ee; }
+  .mr-verdict.save b { color: #1c5e20; }
+  .mr-verdict.spend { border-color: #e2b6b6; background: #fdf3f3; }
+  .mr-verdict.spend b { color: #8f1d1d; }
+  .mr-verdict.same { border-color: #d3bce8; background: #f3eafb; }
+  .mr-verdict.same b { color: #5b2a86; }
+  .mr-compare { min-width: 720px; }
+  .mr-compare td:first-child { min-width: 148px; }
+  .mr-tools { min-width: 700px; }
+  .mr-tools td:first-child { min-width: 126px; }
+  .mr-weights { min-width: 620px; }
+  .mr-weights td:first-child { min-width: 90px; }
+  .mr-four { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: var(--s-3); }
+  .mr-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px 12px; min-width: 0; }
+  .mr-card h3 { margin: 0 0 3px; font-size: 12.5px; line-height: 1.5; }
+  .mr-card p { font-size: 10.5px; line-height: 1.7; color: var(--text-dim); }
+  .mr-card p + p { margin-top: 4px; }
+  .mr-card b { color: var(--ink); }
+  .mr-card .limit { color: #7a4a00; }
+  .mr-prices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: var(--s-3); }
+  .mr-price { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 8px 10px; min-width: 0; }
+  .mr-price b { display: block; font-size: 11.5px; }
+  .mr-price span { display: block; margin-top: 2px; font: 600 14px/1.3 var(--mono); color: var(--accent); }
+  .mr-price small { display: block; margin-top: 2px; font-size: 9.5px; line-height: 1.5; color: var(--text-dim); }
+  .mr-flow { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 11px 12px; }
+  .mr-flow-row { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; font-size: 10.5px; }
+  .mr-flow-row + .mr-flow-row { margin-top: 7px; }
+  .mr-node { border: 1px solid var(--border-bright); border-radius: 4px; padding: 3px 7px; background: var(--surface-soft); white-space: nowrap; }
+  .mr-node.dark { background: var(--accent); border-color: var(--accent); color: white; }
+  .mr-node.soft { border-color: #9eb4c9; background: var(--accent-dim); color: var(--accent); }
+  .mr-node.alert { border-color: #b07d20; background: #fdf3df; color: #7a4a00; }
+  .mr-arrow { color: var(--text-dim); font-family: var(--mono); }
+  .mr-branch { margin-top: 7px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; }
+  .mr-branch-col { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: 6px 7px; font-size: 10px; line-height: 1.55; }
+  .mr-branch-col b { display: block; font-size: 10.5px; }
+  .mr-branch-col span { display: block; color: var(--text-dim); }
+  .mr-code-note { margin-top: var(--s-2); font-size: 10px; color: var(--text-dim); }
+  @media (max-width: 960px) {
+    .mr-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+    .mr-side { border-left: 0; border-top: 1px solid var(--border); padding-left: 0; padding-top: var(--s-4); }
+    .mr-strategies, .mr-four { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .mr-modes { padding: var(--s-3) var(--s-4) 0; }
+    .mr-meta-row { grid-template-columns: 62px minmax(0, 1fr); }
+    .mr-models { grid-template-columns: 1fr; }
+    .mr-cost { grid-template-columns: 1fr; }
+    .mr-prices { grid-template-columns: 1fr; }
+    .mr-branch { grid-template-columns: 1fr; }
+    .mr-bar-row { grid-template-columns: 68px minmax(0, 1fr) 56px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">089 / 模型路由</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 12 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="086-llmops-and-deployment.html">← 上一页 · LLMOps 与 Agent 部署架…</a><a href="090-latency-optimization.html">下一页 → · Agent 系统的延迟优化</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Production &amp; Deployment · 可交互讲解</p>
+      <h1>别让所有请求，<br>都用最贵的模型。</h1>
+    </div>
+    <div>
+      <p class="lead">模型路由在运行时按请求的复杂度、类型、延迟要求和成本约束，动态选择最合适的 LLM。简单问答用 GPT-4o-mini（原文示例 $0.15/M token），复杂推理用 GPT-4o（$2.50/M），极难问题用 o3（$10/M）。ICLR 2025 的 RouteLLM 证明：用 26% 的 GPT-4 调用可保住 95% 的 GPT-4 质量，成本削减约 85%。</p>
+      <p class="definition">关键边界：本页的请求、路由结果和成本对比是<strong>固定教学数据</strong>；模型价格与能力只按原文示例，不更新现价。RouteLLM 的 26% / 95% / 85% 按原文标注，未联网核实。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Production &amp; Deployment</span><span class="pill">模型路由</span><span class="pill">固定教学决策</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="mr-caption-title">
+    <div class="player-top">
+      <div class="player-label">路由决策台 <small>四个固定请求 · 请求 → 策略 → 模型 → 成本</small></div>
+      <div class="controls" role="group" aria-label="决策台控制">
+        <button type="button" class="button button-quiet" id="mr-reset">重置</button>
+        <button type="button" class="button" id="mr-prev" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="mr-next">下一步 →</button>
+      </div>
+    </div>
+    <div class="mr-modes" role="group" aria-label="选择固定请求">
+      <button type="button" class="mr-mode" data-case="translate" aria-pressed="true">翻译短句</button>
+      <button type="button" class="mr-mode" data-case="qa" aria-pressed="false">通用问答</button>
+      <button type="button" class="mr-mode" data-case="reason" aria-pressed="false">极难推理</button>
+      <button type="button" class="mr-mode" data-case="classify" aria-pressed="false">简单分类</button>
+    </div>
+    <div class="stage-nav">
+      <ol style="--stages: 4">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>请求</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>策略</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>模型</button></li>
+        <li><button type="button" class="stage-button" data-stage="3"><span class="stage-number">4</span>成本</button></li>
+      </ol>
+    </div>
+    <div class="scene-host">
+      <div class="mr-stage scene" id="mr-scene" data-scene="model-routing">
+        <div class="mr-grid">
+          <section class="mr-main" id="mr-main" aria-label="路由决策内容"></section>
+          <aside class="mr-side" aria-labelledby="mr-caption-title">
+            <p class="figure-index" id="mr-figure">图 1 · 请求特征</p>
+            <h2 id="mr-caption-title">路由不是选最强，<br>是选刚好够用。</h2>
+            <p id="mr-desc">先看请求的类型、长度和约束，再决定用哪条路由策略。简单任务别浪费强模型。</p>
+            <dl class="mr-facts">
+              <dt>固定请求</dt><dd id="mr-fact-case">翻译短句</dd>
+              <dt>请求类型</dt><dd id="mr-fact-type">翻译</dd>
+              <dt>路由策略</dt><dd id="mr-fact-strategy">待判定</dd>
+              <dt>选中模型</dt><dd id="mr-fact-model">待选择</dd>
+              <dt>原文单价</dt><dd id="mr-fact-price">—</dd>
+              <dt>当前步骤</dt><dd id="mr-fact-step">1 / 4</dd>
+            </dl>
+            <div class="mr-note">固定教学数据：四个请求、路由策略、模型选择和成本对比都写死在页面里，不调用任何模型 API。模型价格按原文示例（$0.15 / $2.50 / $10 每百万 token），未更新现价；RouteLLM 数字按原文引用，未联网核实。</div>
+          </aside>
+        </div>
+      </div>
+      <p class="demo-note">决策台说明：四个请求是固定教学案例，路由结果是按原文规则推导的演示，不是真实流量。页面不调用模型、不发起网络请求；成本对比按原文单价和固定 1M token 计算，不是真实账单。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学决策 · 4 个请求 · 4 个步骤</span><span id="mr-summary">翻译短句 · 第 1 / 4 步</span></div>
+  </section>
+  <p id="mr-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">为什么需要路由</p><h2 id="why-title">一个模型，<br>照顾不了所有请求。</h2></div>
+      <p class="reading-intro">原文把问题拆得很直接：全用最强模型，简单任务浪费；全用最便宜模型，复杂任务质量差；手动选，不可扩展。路由的目标是“刚好够用”。</p>
+    </div>
+    <div class="prose">
+      <div class="mr-four">
+        <div class="mr-card">
+          <h3>全用最强模型</h3>
+          <p>成本高，简单任务浪费。原文举例：GPT-4o 为 $2.50/M token，o3 为 $10/M token。</p>
+        </div>
+        <div class="mr-card">
+          <h3>全用最便宜模型</h3>
+          <p>复杂任务质量差。翻译、分类可能够用，多步推理和代码生成未必。</p>
+        </div>
+        <div class="mr-card">
+          <h3>手动选择</h3>
+          <p>不可扩展，需要领域知识；流量一大，人工判断跟不上。</p>
+        </div>
+        <div class="mr-card">
+          <h3>智能路由</h3>
+          <p>自动判断复杂度，路由到“刚好够用”的模型，平衡质量、成本和延迟。原文给的总体结果是 85% 成本削减 + 95% 质量保持。</p>
+        </div>
+      </div>
+      <div class="callout">
+        <p class="callout-label">原文版本、未联网核实</p>
+        <p>85% 成本削减、95% 质量保持来自原文对 RouteLLM（ICLR 2025）的转述；具体数字取决于流量分布、模型组合和评估集，不是每个系统都能复现。本页不把它写成当前事实。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="strategies-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四种路由策略</p><h2 id="strategies-title">规则、分类器、<br>语义、级联。</h2></div>
+      <p class="reading-intro">原文列了四种策略：基于规则、分类器路由、语义路由、级联路由。它们可以组合使用，不是互斥的。</p>
+    </div>
+    <div class="prose">
+      <div class="mr-four">
+        <div class="mr-card">
+          <h3>1. 基于规则</h3>
+          <p><b>做法：</b>关键词、输入长度、任务类别匹配。翻译走小模型，代码生成走中端，复杂推理走强模型。</p>
+          <p><b>优势：</b>简单、快速、可预测。</p>
+          <p class="limit"><b>劣势：</b>规则维护成本高，无法处理边界情况。</p>
+        </div>
+        <div class="mr-card">
+          <h3>2. 分类器路由</h3>
+          <p><b>做法：</b>训练小模型判断“这个请求需要强模型吗”。RouteLLM 用矩阵分解路由器，阈值 0.7。</p>
+          <p><b>优势：</b>能处理规则覆盖不到的复杂度信号。</p>
+          <p class="limit"><b>代价：</b>需要偏好数据和训练；阈值要用业务数据校准。</p>
+        </div>
+        <div class="mr-card">
+          <h3>3. 语义路由</h3>
+          <p><b>做法：</b>把查询和模型擅长领域都转成向量，找余弦相似度最高的模型。原文举例：代码、创意、推理、通用四类模型画像。</p>
+          <p><b>优势：</b>不依赖关键词，能匹配语义相近的任务。</p>
+          <p class="limit"><b>代价：</b>需要维护模型画像和向量索引；相似不等于质量最优。</p>
+        </div>
+        <div class="mr-card">
+          <h3>4. 级联路由</h3>
+          <p><b>做法：</b>先用小模型尝试，置信度 ≥ 0.8 就返回；不足再升级到强模型。</p>
+          <p><b>优势：</b>确保质量下限。</p>
+          <p class="limit"><b>代价：</b>升级时成本翻倍（两次调用）；原文示例称只有约 20% 请求需要升级。</p>
+        </div>
+      </div>
+      <details>
+        <summary>展开原文的规则路由与级联路由代码骨架</summary>
+        <pre><code>class RuleBasedRouter:
+    """基于预定义规则路由"""
+
+    def route(self, query):
+        # 按任务类型
+        if query.task_type == "translation":
+            return "gpt-4o-mini"      # 翻译用小模型即可
+        if query.task_type == "code_generation":
+            return "claude-sonnet-4-5"  # 代码生成用中端模型
+        if query.task_type == "complex_reasoning":
+            return "o3"               # 复杂推理用最强模型
+
+        # 按输入长度
+        if len(query.text) &lt; 100:
+            return "gpt-4o-mini"      # 短查询用小模型
+        elif len(query.text) &lt; 2000:
+            return "gpt-4o"
+        else:
+            return "claude-sonnet-4-5"  # 长文本用大上下文模型
+
+class CascadeRouter:
+    """先用小模型尝试，不确定时升级"""
+
+    async def route_with_cascade(self, query):
+        response = await self.call("gpt-4o-mini", query)
+        if response.confidence &gt; 0.8:
+            return response  # 小模型够用
+        response = await self.call("gpt-4o", query)
+        return response</code></pre>
+        <p class="mr-code-note">以上为原文节选，只作阅读展示，本页不执行；模型名和阈值按原文。</p>
+      </details>
+      <div class="callout">
+        <p class="callout-label">怎么选</p>
+        <p>有明确任务类型和长度信号，先用规则路由；有偏好数据、需要更细的复杂度判断，用分类器；任务类型跨领域、需要按语义匹配，用语义路由；最看重质量下限、能接受偶发双调用，用级联。生产系统通常规则 + 分类器 + 级联组合。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="flow-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">路由决策流</p><h2 id="flow-title">简单、中等、复杂，<br>各走各的路。</h2></div>
+      <p class="reading-intro">原文的流程图把请求分成三档：简单走小模型，中等走中端，复杂走强模型；小模型置信度不足时级联升级。</p>
+    </div>
+    <div class="prose">
+      <div class="mr-flow" role="img" aria-label="路由流程：用户请求进入复杂度评估，简单走小模型，中等走中端模型，复杂走强模型；小模型置信度低于 0.8 时升级到强模型">
+        <div class="mr-flow-row"><span class="mr-node dark">用户请求</span><span class="mr-arrow">→</span><span class="mr-node soft">复杂度评估</span></div>
+        <div class="mr-branch">
+          <div class="mr-branch-col"><b>简单</b><span>小模型 gpt-4o-mini</span><span>置信度 ≥ 0.8 → 响应</span></div>
+          <div class="mr-branch-col"><b>中等</b><span>中端模型 claude-sonnet</span><span>→ 响应</span></div>
+          <div class="mr-branch-col"><b>复杂</b><span>强模型 gpt-4o / o3</span><span>→ 响应</span></div>
+        </div>
+        <div class="mr-flow-row"><span class="mr-node alert">小模型置信度 &lt; 0.8</span><span class="mr-arrow">→ 级联升级 →</span><span class="mr-node">强模型 gpt-4o / o3</span></div>
+      </div>
+      <p>这张图对应原文的 Mermaid 流程：简单请求先试小模型，置信度不足再升级；中等和复杂请求直接走更强的模型。注意“简单”不是按输入长度一刀切，而是综合任务类型和复杂度评估。</p>
+      <details>
+        <summary>展开原文的 Mermaid 路由流程图源码</summary>
+        <pre><code>flowchart TD
+    A["用户请求"] --&gt; B{"复杂度评估"}
+    B -- "简单" --&gt; C["小模型&lt;br/&gt;gpt-4o-mini"]
+    B -- "中等" --&gt; D["中端模型&lt;br/&gt;claude-sonnet"]
+    B -- "复杂" --&gt; E["强模型&lt;br/&gt;gpt-4o / o3"]
+    E --&gt; F["响应"]
+    D --&gt; F
+    C -- "置信度 ≥ 0.8" --&gt; F
+    C -- "置信度 &lt; 0.8&lt;br/&gt;级联升级" --&gt; E
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    class A,C,D,E,F proc
+    class B decision</code></pre>
+        <p class="mr-code-note">Mermaid 源码按原文保留；页面不加载 Mermaid，阅读以上方 CSS 流程图为离线版本。</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="multi-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">多维度路由决策</p><h2 id="multi-title">不只看质量，<br>还看成本、延迟、隐私。</h2></div>
+      <p class="reading-intro">原文的多维路由器给候选模型打分，默认权重是质量 0.4、成本 0.3、延迟 0.2、隐私 0.1，另外还要看可用性。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data mr-weights">
+          <thead><tr><th>维度</th><th>默认权重（原文示例）</th><th>看什么</th></tr></thead>
+          <tbody>
+            <tr><td><strong>质量</strong></td><td class="num">0.4</td><td>模型在该类型任务上的预期表现</td></tr>
+            <tr><td><strong>成本</strong></td><td class="num">0.3</td><td>每个 token 的价格</td></tr>
+            <tr><td><strong>延迟</strong></td><td class="num">0.2</td><td>模型的响应时间</td></tr>
+            <tr><td><strong>隐私</strong></td><td class="num">0.1</td><td>是否需要本地部署（敏感数据）</td></tr>
+            <tr><td><strong>可用性</strong></td><td>—</td><td>模型的当前健康状态</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>权重不是固定的。面向用户的实时问答更看重延迟，离线批处理更看重成本，涉及敏感数据时隐私维度会直接变成硬约束，而不是 0.1 的软权重。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="ecosystem-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">路由工具生态</p><h2 id="ecosystem-title">从开源算法，<br>到企业网关。</h2></div>
+      <p class="reading-intro">原文列了六个代表工具：RouteLLM、LiteLLM、Portkey、OpenRouter、Azure Model Router、AnyLLM。它们的定位不同，有的偏算法，有的偏网关。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data mr-tools">
+          <thead><tr><th>工具</th><th>原文列出的特色</th></tr></thead>
+          <tbody>
+            <tr><td><strong>RouteLLM</strong></td><td>ICLR 2025，学术界验证的路由算法；矩阵分解路由器，开源</td></tr>
+            <tr><td><strong>LiteLLM</strong></td><td>统一 100+ 模型 API；内置路由、故障转移、负载均衡</td></tr>
+            <tr><td><strong>Portkey</strong></td><td>AI Gateway，企业级路由；条件路由 + 自动故障转移</td></tr>
+            <tr><td><strong>OpenRouter</strong></td><td>统一接口访问所有主流模型；自动选择性价比最优的提供商</td></tr>
+            <tr><td><strong>Azure Model Router</strong></td><td>微软企业级路由；实时评估复杂度、成本、性能</td></tr>
+            <tr><td><strong>AnyLLM</strong></td><td>强化学习驱动的动态路由；自动学习最优路由策略</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文的面试提醒：marktechpost 的 “LLMRouter” 文章介绍的是另一个同名系统，与 ICLR 2025 的 RouteLLM 不是同一项目。引用时优先用 arXiv 原文和官方仓库。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="numbers-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">RouteLLM 数字</p><h2 id="numbers-title">26%、95%、85%，<br>分别是什么。</h2></div>
+      <p class="reading-intro">原文引用 RouteLLM（ICLR 2025）的三个核心数字。它们描述的是一个特定设置下的整体结果，不是每个请求的固定比例。</p>
+    </div>
+    <div class="prose">
+      <div class="mr-prices">
+        <div class="mr-price"><b>GPT-4 调用比例</b><span>26%</span><small>仅用 26% 的 GPT-4 调用</small></div>
+        <div class="mr-price"><b>GPT-4 质量保持</b><span>95%</span><small>达到 95% 的 GPT-4 质量</small></div>
+        <div class="mr-price"><b>成本削减</b><span>约 85%</span><small>相比全部使用 GPT-4</small></div>
+      </div>
+      <div class="callout">
+        <p class="callout-label">原文补充</p>
+        <p>原文还写了数据增强后的结果：95% 质量、仅 14% 强模型调用、成本削减 75–85%。这组数字和 26% 是不同设置，不能混着引用。分类器路由的推理时间原文称小于 10ms，成本几乎为零。</p>
+      </div>
+      <p>这三个数字回答的是“整体上能省多少、质量掉多少”，不是“每个请求该用哪个模型”。具体到单个请求，路由可能选小模型、中端模型，甚至比基线更贵的强模型。下面的成本对比会展示这种差异。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">路由器不贵，<br>两个模型也不够。</h2></div>
+      <p class="reading-intro">原文列了 2 条误区和 2 条追问。核心是：路由开销很小；生产通常要 3–5 个模型；评估看质量保持率和成本削减率；路由是结构性需求。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“路由器本身的开销会抵消收益。”</h3><p>分类器路由（如 RouteLLM 的矩阵分解模型）推理时间 &lt; 10ms，成本几乎为零。相比于将简单请求从 $2.50/M 路由到 $0.15/M 的节省，路由器开销微不足道。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“两个模型就够了（强+弱）。”</h3><p>实际生产系统通常需要 3–5 个模型：最轻量（FAQ/简单任务）→ 中端（一般任务）→ 高端（复杂推理）→ 特化模型（代码/数学/创意）。原文称 37% 的企业在 2026 年使用 5+ 个模型，该调查数字按原文时点，未联网核实。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>如何评估路由器的效果？</h3><p>两个核心指标：(1) 质量保持率——路由后的整体质量 vs 全部使用强模型的质量（原文目标 &gt; 95%）；(2) 成本削减率——路由后的总成本 vs 全部使用强模型的成本（原文目标 &gt; 50%）。同时监控各模型的实际调用比例和各自的质量指标。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>更强的模型会不会让路由不再需要？</h3><p>不会。即使最强的模型变得很便宜，不同模型在不同任务上仍有各自优势（速度、专业性、上下文长度）。而且新的强模型出来后，旧的模型变成“弱模型”，路由的价值持续存在。原文判断这是一个结构性需求。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《模型路由（Model Routing）：如何根据任务复杂度选择模型？》。RouteLLM 数字、模型价格和企业调查按原文时点引用，本页未联网核实，也不更新现价。</p>
+    <details>
+      <summary>展开原文列出的六条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://arxiv.org/abs/2406.18665" target="_blank" rel="noopener noreferrer">RouteLLM: Learning to Route LLMs with Preference Data (arXiv:2406.18665, ICLR 2025)</a></li>
+          <li><a href="https://github.com/lm-sys/RouteLLM" target="_blank" rel="noopener noreferrer">RouteLLM GitHub (lm-sys/RouteLLM)</a></li>
+          <li><a href="https://developers.redhat.com/articles/2025/05/20/llm-semantic-router-intelligent-request-routing" target="_blank" rel="noopener noreferrer">LLM Semantic Router: Intelligent Request Routing (Red Hat)</a></li>
+          <li><a href="https://portkey.ai/blog/task-based-llm-routing/" target="_blank" rel="noopener noreferrer">Task-Based LLM Routing: Optimizing LLM Performance (Portkey)</a></li>
+          <li><a href="https://www.swfte.com/blog/intelligent-llm-routing-multi-model-ai" target="_blank" rel="noopener noreferrer">Intelligent LLM Routing: How Multi-Model AI Cuts Costs by 85% (Swfte AI)</a></li>
+          <li><a href="https://www.truefoundry.com/blog/what-is-llm-router" target="_blank" rel="noopener noreferrer">What is LLM Router? (TrueFoundry)</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。原文提醒：marktechpost 的 “LLMRouter” 与 ICLR 2025 的 RouteLLM 不是同一项目。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>10-production-and-deployment/089-model-routing.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 6 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const MR_CASES = {
+    translate: {
+      label: "翻译短句",
+      type: "翻译",
+      text: "把这句话翻译成英文：会议改到下午三点。",
+      length: "22 个汉字",
+      constraint: "延迟优先，质量要求中等",
+      strategy: "rule",
+      strategyLabel: "规则路由",
+      strategyWhy: "任务类型明确是 translation，规则直接命中，不需要分类器。",
+      model: "gpt-4o-mini",
+      price: "$0.15 / M token",
+      priceNum: 0.15,
+      score: "规则命中：task_type=translation",
+      modelWhy: "原文的规则路由示例：翻译用小模型即可。",
+      tier: "小模型"
+    },
+    qa: {
+      label: "通用问答",
+      type: "通用问答",
+      text: "公司年假政策里，试用期员工有几天？",
+      length: "20 个汉字",
+      constraint: "质量与延迟平衡",
+      strategy: "semantic",
+      strategyLabel: "语义路由",
+      strategyWhy: "查询语义最接近 general_model 画像，路由到通用模型。",
+      model: "gpt-4o",
+      price: "$2.50 / M token",
+      priceNum: 2.50,
+      score: "语义相似度最高：general_model",
+      modelWhy: "原文的语义路由示例：按查询与模型画像的向量相似度匹配。",
+      tier: "中端模型"
+    },
+    reason: {
+      label: "极难推理",
+      type: "极难推理",
+      text: "证明这个调度算法的最坏时间复杂度，并给出一个反例。",
+      length: "27 个汉字",
+      constraint: "质量优先，成本可放宽",
+      strategy: "classifier",
+      strategyLabel: "分类器路由",
+      strategyWhy: "分类器判断需要强模型，score 0.82 高于阈值 0.7。",
+      model: "o3",
+      price: "$10 / M token",
+      priceNum: 10,
+      score: "分类器 score 0.82 > 阈值 0.7",
+      modelWhy: "原文的规则路由示例：复杂推理走最强模型 o3。",
+      tier: "强模型"
+    },
+    classify: {
+      label: "简单分类",
+      type: "工单分类",
+      text: "把这条工单标记为退款、物流或账号问题。",
+      length: "21 个汉字",
+      constraint: "成本优先，质量下限要保住",
+      strategy: "cascade",
+      strategyLabel: "级联路由",
+      strategyWhy: "先试小模型；置信度 0.91 高于 0.8，不需要升级。",
+      model: "gpt-4o-mini",
+      price: "$0.15 / M token",
+      priceNum: 0.15,
+      score: "小模型置信度 0.91 ≥ 0.8",
+      modelWhy: "原文的级联路由示例：小模型够用就返回，不够再升级。",
+      tier: "小模型"
+    }
+  };
+
+  const MR_STRATEGIES = [
+    { key: "rule", name: "规则路由", tag: "关键词 / 长度 / 类别", desc: "维护成本高，但简单、快速、可预测。" },
+    { key: "classifier", name: "分类器路由", tag: "RouteLLM 矩阵分解", desc: "用小模型判断复杂度，阈值 0.7。" },
+    { key: "semantic", name: "语义路由", tag: "向量相似度", desc: "把查询匹配到最擅长的模型画像。" },
+    { key: "cascade", name: "级联路由", tag: "先小后大", desc: "小模型置信度 ≥ 0.8 就返回，否则升级。" }
+  ];
+
+  const MR_MODELS = [
+    { name: "gpt-4o-mini", price: "$0.15 / M", tier: "小模型", use: "翻译、简单分类" },
+    { name: "gpt-4o", price: "$2.50 / M", tier: "中端模型", use: "通用问答" },
+    { name: "o3", price: "$10 / M", tier: "强模型", use: "复杂推理" }
+  ];
+
+  const MR_STEPS = [
+    { label: "请求", figure: "图 1 · 请求特征", title: "路由不是选最强，<br>是选刚好够用。", desc: "先看请求的类型、长度和约束，再决定用哪条路由策略。简单任务别浪费强模型。", heading: "先看请求长什么样。" },
+    { label: "策略", figure: "图 2 · 路由策略", title: "四条策略，<br>各管一类问题。", desc: "规则、分类器、语义、级联。固定请求会命中其中一条，也可能组合使用。", heading: "四条策略，各管一类问题。" },
+    { label: "模型", figure: "图 3 · 模型选择", title: "选中的模型，<br>要能说出为什么。", desc: "模型选择不是“越强越好”，而是满足质量约束下的成本与延迟平衡。", heading: "选中的模型，要能说出为什么。" },
+    { label: "成本", figure: "图 4 · 成本对比", title: "省不省，<br>要看跟谁比。", desc: "单请求对比全部用 GPT-4o 的单价；整体 85% 是 RouteLLM 的流量结果，两者不能混用。", heading: "省不省，要看跟谁比。" }
+  ];
+
+  const mrMain = document.getElementById("mr-main");
+  const mrModes = Array.from(document.querySelectorAll(".mr-mode"));
+  const mrStageButtons = Array.from(document.querySelectorAll(".stage-button"));
+  const mrPrev = document.getElementById("mr-prev");
+  const mrNext = document.getElementById("mr-next");
+  const mrReset = document.getElementById("mr-reset");
+  const mrFigure = document.getElementById("mr-figure");
+  const mrDesc = document.getElementById("mr-desc");
+  const mrFactCase = document.getElementById("mr-fact-case");
+  const mrFactType = document.getElementById("mr-fact-type");
+  const mrFactStrategy = document.getElementById("mr-fact-strategy");
+  const mrFactModel = document.getElementById("mr-fact-model");
+  const mrFactPrice = document.getElementById("mr-fact-price");
+  const mrFactStep = document.getElementById("mr-fact-step");
+  const mrSummary = document.getElementById("mr-summary");
+  const mrAnnouncement = document.getElementById("mr-announcement");
+  let mrCase = "translate";
+  let mrStep = 0;
+
+  function mrRenderStep(item, step) {
+    if (step === 0) {
+      return '<p class="mr-kicker">固定请求 · ' + item.label + '</p>' +
+        '<div class="mr-request"><b>' + item.text + '</b><p>固定教学请求，不发送给任何模型。</p></div>' +
+        '<dl class="mr-meta">' +
+        '<div class="mr-meta-row"><dt>请求类型</dt><dd>' + item.type + '</dd></div>' +
+        '<div class="mr-meta-row"><dt>输入长度</dt><dd>' + item.length + '</dd></div>' +
+        '<div class="mr-meta-row"><dt>约束</dt><dd>' + item.constraint + '</dd></div>' +
+        '</dl>' +
+        '<div class="mr-callout"><b>先问三个问题：</b>任务是什么类型？输入有多长？质量、成本、延迟哪个优先？答案决定后面走规则、分类器、语义还是级联。</div>';
+    }
+    if (step === 1) {
+      return '<p class="mr-kicker">' + item.label + ' · 路由策略</p>' +
+        '<h3 class="mr-h3">' + MR_STEPS[1].heading + '</h3>' +
+        '<p class="mr-lede">四张策略卡里，只有一张会亮起。固定请求命中哪张，取决于它的类型、长度和可用信号。</p>' +
+        '<div class="mr-strategies">' + MR_STRATEGIES.map((s) => {
+          const picked = s.key === item.strategy;
+          return '<div class="mr-strategy' + (picked ? " picked" : "") + '">' +
+            (picked ? '<span class="mr-picked">本请求命中</span>' : '') +
+            '<h3>' + s.name + '</h3><span class="tag">' + s.tag + '</span><p>' + s.desc + '</p></div>';
+        }).join("") + '</div>' +
+        '<div class="mr-reason"><b>为什么是' + item.strategyLabel + '？</b><p>' + item.strategyWhy + '</p></div>' +
+        '<div class="mr-callout warn"><b>策略不是互斥的：</b>生产系统常把规则、分类器和级联组合起来。先用规则挡掉明确任务，再用分类器处理边界，最后用级联兜住质量下限。</div>';
+    }
+    if (step === 2) {
+      return '<p class="mr-kicker">' + item.label + ' · 模型选择</p>' +
+        '<h3 class="mr-h3">' + MR_STEPS[2].heading + '</h3>' +
+        '<p class="mr-lede">候选模型有三个价位：小模型、中端、强模型。固定请求选中了' + item.model + '（' + item.tier + '）。</p>' +
+        '<div class="mr-models">' + MR_MODELS.map((m) => {
+          const picked = m.name === item.model;
+          return '<div class="mr-model' + (picked ? " picked" : "") + '">' +
+            (picked ? '<span class="mr-picked">选中</span>' : '') +
+            '<b>' + m.name + '</b><span class="price">' + m.price + '</span><span>' + m.tier + ' · ' + m.use + '</span></div>';
+        }).join("") + '</div>' +
+        '<div class="mr-reason"><b>判断依据：</b><p>' + item.score + '。' + item.modelWhy + '</p></div>' +
+        '<div class="mr-callout warn"><b>价格口径：</b>以上单价按原文示例（每百万 token），本页不联网更新。模型能力和价格会变化，真实选型要用当前评测和报价。</div>';
+    }
+    const ratio = item.priceNum / 2.50;
+    const percent = Math.round(ratio * 100);
+    const diff = percent - 100;
+    let verdictClass = "same";
+    let verdictTitle = "与基线持平";
+    let verdictText = "这个请求用 GPT-4o，成本与“全部用 GPT-4o”相同；路由没有省，也没有多花。";
+    if (percent < 100) {
+      verdictClass = "save";
+      verdictTitle = "比基线省 " + Math.abs(diff) + "%";
+      verdictText = "按原文单价、1M token 计算，这个请求的成本是基线的 " + percent + "%。";
+    } else if (percent > 100) {
+      verdictClass = "spend";
+      verdictTitle = "比基线贵 " + diff + "%";
+      verdictText = "复杂请求用更强的模型，单请求成本是基线的 " + percent + "%。质量优先时，这笔钱可能值得花。";
+    }
+    const maxPrice = 10;
+    const baselineWidth = Math.round((2.50 / maxPrice) * 100);
+    const routedWidth = Math.round((item.priceNum / maxPrice) * 100);
+    return '<p class="mr-kicker">' + item.label + ' · 成本对比</p>' +
+      '<h3 class="mr-h3">' + MR_STEPS[3].heading + '</h3>' +
+      '<p class="mr-lede">对比基线：全部用 GPT-4o（原文示例 $2.50/M token）。这是单请求单价对比，不是 RouteLLM 的整体 85%。</p>' +
+      '<div class="mr-cost">' +
+      '<div class="mr-cost-card"><span>基线 · 全部用 GPT-4o</span><b>$2.50</b><small>每百万 token，原文示例</small></div>' +
+      '<div class="mr-cost-card routed"><span>本请求 · ' + item.model + '</span><b>' + item.price + '</b><small>' + item.tier + '，原文示例</small></div>' +
+      '</div>' +
+      '<div class="mr-bars">' +
+      '<div class="mr-bar-row"><span class="mr-bar-label">基线 GPT-4o</span><div class="mr-bar-track"><div class="mr-bar" style="--w:' + baselineWidth + '%"></div></div><span class="mr-bar-value">$2.50</span></div>' +
+      '<div class="mr-bar-row routed' + (percent > 100 ? " hot" : "") + '"><span class="mr-bar-label">' + item.model + '</span><div class="mr-bar-track"><div class="mr-bar" style="--w:' + routedWidth + '%"></div></div><span class="mr-bar-value">' + item.price.split(" /")[0] + '</span></div>' +
+      '</div>' +
+      '<div class="mr-verdict ' + verdictClass + '"><b>' + verdictTitle + '</b><p>' + verdictText + '</p></div>' +
+      '<div class="mr-callout"><b>和 RouteLLM 的 85% 区分开：</b>85% 是特定流量分布下的整体成本削减，不是每个请求都省 85%。简单请求可能省 90% 以上，复杂请求可能比基线更贵；整体是否省钱，取决于请求组合和路由质量。</div>';
+  }
+
+  function mrRender(announce) {
+    const item = MR_CASES[mrCase];
+    const step = MR_STEPS[mrStep];
+    mrMain.innerHTML = mrRenderStep(item, mrStep);
+    mrModes.forEach((button) => {
+      button.setAttribute("aria-pressed", button.dataset.case === mrCase ? "true" : "false");
+    });
+    mrStageButtons.forEach((button, i) => {
+      if (i === mrStep) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    mrFigure.textContent = step.figure;
+    mrDesc.textContent = step.desc;
+    mrFactCase.textContent = item.label;
+    mrFactType.textContent = item.type;
+    mrFactStrategy.textContent = mrStep >= 1 ? item.strategyLabel : "待判定";
+    mrFactModel.textContent = mrStep >= 2 ? item.model : "待选择";
+    mrFactPrice.textContent = mrStep >= 2 ? item.price.split(" /")[0] + " / M" : "—";
+    mrFactStep.textContent = (mrStep + 1) + " / 4";
+    mrSummary.textContent = item.label + " · 第 " + (mrStep + 1) + " / 4 步";
+    mrPrev.disabled = mrStep === 0;
+    mrNext.disabled = mrStep === MR_STEPS.length - 1;
+    mrNext.textContent = mrStep === MR_STEPS.length - 1 ? "已到成本" : "下一步 →";
+    if (announce) {
+      mrAnnouncement.textContent = item.label + "，第 " + (mrStep + 1) + " 步：" + step.label + "。";
+    }
+  }
+
+  mrModes.forEach((button) => {
+    button.addEventListener("click", () => {
+      mrCase = button.dataset.case;
+      mrRender(true);
+    });
+  });
+  mrStageButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      mrStep = Number(button.dataset.stage);
+      mrRender(true);
+    });
+  });
+  mrPrev.addEventListener("click", () => {
+    if (mrStep > 0) {
+      mrStep -= 1;
+      mrRender(true);
+    }
+  });
+  mrNext.addEventListener("click", () => {
+    if (mrStep < MR_STEPS.length - 1) {
+      mrStep += 1;
+      mrRender(true);
+    }
+  });
+  mrReset.addEventListener("click", () => {
+    mrCase = "translate";
+    mrStep = 0;
+    mrRender(false);
+    mrAnnouncement.textContent = "已重置：翻译短句，第 1 步请求特征。";
+  });
+
+  mrRender(false);
+</script>
+</body>
+</html>

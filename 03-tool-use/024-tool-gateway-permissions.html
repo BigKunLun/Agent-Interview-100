@@ -1,0 +1,1125 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>如何设计 Tool Gateway 和工具权限管理？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  /* 024 Tool Gateway 权限矩阵 */
+  .gw-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .gw-intro { display: flex; justify-content: space-between; gap: var(--s-3); align-items: end; flex-wrap: wrap; }
+  .gw-intro h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; }
+  .gw-intro p { font-size: var(--t-small); color: var(--text-dim); max-width: 38em; }
+  .gw-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); padding: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .gw-control { min-width: 0; }
+  .gw-control label { display: block; font-size: 10px; letter-spacing: .04em; color: var(--text-dim); margin-bottom: 3px; }
+  .gw-control select { width: 100%; min-height: 38px; padding: 5px 8px; border: 1px solid var(--border-bright); border-radius: 5px; background: var(--surface); color: var(--ink); font-size: 12px; }
+  .gw-matrix-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .gw-matrix { width: 100%; min-width: 620px; border-collapse: collapse; font-size: 12px; }
+  .gw-matrix th, .gw-matrix td { padding: 7px 8px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); text-align: center; vertical-align: middle; }
+  .gw-matrix th:last-child, .gw-matrix td:last-child { border-right: 0; }
+  .gw-matrix tbody tr:last-child th, .gw-matrix tbody tr:last-child td { border-bottom: 0; }
+  .gw-matrix thead th { color: var(--text-dim); font-size: 10px; font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+  .gw-matrix thead th:first-child, .gw-matrix tbody th { text-align: left; }
+  .gw-matrix tbody th { font: 600 11px/1.5 var(--mono); white-space: nowrap; }
+  .gw-cell { width: 100%; min-height: 40px; border: 1px solid transparent; border-radius: 5px; background: transparent; font: 600 11px/1.5 var(--mono); }
+  .gw-cell.allow { color: #1b5e20; background: #f1f8f1; }
+  .gw-cell.deny { color: #8b1a1a; background: #fff3f3; }
+  .gw-cell:hover { border-color: var(--border-bright); }
+  .gw-cell.is-selected { border-color: var(--ink); box-shadow: inset 0 0 0 1px var(--ink); }
+  .gw-legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: var(--s-3); font-size: 11px; color: var(--text-dim); }
+  .gw-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .gw-legend i { display: inline-block; width: 14px; height: 10px; border: 1px solid var(--border); }
+  .gw-legend .allow { background: #f1f8f1; border-color: #9bc59b; }
+  .gw-legend .deny { background: #fff3f3; border-color: #d99b9b; }
+  .gw-summary { margin-top: var(--s-3); font: 11px/1.6 var(--mono); color: var(--text-dim); }
+  .gw-scroll-hint { display: none; margin-top: var(--s-2); font-size: 11px; color: var(--text-dim); }
+  .gw-detail { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: var(--s-4); margin-top: var(--s-4); align-items: start; }
+  .gw-detail > * { min-width: 0; }
+  .gw-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .gw-card h3 { font-size: 14px; line-height: 1.5; font-weight: 600; }
+  .gw-decision { display: flex; align-items: baseline; gap: 9px; flex-wrap: wrap; margin-top: var(--s-2); }
+  .gw-decision strong { font: 600 26px/1.2 var(--mono); letter-spacing: -.03em; }
+  .gw-decision strong.allow { color: #1b5e20; }
+  .gw-decision strong.deny { color: #8b1a1a; }
+  .gw-decision code { font-size: 12px; }
+  .gw-request { margin-top: var(--s-3); }
+  .gw-request pre { margin-top: 5px; max-height: 220px; overflow: auto; }
+  .gw-steps { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 5px; }
+  .gw-step { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 8px; align-items: start; border: 1px solid var(--border); border-radius: 5px; background: var(--surface-soft); padding: 7px 9px; }
+  .gw-step.ok { border-color: #cfe3cf; background: #f6faf6; }
+  .gw-step.bad { border-color: #e3b5b5; background: #fff6f6; }
+  .gw-step.skip { border-style: dashed; opacity: .72; }
+  .gw-step-mark { display: inline-grid; place-items: center; min-height: 20px; padding: 1px 5px; border-radius: 4px; font: 700 9px/1.5 var(--mono); color: white; background: #2e7d32; margin-top: 1px; white-space: nowrap; }
+  .gw-step.bad .gw-step-mark { background: #b71c1c; }
+  .gw-step.skip .gw-step-mark { background: #8b908b; }
+  .gw-step b { display: block; font-size: 12px; line-height: 1.5; }
+  .gw-step span { display: block; font-size: 11px; line-height: 1.6; color: var(--text-dim); }
+  .gw-step .gw-step-mark { color: #fff; }
+  .gw-note { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px solid var(--border); font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .gw-note strong { color: var(--ink); }
+  .gw-caption { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border); }
+  .gw-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; }
+  .gw-caption p:not(.figure-index):not(.gw-action) { margin-top: var(--s-2); font-size: var(--t-small); color: var(--text-dim); max-width: 66em; }
+  .gw-action { display: inline-block; margin-top: var(--s-3); padding: 4px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font: 11px/1.6 var(--mono); color: var(--accent); background: var(--accent-dim); }
+  .gw-flow { display: grid; gap: 7px; margin-top: var(--s-4); }
+  .gw-flow-node { border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); padding: 8px 11px; font-size: 12px; line-height: 1.6; }
+  .gw-flow-node small { display: block; font-size: 10px; color: var(--text-dim); }
+  .gw-flow-node.policy { border-color: #c9a5d9; background: #faf3fd; }
+  .gw-flow-node.tool { background: var(--surface-soft); }
+  .gw-flow-arrow { text-align: center; color: var(--text-dim); font: 10px/1.3 var(--mono); }
+  .gw-flow-arrow b { display: block; font-size: 15px; }
+  .gw-branch { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); margin-top: 2px; }
+  .gw-branch div { border: 1px solid var(--border); border-radius: 5px; padding: 7px 9px; font-size: 11px; line-height: 1.6; background: var(--surface); }
+  .gw-branch div:first-child { border-color: #cfe3cf; background: #f6faf6; }
+  .gw-branch div:last-child { border-color: #e3b5b5; background: #fff6f6; }
+  .gw-rail { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-2); margin-top: var(--s-4); }
+  .gw-rail div { border: 1px solid var(--border); border-radius: 5px; background: var(--surface); padding: 8px 9px; font: 11px/1.6 var(--mono); color: var(--text-dim); }
+  .gw-rail strong { display: block; color: var(--ink); font-size: 12px; }
+  .gw-guard { display: grid; gap: 5px; margin-top: var(--s-3); }
+  .gw-guard div { border: 1px solid var(--border); border-radius: 5px; background: var(--surface); padding: 7px 10px; font-size: 12px; line-height: 1.6; }
+  .gw-guard div:nth-child(2) { border-style: dashed; background: var(--surface-soft); text-align: center; color: var(--text-dim); }
+  @media (max-width: 1000px) {
+    .gw-controls { grid-template-columns: 1fr 1fr; }
+    .gw-detail { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .gw-stage { padding: var(--s-4); }
+    .gw-controls { grid-template-columns: 1fr; }
+    .gw-card { padding: var(--s-3); }
+    .gw-rail { grid-template-columns: 1fr 1fr; }
+    .gw-caption h2 { font-size: 22px; }
+    .gw-matrix { min-width: 560px; }
+    .gw-scroll-hint { display: block; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">024 / Tool Gateway 权限</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 20 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="023-common-tool-patterns.html">← 上一页 · Tool Use 的常见模式</a><span class="disabled">下一页 →</span></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Tool Use · 可交互讲解</p>
+      <h1>Agent 不碰凭证，<br>请求先过门。</h1>
+    </div>
+    <div>
+      <p class="lead">Tool Gateway 是 Agent 与工具之间的安全中间层。Agent 不直接调用工具，也不持有凭证；所有请求都经过 Gateway 做身份验证、权限检查、参数校验、速率限制和审计日志。权限用 Policy-as-Code 外部化，配合 RBAC / ABAC 做细粒度控制。</p>
+      <p class="definition">关键边界：<strong>Agent 是不可信请求者</strong>。权限检查必须在 Agent 外部执行，不能只写在 Agent 代码里；委托用户的权限也不能被 Agent 原样继承。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Tool Use</span><span class="pill">Gateway / RBAC / ABAC</span><span class="pill">本地演示</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-label="Tool Gateway 权限矩阵演示">
+    <div class="player-top">
+      <div class="player-label">权限矩阵 <small>角色 × 工具 × 参数上下文，固定策略本地复算</small></div>
+      <div class="controls" role="group" aria-label="权限矩阵控制">
+        <button type="button" class="button button-quiet" id="gw-reset">重置</button>
+        <button type="button" class="button" id="gw-export">复制决策摘要</button>
+      </div>
+    </div>
+    <div class="gw-stage scene" id="gw-scene" data-scene="permission-matrix">
+      <div class="gw-intro">
+        <div>
+          <p class="figure-index">固定策略 · 可独立复算</p>
+          <h2>改上下文，看同一格的判定怎么变。</h2>
+        </div>
+        <p>18 个格子 = 3 个角色 × 6 个工具。点击任一格查看逐条策略判断；所有结果由页面脚本按固定规则计算。</p>
+      </div>
+      <div class="gw-controls">
+        <div class="gw-control"><label for="gw-time">时间上下文</label><select id="gw-time"><option value="work">工作时间内（10:00）</option><option value="off">非工作时间（22:00）</option></select></div>
+        <div class="gw-control"><label for="gw-customer">客户归属</label><select id="gw-customer"><option value="assigned">本人负责的客户</option><option value="other">非本人负责的客户</option></select></div>
+        <div class="gw-control"><label for="gw-approval">人工审批</label><select id="gw-approval"><option value="no">未批准</option><option value="yes">已批准</option></select></div>
+        <div class="gw-control"><label for="gw-user">委托用户权限</label><select id="gw-user"><option value="full">完整权限</option><option value="readonly">只读权限</option></select></div>
+      </div>
+      <div class="gw-matrix-wrap">
+        <table class="gw-matrix" id="gw-matrix">
+          <caption class="sr-only">三个 Agent 角色对六个工具的允许或拒绝矩阵，随上方上下文变化</caption>
+          <thead><tr id="gw-matrix-head"></tr></thead>
+          <tbody id="gw-matrix-body"></tbody>
+        </table>
+      </div>
+      <p class="gw-scroll-hint">表格可左右滑动，查看全部 6 个工具。</p>
+      <div class="gw-legend"><span><i class="allow"></i>允许</span><span><i class="deny"></i>拒绝</span><span>选中格显示逐条判定</span></div>
+      <p class="gw-summary" id="gw-summary"></p>
+
+      <div class="gw-detail">
+        <div class="gw-card">
+          <p class="figure-index">请求与参数</p>
+          <h3 id="gw-request-title">support_agent → send_email</h3>
+          <div class="gw-decision"><strong id="gw-decision">拒绝</strong><code id="gw-code">APPROVAL_REQUIRED</code></div>
+          <div class="gw-request"><pre><code id="gw-request"></code></pre></div>
+          <p class="gw-note">这些参数是固定教学数据。本页不连接策略引擎、不发起审批、不执行任何工具调用，也不修改任何权限。</p>
+        </div>
+        <div class="gw-card">
+          <p class="figure-index">逐条判定</p>
+          <h3>按顺序检查，遇到拒绝就停止。</h3>
+          <ol class="gw-steps" id="gw-steps"></ol>
+          <p class="gw-note" id="gw-detail-note"></p>
+        </div>
+      </div>
+      <div class="gw-caption">
+        <p class="figure-index">图 1 · 固定策略矩阵</p>
+        <h2 id="gw-caption-title">权限不是一个“是/否”，而是一串条件。</h2>
+        <p id="gw-caption-desc"></p>
+        <p class="gw-action" id="gw-action">本地演示 · 不执行真实授权</p>
+      </div>
+      <p class="demo-note">固定教学数据：角色、工具、策略规则、请求参数和判定结果都是写死的；矩阵按原文的 RBAC / ABAC 规则简化为 3 个角色、6 个工具和 4 个上下文维度。上下文切换只重新计算结果，不调用 OPA / Cedar / 任何真实系统，不执行授权或工具调用。策略仅用于讲解，未经过安全审计。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 本地策略计算</span><span id="gw-state-summary">未执行任何工具 · 未发起审批</span></div>
+  </section>
+  <p id="gw-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">为什么需要 Gateway</p><h2 id="why-title">Agent 直接拿凭证，<br>风险不可控。</h2></div>
+      <p class="reading-intro">没有 Gateway 的架构中，Agent 直接持有 API 密钥并调用外部服务。Prompt Injection、误操作和审计缺失都会变成真实事故。</p>
+    </div>
+    <div class="prose">
+      <ul>
+        <li>Agent 被 Prompt Injection 操纵，调用不该调用的工具。</li>
+        <li>Agent 无意中执行破坏性操作，例如删除数据、发送未经审核的消息。</li>
+        <li>无法追踪和审计 Agent 的行为。</li>
+        <li>凭证暴露在 Agent 的上下文中。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="arch-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">Gateway 架构</p><h2 id="arch-title">每次调用，<br>逐层拦截。</h2></div>
+      <p class="reading-intro">Agent 不持有任何凭证，也不直接与基础设施 API 通信。Gateway 拦截每个请求，做鉴权、权限、校验、限流、执行、审计和结果过滤。</p>
+    </div>
+    <div class="prose">
+      <div class="gw-flow" aria-label="Tool Gateway 请求链路离线示意">
+        <div class="gw-flow-node">Agent（LLM）<small>发起工具调用请求，不持有任何凭证</small></div>
+        <div class="gw-flow-arrow" aria-hidden="true"><b>↓</b>请求</div>
+        <div class="gw-flow-node">Tool Gateway<small>鉴权 · 输入验证 · 限流</small></div>
+        <div class="gw-flow-arrow" aria-hidden="true"><b>↓</b>evaluate()</div>
+        <div class="gw-flow-node policy">策略引擎（OPA / Cedar）<small>按 agent、tool、params、context 做权限检查</small></div>
+        <div class="gw-branch"><div>允许：放行执行工具 → 审计日志 → 结果过滤 → 返回脱敏结果</div><div>拒绝：返回 <code>{"error": "权限不足"}</code>，不执行工具</div></div>
+      </div>
+      <p class="gw-note">离线可读示意：固定请求链路。原图是 Mermaid 时序图，源码见下方折叠块。</p>
+      <details>
+        <summary>查看原文 Mermaid 源码（需在支持 Mermaid 的编辑器中渲染）</summary>
+        <pre><code>sequenceDiagram
+    participant A as Agent(LLM)
+    participant G as Tool Gateway
+    participant P as 策略引擎(OPA)
+    participant T as 实际工具/API
+    A-&gt;&gt;G: 工具调用请求（不持任何凭证）
+    G-&gt;&gt;G: 鉴权 · 输入验证 · 限流
+    G-&gt;&gt;P: 权限检查 evaluate()
+    alt 允许
+        P--&gt;&gt;G: allowed
+        G-&gt;&gt;T: 放行执行
+        T--&gt;&gt;G: 执行结果
+        G-&gt;&gt;G: 审计日志 · 结果过滤
+        G--&gt;&gt;A: 返回结果（已脱敏）
+    else 拒绝
+        P--&gt;&gt;G: denied
+        G--&gt;&gt;A: {"error": "权限不足"}
+    end</code></pre>
+      </details>
+      <p class="code-label">原文代码 · ToolGateway</p>
+      <pre><code>class ToolGateway:
+    def __init__(self, policy_engine, rate_limiter, audit_logger):
+        self.policy = policy_engine      # OPA / Cedar
+        self.limiter = rate_limiter
+        self.logger = audit_logger
+        self.tools = {}                  # 注册的工具
+
+    async def execute(self, agent_id: str, tool_name: str, params: dict) -&gt; dict:
+        # 1. 身份验证
+        agent = await self.authenticate(agent_id)
+
+        # 2. 权限检查
+        decision = self.policy.evaluate({
+            "agent": agent,
+            "tool": tool_name,
+            "params": params,
+            "context": {"time": now(), "user": agent.delegated_user}
+        })
+        if not decision.allowed:
+            self.logger.log_denied(agent_id, tool_name, decision.reason)
+            return {"error": f"权限不足: {decision.reason}"}
+
+        # 3. 输入验证
+        validated = self.validate_input(tool_name, params)
+
+        # 4. 速率限制
+        if not self.limiter.allow(agent_id, tool_name):
+            return {"error": "请求过于频繁，请稍后重试"}
+
+        # 5. 执行工具
+        result = await self.tools[tool_name].execute(validated)
+
+        # 6. 审计日志
+        self.logger.log_execution(agent_id, tool_name, params, result)
+
+        # 7. 结果过滤（去除敏感信息）
+        return self.filter_sensitive(result, agent.permission_level)</code></pre>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="validation-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">参数校验的两级实现</p><h2 id="validation-title">结构不对，<br>值和语义也不对。</h2></div>
+      <p class="reading-intro">validate_input 要挡两类问题：结构不对（缺字段、类型错、多出未声明字段）和语义不对（结构合法但值危险）。JSON Schema 只管第一类，第二类要单独写规则。</p>
+    </div>
+    <div class="prose">
+      <p>第一级是 schema 校验。tool_call 的 <code>arguments</code> 是 JSON 字符串，不是对象，先 <code>json.loads</code>；解析失败本身就是一类错误，要和校验失败一样回灌给模型，不能抛异常打断循环。错误要写清哪个字段、期望什么、实际是什么；只回一句 <code>argument validation failed</code> 等于让模型猜。Schema 里加 <code>additionalProperties: false</code>，把模型编造出来的字段也拦下。</p>
+      <p class="code-label">原文代码 · validate_arguments</p>
+      <pre><code>import json
+
+import jsonschema
+
+
+def validate_arguments(tool_schema: dict, raw_args: str) -&gt; list[dict]:
+    """返回字段级错误列表，空列表表示通过"""
+    try:
+        args = json.loads(raw_args)      # arguments 是 JSON 字符串
+    except json.JSONDecodeError as e:
+        return [{
+            "field": "&lt;arguments&gt;",
+            "expected": "合法的 JSON 对象",
+            "actual": raw_args[:80],
+            "message": f"arguments 解析失败：{e.msg}（第 {e.pos} 个字符）",
+        }]
+
+    validator = jsonschema.Draft202012Validator(tool_schema)
+    errors = []
+    for err in validator.iter_errors(args):
+        if err.validator == "required":
+            missing = [k for k in err.validator_value if k not in err.instance]
+            field, expected = ",".join(missing), "必填字段"
+        else:
+            field = ".".join(map(str, err.absolute_path)) or "&lt;root&gt;"
+            expected = f"{err.validator} 约束: {err.validator_value!r}"
+        errors.append({
+            "field": field,
+            "expected": expected,
+            "actual": repr(err.instance)[:120],
+            "message": err.message,
+        })
+    return errors</code></pre>
+      <p>第二级是语义校验。Schema 表达不了“这个路径在不在允许目录内”“这个 URL 指向哪里”。三类高频规则：路径先 <code>os.path.realpath</code> 解析，再用 <code>os.path.commonpath</code> 判断是否落在允许根目录内；URL 解析出主机名再解析成 IP，拒绝内网、回环、链路本地和云元数据地址 <code>169.254.169.254</code>；SQL 只放行单条只读语句。</p>
+      <p class="code-label">原文代码 · SemanticValidator</p>
+      <pre><code>import ipaddress
+import os
+import re
+import socket
+from urllib.parse import urlparse
+
+
+class SemanticError(Exception):
+    """语义校验失败，回灌时映射为 INVALID_ARGUMENT"""
+
+
+class SemanticValidator:
+    """schema 管结构，这里管 schema 表达不了的语义规则"""
+
+    WRITE_SQL = re.compile(
+        r"\b(INSERT|UPDATE|DELETE|REPLACE|DROP|ALTER|CREATE|TRUNCATE"
+        r"|GRANT|REVOKE|ATTACH|PRAGMA|VACUUM)\b",
+        re.IGNORECASE,
+    )
+
+    def __init__(self, allowed_roots: list[str]):
+        self.allowed_roots = [os.path.realpath(r) for r in allowed_roots]
+
+    def check_path(self, path: str) -&gt; str:
+        resolved = os.path.realpath(path)   # 展开 ../ 和符号链接
+        for root in self.allowed_roots:
+            try:
+                if os.path.commonpath([root, resolved]) == root:
+                    return resolved
+            except ValueError:              # Windows 上不同盘符
+                continue
+        raise SemanticError(f"路径越界：{resolved}")
+
+    def check_url(self, url: str) -&gt; str:
+        parsed = urlparse(url)
+        if parsed.scheme not in ("http", "https"):
+            raise SemanticError(f"协议不允许：{parsed.scheme}")
+        if not parsed.hostname:
+            raise SemanticError("URL 缺少主机名")
+        try:
+            infos = socket.getaddrinfo(parsed.hostname, None)
+        except socket.gaierror as e:
+            raise SemanticError(f"域名解析失败：{parsed.hostname}") from e
+        for *_, sockaddr in infos:
+            ip = ipaddress.ip_address(sockaddr[0].split("%")[0])
+            if (ip.is_private or ip.is_loopback or ip.is_link_local
+                    or ip.is_reserved or ip.is_multicast):
+                raise SemanticError(f"目标地址不允许：{parsed.hostname} -&gt; {ip}")
+        return url
+
+    def check_sql(self, sql: str) -&gt; str:
+        body = sql.strip().rstrip(";")
+        if ";" in body:
+            raise SemanticError("只允许单条 SQL 语句")
+        if not re.match(r"^(SELECT|WITH|EXPLAIN)\b", body, re.IGNORECASE):
+            raise SemanticError("只允许只读查询（SELECT / WITH / EXPLAIN）")
+        if self.WRITE_SQL.search(body):
+            raise SemanticError("检测到写操作关键字，拒绝执行")
+        return body</code></pre>
+      <div class="callout"><p class="callout-label">原文提醒</p><p>校验和实际连接是两次解析，中间存在 DNS rebinding 空窗；重定向后的目标要重新走同一套校验。真正的出口控制要放在网络代理层，这一层负责快速拒绝。SQL 关键字匹配会误伤字符串字面量，生产上再配只读数据库账号兜底。</p></div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="result-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">结果回灌协议</p><h2 id="result-title">六字段，<br>让模型知道怎么改。</h2></div>
+      <p class="reading-intro">工具结果以 role="tool" 的消息回到模型上下文。结构决定模型能不能看懂失败原因、会不会做无效重试。</p>
+    </div>
+    <div class="prose">
+      <div class="gw-rail">
+        <div><strong>status</strong>成功或失败</div>
+        <div><strong>data</strong>成功结果</div>
+        <div><strong>error_code</strong>稳定的机器码</div>
+        <div><strong>message</strong>给人看的一句话</div>
+        <div><strong>hint</strong>给模型的下一步建议</div>
+        <div><strong>retryable</strong>重试有没有意义</div>
+      </div>
+      <p><code>tool_call_id</code> 必须原样回填。并行调用时结果按 id 对齐，不能按返回顺序；顺序错位会让模型把 A 的结果当成 B 的，后续推理全错。</p>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">三类工具错误对应的 error_code、模型动作和是否可重试</caption>
+          <thead><tr><th scope="col">错误类型</th><th scope="col">典型 error_code</th><th scope="col">模型该做什么</th><th scope="col">retryable</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">参数错误</th><td><code>INVALID_ARGUMENT</code></td><td>按 hint 改参数后重试</td><td>true</td></tr>
+            <tr><th scope="row">权限错误</th><td><code>PERMISSION_DENIED</code></td><td>换路径或上报，不要原样重试</td><td>false</td></tr>
+            <tr><th scope="row">执行错误</th><td><code>TOOL_TIMEOUT</code> / <code>INTERNAL</code></td><td>瞬态错误可重试，否则换方法</td><td>视情况</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="code-label">原文代码 · ToolResult</p>
+      <pre><code>import json
+from dataclasses import dataclass
+
+
+@dataclass
+class ToolResult:
+    tool_call_id: str
+    status: str                      # "ok" | "error"
+    data: dict | None = None
+    error_code: str | None = None
+    message: str | None = None
+    hint: str | None = None
+    retryable: bool = False
+
+    def to_message(self) -&gt; dict:
+        """构造回灌给模型的 tool 消息"""
+        payload = {"status": self.status, "data": self.data}
+        if self.status == "error":
+            payload.update({
+                "error_code": self.error_code,
+                "message": self.message,
+                "hint": self.hint,
+                "retryable": self.retryable,
+            })
+        return {
+            "role": "tool",
+            "tool_call_id": self.tool_call_id,   # 与请求一一对应
+            "content": json.dumps(payload, ensure_ascii=False),
+        }
+
+
+# 参数错误：模型读 hint 后改参数重试
+ToolResult(
+    tool_call_id="call_abc",
+    status="error",
+    error_code="INVALID_ARGUMENT",
+    message="字段 start_date 格式不合法",
+    hint="start_date 需要 YYYY-MM-DD，例如 2026-10-01",
+    retryable=True,
+)
+
+# 权限错误：重试没有意义，换路径或上报
+ToolResult(
+    tool_call_id="call_def",
+    status="error",
+    error_code="PERMISSION_DENIED",
+    message="agent 无权读取 /etc/secrets",
+    hint="改用允许目录内的路径；确需该文件请联系管理员",
+    retryable=False,
+)</code></pre>
+      <p>大结果不要直接塞回上下文。超过阈值（经验值几千字符，按模型上下文预算调整）就存到外部，只回引用 id 加一句话摘要；模型需要细节时再调 <code>fetch_result</code> 取。</p>
+      <p class="code-label">原文代码 · ResultPacker</p>
+      <pre><code>MAX_INLINE_CHARS = 8_000  # 经验值，按模型上下文预算调整
+
+
+class ResultPacker:
+    def __init__(self, store):
+        self.store = store
+
+    async def pack(self, tool_call_id: str, raw: str) -&gt; ToolResult:
+        if len(raw) &lt;= MAX_INLINE_CHARS:
+            return ToolResult(tool_call_id, "ok", data={"content": raw})
+
+        ref_id = await self.store.put(raw)
+        return ToolResult(
+            tool_call_id,
+            "ok",
+            data={"ref_id": ref_id, "preview": raw[:500]},
+            hint=f"结果过长已存为 {ref_id}，需要细节时调用 fetch_result(ref_id)",
+        )</code></pre>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="rbac-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">权限模型</p><h2 id="rbac-title">RBAC 管角色，<br>ABAC 管上下文。</h2></div>
+      <p class="reading-intro">RBAC 按角色给工具集合；ABAC 进一步看请求属性，例如时间、客户归属、人工审批状态。两者组合才能表达“谁在什么条件下能做什么”。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文代码 · RBAC 角色定义</p>
+      <pre><code># 角色定义
+roles = {
+    "reader_agent": {
+        "allowed_tools": ["search_docs", "get_weather", "calculate"],
+        "denied_tools": ["send_email", "delete_record", "execute_sql"],
+    },
+    "support_agent": {
+        "allowed_tools": ["search_docs", "get_order", "create_ticket"],
+        "denied_tools": ["delete_record", "modify_pricing"],
+    },
+    "admin_agent": {
+        "allowed_tools": ["*"],  # 全部权限
+        "requires_approval": ["delete_*", "modify_*"],  # 高危操作需审批
+    },
+}</code></pre>
+      <p class="code-label">原文代码 · ABAC / OPA Rego</p>
+      <pre><code># OPA Policy (Rego 语言)
+# policy.rego
+"""
+package tool_access
+import rego.v1  # OPA 1.0+ 必需；老版本用 import future.keywords.in
+
+default allow = false
+
+# 工作时间内允许发送邮件
+allow {
+    input.tool == "send_email"
+    input.context.hour &gt;= 9
+    input.context.hour &lt;= 18
+    input.agent.role == "support_agent"
+}
+
+# 只允许查询自己负责的客户数据
+allow {
+    input.tool == "get_customer_data"
+    input.params.customer_id in input.agent.assigned_customers
+}
+
+# 高危操作需要人工审批
+allow {
+    input.tool == "delete_record"
+    input.context.human_approved == true
+}
+"""</code></pre>
+      <h3>委托授权</h3>
+      <p>Agent 的权限不应超过委托它的用户：Agent 的权限等于 <code>min(Agent 角色权限, 委托用户权限)</code>，两者都允许才放行。</p>
+      <p class="code-label">原文代码 · DelegatedAuth</p>
+      <pre><code>class DelegatedAuth:
+    def check(self, agent: Agent, tool: str, params: dict) -&gt; bool:
+        # Agent 的权限 = min(Agent 角色权限, 委托用户权限)
+        agent_allowed = self.check_agent_role(agent.role, tool)
+        user_allowed = self.check_user_permission(agent.delegated_user, tool)
+
+        # 两者都允许才放行
+        return agent_allowed and user_allowed</code></pre>
+      <p>关键原则：人类用户常常被过度授权，Agent 的权限应该独立审查，不能简单继承用户的全部权限。上面的权限矩阵演示了这一点：把委托用户改成“只读”后，即使是 admin_agent，写工具也会被拒绝。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="hitl-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">Human-in-the-Loop 审批</p><h2 id="hitl-title">高风险工具，<br>暂停等一个“人”。</h2></div>
+      <p class="reading-intro">审批 Gateway 在高风险工具执行前暂停，向人发起审批请求；拒绝就返回原因，批准才继续调用底层 Gateway。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文代码 · ApprovalGateway</p>
+      <pre><code>class ApprovalGateway:
+    HIGH_RISK_TOOLS = ["send_email", "delete_record", "transfer_funds"]
+
+    async def execute_with_approval(self, agent_id, tool, params):
+        if tool in self.HIGH_RISK_TOOLS:
+            # 暂停执行，等待人工审批
+            approval_request = await self.request_human_approval(
+                agent_id=agent_id,
+                tool=tool,
+                params=params,
+                timeout=300  # 5 分钟超时
+            )
+            if not approval_request.approved:
+                return {"error": "操作被人工拒绝", "reason": approval_request.reason}
+
+        return await self.gateway.execute(agent_id, tool, params)</code></pre>
+      <p>超时必须有明确的默认行为：默认拒绝还是默认放行，要在策略里预先声明，不能留给实现临时决定。审批记录也要进入审计日志。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="multi-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">多 Agent 场景</p><h2 id="multi-title">委托链上，<br>权限不能放大。</h2></div>
+      <p class="reading-intro">多 Agent 工作流中，Agent A 可能把任务委托给 Agent B。B 的权限不应超过 A，完整委托链需要被追踪。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文代码 · DelegationChain</p>
+      <pre><code># 委托链追踪
+class DelegationChain:
+    def validate_delegation(self, from_agent, to_agent, tool):
+        # to_agent 的权限不能超过 from_agent
+        if not self.is_subset(to_agent.permissions, from_agent.permissions):
+            raise PermissionError("被委托 Agent 权限不能超过委托者")</code></pre>
+      <p>这条规则和委托授权是同一条原则的延伸：权限只能沿着委托链收缩，不能放大。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="guard-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">运行时护栏与治理</p><h2 id="guard-title">权限之外，<br>还有内容和发布。</h2></div>
+      <p class="reading-intro">权限控制决定“能不能调”，运行时护栏还要看“输入和输出里有什么”。治理流水线则把策略更新当成软件发布来管理。</p>
+    </div>
+    <div class="prose">
+      <div class="gw-guard" aria-label="输入护栏与输出护栏示意">
+        <div>输入护栏：扫描用户输入是否有恶意意图、越狱尝试、PII</div>
+        <div>↓ Agent 处理 ↓</div>
+        <div>输出护栏：验证 Agent 输出是否有幻觉、毒性内容、敏感数据</div>
+      </div>
+      <h3>治理流水线模式</h3>
+      <ol>
+        <li>安全 / 法律团队编写策略，翻译为机器可读代码。</li>
+        <li>对历史日志做影响分析，也就是模拟部署。</li>
+        <li>确认无误后自动部署到全部 Agent。</li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="sdk-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">新动向 · Agent SDK 2026-08</p><h2 id="sdk-title">上下文由宿主供给，<br>默认工具面收窄。</h2></div>
+      <p class="reading-intro">2026-08 Claude Agent SDK 的几次发布，把“Agent 视为不可信”和“最小权限”落进了默认行为。三条变更指向同一方向：权限决策所需的上下文由宿主供给，默认可用的工具面同时收窄。</p>
+    </div>
+    <div class="prose">
+      <h3>classifierContext（v0.3.236，2026-08-19）</h3>
+      <p><code>PostToolUse</code> hook 可返回一段工具结果注释，auto 模式下的权限分类器会连同工具结果一起读取。关键在<strong>谁在断言</strong>：Agent 可以被 Prompt Injection 操纵去声称“操作是安全的”，但无法伪造 hook 的返回值；hook 跑在宿主进程里，读的是宿主自己掌握的事实。</p>
+      <p>信任根仍在宿主侧，和 Gateway 思路同构：判定权不在 Agent 手里，判定上下文从“Gateway 自己查”扩展为“宿主主动喂”。</p>
+      <h3>Todo / 任务追踪工具移出默认工具面（v0.3.233，2026-08-14，BREAKING）</h3>
+      <p>Opus 4.8、Sonnet 5、Fable 5、Mythos 5 及更新模型上，<code>TaskCreate</code> / <code>TodoWrite</code> 等工具不再默认可用，须显式列入 <code>allowedTools</code> 或设 <code>CLAUDE_CODE_ENABLE_TODO_TOOLS=1</code>。方向与最小权限一致：默认工具面越小，Gateway 要防的攻击面越小；从没被授予的工具，不存在被诱导调用的可能。</p>
+      <h3>peer origin 声明权限等级（v0.3.234，2026-08-17）</h3>
+      <p>宿主注入的对端来源标识可携带 <code>fromMode</code> 字段声明发送方权限等级；同等级消息投递给免询问运行的接收方时不再逐条打断。这是“委托授权”的工程化形态：权限等级显式携带并校验，而不是靠接收方猜测。</p>
+      <div class="callout"><p class="callout-label">原文判断</p><p>三条放在一起：Agent 运行时正把“谁有权做什么”的决策权和上下文供给权系统性推给宿主。落到 Gateway 设计上，宿主侧 hook 逻辑本身成了安全边界的一部分——它和 Gateway 一样需要审计、版本控制和影响分析，不能当成随手写的业务回调。</p></div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">七个容易<br>被追问的点。</h2></div>
+      <p class="reading-intro">前两条是误区，后五条是面试追问；答案都来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“在 Agent 代码里做权限检查就够了。”</h3><p>Agent 代码可能被 Prompt Injection 绕过。权限检查必须在 Agent 外部，也就是 Gateway 层执行，作为独立的安全边界。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“给 Agent 和用户一样的权限。”</h3><p>用户常常被过度授权。Agent 应该只获得完成当前任务所需的最小权限集。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>Policy-as-Code 有什么好处？</h3><p>第一，授权逻辑与应用代码分离，安全团队可以独立管理；第二，策略可以版本控制和审计；第三，策略变更不需要重新部署应用代码。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>AWS Bedrock 的 Policy 和自建 Gateway 有什么区别？</h3><p>云服务商的方案（如 Bedrock AgentCore Policy）在 Agent 代码外部执行安全控制，开箱即用但绑定生态。自建 Gateway 更灵活但需要维护，适合多云或自托管场景。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 3</p>
+      <div><h3>classifierContext 让宿主给权限决策注入上下文，会不会削弱“Agent 不可信”的假设？</h3><p>恰恰相反。要点是区分谁在断言：classifierContext 由 PostToolUse hook 返回，hook 运行在宿主进程里，Agent 无法伪造；分类器读到的是宿主基于自身事实的断言，不是 Agent 的自述，信任根仍在宿主侧。追问延伸：hook 成了安全判定的输入源，它自己就变成新攻击面，需按 Gateway 同等标准做审计和变更管控；若 hook 里拼接 Agent 可控的字符串塞进 classifierContext，等于给注入开后门。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 4</p>
+      <div><h3>MCP Server 场景下工具级权限怎么做？</h3><p>Claude Agent SDK（TS）v0.3.301（2026-10）起，sdk-type MCP server 配置支持 per-tool <code>permission_policy</code>（<code>always_ask</code> / <code>always_deny</code>，initialize 与 setMcpServers 均生效）。工具级准入原则下沉为 MCP server 的原生配置面，宿主无需在调用层逐一拦截。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 5</p>
+      <div><h3>JSON Schema 校验通过，参数就一定安全吗？</h3><p>不一定。Schema 只约束结构和类型，管不了值的语义：<code>/data/../etc/passwd</code> 满足 <code>type: string</code>，<code>http://169.254.169.254/latest/meta-data/</code> 满足 <code>format: uri</code>。路径、URL、SQL 这类规则必须单独写语义校验，Schema 通过只是第一级。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《如何设计 Tool Gateway 和工具权限管理？》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的九条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.infoq.com/articles/building-ai-agent-gateway-mcp/" target="_blank" rel="noopener noreferrer">Building a Least-Privilege AI Agent Gateway · InfoQ</a></li>
+          <li><a href="https://noma.security/resources/access-control-for-ai-agents/" target="_blank" rel="noopener noreferrer">AI Agent Access Control: How to Handle Permissions · Noma Security</a></li>
+          <li><a href="https://www.osohq.com/learn/best-practices-of-authorizing-ai-agents" target="_blank" rel="noopener noreferrer">Best Practices of Authorizing AI Agents · Oso</a></li>
+          <li><a href="https://www.cerbos.dev/blog/permission-management-for-ai-agents" target="_blank" rel="noopener noreferrer">Access Control and Permission Management for AI Agents · Cerbos</a></li>
+          <li><a href="https://a21.ai/agent-governance-patterns-policy-as-code-for-live-systems/" target="_blank" rel="noopener noreferrer">Agent Governance Patterns: Policy-as-Code for Live Systems · a21.ai</a></li>
+          <li><a href="https://github.com/anthropics/claude-agent-sdk-typescript/releases/tag/v0.3.236" target="_blank" rel="noopener noreferrer">claude-agent-sdk-typescript v0.3.236 · PostToolUse hook 返回 classifierContext（2026-08-19）</a></li>
+          <li><a href="https://github.com/anthropics/claude-agent-sdk-typescript/releases/tag/v0.3.234" target="_blank" rel="noopener noreferrer">claude-agent-sdk-typescript v0.3.234 · peer origin 声明 fromMode 权限等级（2026-08-17）</a></li>
+          <li><a href="https://github.com/anthropics/claude-agent-sdk-typescript/releases/tag/v0.3.233" target="_blank" rel="noopener noreferrer">claude-agent-sdk-typescript v0.3.233 · Todo 工具移出默认工具面（BREAKING，2026-08-14）</a></li>
+          <li><a href="https://github.com/anthropics/claude-agent-sdk-typescript/releases" target="_blank" rel="noopener noreferrer">Claude Agent SDK (TypeScript) Releases · v0.3.301 per-tool permission_policy（2026-10）</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>03-tool-use/024-tool-gateway-permissions.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 3 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const GW_ROLES = Object.freeze(["reader_agent", "support_agent", "admin_agent"]);
+  const GW_TOOLS = Object.freeze(["search_docs", "get_order", "get_customer_data", "send_email", "delete_record", "execute_sql"]);
+  const GW_WRITE_TOOLS = Object.freeze(["send_email", "delete_record"]);
+  const GW_ROLE_ALLOW = Object.freeze({
+    reader_agent: ["search_docs"],
+    support_agent: ["search_docs", "get_order", "get_customer_data", "send_email"],
+    admin_agent: ["search_docs", "get_order", "get_customer_data", "send_email", "delete_record", "execute_sql"]
+  });
+  const GW_REQUESTS = Object.freeze({
+    search_docs: { query: "退款政策" },
+    get_order: { order_id: "12345" },
+    get_customer_data: { customer_id: "cust_042" },
+    send_email: { to: "customer@example.com", subject: "退款确认" },
+    delete_record: { record_id: "order_12345" },
+    execute_sql: { query: "SELECT status FROM orders WHERE id = '12345'" }
+  });
+
+  const gwState = {
+    time: "work",
+    customer: "assigned",
+    approval: "no",
+    user: "full",
+    role: "support_agent",
+    tool: "send_email"
+  };
+  const gwById = (id) => document.getElementById(id);
+
+  function gwContext() {
+    return {
+      hour: gwState.time === "work" ? 10 : 22,
+      customer: gwState.customer,
+      approval: gwState.approval,
+      user: gwState.user
+    };
+  }
+
+  function gwEvaluate(role, tool, ctx = gwContext()) {
+    const steps = [];
+    const roleAllowed = GW_ROLE_ALLOW[role].includes(tool);
+    steps.push({
+      label: "角色权限",
+      ok: roleAllowed,
+      text: roleAllowed ? `${role} 的允许列表包含 ${tool}` : `${role} 的允许列表不包含 ${tool}`
+    });
+    if (!roleAllowed) return { allowed: false, code: "PERMISSION_DENIED", steps, reason: "角色无权调用该工具" };
+
+    const writeTool = GW_WRITE_TOOLS.includes(tool);
+    const userAllowed = ctx.user === "full" || !writeTool;
+    steps.push({
+      label: "委托用户",
+      ok: userAllowed,
+      text: ctx.user === "full" ? "委托用户具备该工具所需的权限" : (writeTool ? "委托用户只有只读权限，写工具被拒绝" : "委托用户只读，但该工具是只读的，放行")
+    });
+    if (!userAllowed) return { allowed: false, code: "USER_PERMISSION_DENIED", steps, reason: "委托用户权限不足，Agent 权限不能超过用户" };
+
+    if (tool === "send_email") {
+      const hourOk = ctx.hour >= 9 && ctx.hour <= 18;
+      steps.push({ label: "ABAC 时间", ok: hourOk, text: hourOk ? "10:00 落在 9:00–18:00 内" : "22:00 不在 9:00–18:00 内" });
+      if (!hourOk) return { allowed: false, code: "OUTSIDE_ALLOWED_HOURS", steps, reason: "只允许工作时间内发送邮件" };
+    }
+    if (tool === "send_email" || tool === "delete_record") {
+      const approved = ctx.approval === "yes";
+      steps.push({ label: "人工审批", ok: approved, text: approved ? "审批记录为已批准" : "没有已批准的人工审批记录" });
+      if (!approved) return { allowed: false, code: "APPROVAL_REQUIRED", steps, reason: "高风险工具必须有人工审批" };
+    }
+    if (tool === "get_customer_data") {
+      const assigned = ctx.customer === "assigned";
+      steps.push({ label: "客户归属", ok: assigned, text: assigned ? "customer_id 在本人负责的客户列表中" : "customer_id 不在本人负责的客户列表中" });
+      if (!assigned) return { allowed: false, code: "CUSTOMER_SCOPE_DENIED", steps, reason: "只能查询自己负责的客户数据" };
+    }
+    steps.push({ label: "结果", ok: true, text: "所有条件通过，允许执行（本页仍不执行）" });
+    return { allowed: true, code: "ALLOW", steps, reason: "所有策略条件通过" };
+  }
+
+  function gwRenderMatrix() {
+    const head = gwById("gw-matrix-head");
+    head.textContent = "";
+    const corner = document.createElement("th");
+    corner.scope = "col";
+    corner.textContent = "角色 / 工具";
+    head.append(corner);
+    GW_TOOLS.forEach((tool) => {
+      const th = document.createElement("th");
+      th.scope = "col";
+      th.textContent = tool;
+      head.append(th);
+    });
+
+    const body = gwById("gw-matrix-body");
+    body.textContent = "";
+    let allowedCount = 0;
+    GW_ROLES.forEach((role) => {
+      const tr = document.createElement("tr");
+      const th = document.createElement("th");
+      th.scope = "row";
+      th.textContent = role;
+      tr.append(th);
+      GW_TOOLS.forEach((tool) => {
+        const decision = gwEvaluate(role, tool);
+        if (decision.allowed) allowedCount += 1;
+        const td = document.createElement("td");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "gw-cell " + (decision.allowed ? "allow" : "deny");
+        if (role === gwState.role && tool === gwState.tool) button.classList.add("is-selected");
+        button.dataset.role = role;
+        button.dataset.tool = tool;
+        button.setAttribute("aria-pressed", String(role === gwState.role && tool === gwState.tool));
+        button.setAttribute("aria-label", `${role} 调用 ${tool}：${decision.allowed ? "允许" : "拒绝"}，错误码 ${decision.code}`);
+        button.textContent = decision.allowed ? "允许" : "拒绝";
+        button.addEventListener("click", () => {
+          gwState.role = role;
+          gwState.tool = tool;
+          document.querySelectorAll(".gw-cell").forEach((cell) => {
+            const selected = cell.dataset.role === role && cell.dataset.tool === tool;
+            cell.classList.toggle("is-selected", selected);
+            cell.setAttribute("aria-pressed", String(selected));
+          });
+          gwRenderDetail();
+          gwById("gw-announcement").textContent = `已选择 ${role} 调用 ${tool}，结果为${decision.allowed ? "允许" : "拒绝"}，错误码 ${decision.code}。`;
+        });
+        td.append(button);
+        tr.append(td);
+      });
+      body.append(tr);
+    });
+    gwById("gw-summary").textContent = `当前上下文：${gwState.time === "work" ? "工作时间" : "非工作时间"} · ${gwState.customer === "assigned" ? "本人客户" : "非本人客户"} · 审批${gwState.approval === "yes" ? "已批准" : "未批准"} · 委托用户${gwState.user === "full" ? "完整" : "只读"}。18 格中允许 ${allowedCount} 格，拒绝 ${18 - allowedCount} 格。`;
+  }
+
+  function gwRenderDetail() {
+    const decision = gwEvaluate(gwState.role, gwState.tool);
+    gwById("gw-request-title").textContent = `${gwState.role} → ${gwState.tool}`;
+    const decisionEl = gwById("gw-decision");
+    decisionEl.textContent = decision.allowed ? "允许" : "拒绝";
+    decisionEl.className = decision.allowed ? "allow" : "deny";
+    gwById("gw-code").textContent = decision.code;
+    gwById("gw-request").textContent = JSON.stringify({
+      agent_id: gwState.role,
+      tool: gwState.tool,
+      params: GW_REQUESTS[gwState.tool],
+      context: {
+        hour: gwContext().hour,
+        customer_scope: gwState.customer,
+        human_approved: gwState.approval === "yes",
+        delegated_user_permission: gwState.user
+      }
+    }, null, 2);
+
+    const list = gwById("gw-steps");
+    list.textContent = "";
+    decision.steps.forEach((step, index) => {
+      const li = document.createElement("li");
+      li.className = "gw-step " + (step.ok ? "ok" : "bad");
+      const mark = document.createElement("span");
+      mark.className = "gw-step-mark";
+      mark.textContent = step.ok ? "通过" : "拒绝";
+      const body = document.createElement("div");
+      const title = document.createElement("b");
+      title.textContent = `${index + 1}. ${step.label}`;
+      const text = document.createElement("span");
+      text.textContent = step.text;
+      body.append(title, text);
+      li.append(mark, body);
+      list.append(li);
+    });
+    gwById("gw-detail-note").textContent = decision.allowed
+      ? `结论：${decision.code}。本页只计算策略结果，没有向任何工具或审批系统发送请求。`
+      : `结论：${decision.code} · ${decision.reason}。策略在第一条失败处停止，后面的条件不再检查。`;
+    gwById("gw-state-summary").textContent = `未执行任何工具 · 未发起审批 · 当前判定：${decision.allowed ? "允许" : "拒绝"}（${decision.code}）`;
+  }
+
+  function gwRender(announce = true) {
+    gwRenderMatrix();
+    gwRenderDetail();
+    if (announce) {
+      gwById("gw-announcement").textContent = `权限矩阵已更新。${gwById("gw-summary").textContent}`;
+    }
+  }
+
+  function gwReset() {
+    gwState.time = "work";
+    gwState.customer = "assigned";
+    gwState.approval = "no";
+    gwState.user = "full";
+    gwState.role = "support_agent";
+    gwState.tool = "send_email";
+    gwById("gw-time").value = "work";
+    gwById("gw-customer").value = "assigned";
+    gwById("gw-approval").value = "no";
+    gwById("gw-user").value = "full";
+    gwRender(true);
+  }
+
+  ["gw-time", "gw-customer", "gw-approval", "gw-user"].forEach((id) => {
+    gwById(id).addEventListener("change", (event) => {
+      const key = id.replace("gw-", "");
+      gwState[key] = event.target.value;
+      gwRender(true);
+    });
+  });
+  gwById("gw-reset").addEventListener("click", gwReset);
+  gwById("gw-export").addEventListener("click", async () => {
+    const text = gwById("gw-summary").textContent + " " + gwById("gw-code").textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+      gwById("gw-announcement").textContent = "决策摘要已复制到剪贴板（仅当前上下文，未连接任何系统）。";
+    } catch (error) {
+      gwById("gw-announcement").textContent = "浏览器未允许剪贴板访问；摘要仍显示在页面上。";
+    }
+  });
+
+  gwRender(false);
+</script>
+</body>
+</html>

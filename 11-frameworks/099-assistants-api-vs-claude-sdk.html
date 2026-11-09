@@ -1,0 +1,1058 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>OpenAI Responses API / Agents SDK vs Anthropic Claude Agent SDK 对比 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .button:disabled, .button-primary:disabled { color: #4b514b; background: #e4e6df; border-color: #b9beb6; }
+  .badge { display: inline-flex; align-items: center; justify-self: start; margin-top: 4px; padding: 1px 8px; border: 1px solid transparent; border-radius: 999px; font: 11px/1.7 var(--mono); white-space: nowrap; }
+  .badge-neutral { border-color: #c9cec9; background: #eef1ee; color: #3f463f; }
+  .badge-info { border-color: #9eb4c9; background: #eaf1f8; color: #194f87; }
+  .badge-warn { border-color: #d9b47a; background: #fdf3e3; color: #6b4300; }
+  .badge-ok { border-color: #9cc39e; background: #e6f2e6; color: #14532d; }
+  .badge-bad { border-color: #d9a3a3; background: #fbecec; color: #7a1f1f; }
+  .snap { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border: 1px solid #d9b47a; border-radius: 999px; background: #fdf3e3; color: #6b4300; font: 11px/1.6 var(--mono); letter-spacing: .02em; }
+  .snap::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #b45309; }
+  .duel-tabs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 0 var(--s-6); margin-top: var(--s-4); }
+  .scenario-tab { min-height: 44px; padding: 8px 12px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: var(--t-small); }
+  .scenario-tab:hover { background: var(--surface-soft); }
+  .scenario-tab[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+  .duel-task { flex: 1 1 280px; min-width: 0; font-size: 11px; line-height: 1.6; color: var(--text-dim); }
+  .duel-stage { padding: var(--s-4) var(--s-6) var(--s-5); }
+  .duel-board { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); align-items: stretch; }
+  .duel-side { min-width: 0; display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease); }
+  .duel-side.is-active { border-color: #194f87; background: #fbfdff; box-shadow: inset 0 0 0 1px #194f87; }
+  .duel-side.is-done { border-color: #9cc39e; background: #fbfdf9; }
+  .duel-side.is-waiting { background: var(--surface-soft); }
+  .duel-head { display: grid; gap: 2px; align-content: start; }
+  .duel-kicker { font: 10px/1.6 var(--mono); letter-spacing: .06em; color: var(--text-dim); }
+  .duel-head h3 { font-size: 20px; line-height: 1.4; font-weight: 600; }
+  .duel-base { font-size: 11px; line-height: 1.6; color: var(--text-dim); }
+  .duel-verdict { align-self: start; margin-top: 6px; }
+  .duel-points { display: grid; gap: 0; margin: var(--s-3) 0 0; }
+  .duel-point { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 8px; padding: 7px 0; border-top: 1px solid var(--border); }
+  .duel-point dt { margin: 0; font: 11px/1.6 var(--mono); color: var(--text-dim); }
+  .duel-point dd { margin: 0; font-size: 12px; line-height: 1.65; overflow-wrap: anywhere; }
+  .duel-fit { margin-top: var(--s-3); padding: 8px 10px; border: 1px dashed #9eb4c9; border-radius: var(--r-1); background: #f4f8fc; color: #123f6c; font-size: 12px; line-height: 1.7; }
+  .duel-side[data-verdict="非首选"] .duel-fit { border-color: #d9b47a; background: #fdf8ee; color: #6b4300; }
+  .duel-result { margin-top: var(--s-4); padding: var(--s-4) var(--s-5); border: 1px solid #9cc39e; border-radius: var(--r-1); background: #f2f9f2; }
+  .duel-result-label { font: 10px/1.6 var(--mono); letter-spacing: .05em; color: #14532d; }
+  .duel-result h3 { margin-top: 2px; font-size: 22px; line-height: 1.45; }
+  .duel-result p { margin-top: var(--s-2); font-size: var(--t-small); max-width: 60em; }
+  .duel-result .duel-alt { color: var(--text-dim); font-size: 12px; }
+  .duel-caveat { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px dashed var(--border); font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .rel-chain { display: grid; grid-template-columns: minmax(0, 1fr) 46px minmax(0, 1fr) 46px minmax(0, 1fr); gap: 8px; align-items: stretch; margin-top: var(--s-4); }
+  .rel-card { min-width: 0; display: grid; align-content: start; gap: 2px; padding: 10px 12px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); }
+  .rel-card.is-deprecated { border-color: #d9a3a3; background: #fdf7f7; }
+  .rel-card.is-current { border-color: #9eb4c9; background: #f7fbff; }
+  .rel-card.is-claude { border-color: #9cc39e; background: #f9fdf9; }
+  .rel-kicker { font: 10px/1.6 var(--mono); letter-spacing: .05em; color: var(--text-dim); }
+  .rel-card b { font-size: 15px; line-height: 1.5; }
+  .rel-desc { font-size: 11px; line-height: 1.65; color: var(--text-dim); }
+  .rel-arrow { display: grid; place-items: center; align-content: center; gap: 2px; text-align: center; font: 10px/1.5 var(--mono); color: #3f463f; }
+  .rel-arrow span { display: block; }
+  .rel-arrow i { display: block; font-style: normal; font-size: 18px; line-height: 1; }
+  .rel-claude { margin-top: var(--s-2); padding: 8px 10px; border: 1px dashed #9cc39e; border-radius: var(--r-1); background: #f9fdf9; font-size: 11px; line-height: 1.7; color: #14532d; }
+  .cmp-table { min-width: 780px; }
+  .cmp-table th[scope="row"] { position: sticky; left: 0; z-index: 1; min-width: 112px; background: var(--surface); box-shadow: 1px 0 0 var(--border); }
+  .cmp-table thead th:first-child { position: sticky; left: 0; z-index: 2; background: var(--surface-soft); box-shadow: 1px 0 0 var(--border); }
+  .route-list { display: grid; gap: 5px; margin-top: var(--s-3); }
+  .route-row { display: grid; grid-template-columns: minmax(0, .9fr) 22px minmax(0, 1.3fr); gap: 8px; align-items: baseline; padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .route-row b { font-weight: 600; }
+  .route-row .arrow { color: var(--text-dim); text-align: center; font-family: var(--mono); }
+  .route-row span:last-child { color: var(--text-dim); }
+  .source-note { margin-top: var(--s-2); font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .code-note { margin-top: var(--s-2); font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  @media (max-width: 1000px) {
+    .duel-tabs, .duel-stage { padding-inline: var(--s-5); }
+    .rel-chain { grid-template-columns: 1fr; }
+    .rel-arrow { grid-template-columns: auto auto; gap: 6px; }
+    .rel-arrow i { transform: rotate(90deg); }
+  }
+  @media (max-width: 720px) {
+    .duel-tabs { padding-inline: var(--s-4); }
+    .duel-stage { padding: var(--s-4); }
+    .duel-board { grid-template-columns: 1fr; }
+    .duel-head h3 { font-size: 18px; }
+    .duel-point { grid-template-columns: 76px minmax(0, 1fr); }
+    .rel-chain { gap: 5px; }
+    .rel-arrow { justify-content: start; }
+    .prose .table-wrap table.data.cmp-table { min-width: 720px; }
+    .route-row { grid-template-columns: 1fr; gap: 2px; }
+    .route-row .arrow { display: none; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">099 / Agent SDK 双方案对比</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 5 / 9 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="097-langgraph-concepts.html">← 上一页 · LangGraph 的核心概念</a><a href="100-testable-extensible-framework.html">下一页 → · 如何设计可测试、可扩展的 Agent…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Frameworks · 可交互讲解</p>
+      <h1>两条路线，<br>不同的控制点。</h1>
+    </div>
+    <div>
+      <p class="lead">OpenAI 走“SDK 轻 + 云重”：Agents SDK 只提供 Agent、Handoff、Guardrails 三个核心概念，状态由 Responses API 在云端托管。Anthropic 走“工具优先 + MCP”：Claude Agent SDK 原生接 MCP，用 Permission Mode、Hooks 和 Subagent 管工具与多 Agent。</p>
+      <p class="definition"><strong>先分清三者：</strong>Assistants API（2023，云端有状态 API）已在 2025-08-26 公告 deprecated，原文写计划 2026-08-26 关闭；<strong>Responses API（2025-03）才是它的直接替代者</strong>；Agents SDK（2025-03）是 Responses API 之上的编排层。所有版本、价格、日期与生态数字按<strong>原文 2026 时点</strong>保留，标“原文版本、未联网核实”；本页不调用任何 SDK/API。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Frameworks</span><span class="pill">双方案对照</span><span class="pill">MCP</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="duel-title">
+    <div class="player-top">
+      <div class="player-label">双方案选型台 <small>5 个固定需求 · 先看两边再下结论</small></div>
+      <div class="controls" role="group" aria-label="双方案对照控制">
+        <button type="button" class="button button-quiet" id="reset-button">重置</button>
+        <button type="button" class="button" id="back-button" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="next-button">下一步 →</button>
+      </div>
+    </div>
+
+    <nav class="stage-nav" aria-label="对照阶段">
+      <ol id="stage-list" style="--stages: 4"></ol>
+    </nav>
+
+    <div class="duel-tabs" role="group" aria-label="选择固定需求场景">
+      <button type="button" class="scenario-tab" data-scenario="support" aria-pressed="true">客服分流</button>
+      <button type="button" class="scenario-tab" data-scenario="knowledge" aria-pressed="false">知识密集 RAG</button>
+      <button type="button" class="scenario-tab" data-scenario="coding" aria-pressed="false">代码助手</button>
+      <button type="button" class="scenario-tab" data-scenario="multimodel" aria-pressed="false">多模型成本</button>
+      <button type="button" class="scenario-tab" data-scenario="azure" aria-pressed="false">企业 Azure</button>
+      <span class="duel-task" id="duel-task">固定需求：客服 Bot（单模型）</span>
+    </div>
+
+    <div class="scene-caption">
+      <p class="figure-index"><span id="step-index">双方案对照 · 第 1 / 4 阶段</span> <span class="snap">原文版本、未联网核实</span></p>
+      <h2 id="duel-title">先看固定需求，不急着选。</h2>
+      <p id="duel-subtitle">客服 Bot（单模型）：按问题类型把用户转给销售或售后专家，需要可追踪的交接。第 1 阶段只列约束，两边都标“待比较”。</p>
+    </div>
+
+    <div class="scene-host">
+      <div class="duel-stage">
+        <div class="duel-board">
+          <article class="duel-side is-waiting" data-side="openai" aria-labelledby="openai-name">
+            <header class="duel-head">
+              <p class="duel-kicker">方案 A · SDK 轻 + 云重</p>
+              <h3 id="openai-name">OpenAI Agents SDK</h3>
+              <p class="duel-base">基于 Responses API · Function Calling · Python / TypeScript</p>
+              <span class="badge badge-neutral duel-verdict" data-verdict>待比较</span>
+            </header>
+            <dl class="duel-points">
+              <div class="duel-point"><dt>工具接入</dt><dd data-point="tools">待比较</dd></div>
+              <div class="duel-point"><dt>状态 / 运行</dt><dd data-point="state">待比较</dd></div>
+              <div class="duel-point"><dt>多 Agent / HITL</dt><dd data-point="multi">待比较</dd></div>
+            </dl>
+            <p class="duel-fit" data-fit hidden></p>
+          </article>
+
+          <article class="duel-side is-waiting" data-side="claude" aria-labelledby="claude-name">
+            <header class="duel-head">
+              <p class="duel-kicker">方案 B · 工具优先 + MCP</p>
+              <h3 id="claude-name">Claude Agent SDK</h3>
+              <p class="duel-base">Claude 专属 · MCP · Permission Mode / Hooks / Subagent</p>
+              <span class="badge badge-neutral duel-verdict" data-verdict>待比较</span>
+            </header>
+            <dl class="duel-points">
+              <div class="duel-point"><dt>工具接入</dt><dd data-point="tools">待比较</dd></div>
+              <div class="duel-point"><dt>状态 / 运行</dt><dd data-point="state">待比较</dd></div>
+              <div class="duel-point"><dt>多 Agent / HITL</dt><dd data-point="multi">待比较</dd></div>
+            </dl>
+            <p class="duel-fit" data-fit hidden></p>
+          </article>
+        </div>
+
+        <div class="duel-result" id="duel-result" hidden>
+          <p class="duel-result-label">结论 · 按原文选型建议归纳</p>
+          <h3 id="result-choice">OpenAI Agents SDK</h3>
+          <p id="result-why"></p>
+          <p class="duel-alt" id="result-alt"></p>
+        </div>
+
+        <p class="duel-caveat">固定教学对照：5 个场景的任务、约束、两列要点和结论都写死在页面里。本页不调用 OpenAI 或 Anthropic 的 SDK/API，也不发网络请求。“首选 / 可用 / 非首选”是按原文“实际选型建议”归纳的对照标签，不是模型评测。</p>
+      </div>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学对照 · 不调用 SDK/API · 不联网</span><span id="state-summary">客服分流 · 第 1 / 4 阶段 · 双方待比较</span></div>
+  </section>
+  <p id="duel-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="relations-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">一、先分清三层</p><h2 id="relations-title">Assistants、Responses、<br>Agents SDK 不是一回事。</h2></div>
+      <p class="reading-intro">原文特意纠偏：Assistants API 是 2023 年的云端有状态 API；Responses API 才是它的直接替代者；Agents SDK 是 Responses API 上层的轻量编排框架。三者是分层关系，不是改名关系。</p>
+    </div>
+    <div class="prose">
+      <div class="rel-chain" role="img" aria-label="Assistants API 在 API 层被 Responses API 替代，Agents SDK 是 Responses API 之上的 SDK 编排层；Claude Agent SDK 是另一条路线">
+        <div class="rel-card is-deprecated">
+          <span class="rel-kicker">API 层 · 2023</span>
+          <b>Assistants API</b>
+          <span class="rel-desc">Thread / Message / Run 模型，云端托管有状态</span>
+          <span class="badge badge-bad">2025-08-26 公告 deprecated</span>
+        </div>
+        <div class="rel-arrow"><span>API 层直接替代</span><i aria-hidden="true">→</i></div>
+        <div class="rel-card is-current">
+          <span class="rel-kicker">API 层 · 2025-03</span>
+          <b>Responses API</b>
+          <span class="rel-desc">同样云端管理状态，API 设计更现代</span>
+          <span class="badge badge-info">Assistants 的直接替代者</span>
+        </div>
+        <div class="rel-arrow"><span>SDK 层编排</span><i aria-hidden="true">→</i></div>
+        <div class="rel-card">
+          <span class="rel-kicker">SDK 层 · 2025-03</span>
+          <b>OpenAI Agents SDK</b>
+          <span class="rel-desc">Agent / Handoff / Guardrails，基于 Responses API</span>
+          <span class="badge badge-neutral">轻量编排</span>
+        </div>
+      </div>
+      <p class="rel-claude"><strong>另一条路线：</strong>Anthropic Claude Agent SDK（2025-09 从 claude-code-sdk 重命名而来，与 Claude Sonnet 4.5 同步发布）不在上面这条 OpenAI 分层链里。它基于 Claude Code 的实战经验构建，底层是 Messages API + MCP。</p>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">四个名称的层次、状态与替代关系</caption>
+          <thead><tr><th scope="col">名称</th><th scope="col">层次</th><th scope="col">原文状态</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Assistants API</th><td>云端有状态 API（Thread / Message / Run）</td><td>2025-08-26 公告 deprecated；原文写计划 2026-08-26 关闭，是否已执行未联网核实</td></tr>
+            <tr><th scope="row">Responses API</th><td>API 层；Assistants API 的直接替代者</td><td>2025-03 推出；云端管理状态和文件</td></tr>
+            <tr><th scope="row">OpenAI Agents SDK</th><td>SDK 层；Responses API 之上的轻量编排框架</td><td>2025-03 发布；Python 与 TypeScript 双语言</td></tr>
+            <tr><th scope="row">Claude Agent SDK</th><td>SDK 层；Claude 专属，底层 Messages API + MCP</td><td>2025-09 从 claude-code-sdk 重命名</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <p class="callout-label">不要混淆</p>
+        <p>“Agents SDK 是 Assistants API 的直接替代者”这句话是错的。直接替代发生在 API 层：Assistants → Responses。Agents SDK 是 SDK 层的编排框架，它建立在 Responses API 之上。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="compare-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">二、核心对比</p><h2 id="compare-title">十四个维度，<br>两种设计哲学。</h2></div>
+      <p class="reading-intro">OpenAI 强调最小抽象、云端状态和内置追踪；Anthropic 强调工具优先、MCP 开放协议和细粒度授权。表格按原文保留，版本与能力标“原文版本、未联网核实”。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data cmp-table">
+          <caption class="sr-only">OpenAI Agents SDK 与 Claude Agent SDK 的十四维对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">OpenAI Agents SDK</th><th scope="col">Claude Agent SDK</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">发布时间</th><td>2025-03</td><td>2025-09（重命名）</td></tr>
+            <tr><th scope="row">包名</th><td>openai-agents / @openai/agents</td><td>claude-agent-sdk</td></tr>
+            <tr><th scope="row">设计哲学</th><td>最小抽象</td><td>工具优先 + MCP</td></tr>
+            <tr><th scope="row">核心概念</th><td>Agent / Handoff / Guardrails</td><td>ClaudeAgentOptions / query / Subagent</td></tr>
+            <tr><th scope="row">底层 API</th><td>Responses API</td><td>Messages API + MCP</td></tr>
+            <tr><th scope="row">模型支持</th><td>OpenAI 优先</td><td>Claude 专属</td></tr>
+            <tr><th scope="row">工具协议</th><td>Function Calling</td><td>MCP（开放标准）</td></tr>
+            <tr><th scope="row">状态管理</th><td>Responses API（云端托管）</td><td>Hooks + 文件检查点</td></tr>
+            <tr><th scope="row">多 Agent</th><td>Handoff 模式；2026-08 起 Responses API 提供原生多 Agent 编排</td><td>Subagent 派生</td></tr>
+            <tr><th scope="row">Human-in-the-Loop</th><td>需自行实现</td><td>permission_mode</td></tr>
+            <tr><th scope="row">追踪 / 可观测</th><td>内置 Tracing</td><td>Hooks 钩子</td></tr>
+            <tr><th scope="row">语言支持</th><td>Python + TypeScript</td><td>Python + TypeScript</td></tr>
+            <tr><th scope="row">开源</th><td>是</td><td>是</td></tr>
+            <tr><th scope="row">适用场景</th><td>通用 Agent</td><td>Coding / 工具密集</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>一句话概括：OpenAI 是“模型无关的理想，但实际优化 OpenAI 模型”；Claude SDK 明确绑定 Claude，但它依赖的 MCP 是开放标准。一个把状态收进云，一个把工具接进协议。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="openai-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三、OpenAI Agents SDK</p><h2 id="openai-title">三个概念，<br>把编排压到最小。</h2></div>
+      <p class="reading-intro">Agent 是带指令和工具的 LLM，Handoff 是 Agent 间任务交接，Guardrails 是输入/输出验证。SDK 内置追踪、类型安全和 Agent Loop，但不强制托管状态。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">OpenAI Agents SDK · 原文代码，仅转义展示，不执行</p>
+      <pre><code># OpenAI Agents SDK：最小抽象，三个核心概念
+from agents import Agent, Runner, handoff, GuardrailFunctionOutput
+from agents import input_guardrail
+
+# 核心概念 1：Agent — 带指令和工具的 LLM
+triage_agent = Agent(
+    name="Triage Agent",
+    instructions="根据用户问题类型，转接到合适的专家。",
+    handoffs=[sales_agent, support_agent],  # 可以交接给谁
+)
+
+sales_agent = Agent(
+    name="Sales Agent",
+    instructions="处理销售相关问题。",
+    tools=[lookup_pricing, create_quote],
+)
+
+support_agent = Agent(
+    name="Support Agent",
+    instructions="处理技术支持问题。",
+    tools=[search_kb, create_ticket],
+)
+
+# 核心概念 2：Handoff — Agent 间的任务交接
+# LLM 自动决定何时交接，交接时携带上下文
+
+# 核心概念 3：Guardrails — 输入/输出安全检查
+@input_guardrail
+async def check_injection(ctx, agent, input):
+    """检查 Prompt 注入"""
+    result = await Runner.run(
+        injection_detector,
+        input,
+        context=ctx.context,
+    )
+    return GuardrailFunctionOutput(
+        output_info=result,
+        tripwire_triggered=result.is_injection,
+    )
+
+# 运行 Agent
+result = await Runner.run(triage_agent, "我想了解企业版定价")
+
+# Agents SDK 特点：
+# 1. 极简 API——三个概念覆盖大部分场景
+# 2. 内置追踪——自动记录每步执行
+# 3. 类型安全——Pydantic 模型验证输出
+# 4. Agent Loop 内置——自动处理工具调用循环</code></pre>
+      <p><strong>状态在云侧：</strong>Responses API 负责云端状态托管，Agents SDK 在其上做编排。好处是省心，代价是更强的平台锁定：应用代码更薄，原本可以自己换掉的编排逻辑也逐步变成平台能力。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="claude-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四、Claude Agent SDK</p><h2 id="claude-title">工具优先，<br>把 MCP 接进运行时。</h2></div>
+      <p class="reading-intro">核心 API 是 ClaudeAgentOptions + 异步 query()。MCP 服务器配置即工具发现；Permission Mode 和 Hooks 提供细粒度的授权与拦截；Subagent 通过 Task 工具在运行时派生，不是静态声明列表。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">Claude Agent SDK · 原文代码，仅转义展示，不执行</p>
+      <pre><code># Claude Agent SDK（pip install claude-agent-sdk，2025-09 从 claude-code-sdk 重命名）
+# 核心 API：ClaudeAgentOptions + 异步 query() 函数
+# 详见：https://docs.anthropic.com/en/api/agent-sdk
+
+import asyncio
+from claude_agent_sdk import query, ClaudeAgentOptions
+
+# 1. 最简用法：直接 query()
+async def simple_example():
+    options = ClaudeAgentOptions(
+        model="claude-sonnet-5",
+        system_prompt="你是一个数据分析助手。",
+    )
+    async for msg in query(prompt="分析 sales.csv 并给出 Top 3 趋势", options=options):
+        print(msg)
+
+# 2. 配置 MCP 工具服务器（真实 dict 结构，非 URL 列表）
+options = ClaudeAgentOptions(
+    model="claude-sonnet-5",
+    mcp_servers={
+        # stdio 子进程式（最常见）
+        "filesystem": {
+            "type": "stdio",
+            "command": "npx",
+            "args": ["-y", "@modelcontextprotocol/server-filesystem", "/workspace"],
+        },
+        # HTTP 远程
+        "github": {
+            "type": "http",
+            "url": "https://mcp.github.com/v1",
+            "headers": {"Authorization": "Bearer $GITHUB_TOKEN"},
+        },
+    },
+    # 允许哪些工具，可精确到工具名
+    allowed_tools=["Read", "Write", "Bash", "mcp__filesystem__read_file"],
+)
+
+# 3. Permission Mode（细粒度授权控制——这是真正的 HITL 机制）
+options = ClaudeAgentOptions(
+    model="claude-sonnet-5",
+    permission_mode="acceptEdits",  # 自动接受文件编辑
+    # 可选值: "default" | "acceptEdits" | "bypassPermissions" | "plan"
+    # plan 模式下 Agent 只规划不执行，必须人工 confirm 后才能 run
+)
+
+# 4. Hooks 机制：在工具调用前后注入逻辑（这是真实可观测/HITL 的方式）
+async def pre_tool_hook(tool_name: str, tool_input: dict):
+    if tool_name == "Bash" and "rm" in tool_input.get("command", ""):
+        return {"deny": True, "reason": "Dangerous command blocked"}
+    return {"deny": False}
+
+options = ClaudeAgentOptions(
+    model="claude-sonnet-5",
+    hooks={"PreToolUse": pre_tool_hook},
+)
+
+# 5. Subagent 模式（多 Agent 编排）：通过 Task 工具派生子 Agent
+# Claude SDK 没有静态的"sub_agents 列表"参数，而是运行时由主 Agent 决定派生
+# 主 Agent 调用 Task 工具时，会启动一个独立上下文的子 Claude 实例
+options = ClaudeAgentOptions(
+    model="claude-sonnet-5",
+    system_prompt="你是项目经理，可通过 Task 工具委派 researcher/coder/reviewer 子 Agent",
+    allowed_tools=["Task", "Read", "Write"],
+)
+
+# Claude SDK 真实特性：
+# 1. MCP 原生集成——配置即工具发现
+# 2. Permission Mode + Hooks——细粒度的 HITL 和安全护栏
+# 3. Subagent via Task 工具——主 Agent 运行时派生子 Agent，非静态声明
+# 4. 文件系统检查点——基于 .claude/ 目录的状态持久化</code></pre>
+      <p>原文提醒：Claude SDK 没有静态的 sub_agents 列表参数，Subagent 是运行时由主 Agent 通过 Task 工具派生的。另一个容易忽略的点是，Permission Mode 和 Hooks 才是它真正的 HITL 机制，而不是另建一套审批 API。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="diff-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">五、关键差异</p><h2 id="diff-title">工具生态、状态、<br>多 Agent 与绑定。</h2></div>
+      <p class="reading-intro">差异不只在 API 形状，而在工具从哪里来、状态放在哪、谁负责编排、模型能否替换。最后一条决定长期锁定程度。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">两套 SDK 在五个维度上的关键差异</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">OpenAI</th><th scope="col">Anthropic</th><th scope="col">影响</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">工具生态策略</th><td>Function Calling：工具定义在 Agent 代码中，静态</td><td>MCP：工具由独立服务提供，动态发现</td><td>MCP 更灵活，但增加基础设施复杂度</td></tr>
+            <tr><th scope="row">状态管理</th><td>Responses API 在云端托管对话状态和文件</td><td>SDK 内置检查点，可用本地或云端存储</td><td>OpenAI 更省心但锁定云服务；Anthropic 更灵活</td></tr>
+            <tr><th scope="row">多 Agent 模式</th><td>Handoff：扁平化交接，Agent A 把控制权给 Agent B</td><td>Orchestrator：层级化，主 Agent 调度子 Agent</td><td>Handoff 更简单直观；Orchestrator 更适合复杂任务</td></tr>
+            <tr><th scope="row">模型绑定</th><td>SDK 设计为模型无关（但实际优化 OpenAI 模型）</td><td>明确绑定 Claude 模型</td><td>需要多模型支持时，OpenAI SDK 更容易适配</td></tr>
+            <tr><th scope="row">开放性</th><td>SDK 开源，但生态围绕 OpenAI API</td><td>SDK 绑定 Claude，但 MCP 是完全开放的标准</td><td>MCP 的长期价值可能超过任何单一 SDK</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>2026-08 的两个补充：</strong>OpenAI 在 Responses API 增加程序化工具调用；Anthropic 的 Python SDK v0.2.140 把进程内 MCP server 换成 mcp 官方 in-memory transport。前者继续把能力收进 API 层，后者继续把 MCP 集成做深到协议原生。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="snapshot-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">六、2026.7 快照</p><h2 id="snapshot-title">两条路线，<br>都已生产成熟。</h2></div>
+      <p class="reading-intro">原文截至 2026.7 的判断：两条路线均已生产成熟。Claude Agent SDK 成为 Claude Code 的运行时底座，MCP 生态同期扩张；OpenAI 侧则继续完善 Responses API 的云端状态托管，平台锁定也更强。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">2026.7 两条路线的生产成熟度快照</caption>
+          <thead><tr><th scope="col">项目</th><th scope="col">原文快照</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Claude Agent SDK</th><td>成为 Claude Code 的运行时底座；配合 2026-06-30 发布的 Claude Sonnet 5 强化自主任务执行能力</td></tr>
+            <tr><th scope="row">Claude Sonnet 5</th><td>定位“最 agentic 的 Sonnet”，入门定价 $2/MTok 输入 / $10/MTok 输出</td></tr>
+            <tr><th scope="row">MCP 生态</th><td>扩张至 5500+ Server，约 80% Fortune 500 企业参与</td></tr>
+            <tr><th scope="row">OpenAI 侧</th><td>Agents SDK 依托 Responses API 的云端状态托管持续完善；应用更省心，但平台锁定更强</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="source-note">以上日期、模型名、价格与生态数字均按原文 2026 时点保留，标“原文版本、未联网核实”；本页不联网核对，也不更新现价或排名。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="trend-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">七、2026-08 动向</p><h2 id="trend-title">编排下沉，<br>协议做深。</h2></div>
+      <p class="reading-intro">“云侧收拢 vs 开放协议”的分野没变，但两侧各往前走了一步：OpenAI 把编排能力收进 API 层，Anthropic 把 MCP 集成做深到协议原生。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">2026-08 两套方案的最新动向</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">OpenAI（GPT-5.6 时期）</th><th scope="col">Anthropic（Claude Agent SDK）</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">本期主线</th><td>把编排能力收进 API 层</td><td>把 MCP 集成做深到协议原生</td></tr>
+            <tr><th scope="row">代表变更</th><td>Responses API 新增保留推理态 / 原生多 Agent 编排 / 程序化工具调用</td><td>Python SDK v0.2.140 支持 MCP 2.x，进程内 server 改走官方 in-memory transport</td></tr>
+            <tr><th scope="row">方向含义</th><td>云端承担更多 Agent 运行时职责，平台锁定进一步加深</td><td>依赖开放协议的官方实现，减少自研代码、提升互操作保真度</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>OpenAI：编排从 SDK 层下沉到 API 层</h3>
+      <p>The builder's guide to GPT-5.6（2026-08-13）的核心建议是不默认用旗舰、按任务下沉到更省的小模型（Luna / Terra，配套定价显示 Luna 降价约 80%），并推介 Responses API 三项新能力：<strong>保留推理态</strong>（跨轮次保留推理过程，不必每轮重新推理）、<strong>原生多 Agent 编排</strong>（多 Agent 调度由 API 直接提供，不再必须由应用层 Agents SDK 承担）、<strong>程序化工具调用</strong>（工具调用由代码逻辑驱动组织，不必每步都走模型决策）。其中“原生多 Agent 编排”进 API 是原文核心论断的直接演进：“SDK 轻 + 云重”进一步向云侧偏移，应用代码更薄，代价是原本可以自己换掉的编排逻辑也变成平台能力，锁定加深。</p>
+      <h3>Anthropic：MCP 集成从自研分发换成协议原生</h3>
+      <p>Python SDK v0.2.140（2026-08-18）落地 MCP 2.x：进程内 MCP server 不再手写 JSON-RPC（基于 JSON 的远程调用协议）分发，改走 mcp 官方 in-memory transport。手工构造的 <code>mcp.server.Server</code> 可以原样接入，resources / prompts / 全部 result content type 原样透传，不再被 SDK 中间层削减。意义在保真度和维护成本：把实现让给协议官方，而不是长期维护一份平行实现。</p>
+      <div class="callout">
+        <p class="callout-label">日期来源 · 原文注</p>
+        <p>OpenAI 两篇文章的发布日期取自官方列表页的单一来源（正文页经代理读取时不渲染日期），未做正文交叉验证，日期以官方页面为准。以上日期、版本、价格与能力均按原文 2026 时点保留，标“原文版本、未联网核实”。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="alternatives-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">八、第三方替代</p><h2 id="alternatives-title">不绑定官方 SDK，<br>还有这些选择。</h2></div>
+      <p class="reading-intro">模型无关、durable 工作流、云厂商生态和完全自研，各有一条路。先按绑定关系排除，再按工作流复杂度选。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">第三方替代方案及特点</caption>
+          <thead><tr><th scope="col">方案</th><th scope="col">特点</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Vercel AI SDK</th><td>真正模型无关，支持 OpenAI / Claude / Gemini，TypeScript 优先</td></tr>
+            <tr><th scope="row">LangGraph</th><td>1.0 GA（2025-10），durable agent 首个稳定版，原文称月 PyPI 下载超 3800 万</td></tr>
+            <tr><th scope="row">Microsoft Agent Framework</th><td>2026-04 发布 1.0 GA，Azure 生态，企业级多 Agent 编排</td></tr>
+            <tr><th scope="row">Google ADK</th><td>Agent Development Kit，原生集成 A2A 协议 + Vertex AI Agent Engine</td></tr>
+            <tr><th scope="row">自研</th><td>完全控制，无依赖，但需要自己处理所有细节</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>选择决策</h3>
+      <div class="route-list">
+        <div class="route-row"><b>绑定 OpenAI</b><span class="arrow" aria-hidden="true">→</span><span>OpenAI Agents SDK</span></div>
+        <div class="route-row"><b>绑定 Claude + 需要 MCP</b><span class="arrow" aria-hidden="true">→</span><span>Claude Agent SDK</span></div>
+        <div class="route-row"><b>需要多模型 + TypeScript</b><span class="arrow" aria-hidden="true">→</span><span>Vercel AI SDK</span></div>
+        <div class="route-row"><b>需要复杂工作流 / durable</b><span class="arrow" aria-hidden="true">→</span><span>LangGraph</span></div>
+        <div class="route-row"><b>绑定 Azure / 微软生态</b><span class="arrow" aria-hidden="true">→</span><span>Microsoft Agent Framework</span></div>
+        <div class="route-row"><b>绑定 Google Cloud / Gemini</b><span class="arrow" aria-hidden="true">→</span><span>Google ADK</span></div>
+        <div class="route-row"><b>需要完全控制</b><span class="arrow" aria-hidden="true">→</span><span>自研</span></div>
+      </div>
+      <p class="source-note">以上版本、发布日期与下载量均按原文 2026 时点保留，标“原文版本、未联网核实”；本页不联网核对，也不排名。</p>
+
+      <h3>实际选型建议</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">五类项目与原文推荐方案</caption>
+          <thead><tr><th scope="col">项目类型</th><th scope="col">原文推荐</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">客服 Bot（单模型）</th><td>OpenAI Agents SDK：Handoff 模式天然适合客服分流</td></tr>
+            <tr><th scope="row">知识密集型 Agent（RAG + 多数据源）</th><td>Claude Agent SDK + MCP：工具自动发现 + 上下文注入</td></tr>
+            <tr><th scope="row">代码助手（需要文件系统 / 终端访问）</th><td>Claude Agent SDK + MCP：Claude Code 就是这么构建的</td></tr>
+            <tr><th scope="row">多模型策略（成本优化）</th><td>Vercel AI SDK 或 LiteLLM + 自研 Agent Loop</td></tr>
+            <tr><th scope="row">企业级部署（Azure 基础设施）</th><td>Microsoft Agent Framework + Azure OpenAI</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="misconception-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="misconception-title">四条，<br>按原文顺序。</h2></div>
+      <p class="reading-intro">第一条专门纠正 Assistants API 与 Responses API 的关系；后三条谈绑定、MCP 生态和多模型。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“Assistants API 和 Agents SDK 是一回事”，或“Agents SDK 是 Assistants API 的直接替代者。”</h3><p>实际三者关系是：Assistants API（2023）是云端托管的有状态 API（Thread / Message / Run 模型），OpenAI 于 2025-08-26 公告 deprecated，原文写计划 2026-08-26 关闭（以 OpenAI 官方公告为准；本页未联网核实是否已执行）；Responses API（2025-03）才是 Assistants API 的直接替代者，同样云端管理状态，但 API 设计更现代；Agents SDK（2025-03）是基于 Responses API 的上层轻量级编排框架，提供 Agent / Handoff / Guardrails 抽象。三者是分层关系：Assistants → Responses（API 层替代）→ Agents SDK（SDK 层编排）。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“选了一个 SDK 就不能用其他模型。”</h3><p>OpenAI Agents SDK 的 <code>model_settings</code> 可以配置兼容 OpenAI API 格式的任何提供商。Claude Agent SDK 绑定 Claude，但 MCP 服务器可以被任何客户端使用。关键是区分“SDK 绑定”和“协议绑定”。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>MCP 会成为行业标准吗？</h3><p>截至 2026 年初，MCP 已从“Anthropic 提议的标准”成长为事实标准：PulseMCP 收录超 5500 个 MCP Server，约 80% Fortune 500 企业开始参与生态，OpenAI、Google、微软均已宣布支持或兼容 MCP。它解决了“每个 Agent 框架都要自己实现工具集成”的 N×M 问题。但 ACM 2026 学术研究也揭示了开发者痛点：文件系统操作问题占比最高（21.32%），其次是数据验证和类型问题——说明协议走向成熟的同时，工程实践仍在追赶。以上数字按原文 2026 时点保留，未联网核实。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>如果需要同时用 GPT 和 Claude 怎么办？</h3><p>推荐架构：使用 LiteLLM 或 Portkey 作为 Model Gateway，统一 API 接口；自研轻量 Agent Loop，不绑定任何特定 SDK；MCP 作为工具层标准，与模型层解耦。核心思想是模型层和工具层分离。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《OpenAI Responses API / Agents SDK vs Anthropic Claude Agent SDK 对比》。原文用于解释本题，版本、价格、生态数字与日期均按原文 2026 时点保留，本页未联网核实。</p>
+    <details>
+      <summary>展开原文列出的七条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.reddit.com/r/vercel/comments/1r5meu6/claude_agent_sdk_vs_openai_agent_sdk_vs_vercel_ai/" target="_blank" rel="noopener noreferrer">Claude Agent SDK vs OpenAI Agent SDK vs Vercel AI SDK (Reddit)</a></li>
+          <li><a href="https://www.prompthub.us/blog/openais-agents-sdk-and-anthropics-model-context-protocol-mcp" target="_blank" rel="noopener noreferrer">OpenAI's Agents SDK and Anthropic's MCP (PromptHub)</a></li>
+          <li><a href="https://topaiproduct.com/2025/03/12/compare-claude-api-with-openai-agent-api-for-building-an-ai-agent/" target="_blank" rel="noopener noreferrer">Compare Claude API with OpenAI Agent API (Top AI Product)</a></li>
+          <li><a href="https://rabot.medium.com/winning-in-the-autonomous-ai-agents-race-a0c03d52acad" target="_blank" rel="noopener noreferrer">Winning in the Autonomous AI Agents Race: Anthropic vs OpenAI (Medium)</a></li>
+          <li><a href="https://openai.com/index/builders-guide-to-gpt-5-6/" target="_blank" rel="noopener noreferrer">The builder's guide to GPT-5.6 (OpenAI，2026-08-13)</a> —— 模型下沉建议 + Responses API 保留推理态 / 原生多 Agent 编排 / 程序化工具调用</li>
+          <li><a href="https://openai.com/index/advancing-the-price-performance-frontier-with-gpt-5-6/" target="_blank" rel="noopener noreferrer">Advancing the price-performance frontier with GPT-5.6 (OpenAI，2026-07-30)</a> —— Luna 降价约 80%、Terra 约 20%，Sol 新增 Fast mode</li>
+          <li><a href="https://github.com/anthropics/claude-agent-sdk-python/releases/tag/v0.2.140" target="_blank" rel="noopener noreferrer">claude-agent-sdk-python v0.2.140 —— MCP 2.x 支持、官方 in-memory transport（2026-08-18）</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>11-frameworks/099-assistants-api-vs-claude-sdk.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 7 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const SCENARIOS = {
+    support: {
+      name: "客服 Bot（单模型）",
+      task: "按问题类型把用户转给销售或售后专家，需要可追踪的交接。",
+      constraints: ["单模型", "任务分流", "快速上线", "内置追踪"],
+      openai: {
+        verdict: "首选",
+        tools: "Function Calling：工具定义在 Agent 代码中，静态但够用",
+        state: "Responses API 云端托管对话状态，省去自建",
+        multi: "Handoff 扁平交接；内置 Tracing 记录每一步",
+        fit: "Handoff 天然适合客服分流，Responses API 省去状态托管；代价是更强的平台锁定。"
+      },
+      claude: {
+        verdict: "可用",
+        tools: "MCP：工具由独立服务提供，动态发现",
+        state: "Hooks + 文件检查点，状态由自己管理",
+        multi: "Subagent 通过 Task 派生；permission_mode 可做细粒度授权",
+        fit: "也能实现，但原文把客服分流指向 Handoff；Claude 的多 Agent 是层级化 Subagent 编排，且绑定 Claude 模型。"
+      },
+      choice: "OpenAI Agents SDK",
+      why: "原文实际选型建议：客服 Bot（单模型）优先 OpenAI Agents SDK，Handoff 模式天然适合客服分流。",
+      alt: "若后续要接多模型，再考虑 Vercel AI SDK 或 LiteLLM + 自研 Agent Loop。"
+    },
+    knowledge: {
+      name: "知识密集型 Agent（RAG + 多数据源）",
+      task: "把多个数据源接成工具，按问题动态发现并注入上下文。",
+      constraints: ["多数据源", "工具动态发现", "上下文注入", "工具密集"],
+      openai: {
+        verdict: "可用",
+        tools: "Function Calling：工具静态定义在 Agent 代码里",
+        state: "Responses API 云端托管状态和文件",
+        multi: "Handoff 交接；2026-08 起 API 层也提供原生多 Agent 编排",
+        fit: "能做通用 Agent，但多数据源要逐个接工具；工具集变化时要改代码，不如 MCP 配置即发现。"
+      },
+      claude: {
+        verdict: "首选",
+        tools: "MCP：配置 MCP 服务器即可发现工具，支持 stdio 与 HTTP",
+        state: "Hooks + 文件检查点，状态本地或云端自选",
+        multi: "Subagent 运行时派生；Permission Mode / Hooks 细粒度控制",
+        fit: "RAG + 多数据源需要工具自动发现和上下文注入，MCP 是结构性优势；代价是绑定 Claude，并增加 MCP 基础设施复杂度。"
+      },
+      choice: "Claude Agent SDK + MCP",
+      why: "原文实际选型建议：知识密集型 Agent（RAG + 多数据源）用 Claude Agent SDK + MCP，工具自动发现 + 上下文注入。",
+      alt: "如果必须多模型，保留 MCP 工具层，换用支持 MCP 的客户端或自研 Loop。"
+    },
+    coding: {
+      name: "代码助手（文件系统 / 终端）",
+      task: "让 Agent 读写工作区、执行命令，并在敏感操作前停下来等确认。",
+      constraints: ["文件系统", "终端访问", "细粒度授权", "HITL"],
+      openai: {
+        verdict: "可用",
+        tools: "Function Calling：文件与终端工具需要自己接入",
+        state: "Responses API 云端托管状态",
+        multi: "Handoff 扁平交接；HITL 需自行实现",
+        fit: "通用 Agent 可以搭，但文件系统、终端和权限控制都要自己补；对代码场景没有 Claude Code 那样的现成底座。"
+      },
+      claude: {
+        verdict: "首选",
+        tools: "MCP：filesystem / Bash 等服务器直接接入",
+        state: "文件系统检查点，基于 .claude/ 目录持久化",
+        multi: "Subagent 通过 Task 派生；Permission Mode 含 plan / acceptEdits 等模式",
+        fit: "Claude Agent SDK 就是 Claude Code 的运行时底座；Permission Mode + Hooks 能在工具调用前后拦截，适合代码场景。"
+      },
+      choice: "Claude Agent SDK + MCP",
+      why: "原文实际选型建议：代码助手（需要文件系统 / 终端访问）用 Claude Agent SDK + MCP，Claude Code 就是这么构建的。",
+      alt: "若团队已深度绑定 OpenAI，需自行补齐文件系统、终端和审批链，成本更高。"
+    },
+    multimodel: {
+      name: "多模型策略（成本优化）",
+      task: "按任务复杂度在 GPT、Claude 等模型间路由，避免被单一 SDK 绑定。",
+      constraints: ["多模型", "成本优化", "模型层解耦", "工具层复用"],
+      openai: {
+        verdict: "非首选",
+        tools: "Function Calling；工具定义仍围绕 OpenAI 生态",
+        state: "Responses API 云端托管，换模型时状态层也要适配",
+        multi: "Handoff 可用；但编排能力正逐步收进 Responses API",
+        fit: "SDK 设计为模型无关，但实际优化 OpenAI 模型；model_settings 可配兼容 OpenAI 格式的提供商，仍不是真正的多模型中立层。"
+      },
+      claude: {
+        verdict: "非首选",
+        tools: "MCP 开放，但 SDK 本身绑定 Claude",
+        state: "Hooks + 文件检查点，和 Claude 运行时绑定",
+        multi: "Subagent 在 Claude 运行时内派生",
+        fit: "MCP 工具层可以复用，但 Claude Agent SDK 明确绑定 Claude 模型，不适合作为多模型统一入口。"
+      },
+      choice: "Vercel AI SDK 或 LiteLLM + 自研 Agent Loop",
+      why: "原文实际选型建议：多模型策略（成本优化）用 Vercel AI SDK 或 LiteLLM + 自研 Agent Loop。核心是模型层和工具层分离。",
+      alt: "LiteLLM / Portkey 做 Model Gateway，MCP 做工具层标准；不要为了省事把编排也锁进某一家 SDK。"
+    },
+    azure: {
+      name: "企业级部署（Azure 基础设施）",
+      task: "在 Azure 上部署企业级多 Agent 系统，复用现有云基础设施。",
+      constraints: ["Azure 生态", "企业级编排", "合规", "现有基础设施"],
+      openai: {
+        verdict: "非首选",
+        tools: "Function Calling；可接 Azure OpenAI，但需额外适配",
+        state: "Responses API 云端托管，与 Azure 侧状态方案要对接",
+        multi: "Handoff 可用；企业级编排能力有限",
+        fit: "原文的企业级 Azure 建议指向 Microsoft Agent Framework + Azure OpenAI；OpenAI Agents SDK 不是该场景的推荐组合。"
+      },
+      claude: {
+        verdict: "非首选",
+        tools: "MCP 开放，但运行时绑定 Claude",
+        state: "检查点跟随 Claude SDK，和 Azure 基础设施不是一套",
+        multi: "Subagent 在 Claude 运行时内派生",
+        fit: "原文没有把 Claude Agent SDK 列为 Azure 企业级部署的推荐组合；它的运行时与 Azure 编排栈不是一套。"
+      },
+      choice: "Microsoft Agent Framework + Azure OpenAI",
+      why: "原文实际选型建议：企业级部署（Azure 基础设施）用 Microsoft Agent Framework + Azure OpenAI。",
+      alt: "如果坚持官方 SDK，OpenAI Agents SDK 更接近，但仍需处理 Azure 接入与企业编排的缺口。"
+    }
+  };
+
+  const STAGE_NAMES = ["需求", "OpenAI", "Claude", "结论"];
+  const state = { scenario: "support", stage: 0 };
+  const byId = (id) => document.getElementById(id);
+
+  function scenario() {
+    return SCENARIOS[state.scenario];
+  }
+
+  function buildStageNav() {
+    const list = byId("stage-list");
+    list.style.setProperty("--stages", String(STAGE_NAMES.length));
+    list.textContent = "";
+    STAGE_NAMES.forEach((name, index) => {
+      const li = document.createElement("li");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "stage-button";
+      button.dataset.step = String(index);
+      button.setAttribute("aria-controls", "explainer");
+      button.setAttribute("aria-label", `第 ${index + 1} 阶段：${name}`);
+      button.innerHTML = `<span class="stage-number">${index + 1}</span><span>${name}</span>`;
+      if (index === state.stage) button.setAttribute("aria-current", "step");
+      button.addEventListener("click", () => goTo(index));
+      li.append(button);
+      list.append(li);
+    });
+  }
+
+  function updateStageNav() {
+    document.querySelectorAll("#stage-list .stage-button").forEach((button) => {
+      if (Number(button.dataset.step) === state.stage) {
+        button.setAttribute("aria-current", "step");
+      } else {
+        button.removeAttribute("aria-current");
+      }
+    });
+  }
+
+  function badgeClass(verdict) {
+    if (verdict === "首选") return "badge-ok";
+    if (verdict === "可用") return "badge-info";
+    if (verdict === "非首选") return "badge-warn";
+    return "badge-neutral";
+  }
+
+  function renderSide(sideName) {
+    const data = scenario()[sideName];
+    const card = document.querySelector(`.duel-side[data-side="${sideName}"]`);
+    const revealed = sideName === "openai" ? state.stage >= 1 : state.stage >= 2;
+    const active = (sideName === "openai" && state.stage === 1) || (sideName === "claude" && state.stage === 2);
+    const done = state.stage === 3 || (sideName === "openai" && state.stage === 2);
+    card.classList.toggle("is-active", active);
+    card.classList.toggle("is-done", done && !active);
+    card.classList.toggle("is-waiting", !revealed && !active);
+    card.dataset.verdict = revealed ? data.verdict : "";
+    const verdictEl = card.querySelector("[data-verdict]");
+    verdictEl.textContent = revealed ? data.verdict : "待比较";
+    verdictEl.className = `badge ${revealed ? badgeClass(data.verdict) : "badge-neutral"} duel-verdict`;
+    card.querySelectorAll("[data-point]").forEach((dd) => {
+      dd.textContent = revealed ? data[dd.dataset.point] : "待比较";
+    });
+    const fit = card.querySelector("[data-fit]");
+    fit.textContent = revealed ? data.fit : "";
+    fit.hidden = !revealed;
+  }
+
+  function render() {
+    const current = scenario();
+    const stage = state.stage;
+    document.querySelectorAll(".scenario-tab").forEach((button) => {
+      button.setAttribute("aria-pressed", button.dataset.scenario === state.scenario ? "true" : "false");
+    });
+    byId("duel-task").textContent = `固定需求：${current.name}`;
+    byId("step-index").textContent = `双方案对照 · 第 ${stage + 1} / 4 阶段`;
+    const titles = [
+      "先看固定需求，不急着选。",
+      "方案 A 先看：OpenAI 侧。",
+      "方案 B 再看：Claude 侧。",
+      "结论：按原文选型建议。"
+    ];
+    byId("duel-title").textContent = titles[stage];
+    const subtitles = [
+      `${current.name}：${current.task} 第 1 阶段只列约束，两边都标“待比较”。`,
+      `OpenAI 侧按原文能力展开：${current.openai.fit}`,
+      `Claude 侧按原文能力展开：${current.claude.fit}`,
+      `两边都看完再下结论。结论来自原文“实际选型建议”，不是本页评测。`
+    ];
+    byId("duel-subtitle").textContent = subtitles[stage];
+    renderSide("openai");
+    renderSide("claude");
+    const result = byId("duel-result");
+    result.hidden = stage !== 3;
+    byId("result-choice").textContent = current.choice;
+    byId("result-why").textContent = current.why;
+    byId("result-alt").textContent = current.alt;
+    const verdictText = stage === 0 ? "双方待比较" : stage === 1 ? "OpenAI 已展开" : stage === 2 ? "Claude 已展开" : "结论已给出";
+    byId("state-summary").textContent = `${current.name} · 第 ${stage + 1} / 4 阶段 · ${verdictText}`;
+    updateStageNav();
+    byId("back-button").disabled = stage === 0;
+    byId("next-button").disabled = stage === 3;
+  }
+
+  function announce(text) {
+    byId("duel-announcement").textContent = text;
+  }
+
+  function goTo(index) {
+    state.stage = Math.max(0, Math.min(index, 3));
+    render();
+    announce(`第 ${state.stage + 1} 阶段：${byId("duel-title").textContent} ${scenario().name}`);
+  }
+
+  function next() {
+    if (state.stage < 3) goTo(state.stage + 1);
+  }
+
+  function back() {
+    if (state.stage > 0) goTo(state.stage - 1);
+  }
+
+  function reset() {
+    state.stage = 0;
+    render();
+    announce(`已重置，当前需求：${scenario().name}。`);
+  }
+
+  function setScenario(id) {
+    state.scenario = id;
+    state.stage = 0;
+    render();
+    announce(`已切换到${SCENARIOS[id].name}，双方待比较。`);
+  }
+
+  document.querySelectorAll(".scenario-tab").forEach((button) => {
+    button.addEventListener("click", () => setScenario(button.dataset.scenario));
+  });
+  byId("next-button").addEventListener("click", next);
+  byId("back-button").addEventListener("click", back);
+  byId("reset-button").addEventListener("click", reset);
+
+  buildStageNav();
+  render();
+</script>
+</body>
+</html>

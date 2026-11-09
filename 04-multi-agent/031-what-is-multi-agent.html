@@ -1,0 +1,858 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>什么是多 Agent 系统？与单 Agent 相比有何优势？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .ma-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .ma-head { display: flex; justify-content: space-between; gap: var(--s-4); align-items: end; flex-wrap: wrap; }
+  .ma-head h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; }
+  .ma-head > p { font-size: var(--t-small); color: var(--text-dim); max-width: 37em; }
+  .ma-layout { display: grid; grid-template-columns: minmax(0, 1.02fr) minmax(0, .98fr); gap: var(--s-4); margin-top: var(--s-4); align-items: start; }
+  .ma-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .ma-card h3 { font-size: 14px; line-height: 1.5; font-weight: 600; }
+  .ma-q { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); }
+  .ma-q:last-child { border-bottom: 0; }
+  .ma-q-label { font-size: 12px; line-height: 1.55; }
+  .ma-q-label small { display: block; font: 9.5px/1.5 var(--mono); color: var(--text-dim); }
+  .ma-opts { display: inline-flex; gap: 3px; padding: 2px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-soft); }
+  .ma-opt { min-height: 30px; padding: 3px 9px; border: 1px solid transparent; border-radius: 999px; background: transparent; color: var(--text-dim); font-size: 10.5px; white-space: nowrap; }
+  .ma-opt:hover { background: var(--surface); }
+  .ma-opt[aria-pressed="true"] { color: var(--ink); background: var(--surface); border-color: var(--border-bright); font-weight: 600; }
+  .ma-verdict { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .ma-verdict-badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 999px; font: 600 13px/1.5 var(--mono); }
+  .ma-verdict-badge.multi { color: #0d3f6e; background: #e7f0f9; border: 1px solid #a9c4de; }
+  .ma-verdict-badge.single { color: #1b5e20; background: #e8f5e9; border: 1px solid #a5cfa8; }
+  .ma-score { font: 10.5px/1.6 var(--mono); color: var(--text-dim); margin-left: auto; }
+  .ma-score b { font-size: 16px; color: var(--ink); }
+  .ma-factors { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 4px; }
+  .ma-factor { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 6px 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface-soft); font-size: 11px; line-height: 1.5; }
+  .ma-factor span small { display: block; font: 9.5px/1.4 var(--mono); color: var(--text-dim); }
+  .ma-points { display: inline-flex; align-items: center; min-width: 36px; justify-content: center; padding: 1px 7px; border-radius: 4px; font: 700 10.5px/1.6 var(--mono); }
+  .ma-points.plus { color: #1b5e20; background: #e8f5e9; border: 1px solid #a5cfa8; }
+  .ma-points.minus { color: #8b1a1a; background: #fdecec; border: 1px solid #dda8a8; }
+  .ma-points.zero { color: #5d625d; background: #f1f0eb; border: 1px dashed #b9beb4; }
+  .ma-cost { margin-top: var(--s-3); border-top: 1px solid var(--border); padding-top: var(--s-3); }
+  .ma-cost h4 { margin: 0 0 4px; font: 10px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .ma-cost ul { margin: 0; padding-left: 1.15em; }
+  .ma-cost li { font-size: 10.5px; line-height: 1.6; color: var(--text-dim); margin-block: 3px; }
+  .ma-cost li strong { color: var(--ink); }
+  .ma-arch { margin-top: var(--s-5); padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .ma-arch h3 { font-size: 14px; line-height: 1.5; font-weight: 600; }
+  .ma-diagram { margin-top: var(--s-3); display: grid; gap: 6px; }
+  .ma-node { padding: 7px 11px; border: 1px solid var(--border-bright); border-radius: 5px; background: var(--surface-soft); font-size: 11.5px; line-height: 1.5; text-align: center; }
+  .ma-node small { display: block; font: 9.5px/1.4 var(--mono); color: var(--text-dim); }
+  .ma-node.coord { border-color: var(--accent); background: var(--accent-dim); }
+  .ma-node.spec { border-color: #c9a5d9; background: #faf3fd; }
+  .ma-node.sum { border-color: #a5cfa8; background: #f4f8f4; }
+  .ma-arrow { text-align: center; color: var(--text-dim); font: 10px/1.3 var(--mono); }
+  .ma-arrow b { display: block; font-size: 15px; }
+  .ma-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+  .ma-chain { display: grid; gap: 4px; }
+  .ma-diagram-note { margin-top: 7px; font-size: 10.5px; line-height: 1.6; color: var(--text-dim); }
+  .ma-caption { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border); }
+  .ma-caption h2 { font-size: var(--t-h2); line-height: 1.4; }
+  .ma-caption p:not(.figure-index) { margin-top: 6px; font-size: var(--t-small); color: var(--text-dim); max-width: 66em; }
+  .ma-read { margin-top: var(--s-4); padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .ma-read-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .ma-read-node { padding: 6px 10px; border: 1px solid var(--border-bright); border-radius: 5px; background: var(--surface-soft); font-size: 11px; line-height: 1.5; }
+  .ma-read-node.coord { border-color: var(--accent); background: var(--accent-dim); }
+  .ma-read-node.spec { border-color: #c9a5d9; background: #faf3fd; }
+  .ma-read-node.sum { border-color: #a5cfa8; background: #f4f8f4; }
+  .ma-read-row .ma-arrow { font-size: 11px; color: var(--text-dim); }
+  .ma-fan { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; margin: 5px 0; padding-left: 16px; border-left: 1px dashed var(--border-bright); }
+  .ma-read-note { margin-top: 4px; font-size: 10.5px; line-height: 1.6; color: var(--text-dim); }
+  .ma-code { font-size: 11px; }
+  .ma-mermaid { font-size: 10.5px; }
+  @media (max-width: 1000px) {
+    .ma-layout { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .ma-stage { padding: var(--s-4); }
+    .ma-head h2 { font-size: 23px; }
+    .ma-q { grid-template-columns: 1fr; gap: 5px; }
+    .ma-opts { justify-self: start; }
+    .ma-opt { min-height: 34px; }
+    .ma-fan { grid-template-columns: 1fr; }
+    .ma-row { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 3px; }
+    .ma-row .ma-node { padding: 6px 3px; font-size: 10px; line-height: 1.4; }
+    .ma-row .ma-node small { font-size: 8px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">031 / 什么是多 Agent</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 7 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="../03-tool-use/030-tool-use-security.html">← 上一页 · 工具使用的安全性</a><a href="032-communication-patterns.html">下一页 → · 多 Agent 通信模式</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">基础 · Multi-Agent · 可交互讲解</p>
+      <h1>一个人干不完，<br>再拆给一队人。</h1>
+    </div>
+    <div>
+      <p class="lead">多 Agent 系统由多个 LLM 驱动的 Agent 协同解决复杂问题。每个 Agent 专注一个子任务，通过通信和协调完成单个 Agent 难以胜任的工作。核心优势是专精化、并行、上下文分散和模块化；代价是通信开销、不可预测和调试复杂度。</p>
+      <p class="definition">关键边界：<strong>多 Agent 不是默认更优。</strong>简单任务拆成多 Agent，通信成本可能超过收益。本页的选型分数是固定教学权重，不是实测结论，也不调用任何 Agent。</p>
+      <div class="hero-meta"><span class="pill">基础</span><span class="pill">Multi-Agent</span><span class="pill">单 Agent vs 多 Agent</span><span class="pill">本地演示</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="demo-title">
+    <div class="player-top">
+      <div class="player-label">架构选型演练台 <small>5 个固定问题，固定权重</small></div>
+      <div class="controls" role="group" aria-label="选型演示控制">
+        <button type="button" class="button button-quiet" id="ma-reset">重置</button>
+        <button type="button" class="button" id="ma-simple">载入简单示例</button>
+        <button type="button" class="button" id="ma-complex">载入复杂示例</button>
+      </div>
+    </div>
+    <div class="ma-stage scene" data-scene="architecture-choice">
+      <div class="ma-head">
+        <div>
+          <p class="figure-index">图 1 · 固定教学数据</p>
+          <h2 id="demo-title">五个问题，判断该不该拆。</h2>
+        </div>
+        <p>每个选项对应固定分值，达到 3 分建议多 Agent。分值只用于演示判断顺序，不是行业标准。</p>
+      </div>
+
+      <div class="ma-layout">
+        <div class="ma-card">
+          <h3>任务特征</h3>
+          <div id="ma-questions"></div>
+        </div>
+
+        <div class="ma-card">
+          <h3>选型结果</h3>
+          <div class="ma-verdict">
+            <span class="ma-verdict-badge single" id="ma-verdict-badge">单 Agent</span>
+            <span class="ma-score">决策分 <b id="ma-score">0</b> · 阈值 3</span>
+          </div>
+          <ul class="ma-factors" id="ma-factors"></ul>
+          <div class="ma-cost">
+            <h4>成本提醒（固定教学说明）</h4>
+            <ul id="ma-cost-list"></ul>
+          </div>
+        </div>
+      </div>
+
+      <div class="ma-arch">
+        <h3>推荐架构</h3>
+        <div class="ma-diagram" id="ma-diagram"></div>
+        <p class="ma-diagram-note" id="ma-diagram-note"></p>
+      </div>
+
+      <div class="ma-caption">
+        <p class="figure-index">图 2 · 拆分的理由要具体</p>
+        <h2>专精、并行、审查，至少占一个再拆。</h2>
+        <p>如果只是任务步骤多，但没有专业技能差异、没有并行空间、也不需要独立审查，多 Agent 往往只会增加通信和调试成本。先从单 Agent 开始，遇到明确瓶颈再拆。</p>
+      </div>
+      <p class="demo-note">固定教学数据：五个问题、选项分值、阈值 3 和推荐架构都是写死的本地规则，不是实测研究结论。页面不调用模型、不启动 Agent、不测量真实延迟或成本。引用的 33%、53–86%、61.2% 等数字均来自原文，标注为“原文引用、未联网核实”。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学权重 · 不调用 Agent</span><span id="ma-state-summary">决策分 0 · 单 Agent</span></div>
+  </section>
+  <p id="ma-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="what-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">定义</p><h2 id="what-title">分而治之，<br>每个 Agent 只管一段。</h2></div>
+      <p class="reading-intro">多 Agent 系统由多个各自拥有 LLM 的 Agent 组成。协调器拆任务，专精 Agent 各带小工具集和独立上下文，最后汇总。</p>
+    </div>
+    <div class="prose">
+      <div class="ma-read" role="img" aria-label="多 Agent 结构：复杂任务交给协调器，协调器分派给搜索、分析、写作三个专精 Agent，三者结果汇总为最终结果">
+        <div class="ma-read-row"><span class="ma-read-node">复杂任务</span><span class="ma-arrow" aria-hidden="true">→</span><span class="ma-read-node coord">协调器 Agent · 分配任务 / 汇总结果</span></div>
+        <div class="ma-fan">
+          <div class="ma-read-node spec">搜索 Agent · 工具：搜索 / 专精：检索</div>
+          <div class="ma-read-node spec">分析 Agent · 工具：SQL / 专精：数据</div>
+          <div class="ma-read-node spec">写作 Agent · 工具：无 / 专精：文案</div>
+        </div>
+        <div class="ma-read-row"><span class="ma-arrow" aria-hidden="true">↓</span><span class="ma-read-node sum">汇总结果</span></div>
+        <p class="ma-read-note">离线可读示意：协调器拆解，三个专精 Agent 各有独立上下文。原图是 Mermaid 流程图，源码见下方折叠块。</p>
+      </div>
+      <details>
+        <summary>查看原文 Mermaid 源码（需在支持 Mermaid 的编辑器中渲染）</summary>
+        <pre class="ma-mermaid"><code>flowchart TD
+    A["复杂任务"] --&gt; B["协调器 Agent&lt;br/&gt;分配任务 · 汇总结果"]
+    B --&gt; C["搜索 Agent&lt;br/&gt;工具：搜索 · 专精：检索"]
+    B --&gt; D["分析 Agent&lt;br/&gt;工具：SQL · 专精：数据"]
+    B --&gt; E["写作 Agent&lt;br/&gt;工具：无 · 专精：文案"]
+    C --&gt; F["汇总结果"]
+    D --&gt; F
+    E --&gt; F
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class A,F proc
+    class B,C,D,E agent</code></pre>
+      </details>
+      <p>核心思想是分而治之：复杂任务拆成子任务，每个子任务由专精 Agent 处理。协调器负责拆解和汇总，专精 Agent 不承担全局协调。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="limits-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">单 Agent 的局限</p><h2 id="limits-title">一个上下文，<br>装不下所有角色。</h2></div>
+      <p class="reading-intro">长指令、多工具、互相冲突的角色要求，都会让单 Agent 的选择质量下降。</p>
+    </div>
+    <div class="prose">
+      <pre><code>single_agent_problems = {
+    "上下文过载": "50+ 工具定义 + 复杂指令 = 上下文窗口被占满",
+    "角色冲突": "同时要求严谨分析和创意写作，风格矛盾",
+    "工具选择困难": "工具越多，选错工具的概率越高",
+    "单点故障": "一个 Agent 出错，整个任务失败",
+    "不可并行": "所有步骤必须顺序执行",
+}</code></pre>
+      <p>当前 LLM 面对超长、多目标的 prompt 时表现不佳，也不擅长从大量工具中挑对工具。把任务拆给多个专精 Agent，是应对这两个限制的自然方案。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="benefits-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">核心优势</p><h2 id="benefits-title">专精、并行、上下文、<br>模块化，再加准确率。</h2></div>
+      <p class="reading-intro">六个优势里，前四个是架构带来的直接收益；后两个依赖具体任务和研究结论，引用时要带来源。</p>
+    </div>
+    <div class="prose">
+      <h3>1. 任务专精化</h3>
+      <p>每个 Agent 有明确角色和有限工具集。模型也可以按任务选：研究用性价比高的模型，编码用最强模型。</p>
+      <pre><code>agents = {
+    "researcher": {
+        "system_prompt": "你是研究分析师，专注于收集和验证信息",
+        "tools": ["web_search", "arxiv_search"],
+        "model": "claude-sonnet",
+    },
+    "coder": {
+        "system_prompt": "你是高级软件工程师，专注于编写代码",
+        "tools": ["code_executor", "file_write"],
+        "model": "claude-opus",
+    },
+    "reviewer": {
+        "system_prompt": "你是代码审查专家，专注于发现 bug 和改进",
+        "tools": ["code_analyzer"],
+        "model": "claude-sonnet",
+    },
+}</code></pre>
+
+      <h3>2. 并行处理</h3>
+      <p>多个 Agent 同时工作，总时间取最长的那一个。原文引用研究称，动态多 Agent 框架相比传统顺序系统，执行时间可减少 33%——<strong>原文引用、未联网核实</strong>。</p>
+      <pre><code>async def parallel_research(topic):
+    results = await asyncio.gather(
+        researcher_agent.search_papers(topic),
+        market_agent.analyze_market(topic),
+        tech_agent.review_implementations(topic),
+    )
+    return coordinator.synthesize(results)</code></pre>
+
+      <h3>3. 更好的上下文管理</h3>
+      <p>单 Agent 处理长文档时容易丢上下文。多 Agent 中每个 Agent 只处理自己那部分，通过通信维持整体一致性，等效于扩展了上下文窗口。</p>
+
+      <h3>4. 模块化与可维护性</h3>
+      <pre><code>old_analyzer = AnalyzerAgent(model="gpt-4")
+new_analyzer = AnalyzerAgent(model="claude-opus")  # 零影响替换
+
+team.add_agent(TranslationAgent())  # 不修改现有代码</code></pre>
+      <p>单个 Agent 可以独立开发、测试和替换。升级分析能力只换分析 Agent；增加翻译能力只加一个 Agent。</p>
+
+      <h3>5. 准确率提升</h3>
+      <p>原文提到 Producer-Reflector 双 Agent 架构在代码生成任务中大幅提升准确率；Meta 分析显示 MAS（如 Captain Agent）在编程、数据分析和科学推理任务中，准确率和成本效率均优于单 LLM。这些是<strong>原文引用，未联网核实</strong>。</p>
+
+      <h3>6. 降低人工监督成本</h3>
+      <p>原文引用 2024 年对 128 家企业的研究：使用多 Agent AI 的企业在验证和纠正输出上花费的时间减少 61.2%，每年可节省约 194 万美元人力成本。该数字为<strong>原文引用，未联网核实</strong>，不能直接套到其他组织。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="cost-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">代价</p><h2 id="cost-title">多出来的 Agent，<br>都要说话、都要调试。</h2></div>
+      <p class="reading-intro">多 Agent 的收益不是免费的。五项代价里，通信和 token 冗余最先出现，调试难度随 Agent 数量上升。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">多 Agent 系统的五项主要代价</caption>
+          <thead><tr><th scope="col">挑战</th><th scope="col">说明</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">通信开销</th><td>Agent 间信息共享可能引入延迟和冲突</td></tr>
+            <tr><th scope="row">不可预测性</th><td>多 Agent 交互可能产生意外行为</td></tr>
+            <tr><th scope="row">调试困难</th><td>问题追踪需要跨 Agent 跟踪</td></tr>
+            <tr><th scope="row">架构复杂度</th><td>需要设计通信协议、协调机制、错误处理</td></tr>
+            <tr><th scope="row">Token 浪费</th><td>Agent 间重复传递信息导致 token 冗余，原文研究显示 53–86%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Token 冗余的三个常见解法：共享记忆池（黑板模式）、消息摘要（传摘要而不是原始内容）、Instruction-Tool Retrieval（每步只加载必要信息）。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="when-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">何时选择</p><h2 id="when-title">先单 Agent，<br>遇到瓶颈再拆。</h2></div>
+      <p class="reading-intro">原文的判断清单很直接：简单线性、工具少于 10 个、不需要并行、快速原型，先选单 Agent；多技能、可并行、要审查、要模块化、工具超过 20 个，再考虑多 Agent。</p>
+    </div>
+    <div class="prose">
+      <pre><code>decision_guide = {
+    "选择单 Agent": [
+        "任务简单、线性",
+        "工具少于 10 个",
+        "不需要并行处理",
+        "快速原型验证",
+    ],
+    "选择多 Agent": [
+        "任务需要多种专业技能",
+        "子任务可以并行执行",
+        "需要 checker/reviewer 验证质量",
+        "系统需要模块化扩展",
+        "工具数量超过 20 个",
+    ],
+}</code></pre>
+      <p>这不是硬阈值，而是优先级：先看有没有专精或审查需求，再看能不能并行，最后看工具规模和模块化。工具数量只是信号之一，不是唯一理由。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="pitfalls-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="pitfalls-title">四个问题，<br>别为拆而拆。</h2></div>
+      <p class="reading-intro">前两个是误区，后两个是追问。</p>
+    </div>
+    <div>
+      <div class="misconception">
+        <p class="misconception-label">误区 1</p>
+        <div><h3>“多 Agent 总是优于单 Agent。”</h3><p><strong>对于简单任务，多 Agent 的通信开销可能超过收益。</strong>不要为了用多 Agent 而用多 Agent。从单 Agent 开始，遇到明确瓶颈时再拆分。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">误区 2</p>
+        <div><h3>“每个 Agent 必须用不同的 LLM。”</h3><p><strong>Agent 的差异化来自 System Prompt、工具集和角色定义。</strong>同一个模型配不同 prompt 就是不同的 Agent，不一定要换模型。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 1</p>
+        <div><h3>多 Agent 系统的 token 冗余问题如何解决？</h3><p>原文研究显示重复率可达 53–86%。解法包括共享记忆池（黑板模式）、消息摘要（传摘要而非原文）、Instruction-Tool Retrieval（每步只加载必要信息）。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 2</p>
+        <div><h3>如何定义 multi-agent？两个 LLM 调用就算吗？</h3><p>不算。真正的多 Agent 系统需要 Agent 间有自主决策和交互能力，而不是简单的顺序调用链。关键特征是 Agent 能基于其他 Agent 的输出自主调整行为。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《什么是多 Agent 系统？与单 Agent 相比有何优势？》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.superannotate.com/blog/multi-agent-llms" target="_blank" rel="noopener noreferrer">Multi-Agent LLMs in 2025 · SuperAnnotate</a></li>
+          <li><a href="https://www.digitalocean.com/resources/articles/single-agent-vs-multi-agent" target="_blank" rel="noopener noreferrer">Single-Agent vs Multi-Agent Systems · DigitalOcean</a></li>
+          <li><a href="https://arxiv.org/html/2402.03578v2" target="_blank" rel="noopener noreferrer">LLM Multi-Agent Systems: Challenges and Open Problems · arXiv</a></li>
+          <li><a href="https://www.getdynamiq.ai/post/multi-agent-ai-systems-definition-benefits-limitations-how-to-build" target="_blank" rel="noopener noreferrer">Multi-Agent AI Systems: Definition, Benefits, Limitations · Dynamiq</a></li>
+          <li><a href="https://gist.github.com/yoavg/9142e5d974ab916462e8ec080407365b" target="_blank" rel="noopener noreferrer">What Makes Multi-Agent LLM Systems Multi-Agent? · Yoav Goldberg</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </details>
+    </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>04-multi-agent/031-what-is-multi-agent.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 4 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const MA_QUESTIONS = [
+    {
+      key: "spec",
+      label: "任务需要多种专业技能？",
+      hint: "例如检索、写代码、写文案同时出现",
+      options: [["yes", "需要"], ["no", "不需要"]],
+      points: (v) => v === "yes" ? 2 : 0,
+      factor: "多种专业技能",
+      notes: { yes: "专精化收益", no: "单一角色，拆分收益低" }
+    },
+    {
+      key: "parallel",
+      label: "子任务可以并行执行？",
+      hint: "彼此不依赖，能同时开始",
+      options: [["yes", "可以"], ["no", "不可以"]],
+      points: (v) => v === "yes" ? 1 : 0,
+      factor: "可并行",
+      notes: { yes: "延迟可能降低", no: "没有并行收益" }
+    },
+    {
+      key: "tools",
+      label: "工具数量有多少？",
+      hint: "工具越多，单 Agent 选择越难",
+      options: [["low", "<10"], ["mid", "10–20"], ["high", ">20"]],
+      points: (v) => v === "low" ? 0 : v === "mid" ? 1 : 2,
+      factor: "工具规模",
+      notes: { low: "单 Agent 可承受", mid: "开始需要分流", high: "建议拆分工具域" }
+    },
+    {
+      key: "review",
+      label: "需要独立的审查 / 校验？",
+      hint: "例如代码审查、事实核对、质量打分",
+      options: [["yes", "需要"], ["no", "不需要"]],
+      points: (v) => v === "yes" ? 2 : 0,
+      factor: "独立审查",
+      notes: { yes: "Checker / Reviewer 收益", no: "无独立审查需求" }
+    },
+    {
+      key: "prototype",
+      label: "处于快速原型阶段？",
+      hint: "目标是尽快验证想法",
+      options: [["yes", "是"], ["no", "否"]],
+      points: (v) => v === "yes" ? -2 : 0,
+      factor: "快速原型",
+      notes: { yes: "先单 Agent，避免过早复杂化", no: "可以承担架构成本" }
+    }
+  ];
+
+  const MA_STATE = { spec: "yes", parallel: "yes", tools: "mid", review: "yes", prototype: "no" };
+  const maById = (id) => document.getElementById(id);
+
+  function maScore() {
+    let score = 0;
+    const factors = [];
+    MA_QUESTIONS.forEach((q) => {
+      const value = MA_STATE[q.key];
+      const points = q.points(value);
+      score += points;
+      factors.push({ q, value, points });
+    });
+    return { score, factors };
+  }
+
+  function maRenderQuestions() {
+    const host = maById("ma-questions");
+    host.textContent = "";
+    MA_QUESTIONS.forEach((q) => {
+      const row = document.createElement("div");
+      row.className = "ma-q";
+      const label = document.createElement("span");
+      label.className = "ma-q-label";
+      label.textContent = q.label;
+      const hint = document.createElement("small");
+      hint.textContent = q.hint;
+      label.append(hint);
+      const opts = document.createElement("div");
+      opts.className = "ma-opts";
+      opts.setAttribute("role", "group");
+      opts.setAttribute("aria-label", q.label);
+      q.options.forEach(([value, text]) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "ma-opt";
+        button.setAttribute("aria-pressed", String(MA_STATE[q.key] === value));
+        button.textContent = text;
+        button.addEventListener("click", () => {
+          MA_STATE[q.key] = value;
+          maRender();
+          maAnnounce();
+        });
+        opts.append(button);
+      });
+      row.append(label, opts);
+      host.append(row);
+    });
+  }
+
+  function maRenderFactors(result) {
+    const host = maById("ma-factors");
+    host.textContent = "";
+    result.factors.forEach(({ q, value, points }) => {
+      const li = document.createElement("li");
+      li.className = "ma-factor";
+      const text = document.createElement("span");
+      text.textContent = q.factor + "：" + q.notes[value];
+      const small = document.createElement("small");
+      const optionLabel = q.options.find(([v]) => v === value);
+      small.textContent = "选项：" + (optionLabel ? optionLabel[1] : value);
+      text.append(small);
+      const badge = document.createElement("span");
+      badge.className = "ma-points " + (points > 0 ? "plus" : points < 0 ? "minus" : "zero");
+      badge.textContent = points > 0 ? "+" + points : String(points);
+      li.append(text, badge);
+      host.append(li);
+    });
+  }
+
+  function maRenderCost(result) {
+    const multi = result.score >= 3;
+    const host = maById("ma-cost-list");
+    host.textContent = "";
+    const items = [];
+    if (multi) {
+      items.push("多 Agent 会增加通信开销和协调延迟；原文研究显示 token 冗余可达 53–86%。");
+      if (MA_STATE.parallel === "yes") {
+        items.push("子任务可并行，有机会用并行抵消一部分延迟；原文称动态 MAS 可减少 33% 执行时间（原文引用，未核实）。");
+      } else {
+        items.push("子任务不能并行，多 Agent 不会降低总时长，还要额外付协调成本。");
+      }
+      items.push("调试要跨 Agent 追踪，需要 trace / span 和统一的调用日志。");
+    } else {
+      items.push("单 Agent 的通信成本为零，调试链路只有一条，适合先跑通。");
+      items.push("如果之后出现上下文过载、工具选择困难或需要独立审查，再按瓶颈拆分。");
+      if (MA_STATE.prototype === "yes") items.push("快速原型阶段优先验证需求，不要提前承担多 Agent 的架构成本。");
+    }
+    items.forEach((text) => {
+      const li = document.createElement("li");
+      li.textContent = text;
+      host.append(li);
+    });
+  }
+
+  function maRenderDiagram(result) {
+    const multi = result.score >= 3;
+    const host = maById("ma-diagram");
+    host.textContent = "";
+    if (!multi) {
+      const node = document.createElement("div");
+      node.className = "ma-node coord";
+      node.textContent = "单 Agent";
+      const small = document.createElement("small");
+      small.textContent = "一个上下文 · 一套工具 · 顺序执行";
+      node.append(small);
+      host.append(node);
+      const note = document.createElement("p");
+      note.className = "ma-diagram-note";
+      note.textContent = "先把任务跑通；只有出现明确瓶颈时才拆分，避免通信成本先于收益出现。";
+      host.append(note);
+      return;
+    }
+
+    const coord = document.createElement("div");
+    coord.className = "ma-node coord";
+    coord.textContent = "协调器 Agent";
+    const coordSmall = document.createElement("small");
+    coordSmall.textContent = "拆解任务 · 汇总结果";
+    coord.append(coordSmall);
+    host.append(coord);
+
+    const arrow = document.createElement("p");
+    arrow.className = "ma-arrow";
+    arrow.setAttribute("aria-hidden", "true");
+    arrow.innerHTML = "<b>↓</b>" + (MA_STATE.parallel === "yes" ? "并行分派" : "顺序转交");
+    host.append(arrow);
+
+    const specialists = ["搜索 Agent", "分析 Agent", "写作 Agent"];
+    if (MA_STATE.parallel === "yes") {
+      const row = document.createElement("div");
+      row.className = "ma-row";
+      specialists.forEach((name) => {
+        const node = document.createElement("div");
+        node.className = "ma-node spec";
+        node.textContent = name;
+        const small = document.createElement("small");
+        small.textContent = "独立上下文 · 小工具集";
+        node.append(small);
+        row.append(node);
+      });
+      host.append(row);
+    } else {
+      const chain = document.createElement("div");
+      chain.className = "ma-chain";
+      specialists.forEach((name, index) => {
+        const node = document.createElement("div");
+        node.className = "ma-node spec";
+        node.textContent = name;
+        const small = document.createElement("small");
+        small.textContent = "独立上下文 · 小工具集";
+        node.append(small);
+        chain.append(node);
+        if (index < specialists.length - 1) {
+          const link = document.createElement("p");
+          link.className = "ma-arrow";
+          link.setAttribute("aria-hidden", "true");
+          link.innerHTML = "<b>↓</b>顺序转交";
+          chain.append(link);
+        }
+      });
+      host.append(chain);
+    }
+
+    const sumArrow = document.createElement("p");
+    sumArrow.className = "ma-arrow";
+    sumArrow.setAttribute("aria-hidden", "true");
+    sumArrow.innerHTML = "<b>↓</b>汇总";
+    host.append(sumArrow);
+    const sum = document.createElement("div");
+    sum.className = "ma-node sum";
+    sum.textContent = "最终结果";
+    host.append(sum);
+
+    const note = document.createElement("p");
+    note.className = "ma-diagram-note";
+    note.textContent = MA_STATE.parallel === "yes"
+      ? "三个专精 Agent 同时工作，总时间取最慢的一路，再加协调开销。"
+      : "不能并行时，三个专精 Agent 顺序转交；拆分换来的是专精和审查，不是速度。";
+    host.append(note);
+  }
+
+  function maRender() {
+    const result = maScore();
+    const multi = result.score >= 3;
+    const badge = maById("ma-verdict-badge");
+    badge.className = "ma-verdict-badge " + (multi ? "multi" : "single");
+    badge.textContent = multi ? "多 Agent" : "单 Agent";
+    maById("ma-score").textContent = String(result.score);
+    maRenderQuestions();
+    maRenderFactors(result);
+    maRenderCost(result);
+    maRenderDiagram(result);
+    maById("ma-state-summary").textContent = "决策分 " + result.score + " · " + (multi ? "多 Agent" : "单 Agent");
+  }
+
+  function maAnnounce() {
+    const result = maScore();
+    const multi = result.score >= 3;
+    maById("ma-announcement").textContent = "决策分 " + result.score + "，建议" + (multi ? "多 Agent" : "单 Agent") + "。";
+  }
+
+  function maSetState(next) {
+    Object.keys(next).forEach((key) => { MA_STATE[key] = next[key]; });
+    maRender();
+    maAnnounce();
+  }
+
+  maById("ma-simple").addEventListener("click", () => {
+    maSetState({ spec: "no", parallel: "no", tools: "low", review: "no", prototype: "yes" });
+  });
+
+  maById("ma-complex").addEventListener("click", () => {
+    maSetState({ spec: "yes", parallel: "yes", tools: "high", review: "yes", prototype: "no" });
+  });
+
+  maById("ma-reset").addEventListener("click", () => {
+    maSetState({ spec: "yes", parallel: "yes", tools: "mid", review: "yes", prototype: "no" });
+  });
+
+  maRender();
+</script>
+</body>
+</html>

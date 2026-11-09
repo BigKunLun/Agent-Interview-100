@@ -1,0 +1,838 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>评估工具对比：Ragas、LangSmith、Braintrust · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .et-banner { display: flex; align-items: flex-start; gap: 9px; margin: var(--s-4) var(--s-6) 0; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .et-banner::before { content: "教学"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .et-banner strong { color: #4d3000; }
+  .et-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .et-neutral { background: #eef1ee; color: #3f463f; border-color: #c9cec9; }
+  .et-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .et-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .et-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .et-bad { background: #fbecec; color: #8a1f1f; border-color: #d9a3a3; }
+  .et-step-label { font: 10px/1.5 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: 6px; }
+  .et-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); }
+  .et-choice { text-align: left; min-height: 72px; padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .et-choice:hover { border-color: var(--border-bright); }
+  .et-choice[aria-pressed="true"] { border-color: #194f87; background: #eaf1f8; box-shadow: inset 0 0 0 1px #194f87; }
+  .et-choice b { display: block; font: 600 13px/1.5 var(--sans); }
+  .et-choice span { display: block; margin-top: 3px; font-size: 11px; line-height: 1.6; color: var(--text-dim); }
+  .et-choice[aria-pressed="true"] span { color: #3f463f; }
+  .et-picked { margin-top: var(--s-3); padding: 8px 11px; border-left: 3px solid #194f87; background: #eaf1f8; font-size: 12px; line-height: 1.7; }
+  .et-result { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); overflow: hidden; }
+  .et-result-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--surface-soft); }
+  .et-result-head b { font-size: 14px; }
+  .et-primary { font: 600 22px/1.4 var(--serif); }
+  .et-secondary { margin-top: 4px; font-size: 12px; color: var(--text-dim); }
+  .et-why { margin-top: var(--s-3); font-size: 12px; line-height: 1.75; }
+  .et-matrix { margin-top: var(--s-4); }
+  .et-matrix table { min-width: 560px; }
+  .et-matrix th:first-child, .et-matrix td:first-child { min-width: 112px; }
+  .et-stars { font-family: var(--mono); letter-spacing: 1px; white-space: nowrap; }
+  .et-combo { margin-top: var(--s-3); padding: 10px 12px; border: 1px solid #9cc39e; border-radius: var(--r-1); background: #eef7ee; font-size: 12px; line-height: 1.75; }
+  .et-combo b { color: #14532d; }
+  .et-steps { margin-top: var(--s-3); display: grid; gap: 6px; }
+  .et-step { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 8px; padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); font-size: 11px; line-height: 1.65; }
+  .et-step i { display: grid; place-items: center; width: 24px; height: 24px; border: 1px solid #194f87; border-radius: 50%; color: #194f87; font: 600 10px/1 var(--mono); font-style: normal; }
+  .et-step b { display: block; font: 600 11px/1.5 var(--sans); }
+  .et-caveat { margin-top: var(--s-3); padding: 8px 10px; border: 1px solid #d9b47a; border-radius: 4px; background: #fdf3e3; color: #6b4300; font-size: 11px; line-height: 1.7; }
+  .et-empty { padding: var(--s-4); border: 1px dashed var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .et-fixed-note { display: inline-block; margin-top: var(--s-3); padding: 3px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  .et-wide { min-width: 760px; }
+  .et-tree { display: grid; gap: var(--s-2); margin-top: var(--s-4); }
+  .et-tree-group { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 9px 12px; }
+  .et-tree-group > b { display: block; font: 600 12px/1.5 var(--sans); }
+  .et-tree-group ul { margin: 4px 0 0; padding-left: 1.1em; font-size: 11px; line-height: 1.75; color: var(--text-dim); }
+  .et-tool-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .et-tool { min-width: 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 11px; line-height: 1.7; }
+  .et-tool b { display: block; font: 600 13px/1.5 var(--sans); }
+  .et-tool span { display: block; margin-top: 2px; color: var(--text-dim); }
+  .et-table td:first-child { min-width: 7em; }
+  @media (max-width: 900px) { .et-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 720px) {
+    .et-banner { margin-inline: var(--s-4); }
+    .et-choices, .et-tool-grid { grid-template-columns: 1fr; }
+    .et-width-scroll { overflow-x: auto; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">075 / 评估工具对比</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 20 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="074-traces-and-spans.html">← 上一页 · Trace 和 Span</a><span class="disabled">下一页 →</span></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Evaluation · 可交互讲解</p>
+      <h1>工具不是答案，<br>场景才是。</h1>
+    </div>
+    <div>
+      <p class="lead">LLM/Agent 评估工具分两类：评估框架负责定义指标和跑评估，比如 Ragas、DeepEval；评估平台负责评估、监控和协作，比如 LangSmith、Braintrust、Langfuse。两者互补，不是二选一。</p>
+      <p class="definition"><strong>关键边界：</strong>RAG 专项先看 Ragas；LangChain 生态看 LangSmith；框架无关且要开源自部署看 Langfuse；专业 A/B 和评估工作流看 Braintrust。功能与价格只按原文版本，未联网核实。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Evaluation</span><span class="pill">工具选型</span><span class="pill">原文版本 · 未联网核实</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="et-title">
+    <div class="player-top">
+      <div class="player-label">评估工具选型台 <small>场景 → 推荐 → 落地组合</small></div>
+      <div class="controls" role="group" aria-label="工具选型演示控制">
+        <button type="button" class="button button-quiet" id="et-reset">重置</button>
+        <button type="button" class="button" id="et-back" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="et-next">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="工具选型阶段">
+      <ol style="--stages: 3">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>你的场景</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>推荐工具</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>落地组合</button></li>
+      </ol>
+    </nav>
+    <p class="et-banner"><span><strong>本页是固定教学选型，不连接任何评估平台。</strong>场景和主推荐来自原文决策表，补充项标注为本页建议；工具评分来自原文对比表；价格、功能、星级只按原文版本呈现，未联网核实，也不代表当前报价。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="et-index">阶段 1 / 3 · 固定教学选型</p>
+      <h2 id="et-title">先说清楚：你最主要的需求是什么？</h2>
+      <p id="et-subtitle">RAG、LangChain 生态、开源自部署、专业 A/B、企业级观测、预算有限，六种场景对应不同的工具组合。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="et-scene"></div>
+      <p class="demo-note" id="et-note">固定教学选型：场景和推荐均为本页预设，不调用任何平台，不访问网络。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学选型 · 0 次平台调用</span><span id="et-summary">阶段 1 / 3 · 等待选择场景</span></div>
+  </section>
+  <p id="et-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="landscape-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">全景分类</p><h2 id="landscape-title">框架、平台、<br>通用观测。</h2></div>
+      <p class="reading-intro">原文把生态分三层：评估框架定义指标并运行评估；评估平台再加监控和协作；通用观测平台可以扩展到 LLM。</p>
+    </div>
+    <div class="prose">
+      <div class="et-tree">
+        <div class="et-tree-group"><b>评估框架（定义指标、运行评估）</b><ul>
+          <li>Ragas：RAG 专用评估</li>
+          <li>DeepEval：通用 LLM 评估（开源）</li>
+          <li>Promptfoo：Prompt 对比测试</li>
+          <li>Giskard：安全和偏差测试</li>
+        </ul></div>
+        <div class="et-tree-group"><b>评估平台（评估 + 监控 + 协作）</b><ul>
+          <li>LangSmith：LangChain 全栈平台</li>
+          <li>Braintrust：专业评估和迭代</li>
+          <li>Langfuse：开源可观测性平台</li>
+          <li>Arize Phoenix：ML/LLM 观测平台</li>
+          <li>Maxim AI：Agent 评估专注</li>
+        </ul></div>
+        <div class="et-tree-group"><b>通用观测（可扩展到 LLM）</b><ul>
+          <li>Datadog LLM Observability</li>
+          <li>New Relic AI Monitoring</li>
+          <li>Grafana + OpenTelemetry</li>
+        </ul></div>
+      </div>
+      <p class="et-fixed-note">分类与工具定位来自原文</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="ragas-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">Ragas</p><h2 id="ragas-title">RAG 的四个专用指标，<br>每个怎么算。</h2></div>
+      <p class="reading-intro">Ragas 的重点不是通用评分，而是 RAG 链路的两端：检索上下文够不够、回答有没有基于上下文。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data et-wide">
+          <caption class="sr-only">Ragas 的四个 RAG 专用指标</caption>
+          <thead><tr><th scope="col">指标</th><th scope="col">含义</th><th scope="col">计算</th><th scope="col">范围</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Faithfulness</th><td>回答是否基于检索到的上下文，非幻觉</td><td>提取回答中的声明，检查每个声明是否被上下文支持</td><td>0–1，越高越好</td></tr>
+            <tr><th scope="row">Answer Relevancy</th><td>回答与问题的相关程度</td><td>从回答反向生成问题，比较生成问题与原问题的相似度</td><td>0–1</td></tr>
+            <tr><th scope="row">Context Precision</th><td>检索到的上下文中有多少是相关的</td><td>检索结果中，相关段落排名越高分越高</td><td>0–1</td></tr>
+            <tr><th scope="row">Context Recall</th><td>相关信息是否都被检索到了</td><td>参考答案中的信息是否都能在检索上下文中找到</td><td>0–1</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="et-fixed-note">指标定义与计算方式来自原文</p>
+      <details>
+        <summary>查看 Ragas 的原文代码</summary>
+        <pre><code>from ragas import evaluate
+from ragas.metrics import (
+    faithfulness,
+    answer_relevancy,
+    context_precision,
+    context_recall,
+)
+
+# Ragas 的 RAG 专用指标
+ragas_metrics = {
+    "Faithfulness": {
+        "含义": "回答是否基于检索到的上下文（非幻觉）",
+        "计算": "提取回答中的声明 → 检查每个声明是否被上下文支持",
+        "范围": "0-1，越高越好",
+    },
+    "Answer Relevancy": {
+        "含义": "回答与问题的相关程度",
+        "计算": "从回答反向生成问题 → 比较生成问题与原问题的相似度",
+        "范围": "0-1",
+    },
+    "Context Precision": {
+        "含义": "检索到的上下文中有多少是相关的",
+        "计算": "在检索结果中，相关段落的排名越高分越高",
+        "范围": "0-1",
+    },
+    "Context Recall": {
+        "含义": "相关信息是否都被检索到了",
+        "计算": "参考答案中的信息是否都能在检索上下文中找到",
+        "范围": "0-1",
+    },
+}
+
+# 使用示例
+result = evaluate(
+    dataset=eval_dataset,
+    metrics=[faithfulness, answer_relevancy, context_precision],
+    llm=ChatOpenAI(model="gpt-4o"),
+)
+print(result)  # {'faithfulness': 0.85, 'answer_relevancy': 0.92, ...}</code></pre>
+      </details>
+      <p class="et-code-note">原文示例输出里的 0.85 / 0.92 是代码注释中的示意值，不是本页实测。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="platforms-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三个平台</p><h2 id="platforms-title">全栈、专业评估、<br>开源观测。</h2></div>
+      <p class="reading-intro">LangSmith 强在 LangChain 集成；Braintrust 强在专业评估和 A/B；Langfuse 强在开源、自部署和 OTel。</p>
+    </div>
+    <div class="prose">
+      <div class="et-tool-grid">
+        <div class="et-tool"><b>LangSmith</b><span>LangChain 全栈平台。核心能力：Tracing 自动追踪 LangChain / LangGraph；Datasets；内置与自定义 Evaluators；Playground；生产监控；人工标注。</span></div>
+        <div class="et-tool"><b>Braintrust</b><span>专业评估和迭代。核心能力：声明式 Eval Framework；Online Evals；Prompt Playground；内置 A/B Testing；自动记录所有 LLM 调用。</span></div>
+        <div class="et-tool"><b>Langfuse</b><span>开源可观测性，原文称它是最流行的开源替代方案。核心能力：完全开源可自部署；OTel 兼容；框架无关；Trace / Span；在线和离线评估；成本追踪；Prompt 版本管理。</span></div>
+        <div class="et-tool"><b>DeepEval / Promptfoo / Giskard</b><span>原文列出的其他评估框架：DeepEval 通用开源评估；Promptfoo 做 Prompt 对比测试；Giskard 做安全和偏差测试。</span></div>
+      </div>
+      <p class="et-fixed-note">平台能力来自原文，未联网核实</p>
+      <details>
+        <summary>查看 LangSmith、Braintrust、Langfuse 的原文代码</summary>
+        <pre><code>from langsmith import Client
+from langsmith.evaluation import evaluate
+
+client = Client()
+
+langsmith_features = {
+    "Tracing": "自动追踪 LangChain/LangGraph 的每步执行",
+    "Datasets": "创建和管理评估数据集",
+    "Evaluators": "内置和自定义评估器",
+    "Playground": "在线调试和测试 Prompt",
+    "Monitoring": "生产环境的实时监控",
+    "Annotation": "人工标注和反馈收集",
+}
+
+results = evaluate(
+    target=my_agent,
+    data="my-eval-dataset",
+    evaluators=[correctness_evaluator],
+)
+
+
+# Braintrust
+import braintrust
+
+braintrust_features = {
+    "Eval Framework": "声明式评估框架，简洁易用",
+    "Online Evals": "生产流量的实时评估",
+    "Prompt Playground": "Prompt 在线编辑和对比",
+    "A/B Testing": "内置的 Prompt A/B 测试",
+    "Logging": "自动记录所有 LLM 调用",
+}
+
+@braintrust.traced
+def my_task(input):
+    return agent.invoke(input)
+
+experiment = braintrust.Eval(
+    "my-agent-eval",
+    data=lambda: [
+        {"input": "什么是 RAG？", "expected": "检索增强生成..."},
+        # ...
+    ],
+    task=my_task,
+    scores=[
+        braintrust.Score.factuality,  # 内置评分器
+        braintrust.Score.relevance,
+    ],
+)
+
+
+# Langfuse
+from langfuse import Langfuse
+
+langfuse = Langfuse()
+
+langfuse_features = {
+    "开源": "完全开源，可自部署",
+    "OTel 兼容": "支持 OpenTelemetry 标准",
+    "框架无关": "支持 LangChain、LlamaIndex、OpenAI SDK 等",
+    "Tracing": "完整的 Trace/Span 追踪",
+    "Evaluations": "在线和离线评估",
+    "Cost Tracking": "自动追踪 LLM 成本",
+    "Prompt Management": "Prompt 版本管理",
+}
+
+trace = langfuse.trace(name="agent-task")
+span = trace.span(name="llm-call", input=prompt)
+# ... LLM 调用 ...
+span.end(output=response, metadata={"model": "gpt-4o"})
+trace.score(name="quality", value=0.85, comment="回答准确完整")</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="compare-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">对比总结</p><h2 id="compare-title">星级是原文判断，<br>不是当前排名。</h2></div>
+      <p class="reading-intro">原文用 11 个维度对比四个工具。RAG 评估看 Ragas，Tracing 看 LangSmith，A/B 看 Braintrust，开源自部署看 Langfuse。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data et-wide">
+          <caption class="sr-only">原文的四工具对比表</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">Ragas</th><th scope="col">LangSmith</th><th scope="col">Braintrust</th><th scope="col">Langfuse</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">类型</th><td>评估框架</td><td>全栈平台</td><td>评估平台</td><td>观测平台</td></tr>
+            <tr><th scope="row">开源</th><td>✓</td><td>✗ 商业</td><td>✗ 商业</td><td>✓</td></tr>
+            <tr><th scope="row">RAG 评估</th><td class="et-stars">★★★★★</td><td class="et-stars">★★★</td><td class="et-stars">★★★</td><td class="et-stars">★★</td></tr>
+            <tr><th scope="row">Agent 评估</th><td class="et-stars">★★</td><td class="et-stars">★★★★</td><td class="et-stars">★★★★</td><td class="et-stars">★★★</td></tr>
+            <tr><th scope="row">Tracing</th><td>✗</td><td class="et-stars">★★★★★</td><td class="et-stars">★★★</td><td class="et-stars">★★★★</td></tr>
+            <tr><th scope="row">A/B 测试</th><td>✗</td><td class="et-stars">★★★</td><td class="et-stars">★★★★★</td><td class="et-stars">★★</td></tr>
+            <tr><th scope="row">Prompt 管理</th><td>✗</td><td class="et-stars">★★★★</td><td class="et-stars">★★★★</td><td class="et-stars">★★★</td></tr>
+            <tr><th scope="row">OTel 支持</th><td>✗</td><td>✓（2026-01）</td><td>部分</td><td>✓</td></tr>
+            <tr><th scope="row">框架依赖</th><td>无</td><td>LangChain</td><td>无</td><td>无</td></tr>
+            <tr><th scope="row">自部署</th><td>N/A</td><td>✗</td><td>✗</td><td>✓</td></tr>
+            <tr><th scope="row">定价</th><td>免费</td><td>&#36;&#36;&#36;</td><td>&#36;&#36;</td><td>免费 / &#36;&#36;</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="et-fixed-note">功能、星级、OTel 状态和价格符号只按原文版本，未联网核实；价格符号是原文的相对档位，不是现价</p>
+      <div class="callout">
+        <p class="callout-label">怎么读这张表</p>
+        <p>星级是原文作者对工具能力的判断，不是第三方评测排名。价格用 $ 符号表示相对档位，不能当成具体报价。选型时先用场景缩小范围，再用表里的硬条件（开源、自部署、框架依赖、OTel）做排除。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="decision-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">选择决策树</p><h2 id="decision-title">先选组合，<br>再选单品。</h2></div>
+      <p class="reading-intro">原文的决策表是六种场景对应六种组合。它默认评估框架和平台互补，不是只买一个。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data et-wide">
+          <caption class="sr-only">原文的场景与推荐工具</caption>
+          <thead><tr><th scope="col">你的场景</th><th scope="col">推荐工具</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">主要做 RAG</th><td>Ragas（指标最全）+ Langfuse（追踪）</td></tr>
+            <tr><th scope="row">使用 LangChain / LangGraph</th><td>LangSmith（最佳集成）</td></tr>
+            <tr><th scope="row">需要开源 + 自部署</th><td>Langfuse</td></tr>
+            <tr><th scope="row">需要专业的 Prompt A/B 测试</th><td>Braintrust</td></tr>
+            <tr><th scope="row">需要企业级 + 已有 Datadog</th><td>Datadog LLM Observability</td></tr>
+            <tr><th scope="row">预算有限 + 快速开始</th><td>Langfuse（开源）+ DeepEval（评估）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="et-fixed-note">决策表来自原文</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">两个误区，<br>两个追问。</h2></div>
+      <p class="reading-intro">工具不是二选一；商业也不一定比开源好。数据隐私和从零搭建是常见追问。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <div class="misconception-label">误区 01</div>
+        <div><h3>“选一个工具就够了”</h3><p>评估框架（Ragas）和评估平台（LangSmith / Langfuse）是互补的。Ragas 定义 RAG 评估的指标，平台提供运行评估和追踪的基础设施。生产系统通常需要两者结合。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 02</div>
+        <div><h3>“商业平台一定比开源好”</h3><p>Langfuse 作为开源方案在很多场景下已足够好，且可以自部署保证数据安全。商业平台的优势在企业级支持、更丰富的 UI 和更好的协作功能。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 03</div>
+        <div><h3>这些工具如何处理数据隐私？</h3><p>评估工具会记录 LLM 的输入输出，可能包含敏感数据。三条措施：自部署 Langfuse，保证数据不出组织；配置 PII 脱敏规则；只在开发环境记录完整数据，生产环境只记录指标。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 04</div>
+        <div><h3>如何从零开始搭建评估体系？</h3><p>三步走：先用 Langfuse / LangSmith 加 Tracing，了解 Agent 的行为；构建 Golden Dataset，用 DeepEval / Ragas 定义指标；集成到 CI/CD，实现自动化回归测试。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="sources-title">
+    <p class="eyebrow">参考资料</p>
+    <h2 class="source-heading" id="sources-title">原文引用与延伸阅读</h2>
+    <p class="source-summary">以下链接来自原文。只有主动点击外链才会离开本页；本页不加载任何外部资源。</p>
+    <details>
+      <summary>展开 5 条参考资料</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://rhesis.ai/post/best-llm-evaluation-testing-tools" rel="noreferrer noopener">Best LLM Evaluation Tools: 7 Platforms for 2026 (Rhesis AI)</a></li>
+          <li><a href="https://arize.com/llm-evaluation-platforms-top-frameworks/" rel="noreferrer noopener">Comparing LLM Evaluation Platforms: Top Frameworks (Arize AI)</a></li>
+          <li><a href="https://langwatch.ai/blog/langwatch-vs-langsmith-vs-braintrust-vs-langfuse-choosing-the-best-llm-evaluation-monitoring-tool-in-2025" rel="noreferrer noopener">LangWatch vs LangSmith vs Braintrust vs Langfuse (LangWatch)</a></li>
+          <li><a href="https://www.braintrust.dev/articles/best-rag-evaluation-tools" rel="noreferrer noopener">The 5 Best RAG Evaluation Tools (Braintrust)</a></li>
+          <li><a href="https://agenta.ai/blog/top-llm-observability-platforms" rel="noreferrer noopener">Top LLM Observability Platforms 2025 (Agenta)</a></li>
+        </ul>
+        <p class="source-footnote">工具功能、星级、OTel 状态和价格档位均按原文版本呈现，本页未联网核实，也不代表当前报价或排名。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>08-evaluation/075-evaluation-tools-comparison.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 5 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const dollars = (n) => "$".repeat(n);
+
+  const TOOLS = Object.freeze({
+    ragas: { name: "Ragas", type: "评估框架", oss: "✓", rag: "★★★★★", agent: "★★", tracing: "✗", ab: "✗", prompt: "✗", otel: "✗", dep: "无", deploy: "N/A", price: "免费" },
+    langsmith: { name: "LangSmith", type: "全栈平台", oss: "✗ 商业", rag: "★★★", agent: "★★★★", tracing: "★★★★★", ab: "★★★", prompt: "★★★★", otel: "✓（2026-01）", dep: "LangChain", deploy: "✗", price: dollars(3) },
+    braintrust: { name: "Braintrust", type: "评估平台", oss: "✗ 商业", rag: "★★★", agent: "★★★★", tracing: "★★★", ab: "★★★★★", prompt: "★★★★", otel: "部分", dep: "无", deploy: "✗", price: dollars(2) },
+    langfuse: { name: "Langfuse", type: "观测平台", oss: "✓", rag: "★★", agent: "★★★", tracing: "★★★★", ab: "★★", prompt: "★★★", otel: "✓", dep: "无", deploy: "✓", price: "免费 / " + dollars(2) }
+  });
+
+  const SCENARIOS = Object.freeze([
+    {
+      key: "rag", name: "主要做 RAG", desc: "回答质量取决于检索与上下文",
+      primary: "Ragas", secondary: "Langfuse（追踪）",
+      tools: ["ragas", "langfuse"],
+      why: "Ragas 的四个指标直接对准 RAG 链路：Faithfulness 看回答是否基于上下文，Answer Relevancy 看相关性，Context Precision / Recall 看检索质量；Langfuse 补追踪。",
+      combo: "Ragas 定义指标，Langfuse 负责运行评估和追踪",
+      caveat: "Ragas 的指标计算依赖 LLM 判断，Judge 模型和 Prompt 会影响力分数；原文未给准确率数字。"
+    },
+    {
+      key: "langchain", name: "LangChain / LangGraph 生态", desc: "已经在用 LangChain 全家桶",
+      primary: "LangSmith", secondary: "Ragas（需要 RAG 指标时）", secondaryAdded: true,
+      tools: ["langsmith", "ragas"],
+      why: "LangSmith 是 LangChain 生态的全栈平台：自动追踪 LangChain / LangGraph、管理数据集、内置和自定义评估器、Playground、生产监控、人工标注。",
+      combo: "LangSmith 做 Trace + 评估 + Playground；RAG 指标另用 Ragas 补",
+      caveat: "原文对比表把 LangSmith 的框架依赖标为 LangChain；脱离 LangChain 的收益会下降。"
+    },
+    {
+      key: "opensource", name: "开源 + 自部署", desc: "数据不能出组织",
+      primary: "Langfuse", secondary: "DeepEval（通用评估）", secondaryAdded: true,
+      tools: ["langfuse"],
+      why: "Langfuse 完全开源、可自部署，支持 OTel、框架无关、Trace/Span、在线和离线评估、成本追踪、Prompt 版本管理。",
+      combo: "Langfuse 自部署负责观测和评估；DeepEval 补通用指标",
+      caveat: "原文矩阵里 Langfuse 的 RAG ★★、A/B ★★，RAG 和 A/B 不是它的强项；需要时叠加 Ragas / Braintrust。"
+    },
+    {
+      key: "ab", name: "专业评估 / Prompt A/B", desc: "要专业评估和频繁比较版本",
+      primary: "Braintrust", secondary: "Langfuse（追踪，若需自部署）", secondaryAdded: true,
+      tools: ["braintrust", "langfuse"],
+      why: "Braintrust 的内置 A/B Testing 是原文矩阵里的最高分（★★★★★），同时有声明式 Eval Framework、Online Evals、Prompt Playground 和调用记录。",
+      combo: "Braintrust 做 A/B 和评估工作流；Langfuse 补开源自部署的追踪",
+      caveat: "原文把 Braintrust 标为商业、不可自部署、OTel 部分支持；数据敏感时要另做脱敏或自部署方案。"
+    },
+    {
+      key: "datadog", name: "企业级 + 已有 Datadog", desc: "监控栈已经统一",
+      primary: "Datadog LLM Observability", secondary: "现有 APM / 日志体系", secondaryAdded: true,
+      tools: [],
+      why: "原文把 Datadog LLM Observability 列在通用观测类，适合已有 Datadog 的企业继续用同一套监控栈。",
+      combo: "Datadog LLM Observability + 现有 APM / 日志",
+      caveat: "原文没有把 Datadog 放进四工具评分矩阵，所以本页不给它星级；不要拿本页矩阵推断 Datadog 能力。"
+    },
+    {
+      key: "budget", name: "预算有限 + 快速开始", desc: "先跑起来，再谈平台",
+      primary: "Langfuse（开源）", secondary: "DeepEval（评估）",
+      tools: ["langfuse"],
+      why: "Langfuse 开源可自部署，DeepEval 是原文列出的通用开源评估框架；两者组合成本低，能先建立 Trace 和基础指标。",
+      combo: "Langfuse 做观测，DeepEval 做通用评估",
+      caveat: "原文矩阵没有 DeepEval 的星级；本页只按原文定位推荐，不编造它的能力分数。"
+    }
+  ]);
+
+  const STAGES = Object.freeze([
+    {
+      nav: "你的场景",
+      title: "先说清楚：你最主要的需求是什么？",
+      subtitle: "RAG、LangChain 生态、开源自部署、专业 A/B、企业级观测、预算有限，六种场景对应不同的工具组合。",
+      note: "固定教学选型：六个场景来自原文的选择决策表，不调用任何平台，不访问网络。",
+      summary: "阶段 1 / 3 · 等待选择场景"
+    },
+    {
+      nav: "推荐工具",
+      title: "推荐不是排名，是场景匹配",
+      subtitle: "主工具负责核心需求，补充工具补齐追踪或指标。矩阵只展示原文对比表里有的四个工具。",
+      note: "固定教学选型：主推荐来自原文决策表，补充项为本页建议；星级、OTel 状态和价格只按原文版本，未联网核实。",
+      summary: "阶段 2 / 3 · 查看推荐"
+    },
+    {
+      nav: "落地组合",
+      title: "先追踪，再指标，最后进 CI",
+      subtitle: "原文的三步走：先加 Tracing 了解行为，再建 Golden Dataset 和指标，最后集成 CI/CD 做回归。",
+      note: "固定教学选型：落地步骤和隐私建议来自原文；本页不连接任何平台，也不执行任何集成。",
+      summary: "阶段 3 / 3 · 查看落地组合"
+    }
+  ]);
+
+  const state = { stage: 0, scenario: null };
+  const byId = (id) => document.getElementById(id);
+
+  function scenario() {
+    return SCENARIOS.find((item) => item.key === state.scenario);
+  }
+
+  function scenarioButtons() {
+    return SCENARIOS.map((item) => `<button type="button" class="et-choice" data-scenario="${item.key}" aria-pressed="${state.scenario === item.key}">
+      <b>${item.name}</b><span>${item.desc}</span>
+    </button>`).join("");
+  }
+
+  function matrix(scenarioData) {
+    if (!scenarioData.tools.length) {
+      return `<div class="et-empty"><b>原文没有把这个工具放进四工具评分矩阵。</b><br>Datadog LLM Observability 仅在“通用观测”分类和决策表中出现；本页不替原文补星级。</div>`;
+    }
+    const tools = scenarioData.tools.map((key) => TOOLS[key]);
+    const rows = [
+      ["类型", "type"], ["开源", "oss"], ["RAG 评估", "rag"], ["Agent 评估", "agent"],
+      ["Tracing", "tracing"], ["A/B 测试", "ab"], ["Prompt 管理", "prompt"],
+      ["OTel 支持", "otel"], ["框架依赖", "dep"], ["自部署", "deploy"], ["定价", "price"]
+    ];
+    const body = rows.map(([label, key]) => `<tr><th scope="row">${label}</th>${tools.map((tool) => `<td class="${key === "rag" || key === "agent" || key === "tracing" || key === "ab" || key === "prompt" ? "et-stars" : ""}">${tool[key]}</td>`).join("")}</tr>`).join("");
+    return `<div class="table-wrap et-matrix"><table class="data">
+      <caption class="sr-only">推荐工具在原文对比表中的数据</caption>
+      <thead><tr><th scope="col">维度</th>${tools.map((tool) => `<th scope="col">${tool.name}</th>`).join("")}</tr></thead>
+      <tbody>${body}</tbody>
+    </table></div>`;
+  }
+
+  function choiceScene() {
+    const picked = scenario();
+    return `
+      <p class="et-step-label">步骤 1 · 你的场景</p>
+      <div class="et-choices" role="group" aria-label="选择评估场景">${scenarioButtons()}</div>
+      <p class="et-picked">${picked ? `已选：${picked.name}。点“下一步”查看推荐工具和原文矩阵。` : "还没有选择场景。六种场景都可以选，主推荐来自原文决策表，补充项会标注为本页建议。"}</p>
+      <p class="et-fixed-note">固定教学选型：六个场景来自原文选择决策表</p>`;
+  }
+
+  function resultScene() {
+    const picked = scenario();
+    if (!picked) {
+      return `<div class="et-empty"><b>还没有选择场景。</b><br>请先回到第 1 步选一个场景，再来查看推荐。</div>`;
+    }
+    return `
+      <div class="et-result">
+        <div class="et-result-head"><b>${picked.name}</b><span class="et-badge et-info">固定教学推荐</span></div>
+        <div class="et-result-head" style="border-bottom:1px solid var(--border)">
+          <div><p class="et-primary">${picked.primary} <span class="et-badge et-ok">原文主推荐</span></p><p class="et-secondary">补充：${picked.secondary} <span class="et-badge ${picked.secondaryAdded ? "et-warn" : "et-neutral"}">${picked.secondaryAdded ? "本页补充" : "原文决策表"}</span></p></div>
+        </div>
+        <div style="padding:var(--s-4)">
+          <p class="et-why">${picked.why}</p>
+          ${matrix(picked)}
+          <p class="et-caveat">${picked.caveat} 功能、价格、星级只按原文版本，未联网核实。</p>
+        </div>
+      </div>
+      <p class="et-fixed-note">主推荐来自原文决策表，补充项为本页建议；不是任何平台的实时选型结论</p>`;
+  }
+
+  function landingScene() {
+    const picked = scenario();
+    if (!picked) {
+      return `<div class="et-empty"><b>还没有选择场景。</b><br>请先完成第 1 步，才能看到对应的组合和落地顺序。</div>`;
+    }
+    return `
+      <div class="et-combo"><b>组合建议：</b>${picked.combo}。</div>
+      <div class="et-steps">
+        <div class="et-step"><i>1</i><span><b>先加 Tracing</b>用 Langfuse / LangSmith 记录 Agent 的行为，先看清它实际怎么走。</span></div>
+        <div class="et-step"><i>2</i><span><b>建 Golden Dataset + 指标</b>用 DeepEval / Ragas 定义指标，先把“什么叫好”写清楚。</span></div>
+        <div class="et-step"><i>3</i><span><b>集成 CI/CD</b>把评估变成每次变更都跑的回归测试，而不是上线前临时补。</span></div>
+      </div>
+      <div class="et-caveat">数据隐私：评估工具会记录 LLM 输入输出，可能含敏感数据。自部署 Langfuse；配置 PII 脱敏；开发环境记完整数据，生产环境只记指标。</div>
+      <p class="et-fixed-note">落地步骤和隐私建议来自原文；本页不连接任何平台，也不执行集成</p>`;
+  }
+
+  const SCENES = [choiceScene, resultScene, landingScene];
+
+  function bindSceneControls() {
+    document.querySelectorAll("[data-scenario]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.scenario = button.dataset.scenario;
+        renderStage(0);
+        byId("et-announcement").textContent = `已选择场景：${scenario().name}`;
+      });
+    });
+  }
+
+  function renderStage(stage) {
+    state.stage = stage;
+    const meta = STAGES[stage];
+    byId("et-scene").innerHTML = SCENES[stage]();
+    byId("et-index").textContent = `阶段 ${stage + 1} / 3 · 固定教学选型`;
+    byId("et-title").textContent = meta.title;
+    byId("et-subtitle").textContent = meta.subtitle;
+    byId("et-note").textContent = meta.note;
+    byId("et-summary").textContent = meta.summary;
+    byId("et-back").disabled = stage === 0;
+    byId("et-next").disabled = stage === STAGES.length - 1 || (stage === 0 && !state.scenario);
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      const active = Number(button.dataset.stage) === stage;
+      if (active) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    bindSceneControls();
+    byId("et-announcement").textContent = `${meta.title}。${meta.subtitle}`;
+  }
+
+  byId("et-reset").addEventListener("click", () => {
+    state.scenario = null;
+    renderStage(0);
+  });
+  byId("et-back").addEventListener("click", () => renderStage(Math.max(0, state.stage - 1)));
+  byId("et-next").addEventListener("click", () => {
+    if (state.stage === 0 && !state.scenario) return;
+    renderStage(Math.min(STAGES.length - 1, state.stage + 1));
+  });
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+
+  renderStage(0);
+</script>
+</body>
+</html>

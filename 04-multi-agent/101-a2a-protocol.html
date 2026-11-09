@@ -1,0 +1,923 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>A2A（Agent-to-Agent）协议是什么？它与 MCP 有何区别？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .sim-banner { display: flex; align-items: flex-start; gap: 9px; margin: var(--s-4) var(--s-6) 0; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .sim-banner strong { color: #4d3000; }
+  .sim-banner::before { content: "模拟"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .badge-neutral { background: #eef1ee; color: #3f463f; border-color: #c9cec9; }
+  .badge-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .badge-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .badge-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .badge-bad { background: #fbecec; color: #8a1f1f; border-color: #d9a3a3; }
+  .badge-solid { background: #194f87; color: #fff; border-color: #194f87; }
+  .state-strip { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: var(--s-4); padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .state-strip .label { font: 11px/1.6 var(--mono); color: var(--text-dim); margin-right: 4px; }
+  .state-node { padding: 4px 9px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  .state-node.is-done { border-color: #9cc39e; background: #eef7ee; color: #14532d; }
+  .state-node.is-current { border-color: #194f87; background: #194f87; color: #fff; font-weight: 600; }
+  .state-node.is-future { border-style: dashed; color: #4b514b; }
+  .state-arrow { color: var(--text-dim); font: 12px/1 var(--mono); }
+  .seq { display: grid; gap: 8px; margin-top: var(--s-4); }
+  .seq-head { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); }
+  .seq-head div { padding: 7px 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); font: 600 11px/1.6 var(--mono); color: var(--text-dim); text-align: center; }
+  .seq-row { display: grid; grid-template-columns: minmax(0, 1fr) 68px minmax(0, 1fr); gap: var(--s-2); align-items: center; }
+  .seq-msg { border: 1px solid var(--border); border-left: 3px solid #194f87; border-radius: var(--r-1); background: var(--surface); padding: 8px 10px; font-size: 12px; line-height: 1.65; }
+  .seq-msg.server { border-left-color: #2e7d32; }
+  .seq-msg b { display: block; font: 600 10px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .05em; }
+  .seq-msg code { font-size: 11px; overflow-wrap: anywhere; }
+  .seq-arrow { text-align: center; font: 11px/1.4 var(--mono); color: var(--text-dim); }
+  .seq-arrow span { display: block; font-size: 10px; }
+  .seq-spacer { min-height: 1px; }
+  .msg-log { list-style: none; margin: var(--s-4) 0 0; padding: 0; border-top: 1px solid var(--border); }
+  .msg-log li { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: var(--s-2); padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .msg-log li:last-child { border-bottom: 0; }
+  .msg-log .t { font: 11px/1.7 var(--mono); color: var(--text-dim); }
+  .card-json { margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); overflow: hidden; }
+  .card-json header { display: flex; justify-content: space-between; gap: var(--s-2); align-items: center; flex-wrap: wrap; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--surface-soft); font: 600 11px/1.6 var(--mono); color: var(--text-dim); }
+  .card-json pre { margin: 0; border-radius: 0; background: transparent; }
+  .layer-stack { display: grid; gap: 6px; margin-top: var(--s-4); }
+  .layer-row { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: var(--s-3); align-items: center; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 13px; }
+  .layer-row b { font: 600 11px/1.6 var(--mono); color: #194f87; }
+  .dual-layer { margin-top: var(--s-4); padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .dual-agents { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); }
+  .dual-agent { padding: var(--s-3); border: 1px solid #9eb4c9; border-radius: var(--r-1); background: var(--surface); text-align: center; font-size: 13px; }
+  .dual-agent b { display: block; font: 600 12px/1.6 var(--mono); color: #194f87; }
+  .dual-link { grid-column: 1 / -1; text-align: center; font: 11px/1.6 var(--mono); color: #194f87; border-block: 1px dashed #9eb4c9; padding: 4px 0; }
+  .dual-tools { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-2); margin-top: var(--s-4); }
+  .dual-tool { padding: 8px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); text-align: center; font-size: 12px; color: var(--text-dim); }
+  .dual-tools-label { margin-top: var(--s-2); font: 11px/1.6 var(--mono); color: var(--text-dim); text-align: center; }
+  .eco-note { margin-top: var(--s-3); padding: 8px 11px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; }
+  .fixed-note { display: inline-block; margin-top: var(--s-3); padding: 3px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  @media (max-width: 720px) {
+    .sim-banner { margin-inline: var(--s-4); }
+    .table-wrap table.data.wide { min-width: 680px; }
+    .seq-head { grid-template-columns: 1fr 1fr; }
+    .seq-row { grid-template-columns: 1fr; }
+    .seq-arrow { display: flex; align-items: center; gap: 6px; justify-content: flex-start; padding-left: 4px; }
+    .seq-arrow span { display: inline; }
+    .seq-spacer { display: none; }
+    .layer-row { grid-template-columns: 1fr; gap: 2px; }
+    .dual-tools { grid-template-columns: 1fr 1fr; }
+    .dual-agents { gap: var(--s-3); }
+    .card-json pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">101 / A2A 协议</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 15 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="039-debugging-monitoring-multi-agent.html">← 上一页 · 如何调试和监控多 Agent 系统？</a><a href="../05-memory-and-state/041-context-window-management.html">下一页 → · 对话上下文窗口管理与压缩策略</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Multi-Agent · 可交互讲解</p>
+      <h1>Agent 之间，<br>也要说同一种语言。</h1>
+    </div>
+    <div>
+      <p class="lead">A2A（Agent-to-Agent）是 Google 在 2025 年 4 月发布的开放协议，目标是让不同厂商、不同框架构建的 Agent 直接通信与协作。它基于 HTTP + JSON-RPC 2.0 + SSE，用 Agent Card 发现能力，用 Task 管理有状态的任务生命周期。</p>
+      <p class="definition"><strong>关键边界：</strong>A2A 管 Agent 与 Agent 之间的横向协作，MCP 管 Agent 与工具、数据源之间的纵向连接。两者互补，不互相替代。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Multi-Agent</span><span class="pill">Agent Card</span><span class="pill">Task 生命周期</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="a2a-title">
+    <div class="player-top">
+      <div class="player-label">A2A 消息时序 <small>固定教学场景 · 本地模拟</small></div>
+      <div class="controls" role="group" aria-label="A2A 演示控制">
+        <button type="button" class="button button-quiet" id="reset-button">重置</button>
+        <button type="button" class="button" id="back-button" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="next-button">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="A2A 交互阶段">
+      <ol style="--stages: 5">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>发现</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>委派</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>等待输入</button></li>
+        <li><button type="button" class="stage-button" data-stage="3"><span class="stage-number">4</span>补充</button></li>
+        <li><button type="button" class="stage-button" data-stage="4"><span class="stage-number">5</span>完成</button></li>
+      </ol>
+    </nav>
+    <p class="sim-banner"><span><strong>本页只做本地消息模拟。</strong>不发现真实 Agent、不请求 <code>/.well-known/agent-card.json</code>、不发送任何 JSON-RPC 或 SSE 请求。下面的 Agent Card、任务编号和返回内容都是预设的教学数据。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="scene-index">阶段 1 / 5 · 固定教学场景</p>
+      <h2 id="a2a-title">先发现对方会什么，再把任务交出去</h2>
+      <p id="scene-subtitle">固定场景：一个协调 Agent 要把“分析特斯拉营收趋势”交给财务分析 Agent。两个 Agent 分属不同团队，只通过 A2A 通信。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="a2a-scene"></div>
+      <p class="demo-note" id="scene-note">固定教学数据：Agent 名称、能力列表、任务编号与文本均为本页预设，不代表任何真实 Agent 或线上服务。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 本地消息模拟 · 不访问网络</span><span id="state-summary">阶段 1 / 5 · 尚未创建 Task</span></div>
+  </section>
+  <p id="a2a-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">诞生背景</p><h2 id="why-title">Agent 越多，<br>孤岛越明显。</h2></div>
+      <p class="reading-intro">不同团队用 LangChain、CrewAI、AutoGen 各建各的 Agent，彼此无法直接对话。A2A 要做的，是成为 Agent 间通信的“HTTP”：与框架无关、与模型无关。</p>
+    </div>
+    <div class="prose">
+      <h3>从互不兼容到统一协议</h3>
+      <div class="dual-layer" role="img" aria-label="引入 A2A 前三个框架的 Agent 互不兼容；引入后通过 A2A 和 JSON-RPC 互通">
+        <p class="figure-index" style="margin-bottom:8px">引入 A2A 前</p>
+        <div class="dual-agents">
+          <div class="dual-agent"><b>LangChain Agent</b>不兼容</div>
+          <div class="dual-agent"><b>CrewAI Agent</b>不兼容</div>
+          <div class="dual-agent"><b>AutoGen Agent</b>各自为战</div>
+          <div class="dual-agent"><b>其他框架</b>各自为战</div>
+        </div>
+        <p class="figure-index" style="margin:16px 0 8px">引入 A2A 后</p>
+        <div class="dual-agents">
+          <div class="dual-agent"><b>LangChain Agent</b>A2A / JSON-RPC</div>
+          <div class="dual-agent"><b>CrewAI Agent</b>A2A / JSON-RPC</div>
+          <div class="dual-agent"><b>AutoGen Agent</b>A2A / JSON-RPC</div>
+          <div class="dual-agent"><b>其他框架</b>A2A / JSON-RPC</div>
+        </div>
+      </div>
+      <p>Google 联合 Atlassian、Salesforce、SAP 等 50+ 企业伙伴推出 A2A。2025 年 6 月，协议捐赠给 Linux Foundation 托管，原文称目前已有 150+ 组织参与。</p>
+
+      <h3>协议层次</h3>
+      <div class="layer-stack">
+        <div class="layer-row"><b>应用层</b><span>Agent Card / Task / Message / Artifact</span></div>
+        <div class="layer-row"><b>消息格式</b><span>JSON-RPC 2.0</span></div>
+        <div class="layer-row"><b>实时推送</b><span>SSE（Server-Sent Events）</span></div>
+        <div class="layer-row"><b>传输层</b><span>HTTP / HTTPS</span></div>
+        <div class="layer-row"><b>安全层</b><span>OAuth 2.0 / API Key / JWT</span></div>
+      </div>
+      <p class="fixed-note">原文版本信息，未联网核实</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="concepts-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">核心概念</p><h2 id="concepts-title">Agent Card 负责发现，<br>Task 负责过程。</h2></div>
+      <p class="reading-intro">Agent Card 声明“我会什么”，Task 记录“这件事做到哪了”，Message 承载对话，Artifact 承载产物。四者分工明确，才能让不透明的 Agent 之间协作。</p>
+    </div>
+    <div class="prose">
+      <h3>1. Agent Card（服务发现）</h3>
+      <p>每个 A2A Agent 在 <code>/.well-known/agent-card.json</code> 发布 Agent Card，声明能力和认证方式，作用类似 OpenAPI spec。早期版本使用 <code>/.well-known/agent.json</code>，后改为 <code>agent-card.json</code> 以符合 RFC 8615。原文还提到协议新增了 gRPC binding 与 Agent Card signing 支持；具体版本以 A2A 协议仓库最新版本为准。</p>
+
+      <h3>2. Task 生命周期</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">A2A Task 状态与允许的迁移</caption>
+          <thead><tr><th scope="col">状态</th><th scope="col">含义</th><th scope="col">可迁移到</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><code>submitted</code></th><td>已提交，尚未开始执行</td><td><code>working</code> / <code>failed</code></td></tr>
+            <tr><th scope="row"><code>working</code></th><td>正在执行</td><td><code>completed</code> / <code>failed</code> / <code>input-required</code></td></tr>
+            <tr><th scope="row"><code>input-required</code></th><td>缺少必要输入，任务暂停</td><td><code>working</code>（补充后恢复）/ <code>failed</code></td></tr>
+            <tr><th scope="row"><code>completed</code></th><td>成功结束</td><td>终态</td></tr>
+            <tr><th scope="row"><code>failed</code></th><td>失败结束</td><td>终态</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Task 是有状态的工作单元：可以暂停等待输入，再恢复执行，而不是一次无状态的调用。原文用 Mermaid 的 <code>stateDiagram-v2</code> 描述这套状态机，源码保留在下方。</p>
+      <details>
+        <summary>查看原文 Mermaid 源码（Task 状态机）</summary>
+        <pre><code>stateDiagram-v2
+    state "submitted（已提交）" as sub
+    state "working（执行中）" as work
+    state "input-required（需要输入）" as ir
+    state "completed（已完成）" as done
+    state "failed（失败）" as fail
+    [*] --&gt; sub
+    sub --&gt; work: 开始执行
+    sub --&gt; fail: 出错
+    work --&gt; done: 成功
+    work --&gt; fail: 出错
+    work --&gt; ir: 缺少必要输入
+    ir --&gt; work: 补充输入后恢复
+    ir --&gt; fail: 出错
+    done --&gt; [*]
+    fail --&gt; [*]</code></pre>
+      </details>
+
+      <h3>3. Message 和 Artifact</h3>
+      <p><strong>Message</strong> 是 Agent 间的对话载体，可以包含 text、file 等多模态 parts。<strong>Artifact</strong> 是任务产出的结构化成果物，和 Message 分开存放，便于下游直接消费。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="vs-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">A2A vs MCP</p><h2 id="vs-title">一个连工具，<br>一个连同伴。</h2></div>
+      <p class="reading-intro">MCP 让 Agent 变得更强，A2A 让 Agent 之间能合作。两者解决正交问题，一个成熟系统往往同时使用。</p>
+    </div>
+    <div class="prose">
+      <div class="dual-layer" role="img" aria-label="Agent A 和 Agent B 通过 A2A 横向协作，两者各自通过 MCP 向下连接数据库、API 工具、搜索引擎和代码执行">
+        <div class="dual-agents">
+          <div class="dual-agent"><b>Agent A（Client）</b>发起协作</div>
+          <div class="dual-agent"><b>Agent B（Server）</b>接受委托</div>
+          <div class="dual-link">A2A 横向协作 · 对等 / 委托</div>
+        </div>
+        <div class="dual-tools">
+          <div class="dual-tool">数据库<br>MCP 纵向</div>
+          <div class="dual-tool">API 工具<br>MCP 纵向</div>
+          <div class="dual-tool">搜索引擎<br>MCP 纵向</div>
+          <div class="dual-tool">代码执行<br>MCP 纵向</div>
+        </div>
+        <p class="dual-tools-label">两边的工具各自走 MCP，不经过 A2A</p>
+      </div>
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">A2A 与 MCP 的定位对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">A2A</th><th scope="col">MCP</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">发起者</th><td>Google（2025.04）</td><td>Anthropic（2024.11）</td></tr>
+            <tr><th scope="row">解决问题</th><td>Agent 之间如何协作</td><td>Agent 如何连接工具 / 数据源</td></tr>
+            <tr><th scope="row">关系模型</th><td>对等 / 委托（Agent ↔ Agent）</td><td>主从（Agent → Tool）</td></tr>
+            <tr><th scope="row">通信方式</th><td>HTTP + JSON-RPC 2.0 + SSE</td><td>JSON-RPC 2.0 + stdio / HTTP + SSE</td></tr>
+            <tr><th scope="row">服务发现</th><td>Agent Card（<code>/.well-known/agent-card.json</code>）</td><td>能力协商（initialize 握手）</td></tr>
+            <tr><th scope="row">状态管理</th><td>有状态（Task 生命周期）</td><td>无状态（单次调用）</td></tr>
+            <tr><th scope="row">类比</th><td>公司之间的合作协议</td><td>员工使用办公软件</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="quote">MCP 让 Agent 变得更强（纵向），A2A 让 Agent 之间能合作（横向）。</p>
+      <details>
+        <summary>查看原文 Mermaid 源码（A2A 与 MCP 的双层关系）</summary>
+        <pre><code>flowchart TD
+    A["Agent A&lt;br/&gt;Client Agent"] &lt;-- A2A 横向协作 --&gt; B["Agent B&lt;br/&gt;Server Agent"]
+    A -- "MCP 纵向" --&gt; T1["数据库"]
+    A -- "MCP 纵向" --&gt; T2["API 工具"]
+    B -- "MCP 纵向" --&gt; T3["搜索引擎"]
+    B -- "MCP 纵向" --&gt; T4["代码执行"]</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="eco-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">生态进展</p><h2 id="eco-title">从纸面标准，<br>走向工程平台。</h2></div>
+      <p class="reading-intro">原文把 2026 年的进展概括为工具链成熟化，以及与 MCP 的双层标准格局落地。以下是原文表述，未联网核实。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">原文列出的 2026 年 A2A 生态进展</caption>
+          <thead><tr><th scope="col">进展</th><th scope="col">说明</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Google ADK 原生支持</th><td>ADK 把 A2A 作为一等公民，A2A Server / Client 能力开箱即用，不必手写 HTTP server、JSON-RPC 路由、Agent Card 生成和 Task 状态机样板代码</td></tr>
+            <tr><th scope="row">Google Cloud 部署链路</th><td>ADK 构建的 A2A Agent 可直接部署到 Vertex AI Agent Engine，获得托管运行环境</td></tr>
+            <tr><th scope="row">官方 Codelab</th><td>Google 发布 Purchasing Concierge 等 Codelab，端到端演示多个 Agent 通过 A2A 协作</td></tr>
+            <tr><th scope="row">A2A + MCP 双层标准</th><td>行业共识：MCP 负责 Agent ↔ 工具纵向扩展，A2A 负责 Agent ↔ Agent 横向协作</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="eco-note">以上为原文 2026 年版本表述，本页未联网核实，也不更新榜单或版本号。</p>
+      <p>原文认为 ADK 原生支持是关键节点：在此之前，实现一个合规的 A2A Agent 需要自行拼装协议层样板代码，门槛高；ADK 把这些变成框架内置能力，是生态从“纸面标准”转向“规模化采用”的分水岭。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="code-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">Python 示例</p><h2 id="code-title">两轮交互，<br>走完一个 Task。</h2></div>
+      <p class="reading-intro">原文用 Python 模拟 A2A 服务端：第一轮请求缺少时间范围，进入 input-required；第二轮补充时间后完成，并产出 artifact。</p>
+    </div>
+    <div class="prose">
+      <p>示例的关键不在 HTTP 细节，而在三件事：Agent Card 声明能力、Task 状态迁移受合法转换表约束、缺少输入时暂停而不是失败。</p>
+      <details open>
+        <summary>展开原文 Python 示例</summary>
+        <pre><code>import json
+import uuid
+from dataclasses import dataclass, field
+from enum import Enum
+
+
+class TaskState(Enum):
+    """A2A Task 状态枚举"""
+    SUBMITTED = "submitted"
+    WORKING = "working"
+    INPUT_REQUIRED = "input-required"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+
+@dataclass
+class AgentCard:
+    """Agent Card —— 声明 Agent 的能力，发布于 /.well-known/agent-card.json"""
+    name: str
+    description: str
+    url: str
+    skills: list[dict] = field(default_factory=list)
+    capabilities: dict = field(default_factory=lambda: {
+        "streaming": True, "pushNotifications": False,
+    })
+
+
+@dataclass
+class Task:
+    """A2A Task —— 协议核心工作单元，带状态机校验"""
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    state: TaskState = TaskState.SUBMITTED
+    messages: list[dict] = field(default_factory=list)
+    artifacts: list[dict] = field(default_factory=list)
+
+    _transitions = {
+        TaskState.SUBMITTED: {TaskState.WORKING, TaskState.FAILED},
+        TaskState.WORKING: {TaskState.COMPLETED, TaskState.FAILED,
+                            TaskState.INPUT_REQUIRED},
+        TaskState.INPUT_REQUIRED: {TaskState.WORKING, TaskState.FAILED},
+    }
+
+    def transition(self, new_state: TaskState):
+        allowed = self._transitions.get(self.state, set())
+        if new_state not in allowed:
+            raise ValueError(
+                f"非法状态转换: {self.state.value} -&gt; {new_state.value}")
+        self.state = new_state
+
+
+class A2AServer:
+    """模拟 A2A 服务端 —— 接收 JSON-RPC 请求、管理 Task 生命周期"""
+
+    def __init__(self, card: AgentCard):
+        self.card = card
+        self.tasks: dict[str, Task] = {}
+
+    def handle_request(self, request: dict) -&gt; dict:
+        method = request["method"]
+        params = request.get("params", {})
+        req_id = request["id"]
+
+        if method == "message/send":
+            result = self._send(params)
+        elif method == "tasks/get":
+            task = self.tasks[params["id"]]
+            result = {"id": task.id, "state": task.state.value}
+        else:
+            return {"jsonrpc": "2.0", "id": req_id,
+                    "error": {"code": -32601, "message": "方法不存在"}}
+
+        return {"jsonrpc": "2.0", "id": req_id, "result": result}
+
+    def _send(self, params: dict) -&gt; dict:
+        task_id = params.get("id", str(uuid.uuid4()))
+        if task_id in self.tasks:
+            task = self.tasks[task_id]
+            task.messages.append(params["message"])
+            task.transition(TaskState.WORKING)  # 从 input-required 恢复
+        else:
+            task = Task(id=task_id, messages=[params["message"]])
+            self.tasks[task_id] = task
+            task.transition(TaskState.WORKING)
+
+        text = task.messages[-1]["parts"][0]["text"]
+        if "分析" in text and "时间" not in text:
+            task.transition(TaskState.INPUT_REQUIRED)
+            return {"id": task.id, "state": task.state.value,
+                    "messages": [{"role": "agent",
+                                  "parts": [{"type": "text",
+                                             "text": "请指定分析时间范围"}]}]}
+
+        task.transition(TaskState.COMPLETED)
+        task.artifacts.append({
+            "name": "report",
+            "parts": [{"type": "text",
+                       "text": f"基于 [{text}] 的分析报告..."}]
+        })
+        return {"id": task.id, "state": task.state.value,
+                "artifacts": task.artifacts}
+
+
+if __name__ == "__main__":
+    server = A2AServer(AgentCard(
+        name="财务分析 Agent",
+        description="专精于财务报表分析",
+        url="https://finance-agent.example.com",
+        skills=[{"id": "financial_analysis", "name": "财务报表分析"}],
+    ))
+
+    # 第一轮：缺少时间范围
+    r1 = server.handle_request({
+        "jsonrpc": "2.0", "id": 1, "method": "message/send",
+        "params": {"id": "task-001",
+                   "message": {"role": "user",
+                               "parts": [{"type": "text",
+                                          "text": "分析特斯拉营收趋势"}]}}
+    })
+
+    # 第二轮：补充时间
+    r2 = server.handle_request({
+        "jsonrpc": "2.0", "id": 2, "method": "message/send",
+        "params": {"id": "task-001",
+                   "message": {"role": "user",
+                               "parts": [{"type": "text",
+                                          "text": "时间范围：2023-2024"}]}}
+    })</code></pre>
+      </details>
+      <p>注意版本差异：核心方法名已从早期的 <code>tasks/send</code> / <code>tasks/sendSubscribe</code> 重命名为 <code>message/send</code> / <code>message/stream</code>。看旧文章时，方法名对不上是常见情况。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="principles-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">设计原则</p><h2 id="principles-title">不透明，<br>才容得下异构。</h2></div>
+      <p class="reading-intro">A2A 不要求双方用同一个模型、同一个框架，甚至不要求对方暴露内部实现。四条原则都围绕这一点。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">A2A 的四条关键设计原则</caption>
+          <thead><tr><th scope="col">原则</th><th scope="col">说明</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">不透明执行</th><td>客户端不需要了解服务端内部实现，模型和框架都可以不同</td></tr>
+            <tr><th scope="row">框架无关</th><td>LangChain、CrewAI、AutoGen 等都可以实现 A2A</td></tr>
+            <tr><th scope="row">能力协商</th><td>通过 Agent Card 动态发现并选择合适的 Agent</td></tr>
+            <tr><th scope="row">安全优先</th><td>内置企业级认证授权：OAuth 2.0、API Key、mTLS</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>长时间运行的任务由三种机制覆盖：<code>message/stream</code> 用 SSE 推送中间状态；Push Notification 让客户端注册 webhook，服务端在状态变更时主动通知；<code>tasks/get</code> 轮询随时查进度。三种机制覆盖秒级到天级的任务时长。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">四个容易<br>答偏的问题。</h2></div>
+      <p class="reading-intro">前两个是误区，后两个是追问。回答时先讲定位，再讲机制。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <div class="misconception-label">误区 01</div>
+        <div><h3>“A2A 会取代 MCP”</h3><p>A2A 和 MCP 解决的是两个正交问题。MCP 是 Agent 连接工具和数据源的标准，属于纵向扩展能力；A2A 是 Agent 之间协作通信的标准，属于横向建立合作。成熟系统往往同时需要两者：用 MCP 获取能力，用 A2A 分工协作。它们更像 TCP 和 HTTP 的关系，不同层次、互相配合。原文称 2026 年这一双层标准定位已成行业共识。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 02</div>
+        <div><h3>“A2A 只适用于同构 Agent”</h3><p>恰恰相反，A2A 的核心设计目标就是让异构 Agent 互通。无论 Agent 基于 Claude、GPT 还是 Gemini，用 LangChain 还是自研框架，只要实现 A2A 协议就能互相协作。Agent Card 里的 skills 是语义级描述，不是实现级绑定。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 03</div>
+        <div><h3>A2A 如何处理长时间运行的任务？</h3><p>三种机制：<code>message/stream</code> 用 SSE 实时推送中间状态和增量结果；Push Notification 通过 webhook 回调，适合数小时级任务；<code>tasks/get</code> 随时轮询进度。三者覆盖秒级到天级。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 04</div>
+        <div><h3>如何在 A2A 中实现身份验证和授权？</h3><p>Agent Card 的 <code>authentication</code> 字段声明支持的认证方案。协议复用成熟的 Web 安全标准：OAuth 2.0（企业间协作首选）、API Key（内部系统）、JWT Bearer Token（无状态场景）。Agent Card 的 skills 还可以设置权限级别，实现细粒度能力授权，例如允许“查询”但禁止“修改”。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="sources-title">
+    <p class="eyebrow">参考资料</p>
+    <h2 class="source-heading" id="sources-title">原文引用与延伸阅读</h2>
+    <p class="source-summary">以下链接来自原文。只有主动点击外链才会离开本页；本页不加载任何外部资源。</p>
+    <details>
+      <summary>展开 8 条参考资料</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://google.github.io/A2A/" rel="noreferrer noopener">A2A Protocol Specification (Google)</a></li>
+          <li><a href="https://developers.googleblog.com/en/a2a-a-new-era-of-agent-interoperability/" rel="noreferrer noopener">Announcing the Agent2Agent Protocol (Google Cloud Blog)</a></li>
+          <li><a href="https://cloud.google.com/blog/products/ai-machine-learning/agent2agent-protocol-is-getting-an-upgrade" rel="noreferrer noopener">Agent2Agent Protocol is getting an upgrade (Google Cloud, 2026)</a></li>
+          <li><a href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/build/adk" rel="noreferrer noopener">Agent Development Kit 官方文档（原生集成 A2A）</a></li>
+          <li><a href="https://codelabs.developers.google.com/intro-a2a-purchasing-concierge" rel="noreferrer noopener">Intro to A2A: Purchasing Concierge Codelab</a></li>
+          <li><a href="https://composio.dev/blog/a2a-vs-mcp/" rel="noreferrer noopener">A2A vs MCP: Understanding AI Agent Protocols (Composio)</a></li>
+          <li><a href="https://github.com/google/A2A" rel="noreferrer noopener">A2A GitHub Repository (google/A2A)</a></li>
+          <li><a href="https://modelcontextprotocol.io/" rel="noreferrer noopener">Model Context Protocol Specification (Anthropic)</a></li>
+        </ul>
+        <p class="source-footnote">版本号、生态进展与合作方数量均按原文 2026 年表述呈现，本页未联网核实。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>04-multi-agent/101-a2a-protocol.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 4 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const AGENT_CARD = Object.freeze({
+    name: "财务分析 Agent",
+    description: "专精于财务报表分析",
+    url: "https://finance-agent.example.com",
+    skills: [{ id: "financial_analysis", name: "财务报表分析" }],
+    capabilities: { streaming: true, pushNotifications: false }
+  });
+
+  const STAGES = Object.freeze([
+    {
+      nav: "发现",
+      title: "先发现对方会什么，再把任务交出去",
+      subtitle: "客户端读取 Agent Card，确认对方提供财务分析能力、支持流式推送。这一步只做能力发现，不传业务数据。",
+      state: "—",
+      summary: "阶段 1 / 5 · 尚未创建 Task"
+    },
+    {
+      nav: "委派",
+      title: "委派任务：message/send 带着 task id 出发",
+      subtitle: "客户端创建 task-001，把“分析特斯拉营收趋势”作为 Message 发出去。服务端接收后进入 working。",
+      state: "working",
+      summary: "阶段 2 / 5 · Task task-001 = working"
+    },
+    {
+      nav: "等待输入",
+      title: "缺少时间范围：任务暂停，不是失败",
+      subtitle: "服务端发现请求里没有时间范围，把 Task 迁到 input-required，并回一条 Message 要求补充。Task 仍然活着。",
+      state: "input-required",
+      summary: "阶段 3 / 5 · Task task-001 = input-required"
+    },
+    {
+      nav: "补充",
+      title: "补充输入：同一个 task id 续上",
+      subtitle: "客户端带着 task-001 再发一条 message/send，内容是“时间范围：2023-2024”。服务端从 input-required 恢复为 working。",
+      state: "working",
+      summary: "阶段 4 / 5 · Task task-001 恢复为 working"
+    },
+    {
+      nav: "完成",
+      title: "完成：状态回传，产物单独给",
+      subtitle: "服务端把 Task 迁到 completed，返回 Artifact。客户端也可以随时用 tasks/get 查询同一任务的状态。",
+      state: "completed",
+      summary: "阶段 5 / 5 · Task task-001 = completed"
+    }
+  ]);
+
+  const state = { stage: 0 };
+  const byId = (id) => document.getElementById(id);
+
+  function stateStrip(current) {
+    const order = ["submitted", "working", "input-required", "completed"];
+    const rank = { "submitted": 1, "working": 2, "input-required": 2, "completed": 3 };
+    const now = rank[current] || 0;
+    const nodes = order.map((name) => {
+      let cls = "state-node";
+      if (name === current) cls += " is-current";
+      else if (rank[name] < now) cls += " is-done";
+      else if (rank[name] > now) cls += " is-future";
+      return `<span class="${cls}">${name}</span>`;
+    }).join('<span class="state-arrow">·</span>');
+    return `<div class="state-strip" role="group" aria-label="Task 状态：${current === "—" ? "尚未创建" : current}">
+      <span class="label">Task 状态</span>${nodes}
+      <span class="badge badge-neutral" style="margin-left:auto">failed 分支未触发</span>
+    </div>`;
+  }
+
+  function cardScene() {
+    return `
+      ${stateStrip("—")}
+      <div class="seq">
+        <div class="seq-head"><div>客户端 Agent（协调者）</div><div>服务端 Agent（财务分析）</div></div>
+        <div class="seq-row">
+          <div class="seq-msg client"><b>客户端 → 服务端</b>GET <code>/.well-known/agent-card.json</code><br><span style="color:var(--text-dim)">本页只展示预设的请求形状，不真正发出。</span></div>
+          <div class="seq-arrow"><span>请求</span>→</div>
+          <div class="seq-spacer"></div>
+        </div>
+      </div>
+      <div class="card-json">
+        <header><span>Agent Card（固定教学数据）</span><span class="badge badge-ok">能力已声明</span></header>
+        <pre><code>{
+  "name": "财务分析 Agent",
+  "description": "专精于财务报表分析",
+  "url": "https://finance-agent.example.com",
+  "skills": [{ "id": "financial_analysis", "name": "财务报表分析" }],
+  "capabilities": { "streaming": true, "pushNotifications": false }
+}</code></pre>
+      </div>
+      <p class="demo-note">真实协议里这个路径是 <code>/.well-known/agent-card.json</code>（早期版本为 <code>agent.json</code>）。本页没有发送请求，卡片内容为预设。</p>`;
+  }
+
+  function delegateScene() {
+    return `
+      ${stateStrip("working")}
+      <div class="seq">
+        <div class="seq-head"><div>客户端 Agent（协调者）</div><div>服务端 Agent（财务分析）</div></div>
+        <div class="seq-row">
+          <div class="seq-msg client"><b>客户端 → 服务端 · message/send</b>
+            <code>{"jsonrpc":"2.0","id":1,"method":"message/send","params":{"id":"task-001","message":{"role":"user","parts":[{"type":"text","text":"分析特斯拉营收趋势"}]}}}</code>
+          </div>
+          <div class="seq-arrow"><span>委派</span>→</div>
+          <div class="seq-spacer"></div>
+        </div>
+      </div>
+      <ul class="msg-log">
+        <li><span class="t">请求</span><span>method = <code>message/send</code>，task id = <code>task-001</code></span></li>
+        <li><span class="t">状态</span><span>submitted → working（服务端开始执行）</span></li>
+      </ul>
+      <p class="demo-note">JSON-RPC 信封是固定教学数据。真实请求还会带认证信息，本页省略。</p>`;
+  }
+
+  function inputScene() {
+    return `
+      ${stateStrip("input-required")}
+      <div class="seq">
+        <div class="seq-head"><div>客户端 Agent（协调者）</div><div>服务端 Agent（财务分析）</div></div>
+        <div class="seq-row">
+          <div class="seq-msg client"><b>客户端 → 服务端</b>task-001，文本：分析特斯拉营收趋势</div>
+          <div class="seq-arrow"><span>已送达</span>→</div>
+          <div class="seq-msg server"><b>服务端 → 客户端 · 状态回传</b>state = <code>input-required</code><br>“请指定分析时间范围”</div>
+        </div>
+      </div>
+      <ul class="msg-log">
+        <li><span class="t">判断</span><span>请求里有“分析”，但没有“时间” → 缺少必要输入</span></li>
+        <li><span class="t">状态</span><span>working → input-required（任务暂停，等待补充）</span></li>
+      </ul>
+      <p class="demo-note">这里最容易讲错：input-required 不是失败。Task 仍然存在，同一个 task id 可以续跑。</p>`;
+  }
+
+  function resumeScene() {
+    return `
+      ${stateStrip("working")}
+      <div class="seq">
+        <div class="seq-head"><div>客户端 Agent（协调者）</div><div>服务端 Agent（财务分析）</div></div>
+        <div class="seq-row">
+          <div class="seq-msg client"><b>客户端 → 服务端 · message/send（同一 task id）</b>
+            <code>{"jsonrpc":"2.0","id":2,"method":"message/send","params":{"id":"task-001","message":{"role":"user","parts":[{"type":"text","text":"时间范围：2023-2024"}]}}}</code>
+          </div>
+          <div class="seq-arrow"><span>补充</span>→</div>
+          <div class="seq-spacer"></div>
+        </div>
+      </div>
+      <ul class="msg-log">
+        <li><span class="t">请求</span><span>task id 仍是 <code>task-001</code>，没有新建任务</span></li>
+        <li><span class="t">状态</span><span>input-required → working（补充输入后恢复）</span></li>
+      </ul>
+      <p class="demo-note">固定教学数据：补充文本为“时间范围：2023-2024”。真实系统里，补充可能来自用户或上游 Agent。</p>`;
+  }
+
+  function doneScene() {
+    return `
+      ${stateStrip("completed")}
+      <div class="seq">
+        <div class="seq-head"><div>客户端 Agent（协调者）</div><div>服务端 Agent（财务分析）</div></div>
+        <div class="seq-row">
+          <div class="seq-spacer"></div>
+          <div class="seq-arrow"><span>产物</span>←</div>
+          <div class="seq-msg server"><b>服务端 → 客户端 · completed</b>state = <code>completed</code><br>Artifact：<code>report</code> = “基于 [时间范围：2023-2024] 的分析报告...”</div>
+        </div>
+        <div class="seq-row">
+          <div class="seq-msg client"><b>客户端 → 服务端 · tasks/get</b><code>{"jsonrpc":"2.0","id":3,"method":"tasks/get","params":{"id":"task-001"}}</code></div>
+          <div class="seq-arrow"><span>查询</span>→</div>
+          <div class="seq-msg server"><b>服务端 → 客户端</b>state = <code>completed</code></div>
+        </div>
+      </div>
+      <ul class="msg-log">
+        <li><span class="t">状态</span><span>working → completed（终态）</span></li>
+        <li><span class="t">产物</span><span>Artifact 与 Message 分开返回，下游可直接消费</span></li>
+      </ul>
+      <p class="demo-note">完整链路：发现 → 委派 → input-required → 补充 → completed。全程本地模拟，没有网络请求。</p>`;
+  }
+
+  const SCENES = [cardScene, delegateScene, inputScene, resumeScene, doneScene];
+
+  function renderStage(stage) {
+    state.stage = stage;
+    const meta = STAGES[stage];
+    byId("a2a-scene").innerHTML = SCENES[stage]();
+    byId("scene-index").textContent = `阶段 ${stage + 1} / 5 · 固定教学场景`;
+    byId("a2a-title").textContent = meta.title;
+    byId("scene-subtitle").textContent = meta.subtitle;
+    byId("state-summary").textContent = meta.summary;
+    byId("back-button").disabled = stage === 0;
+    byId("next-button").disabled = stage === STAGES.length - 1;
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      const active = Number(button.dataset.stage) === stage;
+      if (active) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    byId("a2a-announcement").textContent = `${meta.title}。${meta.subtitle}`;
+  }
+
+  byId("reset-button").addEventListener("click", () => renderStage(0));
+  byId("back-button").addEventListener("click", () => renderStage(Math.max(0, state.stage - 1)));
+  byId("next-button").addEventListener("click", () => renderStage(Math.min(STAGES.length - 1, state.stage + 1)));
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+
+  renderStage(0);
+</script>
+</body>
+</html>

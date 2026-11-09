@@ -1,0 +1,962 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>比较主流多 Agent 框架：CrewAI、AutoGen、LangGraph · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .fw-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .fw-grid { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+  .fw-left, .fw-panel { min-width: 0; }
+  .fw-question { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .fw-question h2 { font: 600 20px/1.45 var(--serif); }
+  .fw-question > p { margin-top: var(--s-2); font-size: 11px; line-height: 1.65; color: var(--text-dim); }
+  .fw-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-3); }
+  .fw-option { min-height: 58px; padding: 7px 9px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface-soft); text-align: left; }
+  .fw-option:hover { border-color: var(--accent); background: var(--accent-dim); }
+  .fw-option b { display: block; font: 600 11px/1.45 var(--sans); color: var(--ink); }
+  .fw-option span { display: block; margin-top: 2px; font-size: 9px; line-height: 1.5; color: var(--text-dim); }
+  .fw-option[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-dim); }
+  .fw-path { display: flex; flex-wrap: wrap; gap: 5px; margin-top: var(--s-3); }
+  .fw-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid #9eb4c9; border-radius: 999px; background: var(--accent-dim); color: var(--accent); font: 9px/1.6 var(--mono); }
+  .fw-chip.empty { border-color: var(--border-bright); background: var(--surface-soft); color: #5f645f; }
+  .fw-panel { border: 1px solid var(--border); border-radius: var(--r-1); background: #f7f6f1; padding: var(--s-4); }
+  .fw-panel h2 { font: 600 19px/1.45 var(--serif); }
+  .fw-panel > p { margin-top: var(--s-2); font-size: 12px; line-height: 1.7; }
+  .fw-result { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: 4px; background: var(--surface); padding: var(--s-3); }
+  .fw-result-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 5px; }
+  .fw-result-head b { font: 600 17px/1.4 var(--serif); }
+  .fw-tag { padding: 1px 7px; border-radius: 999px; border: 1px solid #2e7d32; background: #eef7ee; color: #1b5e20; font: 9px/1.5 var(--mono); }
+  .fw-tag.warn { border-color: #b98a2f; background: #fffaf0; color: #5f430f; }
+  .fw-why, .fw-watch { margin: 8px 0 0; padding-left: 1.2em; }
+  .fw-why li, .fw-watch li { font-size: 10px; line-height: 1.6; margin-top: 2px; }
+  .fw-why li::marker { color: #2e7d32; }
+  .fw-watch li::marker { color: #b98a2f; }
+  .fw-version { margin-top: var(--s-3); padding: 7px 9px; border: 1px solid #b98a2f; border-radius: 4px; background: #fffaf0; color: #5f430f; font-size: 10px; line-height: 1.6; }
+  .fw-version b { color: #4a340b; }
+  .fw-version code { color: #4a340b; }
+  .fw-panel-note { margin-top: var(--s-3); font: 9px/1.6 var(--mono); color: var(--text-dim); }
+  .fw-empty { margin-top: var(--s-3); border: 1px dashed var(--border-bright); border-radius: 4px; background: var(--surface-soft); padding: 10px; font-size: 10px; line-height: 1.65; color: var(--text-dim); }
+  .fw-table-note { margin-top: var(--s-3); padding: 7px 9px; border-left: 3px solid #b98a2f; background: #fffaf0; font-size: 10px; line-height: 1.6; color: #5f430f; }
+
+  @media (max-width: 1000px) { .fw-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 720px) {
+    .fw-stage { padding: var(--s-4); }
+    .fw-options { grid-template-columns: 1fr; }
+    .fw-question, .fw-panel { padding: var(--s-3); }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">036 / 多 Agent 框架</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 11 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="035-conflict-resolution.html">← 上一页 · 多 Agent 系统中的冲突解决机制</a><a href="037-agent-handoff.html">下一页 → · 如何实现 Agent 间的 Hand…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Multi-Agent · 可交互讲解</p>
+      <h1>框架没有最强，<br>只有更合手。</h1>
+    </div>
+    <div>
+      <p class="lead">CrewAI 以角色为核心，LangGraph 以图为核心，AutoGen 体系以对话或事件为核心。2026 年又有 Microsoft Agent Framework、Google ADK 和 OpenAI Agents SDK 加入，选择先看团队生态和流程形态。</p>
+      <p class="definition">关键边界：<strong>本页的框架能力和版本只按原文呈现，未联网核实</strong>。原文中的“1.0 GA”“维护模式”等状态可能已经变化；选型前应查官方文档，不要拿本页当实时榜单。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Multi-Agent</span><span class="pill">框架选型</span><span class="pill">原文版本 · 未联网核实</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="fw-caption-title">
+    <div class="player-top">
+      <div class="player-label">固定选型路径 <small>两问定位方向，结果只复述原文</small></div>
+      <div class="controls" role="group" aria-label="框架选型演示控制">
+        <button type="button" class="button button-quiet" id="fw-reset">重置</button>
+        <button type="button" class="button" id="fw-back" disabled>上一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="三个固定选型步骤">
+      <ol style="--stages: 3">
+        <li><button type="button" class="stage-button" data-step="0" aria-current="step" aria-controls="fw-scene" aria-label="第 1 步：场景"><span class="stage-number">1</span><span>场景</span></button></li>
+        <li><button type="button" class="stage-button" data-step="1" aria-controls="fw-scene" aria-label="第 2 步：细化"><span class="stage-number">2</span><span>细化</span></button></li>
+        <li><button type="button" class="stage-button" data-step="2" aria-controls="fw-scene" aria-label="第 3 步：结果"><span class="stage-number">3</span><span>结果</span></button></li>
+      </ol>
+    </nav>
+    <div class="fw-stage scene" id="fw-scene" data-scene="framework">
+      <div class="fw-grid">
+        <section class="fw-left" aria-label="选型问题">
+          <div class="fw-question">
+            <p class="figure-index" id="fw-question-index">问题 1 / 2</p>
+            <h2 id="fw-question">你的第一约束是什么？</h2>
+            <p id="fw-question-desc">先按团队生态和流程形态选方向，再回答一个细化问题。每题只有一个固定推荐，不计算分数。</p>
+            <div class="fw-options" id="fw-options"></div>
+            <div class="fw-path" id="fw-path" aria-label="已选路径"></div>
+          </div>
+        </section>
+        <aside class="fw-panel" aria-labelledby="fw-caption-title">
+          <p class="figure-index" id="fw-figure">图 1 · 选型路径 · 第 1 / 3 步</p>
+          <h2 id="fw-caption-title">先定方向，再定取舍。</h2>
+          <p id="fw-desc">这一步没有推荐结果。先选最贴近团队现状的一项，下一步才会出现对应的细化问题。</p>
+          <div id="fw-result"></div>
+          <div class="fw-version"><b>版本口径：</b>框架能力、版本和项目状态只按原文（提交 <code>03d6f0c</code>）呈现，未联网核实。原文没有写具体版本号的，本页也不补。</div>
+          <p class="fw-panel-note" id="fw-panel-note">固定教学路径 · 不调用模型 · 不代表实时榜单</p>
+        </aside>
+      </div>
+      <p class="demo-note">固定教学路径：问题、选项、推荐结果和理由都来自原文的选型原则，由本页脚本按固定分支展示；不联网、不查包版本、不比较 benchmark。框架版本状态仅作原文快照。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学路径 · 2 个问题 · 7 个框架选项</span><span id="fw-state-summary">第 1 / 3 步 · 尚未选择</span></div>
+  </section>
+  <p id="fw-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="philosophy-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">设计哲学</p><h2 id="philosophy-title">角色、图、<br>对话与事件。</h2></div>
+      <p class="reading-intro">三个主线框架回答的问题不同：CrewAI 问“谁做什么”，LangGraph 问“怎么流转”，AutoGen 体系问“谁和谁对话、什么事件触发”。</p>
+    </div>
+    <div class="prose">
+      <pre><code>CrewAI:  角色驱动 —— "谁做什么"
+         Crew（团队）= Agent + Task + Process（自治协作）
+         Flow（流程）= deterministic 生产级编排（事件驱动 + state 持久化）
+
+LangGraph: 图驱动 —— "怎么流转"
+           Graph = Node + Edge + State
+           支持条件分支、循环、并行
+
+AutoGen 体系（三个不同项目，常被混淆）:
+  AG2 (ag2ai/ag2)        : 2024-11 社区 fork，AutoGen 0.2 延续
+  AutoGen 0.4+ (microsoft): 2025-01 微软重写，event-driven actor 架构，已进入维护
+  MAF (Microsoft Agent Framework): 微软新主推，1.0 GA (2026.4)，正式取代 AutoGen
+
+2026 厂商级新框架:
+  Google ADK     : 开源，内置 Sequential/Parallel/Loop 编排，原生 A2A 协议
+                   可一键部署到 Vertex AI Agent Engine
+  OpenAI Agents SDK : 轻量级 Handoff 机制，代码优先编排，绑定 Responses API</code></pre>
+      <p>原文特别提醒：AutoGen 不是“一个框架”，而是三个项目并存。面试时说“AutoGen”要说明是 AG2、AutoGen 0.4+ 还是 MAF，否则 import 路径和 API 都对不上。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="arch-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">架构详解</p><h2 id="arch-title">同一件任务，<br>三种写法。</h2></div>
+      <p class="reading-intro">下面三段代码都描述“研究员 + 写手”的协作，但抽象不同：CrewAI 组装团队，LangGraph 建图，AutoGen 发起群聊。</p>
+    </div>
+    <div class="prose">
+      <h3>CrewAI：Agent + Task + Crew</h3>
+      <pre><code>from crewai import Agent, Task, Crew, Process
+
+researcher = Agent(
+    role="高级研究分析师",
+    goal="发现关于 {topic} 的最新趋势",
+    backstory="你是一位经验丰富的研究者...",
+    tools=[search_tool],
+)
+
+writer = Agent(
+    role="技术写作专家",
+    goal="将研究成果写成引人入胜的文章",
+    backstory="你擅长将复杂技术概念简化...",
+)
+
+research_task = Task(
+    description="研究 {topic} 的最新进展",
+    agent=researcher,
+    expected_output="详细的研究报告"
+)
+
+write_task = Task(
+    description="基于研究报告撰写博客文章",
+    agent=writer,
+    expected_output="1500 字的技术博客"
+)
+
+crew = Crew(
+    agents=[researcher, writer],
+    tasks=[research_task, write_task],
+    process=Process.sequential  # 注：Process.hierarchical 已不主推，
+                                # 复杂层级编排建议改用 Flow
+)
+
+result = crew.kickoff(inputs={"topic": "AI Agent"})</code></pre>
+      <h3>LangGraph：Node + Edge + State</h3>
+      <pre><code>from langgraph.graph import StateGraph, START, END
+from typing import TypedDict, Annotated
+
+class State(TypedDict):
+    messages: list
+    research_data: str
+    draft: str
+
+async def research_node(state: State) -&gt; dict:
+    data = await researcher.invoke(state["messages"])
+    return {"research_data": data}
+
+async def write_node(state: State) -&gt; dict:
+    draft = await writer.invoke(state["research_data"])
+    return {"draft": draft}
+
+def should_revise(state: State) -&gt; str:
+    if quality_check(state["draft"]):
+        return "end"
+    return "revise"  # 条件路由
+
+graph = StateGraph(State)
+graph.add_node("research", research_node)
+graph.add_node("write", write_node)
+graph.add_node("revise", revise_node)
+
+graph.add_edge(START, "research")
+graph.add_edge("research", "write")
+graph.add_conditional_edges("write", should_revise, {
+    "end": END,
+    "revise": "revise"
+})
+graph.add_edge("revise", "write")  # 循环
+
+app = graph.compile()</code></pre>
+      <h3>AutoGen / AG2 / MAF：先认清是哪一个</h3>
+      <details open>
+        <summary>三个项目的 import 路径（原文对照）</summary>
+        <div class="source-content">
+          <ul>
+            <li><strong>AG2</strong>（社区 fork，AutoGen 0.2.x 延续）：<code>from autogen import ConversableAgent</code></li>
+            <li><strong>AutoGen 0.4+</strong>（微软重写，event-driven actor 模型）：<code>from autogen_agentchat.agents import AssistantAgent</code></li>
+            <li><strong>MAF</strong>（Microsoft Agent Framework，微软新主推，1.0 GA 2026.4）：<code>from agent_framework import ChatAgent</code>（取代 AutoGen）</li>
+          </ul>
+        </div>
+      </details>
+      <p>下面的群聊代码对应 <strong>AG2 / AutoGen 0.2.x</strong> API，是原文所说的“最易上手”版本；新项目原文建议优先 AutoGen 0.4+ 或 MAF。</p>
+      <pre><code>from autogen import ConversableAgent
+
+researcher = ConversableAgent(
+    name="Researcher",
+    system_message="你是研究分析师...",
+    llm_config={"model": "gpt-4"},
+)
+
+writer = ConversableAgent(
+    name="Writer",
+    system_message="你是技术写作专家...",
+    llm_config={"model": "gpt-4"},
+)
+
+critic = ConversableAgent(
+    name="Critic",
+    system_message="你是内容审核专家...",
+    llm_config={"model": "gpt-4"},
+)
+
+from autogen import GroupChat, GroupChatManager
+
+groupchat = GroupChat(
+    agents=[researcher, writer, critic],
+    messages=[],
+    max_round=10
+)
+manager = GroupChatManager(groupchat=groupchat)
+researcher.initiate_chat(manager, message="研究 AI Agent 的最新趋势")</code></pre>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="compare-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">核心维度对比</p><h2 id="compare-title">九个维度，<br>一张表。</h2></div>
+      <p class="reading-intro">这张表按原文整理。项目状态一列是原文快照，不是本页的实时查询。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">CrewAI、LangGraph 与 AutoGen 体系在核心抽象、学习曲线、流程控制、状态管理、调试性、项目状态、工具生态、Human-in-Loop 和配置方式上的对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">CrewAI</th><th scope="col">LangGraph</th><th scope="col">AG2 / AutoGen 0.4 / MAF</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">核心抽象</th><td>角色 / 团队</td><td>图 / 状态机</td><td>对话 / 消息（AG2）、actor（0.4）、ChatAgent（MAF）</td></tr>
+            <tr><th scope="row">学习曲线</th><td>低</td><td>高</td><td>中（AG2）、中高（0.4）</td></tr>
+            <tr><th scope="row">流程控制</th><td>Crew 顺序 / Flow 事件驱动</td><td>任意图（条件、循环、并行）</td><td>对话 / 事件驱动</td></tr>
+            <tr><th scope="row">状态管理</th><td>内置 state + Flow 持久化</td><td>精细状态 + Reducer</td><td>对话历史 / actor 状态</td></tr>
+            <tr><th scope="row">调试性</th><td>中</td><td>高（图可视化）</td><td>低（非确定性对话）</td></tr>
+            <tr><th scope="row">项目状态</th><td>活跃迭代</td><td>活跃迭代（1.0 GA，2025.10）</td><td>AG2 社区活跃；AutoGen 0.4 已进入维护；MAF 1.0 GA（2026.4）</td></tr>
+            <tr><th scope="row">工具生态</th><td>中</td><td>300+ 集成 + LangSmith</td><td>Azure AI / Semantic Kernel 集成</td></tr>
+            <tr><th scope="row">Human-in-Loop</th><td>支持</td><td>原生支持</td><td>原生支持</td></tr>
+            <tr><th scope="row">配置方式</th><td>代码 + YAML 双轨</td><td>代码驱动</td><td>代码 / Studio GUI</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="fw-table-note">“300+ 集成”“1.0 GA”等只按原文记录，未联网核实，也不构成本页推荐。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="scenario-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">适用场景</p><h2 id="scenario-title">按团队现状选，<br>不按热度选。</h2></div>
+      <p class="reading-intro">原文给出的场景映射如下。同一框架可以覆盖多种场景，但第一约束通常决定起点。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">各框架的最佳适用场景</caption>
+          <thead><tr><th scope="col">框架</th><th scope="col">原文列出的适用场景</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">CrewAI</th><td>业务流程自动化（角色清晰的团队协作）；快速原型和 MVP；非技术团队参与的项目（YAML 配置）</td></tr>
+            <tr><th scope="row">LangGraph</th><td>复杂生产系统（需要精确流程控制）；需要条件分支和循环的工作流；对可观测性要求高的企业应用</td></tr>
+            <tr><th scope="row">AG2 / AutoGen 0.4</th><td>群体决策和多 Agent 辩论（AG2 ConversableAgent / GroupChat）；高并发事件驱动场景（AutoGen 0.4 actor 模型）；研究探索和创意生成</td></tr>
+            <tr><th scope="row">MAF</th><td>微软主推方向，1.0 GA（2026.4）；Azure AI Foundry / Semantic Kernel 深度集成；企业级 Agent 平台（Microsoft 生态新项目优先）</td></tr>
+            <tr><th scope="row">Google ADK</th><td>Google Cloud / Vertex AI 生态项目优先；需要原生 A2A 协议；云上一体化构建-调试-部署（Agent Engine 托管运行时）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="new-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">2026 厂商级新框架</p><h2 id="new-title">四强加开源，<br>各有绑定。</h2></div>
+      <p class="reading-intro">原文的判断是：厂商级框架赢在云生态和托管运行时，代价是厂商锁定；开源框架赢在中立和社区，代价是更多自建。</p>
+    </div>
+    <div class="prose">
+      <ul>
+        <li><strong>Microsoft Agent Framework (MAF) 1.0 GA（2026.4）：</strong>微软继 AutoGen 0.4 后的新主推方向，深度集成 Azure AI Foundry 与 Semantic Kernel。微软体系内 AutoGen 0.4 已进入维护模式，新项目官方推荐迁移到 MAF。</li>
+        <li><strong>Google ADK：</strong>Google 开源的 Agent 开发套件，内置 SequentialAgent、ParallelAgent、LoopAgent 三种编排原语，原生集成 A2A 协议，可一键部署到 Vertex AI Agent Engine。A2A 详见<a href="101-a2a-protocol.html">第 101 题</a>。</li>
+        <li><strong>OpenAI Agents SDK：</strong>轻量级 Handoff 机制，代码优先编排，与 OpenAI Responses API 紧密集成。</li>
+        <li><strong>AWS Agent Squad：</strong>Agent-as-Tools 架构，Lead Agent 协调团队。</li>
+      </ul>
+      <div class="callout">
+        <p class="callout-label">原文趋势判断 · 未联网核实</p>
+        <p>LangGraph（1.0 GA，2025.10）、OpenAI Agents SDK、Google ADK、Microsoft Agent Framework 已形成“四强 + 开源社区（CrewAI / AG2）”格局。这是原文在提交时的判断，不是本页的实时榜单；选型前先确认云生态绑定，再决定厂商路线或开源路线。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">四个容易<br>答偏的点。</h2></div>
+      <p class="reading-intro">前两条是误区，后两条是面试追问；答案来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“选最流行的框架就对了。”</h3><p>框架选择应基于具体需求：需要可控性选 LangGraph，需要快速迭代选 CrewAI，需要灵活对话选 AutoGen。没有万能框架。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“框架 = 生产就绪。”</h3><p>框架提供基础抽象，但生产环境还需要自行解决可观测性、错误处理、安全性等横切关注点。原文认为 LangGraph 在这方面最成熟（配合 LangSmith），其他框架可能需要更多自定义。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>能否混合使用多个框架？</h3><p>可以。例如用 LangGraph 做整体编排，单个节点内部用 CrewAI 的 Crew 完成子任务。但需要注意状态同步和调试复杂度的增加。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>自研 vs 使用框架，如何取舍？</h3><p>如果需求与框架的抽象契合，使用框架；如果框架的限制导致大量 hack，考虑自研。OpenAI 的建议是：先用代码编排（最可控），只在需要灵活性时才引入 LLM 编排。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《比较主流多 Agent 框架：CrewAI、AutoGen、LangGraph》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的十一条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.datacamp.com/tutorial/crewai-vs-langgraph-vs-autogen" target="_blank" rel="noopener noreferrer">CrewAI vs LangGraph vs AutoGen (DataCamp)</a></li>
+          <li><a href="https://latenode.com/blog/platform-comparisons-alternatives/automation-platform-comparisons/langgraph-vs-autogen-vs-crewai-complete-ai-agent-framework-comparison-architecture-analysis-2025" target="_blank" rel="noopener noreferrer">AI Agent Framework Comparison (Latenode)</a></li>
+          <li><a href="https://www.codecademy.com/article/top-ai-agent-frameworks-in-2025" target="_blank" rel="noopener noreferrer">Top AI Agent Frameworks (Codecademy)</a></li>
+          <li><a href="https://www.turing.com/resources/ai-agent-frameworks" target="_blank" rel="noopener noreferrer">Detailed Comparison of Top 6 AI Agent Frameworks (Turing)</a></li>
+          <li><a href="https://www.getmaxim.ai/articles/top-5-ai-agent-frameworks-in-2025-a-practical-guide-for-ai-builders/" target="_blank" rel="noopener noreferrer">Best AI Agent Frameworks 2025 (Maxim AI)</a></li>
+          <li><a href="https://particula.tech/blog/langgraph-vs-crewai-vs-openai-agents-sdk-2026" target="_blank" rel="noopener noreferrer">LangGraph vs CrewAI vs OpenAI Agents SDK 2026（Particula Tech，含 MAF 1.0 GA 对比）</a></li>
+          <li><a href="https://alicelabs.ai/en/insights/best-ai-agent-frameworks-2026" target="_blank" rel="noopener noreferrer">Best AI Agent Frameworks 2026（AliceLabs 框架评测）</a></li>
+          <li><a href="https://www.langchain.com/blog/langchain-langgraph-1dot0" target="_blank" rel="noopener noreferrer">LangChain + LangGraph 1.0 官方公告</a></li>
+          <li><a href="https://www.langchain.com/resources/ai-agent-frameworks" target="_blank" rel="noopener noreferrer">AI Agent Frameworks 资源汇总（LangChain，含 Microsoft Agent Framework）</a></li>
+          <li><a href="https://docs.cloud.google.com/gemini-enterprise-agent-platform/build/adk" target="_blank" rel="noopener noreferrer">Google ADK 官方文档</a></li>
+          <li><a href="https://developers.googleblog.com/en/agent-development-kit-easy-to-build-multi-agent-applications/" target="_blank" rel="noopener noreferrer">Agent Development Kit：轻松构建多 Agent 应用（Google 开发者博客）</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>04-multi-agent/036-multi-agent-frameworks.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 4 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const FW_Q1 = Object.freeze({
+    question: "你的第一约束是什么？",
+    desc: "先按团队生态和流程形态选方向，再回答一个细化问题。每题只有一个固定推荐，不计算分数。",
+    options: [
+      { id: "crew", label: "快速原型、角色分工清晰", desc: "团队协作像一支小分队，先跑起来" },
+      { id: "langgraph", label: "复杂流程、分支与循环", desc: "必须精确控制并追踪每一步" },
+      { id: "conversation", label: "多 Agent 自由对话、辩论", desc: "群体决策、创意生成、事件驱动" },
+      { id: "microsoft", label: "已绑定 Microsoft / Azure", desc: "企业生态优先，考虑迁移成本" },
+      { id: "google", label: "已绑定 Google Cloud、需要 A2A", desc: "Vertex AI 与多 Agent 通信" },
+      { id: "openai", label: "已绑定 OpenAI、轻量 Handoff", desc: "代码优先，绑定 Responses API" }
+    ]
+  });
+
+  const FW_Q2 = Object.freeze({
+    crew: {
+      question: "原型之后，下一步是什么？",
+      options: [
+        {
+          id: "crew-prod", label: "要上生产，流程要确定", desc: "用 Crew + Flow 两层覆盖",
+          framework: "CrewAI（Crew + Flow）", tag: "开源 · 角色驱动",
+          why: ["角色驱动，原型上手最快；Crew 负责自治协作。", "Flow 提供 deterministic 生产级编排、事件驱动和 state 持久化。"],
+          watch: ["原文称 CrewAI 活跃迭代，但未给具体版本号。", "调试性原文评为“中”；可观测性要自行补齐。"],
+          version: "原文状态：活跃迭代（无版本号）。"
+        },
+        {
+          id: "crew-mvp", label: "先做 MVP，暂不接生产", desc: "用 Crew 快速验证角色分工",
+          framework: "CrewAI（Crew）", tag: "开源 · 快速原型",
+          why: ["Agent + Task + Process 三件套，最贴近“团队分工”的直觉。", "支持 YAML 配置，非技术团队也能参与。"],
+          watch: ["生产所需的可观测性、错误处理、安全性要自行解决。", "复杂层级编排原文建议改用 Flow，不主推 Process.hierarchical。"],
+          version: "原文状态：活跃迭代（无版本号）。"
+        }
+      ]
+    },
+    langgraph: {
+      question: "生产上最硬的约束是哪一条？",
+      options: [
+        {
+          id: "lg-graph", label: "条件分支、循环、状态都要", desc: "图与状态机原生表达",
+          framework: "LangGraph", tag: "开源 · 图驱动",
+          why: ["Graph = Node + Edge + State，条件分支和循环是一等公民。", "原文称其支持任意图、精细状态和 Reducer。"],
+          watch: ["学习曲线原文评为“高”。", "需要自己设计状态结构和节点边界，抽象越灵活越容易画乱。"],
+          version: "原文状态：1.0 GA（2025.10）。"
+        },
+        {
+          id: "lg-hitl", label: "还要人审、追踪、可观测", desc: "原生 HITL + 图可视化",
+          framework: "LangGraph + LangSmith", tag: "开源 · 生产可观测",
+          why: ["原文列 LangGraph 原生支持 Human-in-Loop。", "调试性原文评为“高”，配合 LangSmith 做追踪。"],
+          watch: ["LangSmith 是额外集成，成本和数据边界要评估。", "“最成熟”是原文判断，不代表你的团队零成本。"],
+          version: "原文状态：LangGraph 1.0 GA（2025.10）；LangSmith 未给版本。"
+        }
+      ]
+    },
+    conversation: {
+      question: "你要的是哪一种“对话”？",
+      options: [
+        {
+          id: "conv-maf", label: "新项目，愿意跟微软新栈", desc: "原文称 MAF 正式取代 AutoGen",
+          framework: "Microsoft Agent Framework (MAF)", tag: "厂商 · Microsoft",
+          why: ["原文称 MAF 1.0 GA（2026.4），是微软新主推方向。", "AutoGen 0.4 已进入维护模式，新项目官方推荐迁移到 MAF。"],
+          watch: ["绑定 Azure AI Foundry / Semantic Kernel，迁移有厂商锁定。", "1.0 GA 是原文快照，未联网核实。"],
+          version: "原文状态：MAF 1.0 GA（2026.4）。"
+        },
+        {
+          id: "conv-ag2", label: "延续 AutoGen 0.2 API / 社区 fork", desc: "保留 ConversableAgent 写法",
+          framework: "AG2（ag2ai/ag2）", tag: "社区 · AutoGen 0.2 延续",
+          why: ["2024-11 社区 fork，延续 AutoGen 0.2.x 的 ConversableAgent API。", "适合已有 0.2 代码、想继续用群聊模式的团队。"],
+          watch: ["与微软主线分叉，新特性不一定跟进。", "原文把 AG2 标为社区活跃，不等于企业级支持。"],
+          version: "原文状态：2024-11 社区 fork，AutoGen 0.2 延续。"
+        },
+        {
+          id: "conv-04", label: "要 actor 事件驱动，接受维护模式", desc: "AutoGen 0.4+ 的 event-driven 架构",
+          framework: "AutoGen 0.4+", tag: "厂商 · 维护模式",
+          why: ["2025-01 微软重写，event-driven actor 架构。", "适合高并发事件驱动场景和已有的 0.4 代码。"],
+          watch: ["原文明确：已进入维护模式。新项目不应作为首选。", "import 路径与 AG2 不同：autogen_agentchat.agents。"],
+          version: "原文状态：2025-01 重写，已进入维护。"
+        }
+      ]
+    },
+    microsoft: {
+      question: "你在微软生态里的位置是？",
+      options: [
+        {
+          id: "ms-new", label: "新项目，走微软主推", desc: "Azure AI Foundry + Semantic Kernel",
+          framework: "Microsoft Agent Framework (MAF)", tag: "厂商 · Microsoft",
+          why: ["原文称 MAF 1.0 GA（2026.4），定位企业级 Agent 平台。", "深度集成 Azure AI Foundry 与 Semantic Kernel。"],
+          watch: ["厂商锁定；跨云部署要另做评估。", "版本状态只按原文，未联网核实。"],
+          version: "原文状态：MAF 1.0 GA（2026.4）。"
+        },
+        {
+          id: "ms-migrate", label: "已有 AutoGen 0.4，评估迁移", desc: "官方推荐迁移到 MAF",
+          framework: "Microsoft Agent Framework (MAF)", tag: "厂商 · 迁移",
+          why: ["原文称微软体系内新项目官方推荐迁移到 MAF。", "MAF 承接 AutoGen 0.4 的企业级平台定位。"],
+          watch: ["迁移成本和 API 差异要单独立项评估。", "AutoGen 0.4 已进入维护，不宜再扩新功能。"],
+          version: "原文状态：MAF 1.0 GA（2026.4）；AutoGen 0.4 维护模式。"
+        }
+      ]
+    },
+    google: {
+      question: "Google Cloud 这边，你的部署方式？",
+      options: [
+        {
+          id: "gcp-engine", label: "要托管到 Vertex AI Agent Engine", desc: "构建-调试-部署一体化",
+          framework: "Google ADK", tag: "厂商 · Google Cloud",
+          why: ["Google 开源 Agent 开发套件，内置 Sequential / Parallel / Loop 编排原语。", "可一键部署到 Vertex AI Agent Engine 托管运行。"],
+          watch: ["云生态绑定 Google Cloud。", "原文未给 ADK 具体版本号，本页不补。"],
+          version: "原文状态：开源；未给版本号。"
+        },
+        {
+          id: "gcp-a2a", label: "只用 A2A 通信，部署自选", desc: "原生 A2A 协议",
+          framework: "Google ADK", tag: "厂商 · 原生 A2A",
+          why: ["原文称 ADK 原生集成 A2A（Agent-to-Agent）协议。", "与 A2A 深度绑定，适合多 Agent 通信。"],
+          watch: ["非 Google 生态的部署支持需另行核实。", "A2A 协议本身见第 101 题。"],
+          version: "原文状态：开源；未给版本号。"
+        }
+      ]
+    },
+    openai: {
+      question: "OpenAI 这边，编排复杂度到哪？",
+      options: [
+        {
+          id: "oa-handoff", label: "只需轻量 Handoff，代码优先", desc: "绑定 Responses API",
+          framework: "OpenAI Agents SDK", tag: "厂商 · OpenAI",
+          why: ["原文称其提供轻量级 Handoff 机制，代码优先编排。", "与 OpenAI Responses API 紧密集成。"],
+          watch: ["复杂图控制不如 LangGraph，流程一复杂就要换抽象。", "绑定 OpenAI 生态，模型选择受限。"],
+          version: "原文状态：轻量 Handoff；未给版本号。"
+        },
+        {
+          id: "oa-complex", label: "流程会变复杂，需要图控制", desc: "按原文原则改用 LangGraph",
+          framework: "LangGraph", tag: "开源 · 精确控制",
+          why: ["原文的选型原则是“需要精确控制选 LangGraph”。", "OpenAI 模型仍可作为 LangGraph 节点里的模型调用。"],
+          watch: ["要自己接模型 SDK 和可观测性。", "这不是原文直接给出的组合建议，是按两条原则推导的选型。"],
+          version: "原文状态：LangGraph 1.0 GA（2025.10）。"
+        }
+      ]
+    }
+  });
+
+  const fwState = { step: 0, q1: null, q2: null };
+  const fwById = (id) => document.getElementById(id);
+
+  function fwOptionButton(option, onClick) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "fw-option";
+    button.setAttribute("aria-pressed", "false");
+    const title = document.createElement("b");
+    title.textContent = option.label;
+    const desc = document.createElement("span");
+    desc.textContent = option.desc;
+    button.append(title, desc);
+    button.addEventListener("click", () => onClick(option));
+    return button;
+  }
+
+  function fwRenderOptions() {
+    const host = fwById("fw-options");
+    host.textContent = "";
+    if (fwState.step === 0) {
+      FW_Q1.options.forEach((option) => {
+        const button = fwOptionButton(option, () => {
+          fwState.q1 = option.id;
+          fwState.q2 = null;
+          fwState.step = 1;
+          fwRender();
+          fwAnnounce("");
+        });
+        if (fwState.q1 === option.id) button.setAttribute("aria-pressed", "true");
+        host.append(button);
+      });
+    } else if (fwState.step === 1 && fwState.q1) {
+      FW_Q2[fwState.q1].options.forEach((option) => {
+        const button = fwOptionButton(option, () => {
+          fwState.q2 = option.id;
+          fwState.step = 2;
+          fwRender();
+          fwAnnounce("");
+        });
+        if (fwState.q2 === option.id) button.setAttribute("aria-pressed", "true");
+        host.append(button);
+      });
+    } else if (fwState.step === 2) {
+      const again = document.createElement("button");
+      again.type = "button";
+      again.className = "fw-option";
+      const title = document.createElement("b");
+      title.textContent = "重新选择第一问";
+      const desc = document.createElement("span");
+      desc.textContent = "回到起点，换一个团队约束";
+      again.append(title, desc);
+      again.addEventListener("click", () => {
+        fwState.q1 = null;
+        fwState.q2 = null;
+        fwState.step = 0;
+        fwRender();
+        fwAnnounce("");
+      });
+      host.append(again);
+    }
+  }
+
+  function fwRenderPath() {
+    const host = fwById("fw-path");
+    host.textContent = "";
+    const q1Label = fwState.q1 ? FW_Q1.options.find((option) => option.id === fwState.q1).label : "未选场景";
+    const q2Label = fwState.q2 ? FW_Q2[fwState.q1].options.find((option) => option.id === fwState.q2).label : "未选细化";
+    [q1Label, q2Label].forEach((text, index) => {
+      const chip = document.createElement("span");
+      chip.className = "fw-chip" + (text.startsWith("未选") ? " empty" : "");
+      chip.textContent = text;
+      host.append(chip);
+    });
+  }
+
+  function fwRenderPanel() {
+    const resultHost = fwById("fw-result");
+    resultHost.textContent = "";
+    if (fwState.step === 0) {
+      fwById("fw-figure").textContent = "图 1 · 选型路径 · 第 1 / 3 步";
+      fwById("fw-caption-title").textContent = "先定方向，再定取舍。";
+      fwById("fw-desc").textContent = "这一步没有推荐结果。先选最贴近团队现状的一项，下一步才会出现对应的细化问题。";
+      const empty = document.createElement("div");
+      empty.className = "fw-empty";
+      empty.textContent = "尚未选择。本页不按热度排序，也不会在你选之前提前展示推荐。";
+      resultHost.append(empty);
+    } else if (fwState.step === 1) {
+      const q1 = FW_Q1.options.find((option) => option.id === fwState.q1);
+      fwById("fw-figure").textContent = "图 1 · 选型路径 · 第 2 / 3 步";
+      fwById("fw-caption-title").textContent = "方向已定，再细化一层。";
+      fwById("fw-desc").textContent = "你选择了“" + q1.label + "”。下一步的问题只针对这个方向，选完才给出框架。";
+      const empty = document.createElement("div");
+      empty.className = "fw-empty";
+      empty.textContent = "已记录方向，等待细化选择。不同方向会问不同的问题，避免把所有框架塞进一张评分表。";
+      resultHost.append(empty);
+    } else {
+      const option = FW_Q2[fwState.q1].options.find((item) => item.id === fwState.q2);
+      fwById("fw-figure").textContent = "图 1 · 选型路径 · 第 3 / 3 步";
+      fwById("fw-caption-title").textContent = "结果：" + option.framework;
+      fwById("fw-desc").textContent = "这是按原文选型原则得到的固定结果，不是实时排名。理由和注意事项都按原文范围列出。";
+
+      const card = document.createElement("div");
+      card.className = "fw-result";
+      const head = document.createElement("div");
+      head.className = "fw-result-head";
+      const name = document.createElement("b");
+      name.textContent = option.framework;
+      const tag = document.createElement("span");
+      tag.className = "fw-tag";
+      tag.textContent = option.tag;
+      head.append(name, tag);
+      card.append(head);
+
+      const why = document.createElement("ul");
+      why.className = "fw-why";
+      option.why.forEach((text) => {
+        const li = document.createElement("li");
+        li.textContent = text;
+        why.append(li);
+      });
+      card.append(why);
+
+      const watch = document.createElement("ul");
+      watch.className = "fw-watch";
+      option.watch.forEach((text) => {
+        const li = document.createElement("li");
+        li.textContent = text;
+        watch.append(li);
+      });
+      card.append(watch);
+
+      const version = document.createElement("div");
+      version.className = "fw-version";
+      version.textContent = "原文记录：" + option.version.replace(/^原文状态：/, "") + " 未联网核实。";
+      card.append(version);
+      resultHost.append(card);
+    }
+  }
+
+  function fwRender() {
+    fwRenderOptions();
+    fwRenderPath();
+    fwRenderPanel();
+    if (fwState.step === 0) {
+      fwById("fw-question-index").textContent = "问题 1 / 2";
+      fwById("fw-question").textContent = FW_Q1.question;
+      fwById("fw-question-desc").textContent = FW_Q1.desc;
+    } else if (fwState.step === 1 && fwState.q1) {
+      fwById("fw-question-index").textContent = "问题 2 / 2";
+      fwById("fw-question").textContent = FW_Q2[fwState.q1].question;
+      fwById("fw-question-desc").textContent = "只针对你已经选择的方向；选完给出固定推荐。";
+    } else {
+      fwById("fw-question-index").textContent = "路径完成";
+      fwById("fw-question").textContent = "要改选吗？";
+      fwById("fw-question-desc").textContent = "可以回到第一问重新选择；本页不会保存任何选择。";
+    }
+
+    document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+      const index = Number(button.dataset.step);
+      button.disabled = (index === 1 && !fwState.q1) || (index === 2 && !fwState.q2);
+      if (index === fwState.step) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    fwById("fw-back").disabled = fwState.step === 0;
+    fwById("fw-state-summary").textContent = fwState.step === 0
+      ? "第 1 / 3 步 · 尚未选择"
+      : fwState.step === 1
+        ? "第 2 / 3 步 · 已选方向，待细化"
+        : "第 3 / 3 步 · 已出结果 · 原文版本快照";
+  }
+
+  function fwAnnounce(prefix) {
+    let text = "";
+    if (fwState.step === 0) text = FW_Q1.question;
+    else if (fwState.step === 1) text = FW_Q2[fwState.q1].question;
+    else {
+      const option = FW_Q2[fwState.q1].options.find((item) => item.id === fwState.q2);
+      text = "推荐结果：" + option.framework + "。";
+    }
+    fwById("fw-announcement").textContent = prefix + text;
+  }
+
+  document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const index = Number(button.dataset.step);
+      if (index === 0) {
+        fwState.step = 0;
+      } else if (index === 1 && fwState.q1) {
+        fwState.step = 1;
+        fwState.q2 = null;
+      } else if (index === 2 && fwState.q2) {
+        fwState.step = 2;
+      }
+      fwRender();
+      fwAnnounce("");
+    });
+  });
+  fwById("fw-back").addEventListener("click", () => {
+    if (fwState.step === 2) {
+      fwState.step = 1;
+      fwState.q2 = null;
+    } else if (fwState.step === 1) {
+      fwState.step = 0;
+      fwState.q1 = null;
+    }
+    fwRender();
+    fwAnnounce("");
+  });
+  fwById("fw-reset").addEventListener("click", () => {
+    fwState.step = 0;
+    fwState.q1 = null;
+    fwState.q2 = null;
+    fwRender();
+    fwAnnounce("已重置。");
+  });
+  fwRender();
+</script>
+</body>
+</html>

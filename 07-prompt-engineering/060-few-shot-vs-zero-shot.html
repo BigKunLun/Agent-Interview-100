@@ -1,0 +1,968 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Few-Shot vs Zero-Shot Prompting：如何选择？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .fs-stage { padding-top: var(--s-2); }
+  .fs-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr); gap: var(--s-6); align-items: start; }
+  .fs-main { min-width: 0; }
+  .fs-side { min-width: 0; border-left: 1px solid var(--border); padding-left: var(--s-5); }
+  .fs-side h2 { font: 600 24px/1.4 var(--serif); margin: 2px 0 var(--s-2); }
+  .fs-side > p { color: var(--text-dim); font-size: var(--t-small); }
+  .fs-facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; margin: var(--s-4) 0 0; font-size: 12px; }
+  .fs-facts dt { color: var(--text-dim); }
+  .fs-facts dd { margin: 0; font-family: var(--mono); font-size: 11px; text-align: right; }
+  .fs-note { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px dashed var(--border); color: var(--text-dim); font-size: 11px; line-height: 1.7; }
+  .fs-step-label { font: 10px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .06em; }
+  .fs-q { font-size: 19px; font-weight: 600; margin: 3px 0 var(--s-3); }
+  .fs-opts { display: grid; gap: 7px; }
+  .fs-opts.two { grid-template-columns: 1fr 1fr; }
+  .fs-opt { display: block; text-align: left; min-height: 58px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); padding: 9px 11px; transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease); }
+  .fs-opt:hover { border-color: var(--accent); background: #f7fafc; }
+  .fs-opt b { display: block; font-size: 13px; line-height: 1.5; }
+  .fs-opt span { display: block; margin-top: 2px; font-size: 11px; line-height: 1.6; color: var(--text-dim); }
+  .fs-opt[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-dim); }
+  .fs-opt[aria-pressed="true"] b { color: var(--accent); }
+  .fs-hint { margin-top: var(--s-3); font-size: 12px; color: var(--text-dim); }
+  .fs-kicker { font: 10px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .08em; text-transform: uppercase; }
+  .fs-rec { border: 1px solid #9eb4c9; background: var(--accent-dim); border-radius: var(--r-1); padding: var(--s-4); }
+  .fs-rec b { display: block; font: 600 22px/1.3 var(--serif); margin-top: 2px; }
+  .fs-rec p { margin-top: 4px; font-size: 12px; color: var(--text-dim); }
+  .fs-count { display: inline-flex; align-items: center; gap: 5px; margin-top: 8px; padding: 2px 9px; border-radius: 999px; background: var(--surface); border: 1px solid #9eb4c9; font: 600 11px/1.6 var(--mono); color: var(--accent); }
+  .fs-reasons { margin: var(--s-3) 0 0; padding-left: 1.3em; }
+  .fs-reasons li { font-size: 12px; margin-block: 5px; line-height: 1.7; }
+  .fs-preview-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px; margin-top: var(--s-4); }
+  .fs-preview-head b { font-size: 13px; }
+  .fs-preview-head span { font: 10px/1.6 var(--mono); color: var(--text-dim); }
+  .fs-preview { max-height: 300px; overflow: auto; }
+  .fs-caveat { margin-top: var(--s-3); font-size: 11px; color: var(--text-dim); line-height: 1.7; }
+  .fs-again { margin-top: var(--s-3); }
+  .fs-missing { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); font-size: 13px; }
+  .fs-missing ul { margin: var(--s-2) 0; padding-left: 1.2em; }
+  .fs-missing li { font-size: 12px; }
+  .fs-duo { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: var(--s-3); }
+  .fs-duo pre { margin: 0; font-size: 11px; }
+  .fs-duo .label { display: block; font: 10px/1.6 var(--mono); color: var(--text-dim); margin-bottom: 3px; }
+  .fs-two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); margin-top: var(--s-3); }
+  .fs-two > div { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .fs-two h3 { margin: 0 0 6px; font-size: 13px; line-height: 1.5; }
+  .fs-two ul { margin: 0; padding-left: 1.1em; }
+  .fs-two li { font-size: 12px; margin-block: 4px; color: var(--text-dim); }
+  .fs-two li b { color: var(--ink); }
+  .fs-flow { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); overflow: hidden; }
+  .fs-flow-row { display: grid; grid-template-columns: minmax(0, 1.4fr) 86px minmax(0, 1fr); gap: 0; border-bottom: 1px solid var(--border); }
+  .fs-flow-row:last-child { border-bottom: 0; }
+  .fs-flow-q, .fs-flow-yes, .fs-flow-no { padding: 8px 11px; font-size: 12px; line-height: 1.6; }
+  .fs-flow-q { font-weight: 600; }
+  .fs-flow-yes { border-left: 1px solid var(--border); background: #eef5ee; color: #1c5e20; }
+  .fs-flow-no { border-left: 1px solid var(--border); background: var(--surface-soft); color: var(--text-dim); }
+  .fs-flow-head { display: grid; grid-template-columns: minmax(0, 1.4fr) 86px minmax(0, 1fr); background: var(--surface-soft); border-bottom: 1px solid var(--border); font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .fs-flow-head span { padding: 4px 11px; }
+  .fs-flow-head span + span { border-left: 1px solid var(--border); }
+  .fs-tag { display: inline-block; font: 600 10px/1.6 var(--mono); padding: 0 5px; border-radius: 3px; background: #eaf1f8; color: #194f87; border: 1px solid #b9cbdd; }
+  @media (max-width: 960px) {
+    .fs-grid { grid-template-columns: 1fr; gap: var(--s-4); }
+    .fs-side { border-left: 0; border-top: 1px solid var(--border); padding-left: 0; padding-top: var(--s-4); }
+  }
+  @media (max-width: 720px) {
+    .fs-opts.two { grid-template-columns: 1fr; }
+    .fs-duo, .fs-two { grid-template-columns: 1fr; }
+    .fs-flow-head, .fs-flow-row { grid-template-columns: minmax(0, 1.2fr) 62px minmax(0, 1fr); }
+    .fs-flow-q, .fs-flow-yes, .fs-flow-no { padding: 7px 8px; font-size: 11px; }
+    .fs-flow-head span { padding: 4px 8px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">060 / 示例策略选择</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 8 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="059-system-prompt-principles.html">← 上一页 · System Prompt 设计的核…</a><a href="062-agentic-prompting.html">下一页 → · Agentic Prompting</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">基础 · Prompt Engineering · 可交互讲解</p>
+      <h1>给不给例子，<br>看任务。</h1>
+    </div>
+    <div>
+      <p class="lead">Zero-shot 不给示例，直接描述任务；Few-shot 提供 2–5 个输入输出示例，让模型模仿格式和判断标准。任务常见、模型强、输出稳定时，优先 Zero-shot；要固定格式、教领域标签或模型表现不稳时，用 Few-shot。</p>
+      <p class="definition">关键边界：<strong>Few-shot 不是默认更好</strong>。示例质量比数量重要，坏示例会把模型带偏；推理任务上，CoT 带来的提升通常大于多加几个示例。</p>
+      <div class="hero-meta"><span class="pill">基础</span><span class="pill">Prompt Engineering</span><span class="pill">示例策略</span><span class="pill">固定教学决策</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="fs-caption-title">
+    <div class="player-top">
+      <div class="player-label">示例策略决策器 <small>三道固定选择题，按原文决策流程给出建议</small></div>
+      <div class="controls" role="group" aria-label="决策器控制">
+        <button type="button" class="button button-quiet" id="fs-reset">重置</button>
+        <button type="button" class="button" id="fs-prev" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="fs-next" disabled>下一步 →</button>
+      </div>
+    </div>
+    <div class="stage-nav">
+      <ol style="--stages: 4">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>任务</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>模型与稳定性</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>预算</button></li>
+        <li><button type="button" class="stage-button" data-stage="3"><span class="stage-number">4</span>建议</button></li>
+      </ol>
+    </div>
+    <div class="scene-host">
+      <div class="fs-stage scene" id="fs-scene" data-scene="few-shot-decision">
+        <div class="fs-grid">
+          <section class="fs-main" id="fs-main" aria-label="决策步骤内容"></section>
+          <aside class="fs-side" aria-labelledby="fs-caption-title">
+            <p class="figure-index" id="fs-figure">图 1 · 选择任务</p>
+            <h2 id="fs-caption-title">先看任务像什么。</h2>
+            <p id="fs-desc">任务越常见、标签越通用，Zero-shot 越够用；标签有领域含义或输出格式固定，示例才开始有价值。</p>
+            <dl class="fs-facts">
+              <dt>任务</dt><dd id="fs-fact-task">待选择</dd>
+              <dt>模型</dt><dd id="fs-fact-cap">待选择</dd>
+              <dt>稳定性</dt><dd id="fs-fact-stable">待选择</dd>
+              <dt>预算</dt><dd id="fs-fact-budget">待选择</dd>
+              <dt>建议示例</dt><dd id="fs-fact-count">待计算</dd>
+            </dl>
+            <div class="fs-note">固定教学数据：三道题、示例库和推荐规则都写死在页面里。结论按原文的决策流程推导，不调用任何模型，也不代表真实评测结果。</div>
+          </aside>
+        </div>
+      </div>
+      <p class="demo-note">决策器说明：任务、模型能力、稳定性和预算都是固定选项；推荐结果由页面按写死的规则计算。Prompt 预览使用固定示例文本，页面不发起模型调用。文中出现的分数均为示意数据，非真实评测。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学决策 · 3 道选择题 · 1 份建议</span><span id="fs-state-summary">第 1 / 4 步 · 任务</span></div>
+  </section>
+  <p id="fs-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="diff-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">核心区别</p><h2 id="diff-title">一个靠理解，<br>一个靠模仿。</h2></div>
+      <p class="reading-intro">Zero-shot 依赖模型从预训练里学到的通用能力；Few-shot 把“输入长什么样、输出长什么样”直接摆给模型看。</p>
+    </div>
+    <div class="prose">
+      <div class="fs-duo">
+        <div>
+          <span class="label">Zero-shot：只描述任务</span>
+          <pre><code>将以下客户评价分类为"正面"、"负面"或"中性"。
+
+评价：这个产品用了一周就坏了，太失望了。
+分类：</code></pre>
+        </div>
+        <div>
+          <span class="label">Few-shot：先给示例</span>
+          <pre><code>将客户评价分类为"正面"、"负面"或"中性"。
+
+评价：非常好用，超出预期！
+分类：正面
+
+评价：还行吧，没什么特别的。
+分类：中性
+
+评价：快递太慢了，包装也破损了。
+分类：负面
+
+评价：这个产品用了一周就坏了，太失望了。
+分类：</code></pre>
+        </div>
+      </div>
+      <p>Zero-shot 里，模型要自己理解“分类”指什么、标签是什么、输出要不要解释。Few-shot 通过示例把这些隐含约定显式化，模型只需要延续模式。</p>
+      <p>原文的判断是：Few-shot 在分类和格式化任务上优势显著；到了复杂推理任务，CoT 等推理增强技术会把这点优势压下去。随着模型变强，Zero-shot 能覆盖的任务边界也在扩大。</p>
+      <p>代价是 token：每个示例都占输入预算，也会挤占模型用于推理的空间。示例越长、越多，这个代价越明显。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="when-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">何时选哪种</p><h2 id="when-title">简单任务省 token，<br>特定任务给例子。</h2></div>
+      <p class="reading-intro">原文把选择条件列成两张清单。它们不是互斥的硬规则，而是先判断任务和模型，再看输出是否稳定。</p>
+    </div>
+    <div class="prose">
+      <div class="fs-two">
+        <div>
+          <h3>选 Zero-shot 的信号</h3>
+          <ul>
+            <li>任务在预训练中常见（翻译、摘要、问答）</li>
+            <li>使用足够强的模型（原文举例 GPT-4、Claude Opus）</li>
+            <li>任务描述本身足够清晰明确</li>
+            <li>需要灵活处理多样化输入</li>
+            <li>Token 预算有限</li>
+            <li>快速原型验证阶段</li>
+          </ul>
+        </div>
+        <div>
+          <h3>选 Few-shot 的信号</h3>
+          <ul>
+            <li>任务有特定输出格式（JSON、表格、特殊结构）</li>
+            <li>分类标签有领域特定含义，不是通用正负情感</li>
+            <li>模型在 Zero-shot 下表现不稳定</li>
+            <li>需要教模型一个它不熟悉的模式</li>
+            <li>使用较小的模型（Few-shot 对小模型帮助更大）</li>
+            <li>输出一致性非常重要（生产环境）</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Zero-shot 也能增强</h3>
+      <p>不提供示例，不等于只写一句话。原文给出的四种增强方式：角色设定（“你是资深情感分析专家”）、详细指令（写清分类标准）、格式约束（“只输出标签，不要解释”）、CoT 增强（“Let's think step by step”）。</p>
+
+      <h3>领域标签长什么样</h3>
+      <p>代码审查评论分类是典型的 Few-shot 场景：标签不是通用的正面/负面，模型没法只靠名字推断边界，必须给出每个标签的样例。</p>
+      <details>
+        <summary>展开原文的代码审查分类示例</summary>
+        <pre><code>将代码审查评论分类为以下类型：
+- BUG: 发现了实际的代码缺陷
+- STYLE: 代码风格建议
+- PERF: 性能优化建议
+- QUESTION: 需要澄清的问题
+- NITPICK: 微小的改进建议
+
+评论：这里的循环应该用 dict 而不是 list，查找复杂度从 O(n) 降到 O(1)
+类型：PERF
+
+评论：变量名 x 太模糊了，建议改为 user_count
+类型：STYLE
+
+评论：这个空指针检查缺失了，传入 None 时会崩溃
+类型：BUG
+
+评论：{new_comment}
+类型：</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="best-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">Few-shot 最佳实践</p><h2 id="best-title">数量、质量、顺序、<br>格式，四件事。</h2></div>
+      <p class="reading-intro">原文的建议很具体：2–5 个示例最好，复杂任务可到 5–10；示例要多样、有代表性、类别平衡，格式必须一致。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>维度</th><th>建议</th><th>原因</th></tr></thead>
+          <tbody>
+            <tr><td>示例数量</td><td>2–5 个最佳，复杂任务 5–10 个</td><td>太少不够学模式，太多浪费 token 还可能引入噪声</td></tr>
+            <tr><td>示例质量</td><td>多样、覆盖边界；典型而非极端；各标签数量大致相等</td><td>只给简单案例会让模型学不到边界，标签失衡会引入输出偏差</td></tr>
+            <tr><td>示例顺序</td><td>把与待预测输入最相似的示例放在最后</td><td>Recency Effect：模型对最近的示例记忆最深</td></tr>
+            <tr><td>格式一致</td><td>所有示例的标点、空格、字段顺序完全一致</td><td>模型会精确模仿示例格式，包括你不想要的细节</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <p class="callout-label">顺序的代价</p>
+        <p>“最相似的放最后”依赖你能判断相似度。手工挑选时这很主观；生产里通常交给动态 Few-shot：先检索，再按相关度排序。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="dynamic-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">动态 Few-shot</p><h2 id="dynamic-title">每次检索，<br>换一组示例。</h2></div>
+      <p class="reading-intro">固定示例库对所有输入使用同一组例子；动态 Few-shot 先按输入检索最相关的 k 条，再拼进 Prompt。</p>
+    </div>
+    <div class="prose">
+      <pre><code>class DynamicFewShot:
+    """根据输入动态选择最相关的示例"""
+
+    def __init__(self, example_bank, embedding_model):
+        self.examples = example_bank      # 预存的示例库
+        self.embedder = embedding_model
+
+    def build_prompt(self, user_input, k=3):
+        # 1. 从示例库中检索最相关的 k 个示例
+        input_embedding = self.embedder.encode(user_input)
+        similar_examples = self.examples.search(input_embedding, top_k=k)
+
+        # 2. 构建 Few-shot Prompt
+        prompt = "根据以下示例完成任务：\n\n"
+        for example in similar_examples:
+            prompt += f"输入：{example.input}\n"
+            prompt += f"输出：{example.output}\n\n"
+        prompt += f"输入：{user_input}\n输出："
+        return prompt</code></pre>
+      <ul>
+        <li>示例与当前输入高度相关，准确率通常更高。</li>
+        <li>示例库可以持续扩充，覆盖更多场景。</li>
+        <li>不需要手工挑选示例，选择过程自动化。</li>
+      </ul>
+      <p>代价是多了一次检索调用和一套示例库维护流程；示例库本身的质量问题也会被放大。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="perf-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">性能对比</p><h2 id="perf-title">差距在哪，<br>看两张表。</h2></div>
+      <p class="reading-intro">原文给出两组趋势值：情感分类看示例数量的收益，数学推理看 CoT 与示例谁更重要。</p>
+    </div>
+    <div class="prose">
+      <div class="callout">
+        <p class="callout-label">示意数据，非真实评测</p>
+        <p>下表数字是原文按公开报告整理的趋势值，不是本页实测，也不是精确榜单。具体数字会因评测脚本、解析方式和提示版本有 ±2pp 抖动；应以自己在业务数据上的评测为准。</p>
+      </div>
+      <h3>情感分类（SST-2，示意值）</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>方法</th><th class="num">GPT-3.5</th><th class="num">GPT-4</th></tr></thead>
+          <tbody>
+            <tr><td>Zero-shot</td><td class="num">~88%</td><td class="num">~95%</td></tr>
+            <tr><td>Few-shot (3)</td><td class="num">~93%</td><td class="num">~96%</td></tr>
+            <tr><td>Few-shot (5)</td><td class="num">~94%</td><td class="num">~96%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文观察：Few-shot 对弱模型帮助更大（约 +6pp 对 +1pp）；强模型 Zero-shot 已经很好；3 个示例就拿到了大部分提升。</p>
+
+      <h3>数学推理（GSM8K，示意值）</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>方法</th><th class="num">GPT-4</th></tr></thead>
+          <tbody>
+            <tr><td>Zero-shot</td><td class="num">~80%</td></tr>
+            <tr><td>Few-shot (8)</td><td class="num">~82%</td></tr>
+            <tr><td>Zero-shot CoT</td><td class="num">~90%</td></tr>
+            <tr><td>Few-shot CoT</td><td class="num">~92%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文观察：CoT 的提升大于 Few-shot 的提升。对推理任务，推理方式比示例数量更重要。原文建议用 lm-eval-harness / Inspect AI 在自己的业务数据上现场跑，作为权威基准。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="flow-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">决策流程</p><h2 id="flow-title">四个问题，<br>走到一个方法。</h2></div>
+      <p class="reading-intro">原文流程图按顺序问四件事：任务和模型、格式与稳定性、是否需要推理、预算是否紧张。</p>
+    </div>
+    <div class="prose">
+      <div class="fs-flow" role="table" aria-label="Zero-shot 与 Few-shot 决策流程">
+        <div class="fs-flow-head" role="row"><span role="columnheader">问题</span><span role="columnheader">是</span><span role="columnheader">否</span></div>
+        <div class="fs-flow-row" role="row"><div class="fs-flow-q" role="cell">任务简单且模型够强？</div><div class="fs-flow-yes" role="cell">Zero-shot</div><div class="fs-flow-no" role="cell">继续问下一题</div></div>
+        <div class="fs-flow-row" role="row"><div class="fs-flow-q" role="cell">需要特定输出格式，或表现不稳定？</div><div class="fs-flow-yes" role="cell">Few-shot：固定格式、稳定行为</div><div class="fs-flow-no" role="cell">继续问下一题</div></div>
+        <div class="fs-flow-row" role="row"><div class="fs-flow-q" role="cell">需要复杂推理？</div><div class="fs-flow-yes" role="cell">Zero-shot CoT 或 Few-shot CoT</div><div class="fs-flow-no" role="cell">继续问下一题</div></div>
+        <div class="fs-flow-row" role="row"><div class="fs-flow-q" role="cell">Token 预算紧张？</div><div class="fs-flow-yes" role="cell">Zero-shot + 详细指令</div><div class="fs-flow-no" role="cell">先试 Zero-shot，不够再加示例</div></div>
+      </div>
+      <details>
+        <summary>展开原文的 Mermaid 决策图源码</summary>
+        <pre><code>flowchart TD
+    T["任务到来"] --&gt; Q1{"任务简单&lt;br/&gt;且模型够强?"}
+    Q1 -- "是" --&gt; Z["Zero-shot"]
+    Q1 -- "否" --&gt; Q2{"需要特定输出格式?&lt;br/&gt;或表现不稳定?"}
+    Q2 -- "是" --&gt; F["Few-shot&lt;br/&gt;示例固定格式、稳定行为"]
+    Q2 -- "否" --&gt; Q3{"需要复杂推理?"}
+    Q3 -- "是" --&gt; C["Zero-shot CoT&lt;br/&gt;或 Few-shot CoT"]
+    Q3 -- "否" --&gt; Q4{"Token 预算紧张?"}
+    Q4 -- "是" --&gt; B["Zero-shot + 详细指令"]
+    Q4 -- "否" --&gt; U["先试 Zero-shot&lt;br/&gt;不够再加示例"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    class Z,F,C,B,U proc
+    class Q1,Q2,Q3,Q4 decision</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">两个误区，<br>两个追问。</h2></div>
+      <p class="reading-intro">两条误区都在“多给示例总没错”；两条追问问示例怎么挑，以及 One-shot 有没有用。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“Few-shot 总是比 Zero-shot 好。”</h3><p>不一定。推理任务上，CoT 的提升远大于示例的提升；不好的示例可能误导模型，示例质量比数量更重要；强模型的 Zero-shot 已经接近人类水平。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“示例越多越好。”</h3><p>超过 5–10 个示例后，边际收益递减且成本急增。更多示例等于更多输入 token、更高成本，也只剩更少空间给模型思考。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>如何选择 Few-shot 的示例？</h3><p>三个原则：多样性，覆盖不同类型的输入；代表性，选典型案例而非极端案例；相关性，最好与待处理输入相关。动态 Few-shot（检索最相关的示例）是原文推荐的生产实践。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>One-shot（只给一个示例）有用吗？</h3><p>有用，尤其在教模型特定输出格式时。一个精心选择的示例可能比三个普通示例更有效。但对分类任务，一个示例可能引入偏差：模型会倾向输出示例中的标签。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《Few-Shot vs Zero-Shot Prompting：如何选择？》。原文中的性能数字为示意趋势值，本页未联网核对最新榜单。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.vellum.ai/blog/zero-shot-vs-few-shot-prompting-a-guide-with-examples" target="_blank" rel="noopener noreferrer">Zero-Shot vs Few-Shot Prompting: A Guide with Examples (Vellum)</a></li>
+          <li><a href="https://learnprompting.org/docs/basics/few_shot" target="_blank" rel="noopener noreferrer">Zero-Shot, One-Shot, and Few-Shot Prompting (Learn Prompting)</a></li>
+          <li><a href="https://learn.microsoft.com/en-us/dotnet/ai/conceptual/zero-shot-learning" target="_blank" rel="noopener noreferrer">Zero-shot and few-shot learning (.NET - Microsoft Learn)</a></li>
+          <li><a href="https://www.matillion.com/blog/gen-ai-prompt-strategy-zero-shot-few-shot-prompt" target="_blank" rel="noopener noreferrer">How to Choose Your GenAI Prompting Strategy (Matillion)</a></li>
+          <li><a href="https://www.analyticsvidhya.com/blog/2023/09/power-of-llms-zero-shot-and-few-shot-prompting/" target="_blank" rel="noopener noreferrer">Harness the Power of LLMs: Zero-shot and Few-shot Prompting (Analytics Vidhya)</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>07-prompt-engineering/060-few-shot-vs-zero-shot.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 5 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const FS_TASKS = {
+    sent: {
+      label: "情感分类",
+      desc: "常见任务，标签通用：正面 / 负面 / 中性。",
+      query: "这个产品用了一周就坏了，太失望了。"
+    },
+    code: {
+      label: "代码审查分类",
+      desc: "领域标签：BUG / STYLE / PERF / QUESTION / NITPICK。",
+      query: "这段循环每次都用 index 查 list，数据量一大就慢。"
+    },
+    math: {
+      label: "数学应用题",
+      desc: "需要多步推理，答案前要写计算过程。",
+      query: "一个班 38 人，其中 16 人参加合唱，剩下的人参加绘画，绘画组有多少人？"
+    }
+  };
+
+  const FS_CAPS = {
+    "strong-stable": { label: "强模型 + 稳定", model: "强模型", stable: "稳定", desc: "输出格式稳定，任务理解到位。" },
+    "strong-unstable": { label: "强模型 + 不稳定", model: "强模型", stable: "不稳定", desc: "能理解任务，但输出格式会漂移。" },
+    "weak-stable": { label: "较弱模型 + 稳定", model: "较弱模型", stable: "稳定", desc: "输出稳定，但任务理解可能不够细。" },
+    "weak-unstable": { label: "较弱模型 + 不稳定", model: "较弱模型", stable: "不稳定", desc: "理解和格式都容易出偏差。" }
+  };
+
+  const FS_EXAMPLES = {
+    sent: [
+      { input: "非常好用，超出预期！", output: "正面" },
+      { input: "还行吧，没什么特别的。", output: "中性" },
+      { input: "快递太慢了，包装也破损了。", output: "负面" },
+      { input: "客服回复很快，问题当天就解决了。", output: "正面" },
+      { input: "用了一个月，续航比想象中短。", output: "负面" }
+    ],
+    code: [
+      { input: "这里的循环应该用 dict 而不是 list，查找复杂度从 O(n) 降到 O(1)", output: "PERF" },
+      { input: "变量名 x 太模糊了，建议改为 user_count", output: "STYLE" },
+      { input: "这个空指针检查缺失了，传入 None 时会崩溃", output: "BUG" },
+      { input: "这里为什么不用批量接口？单条查询会放大延迟", output: "PERF" },
+      { input: "这个方法名和实际行为不一致，建议重命名", output: "STYLE" }
+    ],
+    math: [
+      { input: "一箱 12 瓶，买了 3 箱，共多少瓶？", output: "12 × 3 = 36。答案：36 瓶" },
+      { input: "24 个苹果平均分给 6 人，每人几个？", output: "24 ÷ 6 = 4。答案：4 个" },
+      { input: "原价 80 元打 8 折，现价多少？", output: "80 × 0.8 = 64。答案：64 元" },
+      { input: "一本书 15 元，买 4 本打 9 折，共付多少？", output: "15 × 4 = 60；60 × 0.9 = 54。答案：54 元" },
+      { input: "从 8:40 到 9:25 经过多少分钟？", output: "8:40 → 9:00 是 20 分钟；9:00 → 9:25 是 25 分钟；共 45 分钟。" }
+    ]
+  };
+
+  const FS_STAGES = [
+    { nav: "任务", figure: "图 1 · 选择任务", title: "先看任务像什么。", desc: "任务越常见、标签越通用，Zero-shot 越够用；标签有领域含义或输出格式固定，示例才开始有价值。" },
+    { nav: "模型与稳定性", figure: "图 2 · 模型与稳定性", title: "强模型也会格式漂移。", desc: "模型强弱决定它能不能只靠指令理解任务；稳定性决定要不要用示例把输出格式钉住。" },
+    { nav: "预算", figure: "图 3 · Token 预算", title: "示例也要花预算。", desc: "示例越多，输入 token 越高，留给输出的空间越少。预算紧张时，先砍示例，再考虑砍指令细节。" },
+    { nav: "建议", figure: "图 4 · 建议", title: "给出方法，也给理由。", desc: "推荐结果按原文决策流程推导。页面同时给出固定 Prompt 预览，说明示例具体怎么拼。" }
+  ];
+
+  const fsState = { stage: 0, task: null, cap: null, budget: null };
+  const fsById = (id) => document.getElementById(id);
+
+  function fsEl(tag, cls, text) {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function fsOption(key, title, desc, selected, onPick) {
+    const button = fsEl("button", "fs-opt");
+    button.type = "button";
+    button.setAttribute("aria-pressed", String(selected));
+    button.append(fsEl("b", "", title), fsEl("span", "", desc));
+    button.addEventListener("click", onPick);
+    return button;
+  }
+
+  function fsRenderStage0(host) {
+    host.append(fsEl("p", "fs-step-label", "第 1 步 / 共 3 步"));
+    host.append(fsEl("p", "fs-q", "任务属于哪一类？"));
+    const opts = fsEl("div", "fs-opts");
+    Object.entries(FS_TASKS).forEach(([key, task]) => {
+      opts.append(fsOption(key, task.label, task.desc, fsState.task === key, () => {
+        fsState.task = key;
+        fsRender();
+        fsAnnounce("已选择" + task.label + "。");
+      }));
+    });
+    host.append(opts);
+    host.append(fsEl("p", "fs-hint", "分类标签越“通用”，Zero-shot 越可能够用；标签越“行话”，越需要示例把定义摆出来。"));
+  }
+
+  function fsRenderStage1(host) {
+    host.append(fsEl("p", "fs-step-label", "第 2 步 / 共 3 步"));
+    host.append(fsEl("p", "fs-q", "模型能力和输出稳定性如何？"));
+    const opts = fsEl("div", "fs-opts two");
+    Object.entries(FS_CAPS).forEach(([key, cap]) => {
+      opts.append(fsOption(key, cap.label, cap.desc, fsState.cap === key, () => {
+        fsState.cap = key;
+        fsRender();
+        fsAnnounce("已选择" + cap.label + "。");
+      }));
+    });
+    host.append(opts);
+    host.append(fsEl("p", "fs-hint", "“稳定”指同一类输入多次调用，标签和格式基本一致；如果每次输出结构都在变，就算不稳定。"));
+  }
+
+  function fsRenderStage2(host) {
+    host.append(fsEl("p", "fs-step-label", "第 3 步 / 共 3 步"));
+    host.append(fsEl("p", "fs-q", "Token 预算宽松还是紧张？"));
+    const opts = fsEl("div", "fs-opts two");
+    [
+      ["loose", "宽松", "可以放 3–5 条示例，或少量示例加详细指令。"],
+      ["tight", "紧张", "优先省输入 token；示例压到 3 条以内或不用。"]
+    ].forEach(([key, title, desc]) => {
+      opts.append(fsOption(key, title, desc, fsState.budget === key, () => {
+        fsState.budget = key;
+        fsRender();
+        fsAnnounce("已选择预算" + title + "。");
+      }));
+    });
+    host.append(opts);
+    host.append(fsEl("p", "fs-hint", "预算按输入 + 输出总 token 算。示例挤掉的预算，最终会从上下文或输出长度里扣。"));
+  }
+
+  function fsRecommendation() {
+    if (!fsState.task || !fsState.cap || !fsState.budget) return null;
+    const tight = fsState.budget === "tight";
+    const cap = fsState.cap;
+    const reasons = [];
+    let method;
+    let count;
+
+    if (fsState.task === "math") {
+      method = tight ? "Zero-shot CoT" : "Few-shot CoT";
+      count = tight ? 0 : 3;
+      reasons.push("推理任务上，CoT 的提升通常大于多加示例；先保证模型写出推理步骤。");
+      if (tight) {
+        reasons.push("预算紧张时，把 token 花在“逐步推理”指令上，而不是示例上。");
+      } else {
+        reasons.push("3 条带推理过程的示例用于固定输出结构；原文建议复杂任务可到 5–10 条，但 3 条已能说明格式。");
+      }
+    } else if (fsState.task === "code") {
+      method = "Few-shot";
+      count = (cap === "weak-stable" || cap === "weak-unstable" || cap === "strong-unstable") ? 5 : 3;
+      if (tight) count = 3;
+      reasons.push("BUG / STYLE / PERF 这类领域标签不是通用情感标签，模型无法只靠名字推断边界。");
+      reasons.push("示例同时教两件事：每个标签的判断标准，以及“评论 → 标签”的输出格式。");
+      if (count === 5) reasons.push("模型较弱或输出不稳定时，原文建议多给示例覆盖边界；5 条仍在 2–5 的推荐区间上限。");
+      if (tight && count === 3) reasons.push("预算紧张，示例压到 3 条：先覆盖三个最常用标签，QUESTION / NITPICK 用标签说明补足。");
+      reasons.push("生产环境可换成动态 Few-shot，按输入检索最相关的示例。");
+    } else {
+      if (cap === "strong-stable") {
+        method = "Zero-shot";
+        count = 0;
+        reasons.push("任务在预训练中常见，强模型 Zero-shot 已能稳定输出；加示例主要增加 token 成本。");
+      } else if (cap === "strong-unstable") {
+        method = "Few-shot";
+        count = 3;
+        reasons.push("输出不稳定说明格式没有被稳定理解，3 条示例先把行为固定住；不必一口气加到 5 条。");
+      } else if (cap === "weak-stable") {
+        method = "Few-shot";
+        count = 3;
+        reasons.push("小模型从示例中获益更大；3 条覆盖三类标签，兼顾成本和一致性。");
+      } else {
+        method = "Few-shot";
+        count = 5;
+        reasons.push("小模型加不稳定，示例要覆盖标签边界；5 条是原文 2–5 推荐区间的上限。");
+      }
+      if (tight && count > 3) {
+        count = 3;
+        reasons.push("预算紧张，示例从 5 条压到 3 条；示例越多，输入 token 越高，留给输出的空间越少。");
+      }
+      if (tight && method === "Zero-shot") {
+        reasons.push("预算紧张时 Zero-shot 更合适：不加示例，必要时补一句详细分类标准。");
+      }
+    }
+
+    if (fsState.task !== "math" && cap.includes("unstable")) {
+      reasons.push("稳定性问题优先用示例解决；如果加示例后仍漂移，再考虑结构化输出或工具约束。");
+    }
+    return { method, count, reasons };
+  }
+
+  function fsPreview(task, count) {
+    const examples = FS_EXAMPLES[task];
+    const query = FS_TASKS[task].query;
+    if (task === "sent") {
+      if (count === 0) {
+        return "将以下客户评价分类为\"正面\"、\"负面\"或\"中性\"。\n\n评价：" + query + "\n分类：";
+      }
+      let text = "将客户评价分类为\"正面\"、\"负面\"或\"中性\"。\n\n";
+      examples.slice(0, count).forEach((example) => {
+        text += "评价：" + example.input + "\n分类：" + example.output + "\n\n";
+      });
+      return text + "评价：" + query + "\n分类：";
+    }
+    if (task === "code") {
+      let text = "将代码审查评论分类为以下类型：\n- BUG: 实际的代码缺陷\n- STYLE: 代码风格建议\n- PERF: 性能优化建议\n- QUESTION: 需要澄清的问题\n- NITPICK: 微小的改进建议\n\n";
+      examples.slice(0, count).forEach((example) => {
+        text += "评论：" + example.input + "\n类型：" + example.output + "\n\n";
+      });
+      return text + "评论：" + query + "\n类型：";
+    }
+    if (count === 0) {
+      return "请逐步推理，先写计算过程，再给出最终答案。\n\n题目：" + query;
+    }
+    let text = "请参考以下带推理过程的示例，再解答新题目。\n\n";
+    examples.slice(0, count).forEach((example, index) => {
+      text += "示例 " + (index + 1) + "：" + example.input + "\n推理：" + example.output + "\n\n";
+    });
+    return text + "题目：" + query + "\n推理：";
+  }
+
+  function fsRenderStage3(host) {
+    const rec = fsRecommendation();
+    if (!rec) {
+      const missing = fsEl("div", "fs-missing");
+      missing.append(fsEl("b", "", "还差几步没有选完。"));
+      const list = document.createElement("ul");
+      if (!fsState.task) list.append(fsEl("li", "", "任务类型"));
+      if (!fsState.cap) list.append(fsEl("li", "", "模型能力与稳定性"));
+      if (!fsState.budget) list.append(fsEl("li", "", "Token 预算"));
+      missing.append(list, fsEl("p", "", "回到前面的步骤补齐后，这里会给出方法和示例数量。"));
+      const jump = fsEl("button", "button", "回到第 1 步");
+      jump.type = "button";
+      jump.addEventListener("click", () => fsGo(0));
+      missing.append(jump);
+      host.append(missing);
+      return;
+    }
+
+    const recCard = fsEl("div", "fs-rec");
+    recCard.append(fsEl("span", "fs-kicker", "推荐方法"));
+    recCard.append(fsEl("b", "", rec.method + (rec.count ? " · " + rec.count + " 条示例" : " · 0 条示例")));
+    const countPill = fsEl("span", "fs-count", "建议示例：" + (rec.count === 0 ? "不用示例" : rec.count + " 条"));
+    recCard.append(countPill);
+    recCard.append(fsEl("p", "", rec.count === 0 ? "结论按原文决策流程推导；不需要示例。原文建议需要示例时 2–5 条最佳。" : "结论按原文决策流程推导；示例数量落在原文建议的 2–5 条区间内（预算紧张时压到 3 条）。"));
+    host.append(recCard);
+
+    const reasons = fsEl("ul", "fs-reasons");
+    rec.reasons.forEach((reason) => reasons.append(fsEl("li", "", reason)));
+    host.append(reasons);
+
+    const preview = fsPreview(fsState.task, rec.count);
+    const head = fsEl("div", "fs-preview-head");
+    head.append(fsEl("b", "", "固定 Prompt 预览"), fsEl("span", "", "共 " + preview.length + " 字符 · 未计 token"));
+    host.append(head);
+    const pre = fsEl("pre", "fs-preview");
+    pre.append(fsEl("code", "", preview));
+    host.append(pre);
+    host.append(fsEl("p", "fs-caveat", "预览是固定示例文本，任务描述和示例库都写死在页面里。字符数不等于 token 数，实际 token 以目标模型的 tokenizer 为准。"));
+
+    const again = fsEl("button", "button button-quiet fs-again", "重新选择");
+    again.type = "button";
+    again.addEventListener("click", fsReset);
+    host.append(again);
+  }
+
+  function fsRenderFacts() {
+    const rec = fsRecommendation();
+    fsById("fs-fact-task").textContent = fsState.task ? FS_TASKS[fsState.task].label : "待选择";
+    const cap = fsState.cap ? FS_CAPS[fsState.cap] : null;
+    fsById("fs-fact-cap").textContent = cap ? cap.model : "待选择";
+    fsById("fs-fact-stable").textContent = cap ? cap.stable : "待选择";
+    fsById("fs-fact-budget").textContent = fsState.budget === "loose" ? "宽松" : fsState.budget === "tight" ? "紧张" : "待选择";
+    fsById("fs-fact-count").textContent = rec ? (rec.count === 0 ? "0 条" : rec.count + " 条") : "待计算";
+  }
+
+  function fsRender() {
+    const host = fsById("fs-main");
+    host.textContent = "";
+    if (fsState.stage === 0) fsRenderStage0(host);
+    else if (fsState.stage === 1) fsRenderStage1(host);
+    else if (fsState.stage === 2) fsRenderStage2(host);
+    else fsRenderStage3(host);
+
+    const stage = FS_STAGES[fsState.stage];
+    fsById("fs-figure").textContent = stage.figure;
+    fsById("fs-caption-title").textContent = stage.title;
+    fsById("fs-desc").textContent = stage.desc;
+    fsById("fs-state-summary").textContent = "第 " + (fsState.stage + 1) + " / 4 步 · " + stage.nav;
+    fsById("fs-prev").disabled = fsState.stage === 0;
+    const answered = fsState.stage === 0 ? !!fsState.task : fsState.stage === 1 ? !!fsState.cap : fsState.stage === 2 ? !!fsState.budget : true;
+    fsById("fs-next").disabled = !answered || fsState.stage === 3;
+    document.querySelectorAll("[data-stage]").forEach((button) => {
+      button.setAttribute("aria-current", Number(button.dataset.stage) === fsState.stage ? "step" : "false");
+    });
+    fsRenderFacts();
+    const scene = fsById("fs-scene");
+    scene.style.animation = "none";
+    void scene.offsetWidth;
+    scene.style.animation = "";
+  }
+
+  let fsAnnounceTimer = 0;
+  function fsAnnounce(message) {
+    const region = fsById("fs-announcement");
+    window.clearTimeout(fsAnnounceTimer);
+    fsAnnounceTimer = window.setTimeout(() => {
+      region.textContent = message;
+    }, 60);
+  }
+
+  function fsGo(stage) {
+    fsState.stage = Math.max(0, Math.min(3, stage));
+    fsRender();
+    fsAnnounce("第 " + (fsState.stage + 1) + " 步，" + FS_STAGES[fsState.stage].nav + "。" + FS_STAGES[fsState.stage].desc);
+  }
+
+  function fsReset() {
+    fsState.stage = 0;
+    fsState.task = null;
+    fsState.cap = null;
+    fsState.budget = null;
+    fsRender();
+    fsAnnounce("已重置，请重新选择任务类型。");
+  }
+
+  document.querySelectorAll("[data-stage]").forEach((button) => {
+    button.addEventListener("click", () => fsGo(Number(button.dataset.stage)));
+  });
+  fsById("fs-prev").addEventListener("click", () => fsGo(fsState.stage - 1));
+  fsById("fs-next").addEventListener("click", () => fsGo(fsState.stage + 1));
+  fsById("fs-reset").addEventListener("click", fsReset);
+
+  fsRender();
+</script>
+</body>
+</html>

@@ -1,0 +1,1240 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>多 Agent 系统中的冲突解决机制 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .cf-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .cf-mechs { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 var(--s-6); margin-top: var(--s-4); }
+  .cf-mech { min-height: 40px; padding: 7px 13px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: 12px; color: var(--text-dim); }
+  .cf-mech:hover { background: var(--surface-soft); }
+  .cf-mech[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+  .cf-mech small { display: block; font: 9px/1.4 var(--mono); font-weight: 400; color: inherit; opacity: .85; }
+  .cf-rules { display: flex; flex-wrap: wrap; gap: 5px; padding: 0 var(--s-6); margin-top: var(--s-2); }
+  .cf-rule { min-height: 34px; padding: 4px 10px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font: 10px/1.4 var(--mono); color: var(--text-dim); }
+  .cf-rule:hover { border-color: var(--accent); }
+  .cf-rule[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+  .cf-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+  .cf-board, .cf-panel { min-width: 0; }
+  .cf-agents { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  .cf-agent { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 7px 8px; }
+  .cf-agent-head { display: flex; align-items: baseline; justify-content: space-between; gap: 4px; }
+  .cf-agent-name { font-size: 11px; font-weight: 600; line-height: 1.4; }
+  .cf-agent-name span { display: block; font: 8px/1.4 var(--mono); color: var(--text-dim); font-weight: 400; }
+  .cf-weight { font: 8px/1.4 var(--mono); color: var(--text-dim); white-space: nowrap; }
+  .cf-vote { display: inline-block; margin-top: 4px; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--border-bright); font: 9px/1.5 var(--mono); }
+  .cf-vote.yes { border-color: #2e7d32; background: #eef7ee; color: #1b5e20; }
+  .cf-vote.no { border-color: #a33a3a; background: #fdf0f0; color: #7d1f1f; }
+  .cf-vote.veto { border-color: #b98a2f; background: #fffaf0; color: #5f430f; font-weight: 600; }
+  .cf-agent p { margin-top: 3px; font-size: 8px; line-height: 1.45; color: var(--text-dim); }
+  .cf-agent.is-veto { border-color: #b98a2f; }
+  .cf-verdict { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3); }
+  .cf-verdict-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px; }
+  .cf-verdict-head b { font: 600 12px/1.5 var(--sans); }
+  .cf-verdict-head span { font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .cf-calc { margin-top: 6px; font: 10px/1.8 var(--mono); color: var(--ink); overflow-wrap: anywhere; }
+  .cf-calc del { text-decoration: none; color: #7d1f1f; }
+  .cf-calc ins { text-decoration: none; color: #1b5e20; font-weight: 600; }
+  .cf-outcome { display: inline-flex; align-items: center; gap: 5px; margin-top: 7px; padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border-bright); background: var(--surface-soft); font: 10px/1.6 var(--mono); }
+  .cf-outcome.pass { border-color: #2e7d32; background: #eef7ee; color: #1b5e20; }
+  .cf-outcome.block { border-color: #a33a3a; background: #fdf0f0; color: #7d1f1f; }
+  .cf-outcome.warn { border-color: #b98a2f; background: #fffaf0; color: #5f430f; }
+  .cf-bars { display: grid; gap: 5px; margin-top: 7px; }
+  .cf-bar-row { display: grid; grid-template-columns: 72px minmax(0, 1fr) 54px; gap: 6px; align-items: center; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .cf-bar { height: 10px; border: 1px solid var(--border); border-radius: 3px; background: var(--surface-soft); overflow: hidden; }
+  .cf-bar i { display: block; height: 100%; background: var(--accent); opacity: .75; }
+  .cf-bar i.fail { background: #a33a3a; }
+  .cf-bar i.pass { background: #2e7d32; }
+  .cf-bar-row b { font-weight: 600; color: var(--ink); text-align: right; }
+  .cf-sides { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+  .cf-side { border: 1px solid var(--border); border-radius: 4px; background: var(--surface); padding: 7px 8px; }
+  .cf-side h3 { font: 600 11px/1.45 var(--sans); }
+  .cf-side p { margin-top: 3px; font-size: 9px; line-height: 1.55; color: var(--text-dim); }
+  .cf-side.block { border-color: #a33a3a; }
+  .cf-side.release { border-color: #2e7d32; }
+  .cf-mediator { border: 1px dashed var(--border-bright); border-radius: 4px; background: var(--surface-soft); padding: 7px 8px; font-size: 9px; line-height: 1.6; color: var(--text-dim); }
+  .cf-mediator b { color: var(--ink); }
+  .cf-panel { border: 1px solid var(--border); border-radius: var(--r-1); background: #f7f6f1; padding: var(--s-4); }
+  .cf-panel h2 { font: 600 19px/1.45 var(--serif); }
+  .cf-panel > p { margin-top: var(--s-2); font-size: 12px; line-height: 1.7; }
+  .cf-facts { margin-top: var(--s-3); border-top: 1px solid var(--border); }
+  .cf-facts div { display: grid; grid-template-columns: 72px minmax(0, 1fr); gap: 7px; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 10px; line-height: 1.55; }
+  .cf-facts dt { font: 9px/1.55 var(--mono); color: var(--text-dim); }
+  .cf-facts dd { margin: 0; overflow-wrap: anywhere; }
+  .cf-boundary { margin-top: var(--s-3); padding: 7px 9px; border: 1px solid #b98a2f; border-radius: 4px; background: #fffaf0; color: #5f430f; font-size: 10px; line-height: 1.6; }
+  .cf-boundary b { color: #4a340b; }
+  .cf-note { margin-top: var(--s-2); font: 9px/1.6 var(--mono); color: var(--text-dim); }
+  .cf-loop { margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .cf-loop-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .cf-loop-node { padding: 6px 9px; border: 1px solid #9eb4c9; border-radius: 4px; background: var(--accent-dim); font: 10px/1.45 var(--mono); color: var(--accent); }
+  .cf-loop-node.decision { border-color: #b98a2f; background: #fffaf0; color: #5f430f; }
+  .cf-loop-node.err { border-color: #a33a3a; background: #fdf0f0; color: #7d1f1f; }
+  .cf-loop-arrow { font: 11px/1 var(--mono); color: var(--text-dim); }
+  .cf-loop p { margin-top: 5px; padding-left: 12px; border-left: 2px solid #b98a2f; font: 9px/1.7 var(--mono); color: #6f4c0d; }
+  .cf-loop figcaption { margin-top: var(--s-3); font-size: 10px; line-height: 1.6; color: var(--text-dim); }
+
+  @media (max-width: 1000px) { .cf-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 720px) {
+    .cf-stage { padding: var(--s-4); }
+    .cf-mechs { padding: 0 var(--s-4); margin-top: var(--s-3); }
+    .cf-mech { flex: 1 1 30%; padding: 6px 8px; font-size: 11px; }
+    .cf-rules { padding: 0 var(--s-4); }
+    .cf-agents { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .cf-agent:last-child { grid-column: span 2; }
+    .cf-panel { padding: var(--s-3); }
+    .cf-bar-row { grid-template-columns: 64px minmax(0, 1fr) 46px; }
+    .cf-sides { grid-template-columns: 1fr; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">035 / 冲突解决</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 10 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="034-task-allocation-coordination.html">← 上一页 · 如何设计 Agent 间的任务分配与…</a><a href="036-multi-agent-frameworks.html">下一页 → · 比较主流多 Agent 框架</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Multi-Agent · 可交互讲解</p>
+      <h1>意见不一致时，<br>让规则说话。</h1>
+    </div>
+    <div>
+      <p class="lead">多个 Agent 得出不同结论，或者抢同一个资源，就需要冲突解决机制。常见做法有三类：投票表决、多轮共识、指定仲裁者。它们解决“听谁的”，但不自动保证“谁是对的”。</p>
+      <p class="definition">关键边界：<strong>投票和共识只能聚合立场，不能修正共同错误</strong>。如果多数 Agent 基于同一份错误数据推理，多数决会放大错误；共识轮次过多还可能让 Agent 互相迎合。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Multi-Agent</span><span class="pill">冲突解决</span><span class="pill">固定投票数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="cf-caption-title">
+    <div class="player-top">
+      <div class="player-label">固定冲突裁决台 <small>5 个 Agent，同一份发布提案</small></div>
+      <div class="controls" role="group" aria-label="冲突解决演示控制">
+        <button type="button" class="button button-quiet" id="cf-reset">重置</button>
+        <button type="button" class="button" id="cf-prev" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="cf-next">下一步 →</button>
+      </div>
+    </div>
+    <div class="cf-mechs" role="group" aria-label="选择冲突解决机制">
+      <button type="button" class="cf-mech" data-mech="vote" aria-pressed="true">投票<small>数票 / 加权 / 否决</small></button>
+      <button type="button" class="cf-mech" data-mech="consensus" aria-pressed="false">共识<small>多轮辩论与阈值</small></button>
+      <button type="button" class="cf-mech" data-mech="arbitration" aria-pressed="false">仲裁<small>指定裁决者</small></button>
+    </div>
+    <div class="cf-rules" id="cf-rules" role="group" aria-label="选择投票规则">
+      <button type="button" class="cf-rule" data-rule="majority" aria-pressed="true">多数决</button>
+      <button type="button" class="cf-rule" data-rule="weighted" aria-pressed="false">加权投票</button>
+      <button type="button" class="cf-rule" data-rule="veto" aria-pressed="false">一票否决</button>
+    </div>
+    <nav class="stage-nav" aria-label="三个固定裁决步骤">
+      <ol style="--stages: 3">
+        <li><button type="button" class="stage-button" data-step="0" aria-current="step" aria-controls="cf-scene" aria-label="第 1 步"><span class="stage-number">1</span><span data-stage-label>立场</span></button></li>
+        <li><button type="button" class="stage-button" data-step="1" aria-controls="cf-scene" aria-label="第 2 步"><span class="stage-number">2</span><span data-stage-label>计票</span></button></li>
+        <li><button type="button" class="stage-button" data-step="2" aria-controls="cf-scene" aria-label="第 3 步"><span class="stage-number">3</span><span data-stage-label>结果</span></button></li>
+      </ol>
+    </nav>
+    <div class="cf-stage scene" id="cf-scene" data-scene="conflict">
+      <div class="cf-grid">
+        <section class="cf-board" aria-label="裁决现场">
+          <div class="cf-agents" id="cf-agents"></div>
+          <div class="cf-verdict" id="cf-verdict"></div>
+          <p class="cf-note" id="cf-note">固定教学数据：5 个 Agent 的立场、权重和票数都是写死的；页面只做算术，不调用真实 Agent，也不代表任何线上投票结果。</p>
+        </section>
+        <aside class="cf-panel" aria-labelledby="cf-caption-title">
+          <p class="figure-index" id="cf-figure">图 1 · 投票 · 第 1 / 3 步</p>
+          <h2 id="cf-caption-title">先看每个人站哪边。</h2>
+          <p id="cf-desc">提案是“是否把 v2.4 直接发布到生产”。安全 Agent 反对，其余四个 Agent 中三个赞成；每个 Agent 还有一个权重，供加权投票使用。</p>
+          <dl class="cf-facts" id="cf-facts"></dl>
+          <div class="cf-boundary" id="cf-boundary"><b>角色边界：</b>投票只收集立场和权重；计票规则由系统预先声明，不能等票投完再改。</div>
+        </aside>
+      </div>
+      <p class="demo-note">固定教学数据：提案、5 个 Agent 的立场、权重、共识轮次和一致率都由本页写死；所有阈值和票数可在页面上独立复算。本页不调用模型或任何真实 Agent，结论只用于讲解机制。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 5 个 Agent · 3 种机制</span><span id="cf-state-summary">投票 · 多数决 · 第 1 / 3 步 · 没有连接 Agent</span></div>
+  </section>
+  <p id="cf-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="types-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">冲突类型</p><h2 id="types-title">先分清<br>在吵什么。</h2></div>
+      <p class="reading-intro">冲突不只有“结论不同”。资源、优先级、方案和事实都可能冲突；不同类型对应不同解法。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">多 Agent 冲突的五种类型与例子</caption>
+          <thead><tr><th scope="col">冲突类型</th><th scope="col">例子</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">结论冲突</th><td>Agent A 说“买入”，Agent B 说“卖出”</td></tr>
+            <tr><th scope="row">资源冲突</th><td>两个 Agent 同时要修改同一数据库记录</td></tr>
+            <tr><th scope="row">优先级冲突</th><td>安全 Agent 说“阻止”，效率 Agent 说“放行”</td></tr>
+            <tr><th scope="row">方案冲突</th><td>Agent 对解决同一问题提出不同方案</td></tr>
+            <tr><th scope="row">事实冲突</th><td>Agent 引用了互相矛盾的数据源</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>投票和共识主要处理结论、方案和优先级冲突；资源冲突更适合用锁、版本号或任务拆分解决；事实冲突要先回到数据源核对，不能靠投票决定哪个事实为真。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="vote-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">机制 1</p><h2 id="vote-title">投票：把立场<br>变成可数的票。</h2></div>
+      <p class="reading-intro">最直观的冲突解决方式。二元决策用多数决，专业度不均等用加权，高风险操作用一票否决。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">二元、加权与排序投票 · 原文代码</p>
+      <pre><code>class VotingResolver:
+    """投票式冲突解决"""
+
+    async def resolve_binary(self, agents, question) -&gt; str:
+        """二元投票：是/否"""
+        votes = await asyncio.gather(
+            *[agent.vote(question) for agent in agents]
+        )
+        yes_count = sum(1 for v in votes if v == "yes")
+        return "yes" if yes_count &gt; len(agents) / 2 else "no"
+
+    async def resolve_weighted(self, agents, question) -&gt; str:
+        """加权投票：按 Agent 专业度加权"""
+        weighted_votes = {}
+        for agent in agents:
+            vote = await agent.vote(question)
+            weight = agent.expertise_score
+            weighted_votes[vote] = weighted_votes.get(vote, 0) + weight
+        return max(weighted_votes, key=weighted_votes.get)
+
+    async def resolve_ranked(self, agents, options) -&gt; str:
+        """排序投票：Agent 提交偏好排序"""
+        rankings = await asyncio.gather(
+            *[agent.rank(options) for agent in agents]
+        )
+        # Borda 计分法：排名越高得分越多
+        scores = {opt: 0 for opt in options}
+        for ranking in rankings:
+            for i, opt in enumerate(ranking):
+                scores[opt] += len(options) - i
+        return max(scores, key=scores.get)</code></pre>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">四种投票方式及适用场景</caption>
+          <thead><tr><th scope="col">投票类型</th><th scope="col">适用场景</th><th scope="col">示例</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">多数决</th><td>二元决策</td><td>“是否发布该版本？”</td></tr>
+            <tr><th scope="row">加权投票</th><td>专业度不均等</td><td>安全专家在安全问题上权重更高</td></tr>
+            <tr><th scope="row">排序投票</th><td>多选一</td><td>从 5 个方案中选择最优</td></tr>
+            <tr><th scope="row">一票否决</th><td>高风险操作</td><td>任何安全 Agent 可阻止操作</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>投票的边界很清楚：它只汇总已有立场。票数再多，也不能把一个错误事实变正确；所以高风险场景通常还要加人工审批或安全否决。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="consensus-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">机制 2</p><h2 id="consensus-title">共识：多轮辩论，<br>阈值逐步放宽。</h2></div>
+      <p class="reading-intro">Agent 每轮提出或修改立场，系统计算一致率；达到阈值就合并，达不到就阈值乘 0.95 进入下一轮，超过最大轮次则降级。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">多轮共识协议 · 原文代码</p>
+      <pre><code>class ConsensusProtocol:
+    """多轮共识协议"""
+
+    def __init__(self, agents, max_rounds=5, threshold=0.8):
+        self.agents = agents
+        self.max_rounds = max_rounds
+        self.threshold = threshold  # 80% 一致才算共识
+
+    async def reach_consensus(self, topic):
+        proposals = {}
+        for round_num in range(self.max_rounds):
+            for agent in self.agents:
+                context = {
+                    "topic": topic,
+                    "round": round_num,
+                    "other_proposals": {
+                        a.id: p for a, p in proposals.items() if a != agent
+                    }
+                }
+                proposals[agent] = await agent.propose(context)
+
+            agreement_rate = self.calculate_agreement(proposals)
+            if agreement_rate &gt;= self.threshold:
+                return self.merge_proposals(proposals)
+
+            # 动态调整阈值（任务越紧急，越容易通过）
+            self.threshold *= 0.95
+
+        # 达到最大轮次仍未共识 → 降级到投票或人工裁决
+        return await self.fallback_to_voting(proposals)
+
+    def calculate_agreement(self, proposals):
+        conclusions = [p["conclusion"] for p in proposals.values()]
+        most_common = max(set(conclusions), key=conclusions.count)
+        return conclusions.count(most_common) / len(conclusions)</code></pre>
+      <figure class="cf-loop">
+        <div class="cf-loop-row">
+          <span class="cf-loop-node">各 Agent 提议 / 修改立场</span><span class="cf-loop-arrow">→</span>
+          <span class="cf-loop-node">计算一致率</span><span class="cf-loop-arrow">→</span>
+          <span class="cf-loop-node decision">一致率 ≥ 阈值？</span><span class="cf-loop-arrow">→</span>
+          <span class="cf-loop-node">合并共识</span>
+        </div>
+        <div class="cf-loop-row" style="margin-top:6px">
+          <span class="cf-loop-node decision">轮次 &gt; 上限？</span><span class="cf-loop-arrow">→</span>
+          <span class="cf-loop-node err">降级：投票 / 人工裁决</span>
+        </div>
+        <p>否（未达阈值）→ 阈值 ×0.95，进入下一轮，回到“各 Agent 提议”。<br>是（超过上限）→ 降级，不再继续辩论。</p>
+        <figcaption>离线可读版：原图是 Mermaid 流程图，回路从“轮次未超上限”回到“各 Agent 提议”。Mermaid 源码见下方折叠块。</figcaption>
+      </figure>
+      <details>
+        <summary>展开原文 Mermaid 源码</summary>
+        <pre><code>flowchart TD
+    A["各 Agent 提议 / 修改立场"] --&gt; B["计算一致率"]
+    B --&gt; Q1{"一致率 ≥ 阈值？"}
+    Q1 -- "是" --&gt; M["合并共识"]
+    Q1 -- "否" --&gt; Q2{"轮次 &gt; 上限？"}
+    Q2 -- "否" --&gt; E["阈值 ×0.95&lt;br/&gt;进入下一轮"]
+    E --&gt; A
+    Q2 -- "是" --&gt; D["降级：投票 / 人工裁决"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class A,B,E,M proc
+    class Q1,Q2 decision
+    class D err</code></pre>
+      </details>
+      <p>关键设计点有三条：<strong>动态共识阈值</strong>（按紧急度和轮次调整）、<strong>最大轮次限制</strong>（防止无限辩论）、<strong>降级机制</strong>（失败后切投票或人工裁决）。</p>
+      <p>阈值逐轮放宽是一把双刃剑：它能避免僵局，但也意味着“越拖越容易通过”。上线前要明确阈值下限，不能让它无限乘 0.95。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="arb-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">机制 3</p><h2 id="arb-title">中介仲裁：<br>把最终裁决权交给一个人。</h2></div>
+      <p class="reading-intro">指定一个权威 Agent 或人类，分析各方推理后给出最终裁决。它适合高风险、需要解释理由的冲突。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">仲裁者 · 原文代码</p>
+      <pre><code>class MediatorResolver:
+    def __init__(self, mediator_agent):
+        self.mediator = mediator_agent  # 仲裁者
+
+    async def resolve(self, conflicting_outputs: dict):
+        """仲裁者分析冲突并做出裁决"""
+        prompt = f"""
+        以下是不同 Agent 对同一问题的分析结果，它们存在冲突：
+
+        {self._format_conflicts(conflicting_outputs)}
+
+        请分析每个 Agent 的推理过程，指出各自的优缺点，
+        然后给出你的最终裁决和理由。
+        """
+        decision = await self.mediator.generate(prompt)
+        return decision</code></pre>
+      <p>仲裁者的权力边界要预先写清：能裁决什么、不能裁决什么、是否必须给出理由、人类是否保留最终否决权。否则“仲裁”只是把单点故障换了个名字。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="syco-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">防止趋同效应</p><h2 id="syco-title">辩论越多，<br>不一定越对。</h2></div>
+      <p class="reading-intro">LLM Agent 容易迎合对方观点，而不是坚持自己正确的判断。这叫趋同效应（Sycophancy），会让共识看起来很好，实际质量下降。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">CONSENSAGENT 的抗趋同做法 · 原文代码</p>
+      <pre><code>class AntiSycophancyProtocol:
+    async def debate(self, agents, topic):
+        for round in range(self.max_rounds):
+            for agent in agents:
+                # 强制要求 Agent 先独立推理，再考虑他人观点
+                response = await agent.generate(f"""
+                第一步：独立分析（忽略其他 Agent 的观点）
+                {topic}
+
+                第二步：考虑其他观点后，明确说明你是否改变立场
+                如果改变，解释具体哪个论据说服了你
+                如果不改变，解释为什么你认为自己的分析更正确
+
+                其他 Agent 的观点：{other_views}
+                """)</code></pre>
+      <p>做法是强制“先独立推理，再看别人”。改立场可以，但必须指出是哪个论据说服的；不改也要给出理由。这样把“迎合”变成可检查的记录。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="resource-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">资源冲突</p><h2 id="resource-title">抢同一把锁时，<br>先避免，再加锁。</h2></div>
+      <p class="reading-intro">资源冲突不只是“谁先拿”，还包括拿到后怎么写。按代价从低到高分三层：避免冲突、加锁、合并。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">写冲突处理的三层做法、代价与适用场景</caption>
+          <thead><tr><th scope="col">层次</th><th scope="col">做法</th><th scope="col">代价与适用</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">避免冲突</th><td>任务拆分时文件集不重叠</td><td>无等待、无死锁，首选</td></tr>
+            <tr><th scope="row">加锁</th><td>文件锁 / 版本号 / 分布式锁</td><td>有等待和死锁风险</td></tr>
+            <tr><th scope="row">合并</th><td>三方合并、测试兜底</td><td>冲突已经发生，只能补救</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>避免为什么最好：</strong>不需要锁服务，不会死锁，也不会有 Agent 排队等锁时白白消耗时间。任务拆分阶段就让每个 Agent 写不同的文件；需要新建文件的场景天然不冲突，各写各的文件，最后统一汇总。只有无法拆开时才退到加锁。</p>
+      <details>
+        <summary>展开资源抢占与排队的最小示例</summary>
+        <pre><code>class ResourceConflictResolver:
+    """处理多个 Agent 竞争同一资源的冲突"""
+
+    def __init__(self):
+        self.locks = {}  # 资源锁
+
+    async def request_resource(self, agent_id, resource_id):
+        if resource_id in self.locks:
+            holder = self.locks[resource_id]
+            if self.priority(agent_id) &gt; self.priority(holder):
+                # 高优先级 Agent 可以抢占
+                await self.preempt(holder, resource_id)
+                self.locks[resource_id] = agent_id
+                return True
+            else:
+                # 排队等待
+                await self.wait_queue(resource_id, agent_id)
+                return False
+        else:
+            self.locks[resource_id] = agent_id
+            return True</code></pre>
+      </details>
+      <p><strong>锁粒度：</strong>默认文件级。目录级适合批量操作，例如整体替换一个包；行级锁实现复杂、收益低，一般不做。关键原则是<strong>缩小临界区，而不是放大粒度</strong>。模型调用、计算、内容生成都放在锁外，只在写盘的那一瞬间持锁。</p>
+      <p class="code-label">文件级锁：模型调用在锁外 · 原文代码</p>
+      <pre><code>from pathlib import Path
+from filelock import FileLock, Timeout
+
+
+class FileWriter:
+    """文件级锁：模型调用在锁外，只在写入瞬间加锁"""
+
+    def __init__(self, root: str, lock_timeout: float = 5.0):
+        self.root = Path(root)
+        self.lock_timeout = lock_timeout
+
+    async def write(self, rel_path: str, producer):
+        path = self.root / rel_path
+        content = await producer(path)          # 生成内容，不持锁
+
+        lock = FileLock(str(path) + ".lock", timeout=self.lock_timeout)
+        try:
+            with lock:                          # 只包住写盘
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(content, encoding="utf-8")
+        except Timeout:
+            raise RuntimeError(f"{rel_path} 被占用，稍后重试或换文件")
+        return path</code></pre>
+      <h3>乐观并发：读版本，写时比对</h3>
+      <p>读的时候记下版本号，写的时候带上版本号比对。版本没变就写入并递增，变了就失败，调用方重新读取再试。适合读多写少的场景，不需要提前加锁。</p>
+      <details>
+        <summary>展开 VersionedStore 原文代码</summary>
+        <pre><code>class VersionConflict(Exception):
+    pass
+
+
+class VersionedStore:
+    """CAS：dict 模拟，生产用 Redis WATCH 或数据库行版本号"""
+
+    def __init__(self):
+        self._data = {}                         # key -&gt; (value, version)
+
+    def read(self, key):
+        value, version = self._data.get(key, (None, 0))
+        return value, version
+
+    def compare_and_set(self, key, expected_version, new_value) -&gt; int:
+        _, current = self._data.get(key, (None, 0))
+        if current != expected_version:
+            raise VersionConflict(f"{key} 版本已变为 {current}")
+        self._data[key] = (new_value, current + 1)
+        return current + 1
+
+    async def update(self, key, mutate, max_retries=3):
+        for _ in range(max_retries):
+            value, version = self.read(key)
+            try:
+                return self.compare_and_set(key, version, mutate(value))
+            except VersionConflict:
+                continue                        # 重新读取后再试
+        raise VersionConflict(f"{key} 连续 {max_retries} 次冲突")</code></pre>
+      </details>
+      <h3>死锁预防与 fencing token</h3>
+      <p>需要多把锁时，全局按路径字典序获取；拿不到锁就超时释放已持有的锁。顺序一致就不会形成环路，超时保证不会永久阻塞。</p>
+      <p>fencing token 解决租约过期的残留写入：锁服务每次授予锁时发一个单调递增的编号，写请求必须带上编号，存储端拒绝比已记录编号更小的写入。</p>
+      <details>
+        <summary>展开 OrderedLocks 与 FencedStore 原文代码</summary>
+        <pre><code>class OrderedLocks:
+    """按字典序批量加锁，失败时释放已持有的锁"""
+
+    def __init__(self, root: str, timeout: float = 5.0):
+        self.root = Path(root)
+        self.timeout = timeout
+
+    async def acquire_all(self, rel_paths):
+        handles = []
+        try:
+            for rel in sorted(set(rel_paths)):  # 全局锁顺序：字典序
+                lock = FileLock(str(self.root / rel) + ".lock",
+                                timeout=self.timeout)
+                lock.acquire()
+                handles.append(lock)
+            return handles
+        except Timeout:
+            for handle in handles:              # 失败则回滚已持有的锁
+                handle.release()
+            raise
+
+
+class FencingLockService:
+    """分布式锁服务：每次授予返回单调递增 token"""
+
+    def __init__(self):
+        self._counter = 0
+
+    def grant(self, resource: str) -&gt; int:
+        self._counter += 1
+        return self._counter
+
+
+class FencedStore:
+    """存储端拒绝旧 token，防止过期持有者覆盖新写入"""
+
+    def __init__(self):
+        self._last_token = {}
+        self._data = {}
+
+    def write(self, resource: str, token: int, value):
+        if token &lt;= self._last_token.get(resource, 0):
+            raise PermissionError(f"token {token} 已过期，拒绝写入")
+        self._last_token[resource] = token      # 生产环境需原子完成
+        self._data[resource] = value</code></pre>
+      </details>
+      <p>生产实现里，token 比较和写入要在同一个原子操作里完成（Redis Lua 脚本或数据库条件更新），否则检查和写入之间仍有竞态。合并是最后手段：不同文件直接合；同一文件用三方合并；语义冲突只能靠构建和测试发现。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="safety-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">安全性提升</p><h2 id="safety-title">共识能挡住<br>一部分攻击。</h2></div>
+      <p class="reading-intro">单个 Agent 被注入攻击后，其他 Agent 可以通过投票或共识否决异常行为。原文给出了一组对比数字。</p>
+    </div>
+    <div class="prose">
+      <div class="callout">
+        <p class="callout-label">原文引用数据 · 未联网核实</p>
+        <p>无共识机制：对抗攻击成功率 46.34%。有共识机制：19.37%（降低超过 50%）。这是原文引用的研究结果，不是本页的实测，也不承诺你的系统能达到同样降幅。</p>
+      </div>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">不同场景推荐使用的冲突解决机制</caption>
+          <thead><tr><th scope="col">场景</th><th scope="col">推荐机制</th><th scope="col">原因</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">快速决策、Agent 同质</th><td>多数投票</td><td>简单高效</td></tr>
+            <tr><th scope="row">Agent 专业度不同</th><td>加权投票</td><td>尊重专业判断</td></tr>
+            <tr><th scope="row">需要深度讨论</th><td>共识协议</td><td>多轮精化</td></tr>
+            <tr><th scope="row">高风险决策</th><td>仲裁 + HITL</td><td>人类把关</td></tr>
+            <tr><th scope="row">安全关键操作</th><td>一票否决</td><td>宁可误拒</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">五个容易<br>答偏的点。</h2></div>
+      <p class="reading-intro">前两条是误区，后三条是面试追问；答案来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“多数投票总是对的。”</h3><p>如果大多数 Agent 都基于同一个错误数据源推理，多数投票会放大错误。级联幻觉（一个 Agent 的错误输出导致其他 Agent 连锁出错）是多 Agent 系统中的重要风险。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“共识轮次越多越好。”</h3><p>过多辩论增加延迟和成本。更重要的是，LLM 的趋同效应意味着更多轮次不一定提高质量——Agent 可能只是学会了迎合对方。要设置合理的最大轮次和降级机制。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>拜占庭容错在 LLM 多 Agent 中有用吗？</h3><p>有用。当一个 Agent 被 Prompt Injection 操控产生恶意输出时，它实际上就是一个“拜占庭节点”。BFT 共识机制可以在部分 Agent 被攻陷的情况下维持系统正确性。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>如何检测冲突而不只是解决冲突？</h3><p>实现冲突检测器：比较各 Agent 输出的语义相似度，低于阈值时触发冲突解决流程。结构化输出（如 JSON）可以做字段级别的差异比较。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 3</p>
+      <div><h3>多个 Agent 写同一工作区，只加文件锁够吗？</h3><p>不够。文件锁只防同时写，防不了租约过期后旧持有者继续写，这时需要 fencing token，让存储层拒绝旧编号的写入。另外锁的临界区要尽量小，模型调用和计算都放在锁外。能从任务拆分上避免文件重叠，就不要用锁。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《多 Agent 系统中的冲突解决机制》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://aclanthology.org/2025.findings-acl.606.pdf" target="_blank" rel="noopener noreferrer">Voting or Consensus? Decision-Making in Multi-Agent Debate (ACL 2025)</a></li>
+          <li><a href="https://people.cs.vt.edu/naren/papers/CONSENSAGENT.pdf" target="_blank" rel="noopener noreferrer">CONSENSAGENT: Efficient Consensus in Multi-Agent LLM Interactions (Virginia Tech)</a></li>
+          <li><a href="https://apxml.com/courses/agentic-llm-memory-architectures/chapter-5-multi-agent-systems/coordination-mechanisms-mas" target="_blank" rel="noopener noreferrer">Coordination Mechanisms in Multi-Agent Systems (APXML)</a></li>
+          <li><a href="https://galileo.ai/blog/multi-agent-coordination-strategies" target="_blank" rel="noopener noreferrer">Multi-Agent Coordination Strategies (Galileo)</a></li>
+          <li><a href="https://arxiv.org/html/2501.06322v1" target="_blank" rel="noopener noreferrer">Multi-Agent Collaboration Mechanisms: A Survey (arXiv)</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>04-multi-agent/035-conflict-resolution.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 4 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const CF_AGENTS = Object.freeze([
+    { id: "S", name: "安全 Agent", focus: "风险与合规", vote: "no", weight: 1.0, veto: true },
+    { id: "P", name: "性能 Agent", focus: "延迟与吞吐", vote: "yes", weight: 0.9 },
+    { id: "D", name: "产品 Agent", focus: "交付与体验", vote: "yes", weight: 0.8 },
+    { id: "O", name: "运维 Agent", focus: "容量与回滚", vote: "no", weight: 0.7 },
+    { id: "Q", name: "测试 Agent", focus: "覆盖与稳定性", vote: "yes", weight: 0.6 }
+  ]);
+
+  const CF_RULES = Object.freeze({
+    majority: {
+      label: "多数决",
+      stageLabels: ["立场", "计票", "结果"],
+      stage0: {
+        title: "先看每个人站哪边。",
+        desc: "提案是“是否把 v2.4 直接发布到生产”。安全 Agent 反对，其余四个 Agent 中三个赞成；每个 Agent 还有一个权重，供加权投票使用。",
+        boundary: "投票只收集立场和权重；计票规则由系统预先声明，不能等票投完再改。",
+        facts: [["提案", "v2.4 直接发布"], ["规则", "赞成票 > 总票数 / 2"], ["票数", "5 票，每人 1 票"], ["状态", "已收齐"]]
+      },
+      stage1: {
+        title: "多数决：3 票赞成，超过 2.5。",
+        desc: "赞成票 3 张，反对票 2 张。半数门槛是 5 / 2 = 2.5；3 > 2.5，所以提案通过。",
+        boundary: "多数决只看票数，不看权重和角色。安全 Agent 的反对在这一规则下只是 1 张普通反对票。",
+        facts: [["赞成", "P、D、Q = 3 票"], ["反对", "S、O = 2 票"], ["门槛", "5 / 2 = 2.5"], ["比较", "3 > 2.5"]]
+      },
+      stage2: {
+        title: "结果：通过。",
+        desc: "按多数决，提案通过。但这个结果掩盖了一个重要事实：唯一的安全 Agent 投了反对票。",
+        boundary: "多数决不保护少数派；高风险场景应改用加权投票、一票否决或仲裁。",
+        facts: [["结论", "通过"], ["赞成", "3 / 5 = 60%"], ["反对", "2 / 5 = 40%"], ["风险提示", "安全 Agent 反对"]]
+      }
+    },
+    weighted: {
+      label: "加权投票",
+      stageLabels: ["立场", "计票", "结果"],
+      stage0: {
+        title: "票数一样，权重不一样。",
+        desc: "同样是 3 票赞成、2 票反对，但安全 Agent 权重 1.0，测试 Agent 只有 0.6。加权计票要把权重相加，而不是数人头。",
+        boundary: "权重必须在投票前公开并固定；事后调权重等于改规则。",
+        facts: [["提案", "v2.4 直接发布"], ["规则", "按专业度权重求和"], ["权重范围", "0.6 – 1.0"], ["总权重", "4.0"]]
+      },
+      stage1: {
+        title: "加权：赞成 2.3，反对 1.7。",
+        desc: "赞成权重 0.9 + 0.8 + 0.6 = 2.3；反对权重 1.0 + 0.7 = 1.7。2.3 > 1.7，提案仍然通过，但差距比票数看起来小。",
+        boundary: "权重让专业意见更有分量，但也可能让高权重 Agent 单点主导；权重来源要可审计。",
+        facts: [["赞成权重", "0.9 + 0.8 + 0.6 = 2.3"], ["反对权重", "1.0 + 0.7 = 1.7"], ["总权重", "2.3 + 1.7 = 4.0"], ["比较", "2.3 > 1.7"]]
+      },
+      stage2: {
+        title: "结果：通过，优势收窄。",
+        desc: "加权后仍然通过，但安全 Agent 的 1.0 权重把反对票托到了 1.7，说明安全意见不该被 3 比 2 的表象盖过。",
+        boundary: "加权投票仍可能通过高风险提案；关键操作应叠加否决权或人工审批。",
+        facts: [["结论", "通过"], ["赞成占比", "2.3 / 4.0 = 57.5%"], ["反对占比", "1.7 / 4.0 = 42.5%"], ["风险提示", "安全 Agent 权重最高"]]
+      }
+    },
+    veto: {
+      label: "一票否决",
+      stageLabels: ["立场", "计票", "结果"],
+      stage0: {
+        title: "先认否决权，再数票。",
+        desc: "安全 Agent 持有一票否决权。只要它投反对，其他票怎么分布都不能让提案通过。",
+        boundary: "否决权只应授予明确的安全角色，并写清触发条件；否则会变成任意阻断。",
+        facts: [["提案", "v2.4 直接发布"], ["规则", "安全角色反对即阻止"], ["否决者", "安全 Agent S"], ["其他票", "P、D、Q 赞成；O 反对"]]
+      },
+      stage1: {
+        title: "计票照常，但否决先生效。",
+        desc: "赞成 3 票、反对 2 票；按多数决本会通过。但安全 Agent S 投了反对并触发一票否决，所以结果是阻止。",
+        boundary: "否决不是“多一票”，而是直接改变结论；计票数字仍然保留，便于审计。",
+        facts: [["赞成", "3 票"], ["反对", "2 票"], ["否决", "安全 Agent S 投反对"], ["比较", "否决优先于票数"]]
+      },
+      stage2: {
+        title: "结果：阻止发布。",
+        desc: "提案被阻止。正确做法不是绕过否决，而是让安全 Agent 给出具体风险项和解除条件，再决定是否灰度。",
+        boundary: "一票否决适合“宁可误拒”的安全操作；它不负责给出替代方案。",
+        facts: [["结论", "阻止"], ["触发者", "安全 Agent S"], ["下一步", "列出风险与解除条件"], ["人工复核", "建议保留"]]
+      }
+    }
+  });
+
+  const CF_CONSENSUS = Object.freeze([
+    {
+      stage: 0,
+      votes: { S: "no", P: "yes", D: "yes", O: "no", Q: "yes" },
+      title: "第 1 轮：一致率 60%，没到 80%。",
+      desc: "五个 Agent 中三个赞成、两个反对，一致率 3 / 5 = 60%。当前阈值是 80%，60% < 80%，本轮不通过。",
+      boundary: "一致率按“最常见结论的占比”算，不是按平均分；60% 就是 3 / 5。",
+      facts: [["本轮一致率", "3 / 5 = 60%"], ["当前阈值", "80%"], ["比较", "60% < 80%"], ["下一轮阈值", "80% × 0.95 = 76%"]],
+      bars: [["一致率", 60, "fail"], ["阈值", 80, "fail"]],
+      outcome: "未达成 · 进入下一轮",
+      outcomeClass: "block"
+    },
+    {
+      stage: 1,
+      votes: { S: "no", P: "yes", D: "yes", O: "yes", Q: "yes" },
+      title: "第 2 轮：运维改票，80% 达标。",
+      desc: "运维 Agent 在辩论后改为赞成，一致率升到 4 / 5 = 80%。阈值已从 80% 乘 0.95 降到 76%，80% ≥ 76%，本轮达成共识。",
+      boundary: "改票必须在记录里说明被哪个论据说服；否则无法区分“被说服”和“迎合”。",
+      facts: [["本轮一致率", "4 / 5 = 80%"], ["当前阈值", "80% × 0.95 = 76%"], ["比较", "80% ≥ 76%"], ["改票者", "运维 Agent O"]],
+      bars: [["一致率", 80, "pass"], ["阈值", 76, "pass"]],
+      outcome: "达成共识 · 进入合并",
+      outcomeClass: "pass"
+    },
+    {
+      stage: 2,
+      votes: { S: "no", P: "yes", D: "yes", O: "yes", Q: "yes" },
+      title: "共识结果：合并，但保留反对记录。",
+      desc: "系统合并提案并记录安全 Agent 的反对意见。安全 Agent 没有改票，它的风险项进入发布检查清单。",
+      boundary: "共识结果不等于全员同意；这里是 4 / 5 达标，安全 Agent 仍是反对。",
+      facts: [["最终一致率", "4 / 5 = 80%"], ["最终阈值", "76%"], ["保留反对", "安全 Agent S"], ["后续动作", "风险项进入检查清单"]],
+      bars: [["最终一致率", 80, "pass"], ["最终阈值", 76, "pass"]],
+      outcome: "共识达成 · 附反对记录",
+      outcomeClass: "warn"
+    }
+  ]);
+
+  const CF_ARBITRATION = Object.freeze([
+    {
+      stage: 0,
+      title: "双方陈述：一边要拦，一边要发。",
+      desc: "安全 Agent 认为有 3 个未关闭的高风险项；性能、产品、测试认为基准提升 12%、测试全过，发布收益明确。",
+      boundary: "仲裁前必须让双方把证据和不可逆后果说清楚，不能只交结论。",
+      facts: [["支持发布", "性能 +12%，测试全过"], ["反对发布", "3 个高风险项未关闭"], ["争议焦点", "收益是否覆盖不可逆风险"], ["证据", "双方各交 1 份材料"]],
+      outcome: "待仲裁",
+      outcomeClass: "warn"
+    },
+    {
+      stage: 1,
+      title: "仲裁分析：先看不可逆性。",
+      desc: "仲裁者比较两类代价：延迟发布的收益损失可恢复；错误全量发布造成的用户影响不可逆。因此不直接全量，也不无限期拖延。",
+      boundary: "仲裁者只能裁决授权范围内的事项；技术事实仍应由对应 Agent 提供。",
+      facts: [["可恢复代价", "延迟发布 · 收益损失"], ["不可逆代价", "全量故障 · 用户影响"], ["裁决原则", "先限制爆炸半径"], ["备选", "灰度 / 回滚 / 延期"]],
+      outcome: "倾向灰度",
+      outcomeClass: "warn"
+    },
+    {
+      stage: 2,
+      title: "裁决：灰度 5%，带回滚条件。",
+      desc: "仲裁者决定先放 5% 流量运行 24 小时；安全指标达标后再放量，任一阻断指标触发立即回滚。人类负责人保留最终否决权。",
+      boundary: "仲裁结果必须包含执行条件、回滚条件和责任人；否则只是口头结论。",
+      facts: [["裁决", "灰度 5% · 24 小时"], ["放量条件", "安全指标达标"], ["回滚条件", "任一阻断指标触发"], ["最终否决", "人类负责人保留"]],
+      outcome: "裁决：灰度发布",
+      outcomeClass: "pass"
+    }
+  ]);
+
+  const cfState = { mech: "vote", rule: "majority", step: 0 };
+  const cfById = (id) => document.getElementById(id);
+
+  function cfVoteBadge(agent, vote) {
+    const span = document.createElement("span");
+    const isVeto = agent.veto && vote === "no" && cfState.mech === "vote" && cfState.rule === "veto" && cfState.step >= 1;
+    span.className = "cf-vote " + (isVeto ? "veto" : vote === "yes" ? "yes" : "no");
+    span.textContent = isVeto ? "反对 · 否决" : vote === "yes" ? "赞成" : "反对";
+    return span;
+  }
+
+  function cfCurrentVotes() {
+    if (cfState.mech === "consensus") return CF_CONSENSUS[cfState.step].votes;
+    if (cfState.mech === "arbitration") {
+      return cfState.step === 0 ? { S: "no", P: "yes", D: "yes", O: "yes", Q: "yes" } : { S: "no", P: "yes", D: "yes", O: "yes", Q: "yes" };
+    }
+    return Object.fromEntries(CF_AGENTS.map((agent) => [agent.id, agent.vote]));
+  }
+
+  function cfRenderAgents() {
+    const host = cfById("cf-agents");
+    host.textContent = "";
+    const votes = cfCurrentVotes();
+    CF_AGENTS.forEach((agent) => {
+      const card = document.createElement("div");
+      card.className = "cf-agent" + (agent.veto ? " is-veto" : "");
+      const head = document.createElement("div");
+      head.className = "cf-agent-head";
+      const name = document.createElement("div");
+      name.className = "cf-agent-name";
+      name.textContent = agent.name;
+      const code = document.createElement("span");
+      code.textContent = agent.id + " · " + agent.focus;
+      name.append(code);
+      const weight = document.createElement("span");
+      weight.className = "cf-weight";
+      weight.textContent = "权重 " + agent.weight.toFixed(1);
+      head.append(name, weight);
+      card.append(head, cfVoteBadge(agent, votes[agent.id]));
+      if (agent.veto) {
+        const note = document.createElement("p");
+        note.textContent = "持一票否决权";
+        card.append(note);
+      }
+      host.append(card);
+    });
+  }
+
+  function cfRenderVoteVerdict() {
+    const host = cfById("cf-verdict");
+    host.textContent = "";
+    const rule = CF_RULES[cfState.rule];
+    const stepData = rule["stage" + cfState.step];
+    const head = document.createElement("div");
+    head.className = "cf-verdict-head";
+    const title = document.createElement("b");
+    title.textContent = cfState.step === 0 ? "立场记录" : cfState.step === 1 ? "计票过程" : "裁决结果";
+    const sub = document.createElement("span");
+    sub.textContent = rule.label + " · 5 票 · 权重合计 4.0";
+    head.append(title, sub);
+    host.append(head);
+
+    if (cfState.step === 0) {
+      const calc = document.createElement("p");
+      calc.className = "cf-calc";
+      calc.textContent = "赞成：P、D、Q（3 票） · 反对：S、O（2 票） · 规则：" + rule.label;
+      host.append(calc);
+      return;
+    }
+
+    const calc = document.createElement("p");
+    calc.className = "cf-calc";
+    if (cfState.rule === "majority") {
+      calc.textContent = "3 赞成 > 5 / 2 = 2.5 → " + (cfState.step === 2 ? "通过" : "达到通过门槛");
+    } else if (cfState.rule === "weighted") {
+      calc.textContent = "赞成 0.9 + 0.8 + 0.6 = 2.3；反对 1.0 + 0.7 = 1.7；2.3 > 1.7 → " + (cfState.step === 2 ? "通过" : "达到通过门槛");
+    } else {
+      calc.textContent = "安全 Agent S 投反对 → 一票否决生效；赞成 3 票不再决定结果";
+    }
+    host.append(calc);
+
+    const outcome = document.createElement("span");
+    outcome.className = "cf-outcome " + (cfState.rule === "veto" ? "block" : "pass");
+    outcome.textContent = cfState.rule === "veto" ? "阻止发布 · 否决生效" : "通过 · 赞成方胜出";
+    host.append(outcome);
+  }
+
+  function cfRenderConsensusVerdict() {
+    const host = cfById("cf-verdict");
+    host.textContent = "";
+    const stepData = CF_CONSENSUS[cfState.step];
+    const head = document.createElement("div");
+    head.className = "cf-verdict-head";
+    const title = document.createElement("b");
+    title.textContent = cfState.step === 0 ? "第 1 轮计票" : cfState.step === 1 ? "第 2 轮计票" : "共识结果";
+    const sub = document.createElement("span");
+    sub.textContent = `一致率 ${stepData.bars[0][1]}% · 阈值 ${stepData.bars[1][1]}%`;
+    head.append(title, sub);
+    host.append(head);
+
+    const bars = document.createElement("div");
+    bars.className = "cf-bars";
+    stepData.bars.forEach(([label, value, cls]) => {
+      const row = document.createElement("div");
+      row.className = "cf-bar-row";
+      const name = document.createElement("span");
+      name.textContent = label;
+      const track = document.createElement("div");
+      track.className = "cf-bar";
+      const fill = document.createElement("i");
+      fill.className = cls;
+      fill.style.width = value + "%";
+      track.append(fill);
+      const num = document.createElement("b");
+      num.textContent = value + "%";
+      row.append(name, track, num);
+      bars.append(row);
+    });
+    host.append(bars);
+
+    const outcome = document.createElement("span");
+    outcome.className = "cf-outcome " + stepData.outcomeClass;
+    outcome.textContent = stepData.outcome;
+    host.append(outcome);
+  }
+
+  function cfRenderArbitrationVerdict() {
+    const host = cfById("cf-verdict");
+    host.textContent = "";
+    const head = document.createElement("div");
+    head.className = "cf-verdict-head";
+    const title = document.createElement("b");
+    title.textContent = ["双方立场", "仲裁分析", "最终裁决"][cfState.step];
+    const sub = document.createElement("span");
+    sub.textContent = "仲裁者：人类负责人指派";
+    head.append(title, sub);
+    host.append(head);
+
+    if (cfState.step === 0) {
+      const sides = document.createElement("div");
+      sides.className = "cf-sides";
+      [["release", "放行方", "性能 +12%，测试全过；延迟发布有收益损失。"], ["block", "阻止方", "3 个高风险项未关闭；全量故障不可逆。"]].forEach(([cls, name, text]) => {
+        const side = document.createElement("div");
+        side.className = "cf-side " + cls;
+        const h = document.createElement("h3");
+        h.textContent = name;
+        const p = document.createElement("p");
+        p.textContent = text;
+        side.append(h, p);
+        sides.append(side);
+      });
+      host.append(sides);
+    } else {
+      const note = document.createElement("p");
+      note.className = "cf-calc";
+      note.textContent = cfState.step === 1
+        ? "可恢复代价 < 不可逆代价 → 不直接全量，也不无限期拖延 → 选择限制爆炸半径。"
+        : "灰度 5% · 24 小时 · 安全指标达标才放量 · 任一阻断指标触发回滚 · 人类保留最终否决。";
+      host.append(note);
+    }
+
+    const outcome = document.createElement("span");
+    outcome.className = "cf-outcome " + CF_ARBITRATION[cfState.step].outcomeClass;
+    outcome.textContent = CF_ARBITRATION[cfState.step].outcome;
+    host.append(outcome);
+  }
+
+  function cfRender() {
+    const mech = cfState.mech;
+    let stepData;
+    if (mech === "vote") stepData = CF_RULES[cfState.rule]["stage" + cfState.step];
+    else if (mech === "consensus") stepData = CF_CONSENSUS[cfState.step];
+    else stepData = CF_ARBITRATION[cfState.step];
+
+    cfRenderAgents();
+    if (mech === "vote") cfRenderVoteVerdict();
+    else if (mech === "consensus") cfRenderConsensusVerdict();
+    else cfRenderArbitrationVerdict();
+
+    const labels = mech === "vote" ? CF_RULES[cfState.rule].stageLabels : mech === "consensus" ? ["首轮", "次轮", "共识"] : ["陈述", "权衡", "裁决"];
+    document.querySelectorAll("#explainer [data-stage-label]").forEach((span, index) => {
+      span.textContent = labels[index];
+      const button = span.closest("button");
+      button.setAttribute("aria-label", `第 ${index + 1} 步：${labels[index]}`);
+    });
+
+    cfById("cf-figure").textContent = `图 1 · ${mech === "vote" ? "投票 · " + CF_RULES[cfState.rule].label : mech === "consensus" ? "共识" : "仲裁"} · 第 ${cfState.step + 1} / 3 步`;
+    cfById("cf-caption-title").textContent = stepData.title;
+    cfById("cf-desc").textContent = stepData.desc;
+    const facts = cfById("cf-facts");
+    facts.textContent = "";
+    stepData.facts.forEach(([label, value]) => {
+      const row = document.createElement("div");
+      const dt = document.createElement("dt");
+      dt.textContent = label;
+      const dd = document.createElement("dd");
+      dd.textContent = value;
+      row.append(dt, dd);
+      facts.append(row);
+    });
+    cfById("cf-boundary").textContent = "";
+    const boundaryLabel = document.createElement("b");
+    boundaryLabel.textContent = "角色边界：";
+    cfById("cf-boundary").append(boundaryLabel, document.createTextNode(stepData.boundary));
+
+    cfById("cf-rules").hidden = mech !== "vote";
+    document.querySelectorAll("#explainer [data-mech]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.mech === mech));
+    });
+    document.querySelectorAll("#explainer [data-rule]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.rule === cfState.rule));
+    });
+    document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+      if (Number(button.dataset.step) === cfState.step) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    cfById("cf-prev").disabled = cfState.step === 0;
+    cfById("cf-next").disabled = cfState.step === 2;
+    const mechLabel = mech === "vote" ? "投票 · " + CF_RULES[cfState.rule].label : mech === "consensus" ? "共识" : "仲裁";
+    cfById("cf-state-summary").textContent = `${mechLabel} · 第 ${cfState.step + 1} / 3 步 · 没有连接 Agent`;
+  }
+
+  function cfAnnounce(prefix) {
+    let stepData;
+    if (cfState.mech === "vote") stepData = CF_RULES[cfState.rule]["stage" + cfState.step];
+    else if (cfState.mech === "consensus") stepData = CF_CONSENSUS[cfState.step];
+    else stepData = CF_ARBITRATION[cfState.step];
+    cfById("cf-announcement").textContent = `${prefix}第 ${cfState.step + 1} 步，共 3 步。${stepData.title}`;
+  }
+
+  document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+    button.addEventListener("click", () => {
+      cfState.step = Number(button.dataset.step);
+      cfRender();
+      cfAnnounce("");
+    });
+  });
+  document.querySelectorAll("#explainer [data-mech]").forEach((button) => {
+    button.addEventListener("click", () => {
+      cfState.mech = button.dataset.mech;
+      cfState.step = 0;
+      cfRender();
+      cfAnnounce("");
+    });
+  });
+  document.querySelectorAll("#explainer [data-rule]").forEach((button) => {
+    button.addEventListener("click", () => {
+      cfState.rule = button.dataset.rule;
+      cfRender();
+      cfAnnounce("");
+    });
+  });
+  cfById("cf-prev").addEventListener("click", () => {
+    cfState.step = Math.max(0, cfState.step - 1);
+    cfRender();
+    cfAnnounce("");
+  });
+  cfById("cf-next").addEventListener("click", () => {
+    cfState.step = Math.min(2, cfState.step + 1);
+    cfRender();
+    cfAnnounce("");
+  });
+  cfById("cf-reset").addEventListener("click", () => {
+    cfState.mech = "vote";
+    cfState.rule = "majority";
+    cfState.step = 0;
+    cfRender();
+    cfAnnounce("已重置。");
+  });
+  cfRender();
+</script>
+</body>
+</html>

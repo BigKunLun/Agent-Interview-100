@@ -1,0 +1,940 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>任务分解（Task Decomposition）的基本方法 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  /* 050 任务分解 */
+  .d-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .d-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+  .d-caption > p:not(.figure-index) { margin-top: var(--s-2); font-size: var(--t-small); color: var(--text-dim); max-width: 66em; }
+  .d-panel { margin-top: var(--s-4); }
+  .d-coarse { border: 1px solid #b45309; border-radius: var(--r-1); background: #fff8e8; padding: var(--s-4); }
+  .d-big-task { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-3); flex-wrap: wrap; }
+  .d-big-task b { font-size: 16px; line-height: 1.5; }
+  .d-big-task span { font: 11px/1.6 var(--mono); color: #8a5a00; }
+  .d-coarse-note { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px dashed #d6b877; font-size: 12px; line-height: 1.65; color: #6b4a08; }
+  .d-flow { display: grid; grid-template-columns: minmax(0, 1.1fr) 18px minmax(0, 1.4fr) 18px minmax(0, 1.1fr) 18px minmax(0, 1.1fr); gap: 8px; align-items: center; }
+  .d-task { border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); padding: 9px 10px; min-width: 0; }
+  .d-task b { display: block; font-size: 12px; line-height: 1.45; }
+  .d-task span { display: block; margin-top: 3px; font: 10px/1.45 var(--mono); color: var(--text-dim); }
+  .d-task.is-first { border-color: var(--accent); background: var(--accent-dim); }
+  .d-arrow { text-align: center; color: var(--text-dim); font-size: 15px; }
+  .d-parallel { border: 1px dashed #2e7d32; border-radius: var(--r-1); background: #f1f8f1; padding: 8px; display: grid; gap: 6px; min-width: 0; }
+  .d-parallel-label { font: 10px/1.4 var(--mono); color: #1b5e20; letter-spacing: .04em; }
+  .d-parallel .d-task { border-color: #9aa89a; }
+  .d-fine-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+  .d-micro { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 7px 8px; min-width: 0; }
+  .d-micro b { display: block; font: 10px/1.4 var(--mono); color: var(--text-dim); }
+  .d-micro span { display: block; margin-top: 2px; font-size: 11px; line-height: 1.45; }
+  .d-fine-note { margin-top: var(--s-3); font-size: 12px; line-height: 1.65; color: var(--text-dim); }
+  .d-fine-note b { color: var(--ink); }
+  .d-adapt-head { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: 10px 12px; }
+  .d-adapt-step { font: 11px/1.5 var(--mono); color: var(--text-dim); }
+  .d-adapt-head h3 { margin: 2px 0 0; font-size: 15px; line-height: 1.5; }
+  .d-adapt-head p:last-child { margin-top: 3px; font-size: 12px; line-height: 1.6; color: var(--text-dim); max-width: 62em; }
+  .d-adapt-tree { margin-top: var(--s-4); display: flex; flex-direction: column; align-items: center; }
+  .d-adapt-root { width: min(300px, 100%); position: relative; padding-bottom: 16px; }
+  .d-adapt-root::after { content: ""; position: absolute; left: 50%; bottom: 0; height: 16px; border-left: 1px solid var(--border-bright); }
+  .d-adapt-row { width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding-top: 16px; position: relative; align-items: start; }
+  .d-adapt-row::before { content: ""; position: absolute; top: 0; left: 16.66%; right: 16.66%; border-top: 1px solid var(--border-bright); }
+  .d-adapt-branch { position: relative; padding-top: 16px; min-width: 0; }
+  .d-adapt-branch::before { content: ""; position: absolute; top: 0; left: 50%; height: 16px; border-left: 1px solid var(--border-bright); }
+  .d-adapt-sub { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 16px; padding-top: 16px; position: relative; }
+  .d-adapt-sub::before { content: ""; position: absolute; top: 0; left: 25%; right: 25%; border-top: 1px solid var(--border-bright); }
+  .d-adapt-sub .d-adapt-node { position: relative; }
+  .d-adapt-sub .d-adapt-node::before { content: ""; position: absolute; top: -16px; left: 50%; height: 16px; border-left: 1px solid var(--border-bright); }
+  .d-adapt-node { border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); padding: 8px 9px; min-width: 0; }
+  .d-adapt-node b { display: block; font-size: 12px; line-height: 1.45; }
+  .d-adapt-node span { display: block; margin-top: 3px; font: 10px/1.4 var(--mono); color: var(--text-dim); }
+  .d-adapt-node.is-run { border-color: var(--accent); background: var(--accent-dim); }
+  .d-adapt-node.is-run span { color: #143f6b; font-weight: 600; }
+  .d-adapt-node.is-fail { border-color: #c62828; background: #fff3f3; }
+  .d-adapt-node.is-fail span { color: #b71c1c; font-weight: 600; }
+  .d-adapt-node.is-ok { border-color: #2e7d32; background: #f1f8f1; }
+  .d-adapt-node.is-ok span { color: #1b5e20; font-weight: 600; }
+  .d-adapt-node.is-split { border-color: #b45309; background: #fff8e8; }
+  .d-adapt-node.is-split span { color: #8a5a00; font-weight: 600; }
+  .d-adapt-node.is-wait { border-style: dashed; }
+  .d-metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-4); }
+  .d-metric { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 8px 10px; min-width: 0; }
+  .d-metric span { display: block; font-size: 10px; line-height: 1.4; color: var(--text-dim); }
+  .d-metric b { display: block; margin-top: 2px; font: 600 20px/1.2 var(--serif); }
+  .d-verdict { margin-top: var(--s-3); border-left: 3px solid var(--accent); padding: 4px 0 4px 12px; font-size: 12px; line-height: 1.65; color: var(--text-dim); }
+  .d-verdict b { color: var(--ink); }
+  .d-tree-note { margin-top: var(--s-3); font-size: 11px; line-height: 1.6; color: var(--text-dim); }
+  .d-mode-hint { margin-top: var(--s-2); font: 11px/1.6 var(--mono); color: var(--text-dim); }
+  .d-method-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .d-method-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .d-method-card h3 { margin-top: 0; font-size: 15px; }
+  .d-method-card p { margin-top: var(--s-2); font-size: 12px; line-height: 1.6; color: var(--text-dim); }
+  .d-method-card .d-method-tag { display: inline-block; font: 10px/1.5 var(--mono); color: var(--accent); }
+  @media (max-width: 1000px) {
+    .d-flow { grid-template-columns: 1fr; gap: 6px; }
+    .d-arrow { transform: rotate(90deg); }
+    .d-fine-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 900px) {
+    .d-adapt-tree { align-items: stretch; }
+    .d-adapt-root { width: 100%; padding-bottom: 0; }
+    .d-adapt-root::after { display: none; }
+    .d-adapt-row { display: block; padding-top: 0; }
+    .d-adapt-row::before { display: none; }
+    .d-adapt-branch { padding-top: 0; margin-top: 8px; margin-left: 14px; }
+    .d-adapt-branch::before { display: none; }
+    .d-adapt-sub { margin-top: 8px; padding-top: 0; margin-left: 18px; }
+    .d-adapt-sub::before { display: none; }
+    .d-adapt-sub .d-adapt-node::before { display: none; }
+    .d-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px) {
+    .d-stage { padding: var(--s-4); }
+    .d-caption h2 { font-size: 22px; }
+    .d-flow { gap: 5px; }
+    .d-fine-grid { grid-template-columns: 1fr 1fr; }
+    .d-method-grid { grid-template-columns: 1fr; }
+    .d-metrics { grid-template-columns: 1fr 1fr; }
+    .d-metric b { font-size: 18px; }
+    .d-adapt-row { display: block; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">050 / 任务分解</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 1 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><span class="disabled">← 上一页</span><a href="052-plan-and-solve-replanning.html">下一页 → · Plan-and-Solve 与动态…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">基础 · Planning &amp; Reasoning · 可交互讲解</p>
+      <h1>把大任务拆小，<br>但别拆得太碎。</h1>
+    </div>
+    <div>
+      <p class="lead">任务分解把复杂目标拆成可执行的子任务。四种方法各有取舍：LLM 驱动灵活、程序化可靠、HTN 递归、ADaPT 只在失败时拆。真正难的是粒度。</p>
+      <p class="definition">关键权衡：太粗 LLM 一次做不完，太细协调开销压过收益。原文数据：ADaPT 在 ALFWorld、WebShop、TextCraft 上分别提升 28.3%、27%、33%，属<strong>原文版本、未联网核实</strong>，不是本页实测。</p>
+      <div class="hero-meta"><span class="pill">基础</span><span class="pill">Planning &amp; Reasoning</span><span class="pill">任务分解</span><span class="pill">固定教学数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="d-title">
+    <div class="player-top">
+      <div class="player-label">任务分解台 <small>固定任务：做一份竞品分析报告</small></div>
+      <div class="controls" role="group" aria-label="任务分解演示控制">
+        <button type="button" class="button button-quiet" id="d-reset">重置</button>
+        <button type="button" class="button" id="d-prev" hidden disabled>上一步</button>
+        <button type="button" class="button button-primary" id="d-next" hidden>下一步 →</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="任务分解粒度">
+      <ol style="--stages: 4">
+        <li><button type="button" class="stage-button" data-mode="coarse" aria-controls="d-scene"><span class="stage-number">1</span><span>太粗</span></button></li>
+        <li><button type="button" class="stage-button" data-mode="fit" aria-current="step" aria-controls="d-scene"><span class="stage-number">2</span><span>适中</span></button></li>
+        <li><button type="button" class="stage-button" data-mode="fine" aria-controls="d-scene"><span class="stage-number">3</span><span>太细</span></button></li>
+        <li><button type="button" class="stage-button" data-mode="adapt" aria-controls="d-scene"><span class="stage-number">4</span><span>ADaPT</span></button></li>
+      </ol>
+    </nav>
+    <div class="d-stage scene" id="d-scene" data-scene="decomposition">
+      <div class="d-caption">
+        <p class="figure-index" id="d-position">图 1 · 适中粒度</p>
+        <h2 id="d-title">适中：五个子任务，两个可以并行。</h2>
+        <p id="d-desc">原文示例把报告拆成五步：确定竞品列表、分别收集 A/B 数据、对比分析、生成报告。收集 A 和 B 都只依赖第一步，可以并行。</p>
+      </div>
+
+      <div class="d-panel" data-panel="coarse" hidden>
+        <div class="d-coarse">
+          <div class="d-big-task"><b>做一份完整的竞品分析报告</b><span>1 个任务 · 1 次调用</span></div>
+          <p class="d-coarse-note">范围模糊、步骤多、依赖长。LLM 擅长聚焦、范围明确的任务，不擅长一次处理长依赖链；直接丢过去，输出质量不稳定。</p>
+        </div>
+      </div>
+
+      <div class="d-panel" data-panel="fit">
+        <div class="d-flow">
+          <div class="d-task is-first"><b>T1 确定竞品列表</b><span>web_search · 无依赖</span></div>
+          <div class="d-arrow" aria-hidden="true">→</div>
+          <div class="d-parallel">
+            <p class="d-parallel-label">并行组：都只依赖 T1</p>
+            <div class="d-task"><b>T2 收集竞品 A 数据</b><span>web_search · 依赖 T1</span></div>
+            <div class="d-task"><b>T3 收集竞品 B 数据</b><span>web_search · 依赖 T1</span></div>
+          </div>
+          <div class="d-arrow" aria-hidden="true">→</div>
+          <div class="d-task"><b>T4 对比分析</b><span>无工具 · 依赖 T2、T3</span></div>
+          <div class="d-arrow" aria-hidden="true">→</div>
+          <div class="d-task"><b>T5 生成报告</b><span>write_file · 依赖 T4</span></div>
+        </div>
+        <p class="d-tree-note">子任务图来自原文示例：T2 与 T3 都只依赖 T1，可以并行；T4 必须等两者都完成。</p>
+      </div>
+
+      <div class="d-panel" data-panel="fine" hidden>
+        <div class="d-fine-grid">
+          <div class="d-micro"><b>01</b><span>搜索“竞品 A 产品特性”</span></div>
+          <div class="d-micro"><b>02</b><span>提取第 1 条结果的标题</span></div>
+          <div class="d-micro"><b>03</b><span>提取第 1 条结果的正文</span></div>
+          <div class="d-micro"><b>04</b><span>保存竞品 A 摘要</span></div>
+          <div class="d-micro"><b>05</b><span>搜索“竞品 B 产品特性”</span></div>
+          <div class="d-micro"><b>06</b><span>提取第 1 条结果的标题</span></div>
+          <div class="d-micro"><b>07</b><span>提取第 1 条结果的正文</span></div>
+          <div class="d-micro"><b>08</b><span>保存竞品 B 摘要</span></div>
+          <div class="d-micro"><b>09</b><span>合并两个摘要</span></div>
+          <div class="d-micro"><b>10</b><span>生成报告</span></div>
+        </div>
+        <p class="d-fine-note"><b>示意数据：</b>这里只列出 10 个微步骤。原文提醒，继续拆下去可能出现上百个微步骤，调用次数、依赖管理和失败重试的协调开销会成倍增加。</p>
+      </div>
+
+      <div class="d-panel" data-panel="adapt" hidden>
+        <div class="d-adapt-head">
+          <p class="d-adapt-step" id="d-adapt-step">ADaPT · 第 1 / 4 步</p>
+          <h3 id="d-adapt-title">先尝试直接执行整个任务。</h3>
+          <p id="d-adapt-desc">ADaPT 不先拆分，直接让 LLM 做完整任务。能做好就结束，避免不必要的分解。</p>
+        </div>
+        <div class="d-adapt-tree" role="group" aria-label="ADaPT 按需分解树">
+          <div class="d-adapt-root">
+            <div class="d-adapt-node is-run" data-adapt="root"><b>竞品分析报告</b><span data-adapt-state>尝试直接执行</span></div>
+          </div>
+          <div class="d-adapt-row" id="d-adapt-row" hidden>
+            <div class="d-adapt-branch">
+              <div class="d-adapt-node is-wait" data-adapt="n1"><b>1 收集竞品数据</b><span data-adapt-state>待尝试</span></div>
+            </div>
+            <div class="d-adapt-branch">
+              <div class="d-adapt-node is-wait" data-adapt="n2"><b>2 对比分析</b><span data-adapt-state>待尝试</span></div>
+              <div class="d-adapt-sub" id="d-adapt-sub" hidden>
+                <div class="d-adapt-node is-wait" data-adapt="n2a"><b>2.1 对比产品特性</b><span data-adapt-state>待尝试</span></div>
+                <div class="d-adapt-node is-wait" data-adapt="n2b"><b>2.2 对比定价</b><span data-adapt-state>待尝试</span></div>
+              </div>
+            </div>
+            <div class="d-adapt-branch">
+              <div class="d-adapt-node is-wait" data-adapt="n3"><b>3 生成报告</b><span data-adapt-state>待尝试</span></div>
+            </div>
+          </div>
+        </div>
+        <p class="d-tree-note">子任务 1、2、3 为固定教学拆分；原文只规定“失败才分解、子任务递归走同一流程”，没有规定具体拆法。</p>
+      </div>
+
+      <div class="d-metrics" id="d-metrics" aria-label="分解指标"></div>
+      <p class="d-verdict" id="d-verdict"><b>适中：</b>每个子任务一次搜索或一次分析可完成；T2、T3 只依赖 T1，可以并行。</p>
+      <p class="demo-note">固定教学数据：任务、子任务、依赖关系、微步骤和 ADaPT 状态均为演示而设，不是模型实时输出。本页不调用模型，也不执行任何工具。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 粒度切换与 ADaPT 递归都由页面脚本控制</span><span id="d-state-summary">适中粒度 · 没有连接模型</span></div>
+  </section>
+  <p id="d-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="d-why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">一 · 为什么拆，怎么拆</p><h2 id="d-why-title">先看任务，<br>再选方法。</h2></div>
+      <p class="reading-intro">LLM 擅长聚焦、范围明确的任务；不擅长模糊、多步骤、长依赖链的复杂任务。分解的目的，是把后者变成前者。</p>
+    </div>
+    <div class="prose">
+      <p>“帮我做一份竞品分析报告”包含五类工作：确定竞品、收集资料、收集市场与定价、对比分析、生成报告。把它们拆开，每一步都能用一次模型调用或一次工具调用完成。</p>
+      <p class="code-label">原文示例：从复杂任务到子任务</p>
+      <pre><code>复杂任务："帮我做一份竞品分析报告"
+  ↓ 分解
+子任务 1: 确定要分析的竞品列表
+子任务 2: 收集每个竞品的产品特性
+子任务 3: 收集市场数据和定价信息
+子任务 4: 对比分析优劣势
+子任务 5: 生成报告和可视化图表</code></pre>
+
+      <h3>方法 1：LLM 驱动分解</h3>
+      <p>用 Prompt 让 LLM 自行拆分，要求它输出带依赖关系和工具标注的 JSON。最灵活，适合未知或多变的任务；缺点是可能产生逻辑错误或遗漏步骤。</p>
+      <p class="code-label">原文 Prompt 与输出示例</p>
+      <pre><code>将以下任务分解为可独立执行的子任务列表。
+
+要求：
+1. 每个子任务足够小，可以用一次 LLM 调用或一次工具调用完成
+2. 明确标注子任务间的依赖关系
+3. 标注每个子任务需要的工具
+
+输出 JSON 格式：
+[
+  {"id": 1, "task": "...", "depends_on": [], "tools": ["search"]},
+  {"id": 2, "task": "...", "depends_on": [1], "tools": ["analyze"]}
+]
+
+示例输出：
+{"id": 1, "task": "搜索竞品列表", "depends_on": [], "tools": ["web_search"]}
+{"id": 2, "task": "收集竞品A的数据", "depends_on": [1], "tools": ["web_search"]}
+{"id": 3, "task": "收集竞品B的数据", "depends_on": [1], "tools": ["web_search"]}
+{"id": 4, "task": "对比分析", "depends_on": [2, 3], "tools": []}
+{"id": 5, "task": "生成报告", "depends_on": [4], "tools": ["write_file"]}</code></pre>
+      <p>注意 2 和 3 都只依赖 1，可以并行。分解结果不只是任务列表，还要带上依赖和工具，后续编排才有依据。</p>
+
+      <h3>方法 2：程序化分解</h3>
+      <p>用代码预定义拆分规则，确定、可靠，适合固定流程的业务逻辑。代价是不灵活，任务一变就要改代码。</p>
+      <p class="code-label">原文示例：固定流水线</p>
+      <pre><code>steps = [
+    {"name": "data_collection", "agent": "researcher", "parallel": True},
+    {"name": "data_analysis", "agent": "analyst", "parallel": False},
+    {"name": "draft_writing", "agent": "writer", "parallel": False},
+    {"name": "review", "agent": "reviewer", "parallel": False},
+]
+
+for step in self.steps:
+    agent = self.get_agent(step["agent"])
+    context[step["name"]] = await agent.execute(context)</code></pre>
+      <p>这种写法把“做什么”固化在代码里，运行时不需要 LLM 参与规划。稳定，但遇到没预设过的任务就无能为力。</p>
+
+      <div class="d-method-grid">
+        <div class="d-method-card"><span class="d-method-tag">方法 1</span><h3>LLM 驱动</h3><p>灵活，适合未知或多变任务；稳定性靠校验和重试兜底。</p></div>
+        <div class="d-method-card"><span class="d-method-tag">方法 2</span><h3>程序化</h3><p>可靠，适合成熟业务流程；任务变化需要改代码。</p></div>
+        <div class="d-method-card"><span class="d-method-tag">方法 3</span><h3>HTN 层级分解</h3><p>递归拆到“可直接执行”，适合复杂但有结构的任务。</p></div>
+        <div class="d-method-card"><span class="d-method-tag">方法 4</span><h3>ADaPT 按需分解</h3><p>先直接做，失败才拆；只在必要时付出分解成本。</p></div>
+      </div>
+    </div>
+  </section>
+  <section class="reading" aria-labelledby="d-htn-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">二 · 递归与按需</p><h2 id="d-htn-title">拆到能执行，<br>或者拆到失败为止。</h2></div>
+      <p class="reading-intro">HTN 一路递归，直到每个子任务都能直接执行；ADaPT 反过来，先尝试直接执行，失败了才拆。两者都靠“是否可执行”决定何时停。</p>
+    </div>
+    <div class="prose">
+      <h3>方法 3：层级分解（HTN）</h3>
+      <p>HTN 递归拆分任务，直到每个子任务都是“原始任务”——可以用一次工具调用完成。原文实现用两个停止条件：任务已经被判断为原始任务，或者到达最大深度。</p>
+      <p class="code-label">原文递归骨架</p>
+      <pre><code>async def decompose(self, task, depth=0, max_depth=3):
+    if depth &gt;= max_depth:
+        return [task]              # 达到最大深度，不再分解
+    if await self.is_primitive(task):
+        return [task]              # 已经可以直接执行
+    subtasks = await self.llm_decompose(task)
+    all_tasks = []
+    for subtask in subtasks:
+        all_tasks.extend(await self.decompose(subtask, depth + 1))
+    return all_tasks</code></pre>
+      <p>判断“是否原始任务”本身也调用 LLM：问它“这个任务能否用一次搜索、代码执行或 API 调用完成”。这个判断的质量直接决定递归会不会过早停止或拆得过深。</p>
+
+      <details>
+        <summary>展开原文 HTN 完整代码</summary>
+        <pre><code>class HierarchicalDecomposition:
+    """递归分解：直到每个子任务可直接执行"""
+
+    async def decompose(self, task, depth=0, max_depth=3):
+        if depth &gt;= max_depth:
+            return [task]  # 达到最大深度，不再分解
+
+        # 判断任务是否足够简单可以直接执行
+        if await self.is_primitive(task):
+            return [task]
+
+        # 分解为子任务
+        subtasks = await self.llm_decompose(task)
+
+        # 递归分解每个子任务
+        all_tasks = []
+        for subtask in subtasks:
+            decomposed = await self.decompose(subtask, depth + 1)
+            all_tasks.extend(decomposed)
+
+        return all_tasks
+
+    async def is_primitive(self, task):
+        """判断任务是否可以用一次工具调用完成"""
+        response = await self.llm.invoke(
+            f"这个任务能否用一次搜索/代码执行/API调用完成？"
+            f"任务：{task}\n回答 yes 或 no"
+        )
+        return response.strip().lower() == "yes"</code></pre>
+      </details>
+
+      <h3>方法 4：自适应分解（ADaPT）</h3>
+      <p>ADaPT（As-Needed Decomposition and Planning）先尝试直接执行。成功就返回；失败才分解，然后让每个子任务递归走同一流程，最后聚合子结果。</p>
+      <p class="code-label">原文执行骨架</p>
+      <pre><code>async def solve(self, task):
+    result = await self.attempt(task)
+    if result.success:
+        return result
+    subtasks = await self.decompose(task)
+    results = []
+    for subtask in subtasks:
+        sub_result = await self.solve(subtask)   # 子任务递归
+        results.append(sub_result)
+    return self.aggregate(results)</code></pre>
+      <p>“失败”不只看异常：输出质量不达标也算失败。原文的 <code>attempt</code> 会先校验结果，校验不过就返回 <code>Failure("输出质量不达标")</code>，再进入分解。</p>
+
+      <div class="callout">
+        <p class="callout-label">原文数据、未联网核实</p>
+        <p>ADaPT 在 ALFWorld 上提升 <strong>28.3%</strong>，WebShop 提升 <strong>27%</strong>，TextCraft 提升 <strong>33%</strong>；简短回答概括为 27–33%。这些数字来自原论文设置，不是本页实测，也不保证换任务后仍成立。</p>
+      </div>
+
+      <details>
+        <summary>展开原文 ADaPT 完整代码与流程图源码</summary>
+        <pre><code>class ADaPT:
+    """As-Needed Decomposition and Planning with LLMs"""
+
+    async def solve(self, task):
+        # 先尝试直接执行
+        result = await self.attempt(task)
+
+        if result.success:
+            return result
+        else:
+            # 执行失败 → 分解后重试
+            subtasks = await self.decompose(task)
+            results = []
+            for subtask in subtasks:
+                # 递归：每个子任务也先尝试直接执行
+                sub_result = await self.solve(subtask)
+                results.append(sub_result)
+            return self.aggregate(results)
+
+    async def attempt(self, task):
+        """尝试直接用 LLM 执行任务"""
+        try:
+            result = await self.llm.invoke(task)
+            if self.validate(result):
+                return Success(result)
+            else:
+                return Failure("输出质量不达标")
+        except Exception as e:
+            return Failure(str(e))</code></pre>
+        <p class="code-label">流程图源码 · 原文 Mermaid</p>
+        <pre><code>flowchart TD
+    T["任务"] --&gt; E["尝试直接执行"]
+    E --&gt; Q{"成功?"}
+    Q -- "是" --&gt; R["返回结果"]
+    Q -- "否" --&gt; D["分解为子任务"]
+    D --&gt; RC["递归求解&lt;br/&gt;（子任务走同一流程）"]
+    RC --&gt; AG["聚合子结果"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    class T,E,R,D,RC,AG proc
+    class Q decision</code></pre>
+        <p class="source-footnote">源码按原文保留，仅做 HTML 转义；本页互动里的 ADaPT 树按同一“尝试 → 失败 → 分解 → 递归 → 聚合”关系呈现。</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="d-rep-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三 · 表示、粒度与选型</p><h2 id="d-rep-title">拆完以后，<br>还要说清怎么连。</h2></div>
+      <p class="reading-intro">子任务可以表示成线性序列、DAG 或树。表示方式决定哪些步骤能并行；粒度则决定每一步值不值得单独调用。</p>
+    </div>
+    <div class="prose">
+      <h3>三种子任务表示</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">线性序列、DAG 和树形层级三种子任务表示方式的对比</caption>
+          <thead><tr><th scope="col">表示</th><th scope="col">结构</th><th scope="col">适合</th><th scope="col">限制</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">线性序列</th><td>任务按顺序排成一条链。</td><td>步骤固定、无并行需求的流程。</td><td>无法表达并行和复杂依赖。</td></tr>
+            <tr><th scope="row">DAG</th><td>节点是任务，边是依赖；允许多个前驱。</td><td>有并行机会、依赖关系明确的流程。</td><td>要额外做拓扑排序和依赖管理。</td></tr>
+            <tr><th scope="row">树形层级</th><td>任务递归包含子任务。</td><td>层级清晰、需要逐层展开的目标。</td><td>同一子任务被多个父任务复用时不好表达。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="code-label">原文示例：同一组工作的三种写法</p>
+      <pre><code># 方式 1：线性序列（最简单）
+linear = ["搜索", "分析", "写作", "审核"]
+
+# 方式 2：DAG（有向无环图，支持并行）
+dag = {
+    "搜索A": {"depends_on": []},
+    "搜索B": {"depends_on": []},       # 与搜索A并行
+    "分析": {"depends_on": ["搜索A", "搜索B"]},
+    "报告": {"depends_on": ["分析"]},
+}
+
+# 方式 3：树形层级
+tree = {
+    "竞品分析": {
+        "数据收集": {
+            "搜索竞品A": {},
+            "搜索竞品B": {},
+        },
+        "分析对比": {},
+        "生成报告": {},
+    }
+}</code></pre>
+
+      <h3>分解粒度的权衡</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">任务分解太粗、太细和适中的例子与结果</caption>
+          <thead><tr><th scope="col">粒度</th><th scope="col">原文例子</th><th scope="col">结果</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">太粗</th><td>“做一份完整的竞品分析报告”</td><td>LLM 无法一次完成，输出质量差。</td></tr>
+            <tr><th scope="row">太细</th><td>“搜索关键词”“提取第一条的标题”“提取第一条的内容”……</td><td>可能出现 100 个微步骤，协调开销巨大。</td></tr>
+            <tr><th scope="row">适中</th><td>“收集竞品 A 的核心产品特性和定价”</td><td>一次搜索加一次分析可完成。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>判断粒度的一个实用标准：这个子任务能不能用<strong>一次模型调用或一次工具调用</strong>完成。能，就停；不能，再拆。超过这个粒度继续拆，通常只是在增加协调成本。</p>
+
+      <h3>方法选择指南</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">五种任务分解方法的适用场景、可靠性和灵活性</caption>
+          <thead><tr><th scope="col">方法</th><th scope="col">适用场景</th><th scope="col">可靠性</th><th scope="col">灵活性</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">LLM 驱动</th><td>未知 / 多变的任务</td><td>中</td><td>最高</td></tr>
+            <tr><th scope="row">程序化</th><td>固定流程的业务逻辑</td><td>最高</td><td>最低</td></tr>
+            <tr><th scope="row">层级（HTN）</th><td>复杂但有结构的任务</td><td>高</td><td>中</td></tr>
+            <tr><th scope="row">ADaPT</th><td>复杂度不确定的任务</td><td>高</td><td>高</td></tr>
+            <tr><th scope="row">TDAG</th><td>多 Agent + 动态环境</td><td>中</td><td>高</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>最佳实践通常是混合：程序化定义主流程，LLM 处理需要判断力的子步骤。这样既有稳定骨架，又保留对未知情况的适应能力。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="d-mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="d-mis-title">四个容易<br>被追问的点。</h2></div>
+      <p class="reading-intro">前两条是误区，后两条是面试追问；答案都来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“LLM 分解总是最好的。”</h3><p>LLM 分解灵活但不稳定，可能产生逻辑错误或遗漏关键步骤。对成熟的业务流程，程序化分解更可靠。最佳实践是混合：程序化定义主流程，LLM 处理需要判断力的子步骤。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“分解越细越好。”</h3><p>过度分解增加 LLM 调用次数和协调复杂度。研究指出，小模型加精细分解可能损失大模型整体推理产生的创造性洞见。找到合适的粒度才是关键。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>“如何验证分解结果的质量？”</h3><p>检查三个方面：完整性，子任务是否覆盖原始目标的所有方面；独立性，子任务之间是否有不必要的耦合；可执行性，每个子任务是否足够具体、可以直接执行。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>“任务分解和 Agent 编排是什么关系？”</h3><p>分解产生子任务图（DAG），编排决定执行策略（顺序、并行、条件）。分解是“做什么”，编排是“怎么做”。LangGraph 等框架把两者统一：分解结果直接映射为图的节点和边。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="d-source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="d-source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《任务分解（Task Decomposition）的基本方法》。原文用来说明本题，不代表其外部链接或论文数字已通过本页复核。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://apxml.com/courses/agentic-llm-memory-architectures/chapter-4-complex-planning-tool-integration/task-decomposition-strategies" target="_blank" rel="noopener noreferrer">LLM Agent Task Decomposition Strategies · APXML</a></li>
+          <li><a href="https://allenai.github.io/adaptllm/" target="_blank" rel="noopener noreferrer">ADaPT: As-Needed Decomposition and Planning with LLMs · Allen AI</a></li>
+          <li><a href="https://www.amazon.science/blog/how-task-decomposition-and-smaller-llms-can-make-ai-more-affordable" target="_blank" rel="noopener noreferrer">How Task Decomposition Makes AI More Affordable · Amazon Science</a></li>
+          <li><a href="https://arxiv.org/html/2510.07772v1" target="_blank" rel="noopener noreferrer">Systematic Decomposition of Complex LLM Tasks · arXiv</a></li>
+          <li><a href="https://mgx.dev/insights/task-decomposition-for-coding-agents-architectures-advancements-and-future-directions/a95f933f2c6541fc9e1fb352b429da15" target="_blank" rel="noopener noreferrer">Task Decomposition for Coding Agents · MGX</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>06-planning-and-reasoning/050-task-decomposition.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 5 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const D_MODES = Object.freeze({
+    coarse: {
+      label: "太粗粒度",
+      title: "太粗：一个任务丢给模型，做不完。",
+      desc: "“做一份完整的竞品分析报告”范围模糊、步骤多。LLM 擅长聚焦、范围明确的任务，不擅长一次处理长依赖链。",
+      verdict: "<b>太粗：</b>范围模糊、步骤多、依赖长，LLM 一次输出很难覆盖完整。",
+      metrics: [["子任务数", "1"], ["可并行", "0"], ["依赖边", "0"], ["协调开销", "低"], ["能一次执行", "否"]]
+    },
+    fit: {
+      label: "适中粒度",
+      title: "适中：五个子任务，两个可以并行。",
+      desc: "原文示例把报告拆成五步：确定竞品列表、分别收集 A/B 数据、对比分析、生成报告。收集 A 和 B 都只依赖第一步，可以并行。",
+      verdict: "<b>适中：</b>每个子任务一次搜索或一次分析可完成；T2、T3 只依赖 T1，可以并行。",
+      metrics: [["子任务数", "5"], ["可并行", "2"], ["依赖边", "5"], ["协调开销", "中"], ["能一次执行", "是"]]
+    },
+    fine: {
+      label: "太细粒度",
+      title: "太细：步骤成倍增加，协调吃掉收益。",
+      desc: "继续往下拆，会出现大量“提取第一条标题”这类微步骤。步骤越多，调用次数、依赖管理和失败重试的协调成本越高。",
+      verdict: "<b>太细：</b>同一份工作拆成大量微步骤，调用次数和协调开销成倍增加。",
+      metrics: [["子任务数", "10（示意）"], ["可并行", "0"], ["依赖边", "9"], ["协调开销", "高"], ["能一次执行", "是"]]
+    },
+    adapt: {
+      label: "ADaPT 按需",
+      title: "ADaPT：先直接做，失败才拆。",
+      desc: "ADaPT 先尝试直接执行，失败后才分解；每个子任务递归走同一流程，最后聚合结果。它只在必要时付出分解成本。",
+      verdict: "<b>按需：</b>能直接做就不拆，失败才递归；只有做不了的分支才付出分解成本。",
+      metrics: [["叶子任务", "4"], ["递归层数", "2"], ["直接成功", "3"], ["额外分解", "1"], ["协调开销", "按需"]]
+    }
+  });
+
+  const D_ADAPT_STEPS = Object.freeze([
+    {
+      title: "先尝试直接执行整个任务。",
+      desc: "ADaPT 不先拆分，直接让 LLM 做完整任务。能做好就结束，避免不必要的分解。",
+      root: ["is-run", "尝试直接执行"],
+      row: false,
+      sub: false,
+      nodes: {}
+    },
+    {
+      title: "失败后才分解成三个子任务。",
+      desc: "校验不通过，ADaPT 才调用分解。三个子任务分别再走同一流程：先尝试直接执行。",
+      root: ["is-fail", "失败：输出质量不达标"],
+      row: true,
+      sub: false,
+      nodes: {
+        n1: ["is-wait", "待尝试"],
+        n2: ["is-wait", "待尝试"],
+        n3: ["is-wait", "待尝试"]
+      }
+    },
+    {
+      title: "子任务逐个尝试：两个成功，一个失败。",
+      desc: "子任务 1 和 3 直接完成；子任务 2 仍做不好，需要继续分解。",
+      root: ["is-fail", "失败：质量不达标"],
+      row: true,
+      sub: false,
+      nodes: {
+        n1: ["is-ok", "成功"],
+        n2: ["is-fail", "失败：需要再分解"],
+        n3: ["is-ok", "成功"]
+      }
+    },
+    {
+      title: "只把失败的分支再拆一层。",
+      desc: "2.1 对比特性、2.2 对比定价都直接成功。ADaPT 只分解做不了的部分，其他分支不重复拆。",
+      root: ["is-ok", "聚合完成"],
+      row: true,
+      sub: true,
+      nodes: {
+        n1: ["is-ok", "成功"],
+        n2: ["is-split", "已分解"],
+        n3: ["is-ok", "成功"],
+        n2a: ["is-ok", "成功"],
+        n2b: ["is-ok", "成功"]
+      }
+    }
+  ]);
+
+  const dState = { mode: "fit", adaptStep: 1 };
+  const dById = (id) => document.getElementById(id);
+
+  function renderDMetrics(mode) {
+    dById("d-metrics").innerHTML = D_MODES[mode].metrics.map(([label, value]) =>
+      `<div class="d-metric"><span>${label}</span><b>${value}</b></div>`
+    ).join("");
+  }
+
+  function renderDAdapt() {
+    const step = D_ADAPT_STEPS[dState.adaptStep - 1];
+    const rootEl = document.querySelector('[data-adapt="root"]');
+    rootEl.className = `d-adapt-node ${step.root[0]}`;
+    rootEl.querySelector("[data-adapt-state]").textContent = step.root[1];
+
+    dById("d-adapt-row").hidden = !step.row;
+    dById("d-adapt-sub").hidden = !step.sub;
+
+    ["n1", "n2", "n3", "n2a", "n2b"].forEach((id) => {
+      const el = document.querySelector(`[data-adapt="${id}"]`);
+      if (!el) return;
+      const data = step.nodes[id];
+      if (!data) {
+        el.className = "d-adapt-node is-wait";
+        el.querySelector("[data-adapt-state]").textContent = "待尝试";
+        return;
+      }
+      el.className = `d-adapt-node ${data[0]}`;
+      el.querySelector("[data-adapt-state]").textContent = data[1];
+    });
+
+    dById("d-adapt-step").textContent = `ADaPT · 第 ${dState.adaptStep} / ${D_ADAPT_STEPS.length} 步`;
+    dById("d-adapt-title").textContent = step.title;
+    dById("d-adapt-desc").textContent = step.desc;
+    dById("d-position").textContent = `图 1 · ADaPT 第 ${dState.adaptStep} / ${D_ADAPT_STEPS.length} 步`;
+    dById("d-state-summary").textContent = `ADaPT 第 ${dState.adaptStep} / ${D_ADAPT_STEPS.length} 步 · 没有连接模型`;
+    dById("d-prev").disabled = dState.adaptStep === 1;
+    dById("d-next").disabled = dState.adaptStep === D_ADAPT_STEPS.length;
+  }
+
+  function renderDMode(announce = true) {
+    const mode = dState.mode;
+    const data = D_MODES[mode];
+
+    document.querySelectorAll("[data-panel]").forEach((panel) => {
+      panel.hidden = panel.dataset.panel !== mode;
+    });
+    document.querySelectorAll("#explainer [data-mode]").forEach((button) => {
+      if (button.dataset.mode === mode) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+
+    dById("d-position").textContent = `图 1 · ${data.label}`;
+    dById("d-title").textContent = data.title;
+    dById("d-desc").textContent = data.desc;
+    dById("d-verdict").innerHTML = data.verdict;
+    renderDMetrics(mode);
+
+    const isAdapt = mode === "adapt";
+    dById("d-prev").hidden = !isAdapt;
+    dById("d-next").hidden = !isAdapt;
+    if (isAdapt) renderDAdapt();
+    else dById("d-state-summary").textContent = `${data.label} · 没有连接模型`;
+
+    if (announce) {
+      const stepText = isAdapt ? `第 ${dState.adaptStep} 步。${D_ADAPT_STEPS[dState.adaptStep - 1].title}` : "";
+      dById("d-announcement").textContent = `${data.label}。${data.title}${data.desc}${stepText}`;
+    }
+  }
+
+  function setDMode(mode, announce = true) {
+    if (!D_MODES[mode]) return;
+    dState.mode = mode;
+    renderDMode(announce);
+  }
+
+  function setDAdaptStep(step, announce = true) {
+    dState.adaptStep = Math.max(1, Math.min(D_ADAPT_STEPS.length, step));
+    renderDAdapt();
+    if (announce) {
+      const current = D_ADAPT_STEPS[dState.adaptStep - 1];
+      dById("d-announcement").textContent = `ADaPT 第 ${dState.adaptStep} 步，共 ${D_ADAPT_STEPS.length} 步。${current.title}${current.desc}`;
+    }
+  }
+
+  document.querySelectorAll("#explainer [data-mode]").forEach((button) => {
+    button.addEventListener("click", () => {
+      dState.mode = button.dataset.mode;
+      if (dState.mode === "adapt") dState.adaptStep = 1;
+      renderDMode();
+    });
+  });
+  dById("d-prev").addEventListener("click", () => setDAdaptStep(dState.adaptStep - 1));
+  dById("d-next").addEventListener("click", () => setDAdaptStep(dState.adaptStep + 1));
+  dById("d-reset").addEventListener("click", () => {
+    dState.mode = "fit";
+    dState.adaptStep = 1;
+    renderDMode(false);
+    dById("d-announcement").textContent = "已重置，回到适中粒度。";
+  });
+
+  renderDMode(false);
+</script>
+</body>
+</html>

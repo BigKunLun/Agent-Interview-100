@@ -1,0 +1,840 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>LLM API 的成本优化策略 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .data-tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); color: var(--text-dim); font: 11px/1.5 var(--mono); letter-spacing: .03em; }
+  .data-tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--series-2); }
+  .decision-stage { padding: var(--s-4) var(--s-6) var(--s-5); }
+  .decision-path { display: flex; flex-wrap: wrap; gap: 6px; min-height: 30px; margin-bottom: var(--s-4); }
+  .path-chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: var(--t-label); }
+  .path-chip b { color: var(--accent); font-weight: 600; }
+  .decision-card { border: 1px solid var(--border); border-radius: var(--r-1); padding: var(--s-5); background: var(--surface-soft); }
+  .decision-card h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+  .decision-note { margin-top: var(--s-3); font-size: var(--t-small); color: var(--text-dim); max-width: 46em; }
+  .decision-actions { display: flex; gap: var(--s-2); margin-top: var(--s-5); flex-wrap: wrap; }
+  .decision-actions .button { min-width: 0; text-align: left; }
+  .decision-result { border: 1px solid var(--border-bright); border-left: 4px solid var(--accent); border-radius: var(--r-1); padding: var(--s-5); background: var(--surface); animation: arrive var(--med) var(--ease); }
+  .result-level { font: var(--t-label)/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .decision-result h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; margin-top: 4px; }
+  .result-summary { margin-top: var(--s-3); font-size: var(--t-small); max-width: 52em; }
+  .strategy-groups { display: grid; gap: var(--s-4); margin-top: var(--s-4); }
+  .strategy-group { border-top: 1px solid var(--border); padding-top: var(--s-3); }
+  .strategy-group h3 { font-size: var(--t-small); font-weight: 600; }
+  .strategy-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); margin-top: var(--s-2); }
+  .strategy-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: var(--s-3); font-size: 12px; }
+  .strategy-card b { display: block; font-size: 13px; }
+  .strategy-card .example { display: block; margin-top: 4px; font: 11px/1.6 var(--mono); color: var(--series-2); }
+  .strategy-card span { display: block; margin-top: 4px; color: var(--text-dim); }
+  .not-priority { margin-top: var(--s-4); padding: var(--s-3) var(--s-4); border: 1px dashed var(--border-bright); border-radius: var(--r-1); font-size: 12px; color: var(--text-dim); }
+  .not-priority b { color: var(--ink); }
+  .result-foot { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); max-width: 60em; }
+  .price-table td:last-child { white-space: nowrap; }
+  .price-note { margin-top: var(--s-2); font: 11px/1.7 var(--mono); color: var(--series-2); }
+  .strategy-stack { display: grid; gap: var(--s-2); margin-top: var(--s-4); }
+  .stack-row { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: var(--s-3); padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .stack-row b { font-weight: 600; }
+  .stack-row span { color: var(--text-dim); }
+  .warn-box { border: 1px solid #d9a3a3; border-left: 4px solid #8a1f1f; border-radius: var(--r-1); background: #fbecec; padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+  .warn-box p { font-size: var(--t-small); color: #5f1a1a; max-width: 55em; }
+  .warn-box p + p { margin-top: var(--s-2); }
+  .pending-note { border: 1px dashed var(--border-bright); border-radius: var(--r-1); padding: 3px 7px; color: var(--text-dim); font-size: 11px; white-space: nowrap; }
+  @media (max-width: 1000px) {
+    .decision-stage { padding-inline: var(--s-5); }
+  }
+  @media (max-width: 720px) {
+    .prose .table-wrap table.data.mid { min-width: 520px; }
+    .prose .table-wrap table.data.wide { min-width: 760px; }
+    .decision-stage { padding: var(--s-4); }
+    .decision-card, .decision-result { padding: var(--s-4); }
+    .decision-card h2, .decision-result h2 { font-size: 22px; }
+    .decision-actions .button { flex: 1 1 100%; }
+    .strategy-list { grid-template-columns: 1fr; }
+    .stack-row { grid-template-columns: 1fr; gap: 2px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">088 / 成本优化</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 9 / 10 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="../09-safety-and-alignment/080-human-in-the-loop.html">← 上一页 · Human-in-the-Loop</a><a href="../11-frameworks/098-framework-vs-custom.html">下一页 → · 框架 vs 自研</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">基础 · Production &amp; Deployment · 可交互讲解</p>
+      <h1>先看账单，<br>再谈优化。</h1>
+    </div>
+    <div>
+      <p class="lead">LLM API 成本优化有六类核心手段：Prompt 优化、Prompt 缓存、语义缓存、模型路由、RAG 替代长上下文、批处理。先按调用量和工作负载特征选组合，再用监控和预算控制兜底。</p>
+      <p class="definition"><strong>数字边界：</strong>本页出现的价格、折扣和降本百分比都是<strong>原文示例，未更新现价</strong>。不同策略的降本幅度不能相加；原文所称最高 80–90% 是组合策略的说法，不是承诺，也不保证你的场景可达。</p>
+      <div class="hero-meta"><span class="pill">基础</span><span class="pill">成本优化</span><span class="pill">决策树</span><span class="pill">原文示例数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="tree-title">
+    <div class="player-top">
+      <div class="player-label">按工作负载选策略 <small>固定决策逻辑 · 不计算节省比例</small></div>
+      <div class="controls" role="group" aria-label="成本优化决策控制">
+        <button type="button" class="button button-quiet" id="reset-button">重新开始</button>
+        <button type="button" class="button" id="back-button" disabled>返回上一步</button>
+      </div>
+    </div>
+    <div class="decision-stage">
+      <div class="decision-path" id="decision-path" aria-label="已经过的判断"></div>
+      <div class="decision-card" id="question-card">
+        <p class="figure-index" id="question-index">问题 1 / 4</p>
+        <h2 id="question-title">月调用量大概在哪个区间？</h2>
+        <p class="decision-note" id="question-note">调用量决定先上哪些策略。原文的决策树按量分档，低量优先做零成本优化。</p>
+        <div class="decision-actions" id="question-actions" role="group" aria-labelledby="question-title"></div>
+      </div>
+      <div class="decision-result" id="decision-result" hidden>
+        <p class="result-level" id="result-level"></p>
+        <h2 id="result-title"></h2>
+        <p class="result-summary" id="result-summary"></p>
+        <div class="strategy-groups" id="strategy-groups"></div>
+        <div class="not-priority" id="not-priority" hidden></div>
+        <p class="result-foot" id="result-foot"></p>
+      </div>
+      <p class="demo-note" style="margin-top: var(--s-4);">固定教学数据：月调用量、重复度、时效和输入规模都是你在本页选择的假设，不来自真实业务；结果只给策略方向，不计算节省比例。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定决策逻辑 · 本页不调用模型、不联网询价</span><span id="state-summary">尚未作答 · 共 4 个判断问题</span></div>
+  </section>
+  <p id="cost-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="overview-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">策略全景</p><h2 id="overview-title">六类手段，<br>投入产出不一样。</h2></div>
+      <p class="reading-intro">原文按投入产出排序：立即见效的 Prompt 精简和输出限制，短期投入的缓存和路由，中期投入的批处理、微调和自建服务。表里的百分比都是原文示例。</p>
+    </div>
+    <div class="prose">
+      <div class="warn-box">
+        <p><strong>先读这条：</strong>下面的价格、折扣和降幅都是<strong>原文示例，未更新现价</strong>。不同策略的百分比不能相加；原文的“最高 80–90%”是组合策略的最高说法，不是每项相加的结果，也不是可达承诺。</p>
+      </div>
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">六类成本优化策略、投入周期和原文示例效果</caption>
+          <thead><tr><th scope="col">策略</th><th scope="col">投入周期</th><th scope="col">原文示例效果</th><th scope="col">主要前提</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Prompt 优化</th><td>立即</td><td>-15–40%</td><td>指令里有冗余词、输出可以结构化</td></tr>
+            <tr><th scope="row">Prompt 缓存</th><td>1–2 周</td><td>缓存部分 -50–90%；Anthropic 缓存命中 $0.30/M vs 正常 $3.00/M</td><td>有稳定、可前置的静态前缀</td></tr>
+            <tr><th scope="row">语义缓存</th><td>1–2 周</td><td>-30–73%（Redis LangCache 高重复场景）</td><td>请求高度相似，答案时效性允许复用</td></tr>
+            <tr><th scope="row">模型路由</th><td>1–2 周</td><td>-40–85%（RouteLLM 约 85%）</td><td>能可靠判断任务复杂度</td></tr>
+            <tr><th scope="row">RAG 替代长上下文</th><td>1–2 周</td><td>-70%+ 上下文 token</td><td>检索质量足够，文档可切分</td></tr>
+            <tr><th scope="row">批处理</th><td>1–3 个月</td><td>OpenAI Batch API 50% 折扣</td><td>任务非实时，能接受延迟</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="price-note">表中所有数字均为原文示例，未更新现价；不同策略的降幅不可相加。</p>
+      <p>原文还列了两项中期手段：微调小模型替代大模型（原文示例 -60–80%），以及月调用量超过 100 万次时自建推理服务（vLLM）。自建的硬件投入原文示例是 $10K–50K，6–12 个月回本，这两个数字同样未更新。</p>
+
+      <h3>Prompt 优化：先去掉不必要的 token</h3>
+      <p>原文的四条做法是：去除冗余指令；用结构化输出代替自然语言；限制输出长度；用 Prompt 压缩工具。最关键的一条认知是：<strong>输出 token 成本是输入 token 的 2–5 倍</strong>，所以 <code>max_tokens</code> 是最直接的成本控制点。原文的立即见效清单还给了几个示例：限制输出长度 <strong>-20–30%</strong>、降低温度到 0 减少重试 <strong>-5–10%</strong>、结构化输出 <strong>-10–20%</strong>。这些百分比都是原文示例，未更新，也不能相加。原文还提到 LLMLingua 最多可压缩 Prompt 20 倍并保持语义，这个 20 倍同样是原文示例，不是普遍保证。</p>
+      <details>
+        <summary>查看 PromptOptimizer 原文代码</summary>
+        <pre><code># 策略 1：Prompt 优化
+class PromptOptimizer:
+    """Prompt 级别的成本优化"""
+
+    def optimize(self, prompt):
+        """精简 Prompt 减少 token"""
+        # 1. 去除冗余指令
+        # Bad: "请你仔细地、认真地、全面地分析以下文本..."
+        # Good: "分析以下文本："
+
+        # 2. 结构化输出代替自然语言
+        # Bad: "请用自然语言详细描述你的分析结果"
+        # Good: "输出JSON: {result, confidence, key_points[]}"
+
+        # 3. 输出限制
+        # 输出 token 成本 = 输入的 2-5 倍！
+        # 限制 max_tokens 是最直接的成本控制
+        pass</code></pre>
+      </details>
+
+      <h3>Prompt 缓存：把静态内容放到最前面</h3>
+      <p>提供商会缓存已处理的前缀，后续请求复用。做法是把系统指令、知识库、Few-shot 示例放在 Prompt 开头，把每次不同的用户查询放在最后。原文给出的 Anthropic 价格示例是：正常输入 $3.00/M tokens，缓存命中 $0.30/M tokens，缓存写入 $3.75/M tokens；OpenAI 的缓存命中是 50% 折扣，自动缓存。原文还提到 GPT-6 起提供显式断点与命中率诊断（2026-09-22 官方工程博客）。</p>
+      <div class="table-wrap">
+        <table class="data price-table mid">
+          <caption class="sr-only">Prompt 缓存的原文价格示例</caption>
+          <thead><tr><th scope="col">提供商</th><th scope="col">原文示例</th><th scope="col">说明</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Anthropic</th><td>正常 $3.00/M；命中 $0.30/M；写入 $3.75/M</td><td>命中相对正常约 90% 折扣；写入首次更贵</td></tr>
+            <tr><th scope="row">OpenAI</th><td>命中 50% 折扣</td><td>自动缓存；GPT-6 起有显式断点与诊断</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="price-note">以上为原文示例，未更新现价；实际计费以提供商当前价格页为准。</p>
+      <details>
+        <summary>查看 PromptCaching 原文代码</summary>
+        <pre><code># 策略 2：Prompt 缓存
+class PromptCaching:
+    """利用提供商的 Prompt 缓存功能"""
+
+    # 核心原理：将静态内容放在 Prompt 开头
+    # 提供商会缓存已处理的前缀，后续请求复用
+
+    pricing_comparison = {
+        "Anthropic Claude": {
+            "正常输入": "$3.00/M tokens",
+            "缓存命中": "$0.30/M tokens",  # 90% 折扣
+            "缓存写入": "$3.75/M tokens",  # 首次写入稍贵
+        },
+        "OpenAI": {
+            "正常输入": "标准价格",
+            "缓存命中": "50% 折扣",  # 自动缓存；GPT-6 起提供显式断点/命中率诊断（2026-09-22 官方工程博客）
+        },
+    }
+
+    def structure_for_caching(self, system_prompt, user_query):
+        """将 Prompt 结构化以最大化缓存命中"""
+        return [
+            # 静态部分（会被缓存）——放在最前面
+            {"role": "system", "content": system_prompt},       # 系统指令
+            {"role": "system", "content": knowledge_base},      # 知识库
+            {"role": "system", "content": few_shot_examples},   # 示例
+
+            # 动态部分（每次不同）——放在最后
+            {"role": "user", "content": user_query},
+        ]</code></pre>
+      </details>
+
+      <h3>语义缓存：相似请求直接复用结果</h3>
+      <p>语义缓存对语义相似的请求返回缓存结果。原文的参数示例是相似度阈值 0.95、TTL 3600 秒；命中时毫秒级返回，零 API 成本。它适合 FAQ、客服和重复性查询，原文引用 Redis LangCache 在高重复场景下减少 73% 成本。前提是答案允许复用：价格、库存、个人状态这类时效性强的查询不适合直接吃缓存。</p>
+      <details>
+        <summary>查看 SemanticCache 原文代码</summary>
+        <pre><code># 策略 3：语义缓存
+class SemanticCache:
+    """对语义相似的请求返回缓存结果"""
+
+    def __init__(self):
+        self.cache = RedisSemanticCache(
+            similarity_threshold=0.95,  # 相似度阈值
+            ttl=3600,                    # 缓存 1 小时
+        )
+
+    async def query(self, prompt):
+        # 1. 检查语义缓存
+        cached = await self.cache.search(prompt)
+        if cached and cached.similarity &gt; 0.95:
+            return cached.response  # 毫秒级返回，零 API 成本
+
+        # 2. 缓存未命中，调用 LLM
+        response = await self.llm.invoke(prompt)
+
+        # 3. 存入缓存供后续复用
+        await self.cache.store(prompt, response)
+        return response
+
+    # 适用场景：FAQ、客服、重复性查询
+    # Redis LangCache: 高重复场景下减少 73% 成本</code></pre>
+      </details>
+
+      <h3>模型路由：让合适的模型做合适的任务</h3>
+      <p>模型路由按任务复杂度选择模型。原文的三档示例是 gpt-4o-mini（$0.15/M 输入）、gpt-4o（$2.50/M 输入）、o3（$10.00/M 输入）；RouteLLM 研究给出“95% GPT-4 质量，仅用 26% GPT-4 调用，成本削减约 85%”。这些价格和比例都是原文示例，未更新现价，也不代表你的路由能达到同样效果。</p>
+      <details>
+        <summary>查看 CostAwareRouter 原文代码</summary>
+        <pre><code># 策略 4：模型路由
+class CostAwareRouter:
+    """按任务复杂度选择模型"""
+
+    model_tiers = {
+        "tier_1": {"model": "gpt-4o-mini", "cost": "$0.15/M in"},
+        "tier_2": {"model": "gpt-4o",      "cost": "$2.50/M in"},
+        "tier_3": {"model": "o3",          "cost": "$10.00/M in"},
+    }
+
+    async def route(self, query):
+        # 用轻量分类器判断复杂度
+        complexity = await self.classify_complexity(query)
+
+        if complexity == "simple":
+            return self.model_tiers["tier_1"]   # 简单问答
+        elif complexity == "moderate":
+            return self.model_tiers["tier_2"]   # 分析推理
+        else:
+            return self.model_tiers["tier_3"]   # 复杂推理
+
+    # RouteLLM 研究：95% GPT-4 质量，仅用 26% GPT-4 调用
+    # 成本削减约 85%</code></pre>
+      </details>
+
+      <h3>RAG 替代长上下文，批处理换取折扣</h3>
+      <p><strong>RAG 替代长上下文</strong>是用检索到的相关片段代替把整篇文档塞进 Prompt。原文示例是减少 70%+ 上下文 token；代价是检索质量成为新的瓶颈，检索漏掉关键段落时，模型也拿不到信息。</p>
+      <p><strong>批处理</strong>适合非实时任务。OpenAI Batch API 原文示例是 50% 折扣；它换来的是延迟，不适合用户在页面等待结果的场景。</p>
+
+      <h3>成本监控与预算控制</h3>
+      <p>原文的 <code>CostMonitor</code> 按请求记录成本，日预算用到 80% 时告警，超出时提示降级模型；报告按模型、功能、用户拆分，列出 Top 10 最贵请求和优化建议。监控的目的不只是报警，还要能回答“钱花在哪个功能、哪个模型、哪类请求上”。</p>
+      <details>
+        <summary>查看 CostMonitor 原文代码</summary>
+        <pre><code>class CostMonitor:
+    """成本监控和预算控制"""
+
+    def __init__(self, daily_budget=100.0):
+        self.daily_budget = daily_budget
+
+    def track_request(self, request_id, model, input_tokens, output_tokens):
+        """追踪每个请求的成本"""
+        cost = self.calculate_cost(model, input_tokens, output_tokens)
+        self.store.record(request_id, cost)
+
+        # 预算告警
+        daily_total = self.store.get_daily_total()
+        if daily_total &gt; self.daily_budget * 0.8:
+            self.alert("日预算已使用 80%")
+        if daily_total &gt; self.daily_budget:
+            self.alert("日预算已超出！考虑降级模型")
+
+    def generate_report(self):
+        """成本分析报告"""
+        return {
+            "按模型": self.cost_by_model(),
+            "按功能": self.cost_by_feature(),
+            "按用户": self.cost_by_user(),
+            "Top 10 最贵请求": self.most_expensive_requests(),
+            "优化建议": self.optimization_suggestions(),
+        }</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="tree-detail-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">决策树</p><h2 id="tree-detail-title">按量分档，<br>再按工作负载加减。</h2></div>
+      <p class="reading-intro">原文的决策树先按每月调用量分四档。下面的月成本区间同样是原文示例，不是报价；实际成本取决于 token 结构和缓存命中率。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data mid">
+          <caption class="sr-only">按月调用量分档的策略建议和原文成本示例</caption>
+          <thead><tr><th scope="col">月调用量</th><th scope="col">原文建议</th><th scope="col">原文成本示例</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">&lt; 10K 次/月</th><td>Prompt 优化 + Prompt 缓存（免费/低成本）</td><td>$10–100</td></tr>
+            <tr><th scope="row">10K–100K 次/月</th><td>再加模型路由 + 语义缓存 + 批处理（非实时任务）</td><td>$100–1000</td></tr>
+            <tr><th scope="row">100K–1M 次/月</th><td>再加 RAG 替代长上下文 + 微调小模型替代部分大模型调用</td><td>$500–5000</td></tr>
+            <tr><th scope="row">&gt; 1M 次/月</th><td>考虑自建推理服务（vLLM + 开源模型）</td><td>取决于硬件折旧；硬件原文示例 $10K–50K，6–12 个月回本</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="price-note">以上月成本和硬件数字均为原文示例，未更新现价；不同档位的区间不能相加或外推。</p>
+      <p>什么时候考虑自建？原文给了四个条件：月调用量超过 100 万次；对延迟有严格要求（低于 200ms）；数据隐私要求不能发送到第三方；开源模型已经满足质量需求。自建的关键工具是 vLLM（推理引擎）加开源模型（Llama / Qwen）。</p>
+
+      <h3>成本异常的排查顺序</h3>
+      <p>原文的 $5000 账单场景给出一条固定排查路径：先看监控，找出消耗激增的时间点和功能模块；再看 Token 分布，判断是输入还是输出激增；然后查异常请求，看是否有查询触发无限循环或过度检索；接着查模型使用，看是否错误配置导致大量请求走了昂贵模型；最后立即止损：限制单请求 Token 上限、暂时禁用可疑功能、启用预算熔断。</p>
+      <div class="strategy-stack">
+        <div class="stack-row"><b>1. 时间点</b><span>哪一天、哪个小时开始涨；对应哪个功能模块。</span></div>
+        <div class="stack-row"><b>2. Token 分布</b><span>输入涨还是输出涨；输出单价通常是输入的 2–5 倍（原文示例）。</span></div>
+        <div class="stack-row"><b>3. 异常请求</b><span>是否有无限循环、过度检索、重复调用。</span></div>
+        <div class="stack-row"><b>4. 模型使用</b><span>是否有错误配置把流量送到昂贵模型。</span></div>
+        <div class="stack-row"><b>5. 立即止损</b><span>限制单请求 Token、禁用可疑功能、启用预算熔断。</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="misconception-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="misconception-title">七个容易被追问的点。</h2></div>
+      <p class="reading-intro">前两条是误区，后五条包含预估、自建和三个线上场景追问；答案都来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“用最便宜的模型就是最省钱。”</h3><p>便宜模型如果质量差导致用户重试，实际成本可能更高。正确做法是模型路由：让合适的模型处理合适的任务。原文引用 RouteLLM 说明，这种方法可以在保持 95% 质量的同时削减约 85% 成本；这两个数字都是原文示例。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“成本优化一定会牺牲质量。”</h3><p>Prompt 缓存和语义缓存返回的是同样的结果，不会改变质量；模型路由也不是降质量，简单任务本来就不需要最强模型。真正的风险在于过度压缩 Prompt 导致指令不清晰。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>如何预估 LLM 项目的成本？</h3><p>（1）估算每个用户每天的平均请求数；（2）估算每个请求的平均 Token 数（输入 + 输出）；（3）乘以模型单价；（4）加上缓存命中率的折扣。原文公式：月成本 ≈ DAU × 日均请求 × 平均 Token × 单价 × (1 − 缓存率) × 30。单价要用当前价格，不能直接套本页的原文示例。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>什么时候应该考虑自建？</h3><p>月调用量超过 100 万次、对延迟有严格要求（低于 200ms）、数据隐私要求不能发送到第三方、或开源模型已满足质量需求时。关键工具：vLLM（推理引擎）+ 开源模型（Llama / Qwen）。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">场景追问 1</p>
+      <div><h3>突然收到一笔 $5000 的 API 账单，正常月份只有 $500，怎么快速定位？</h3><p>（1）检查监控，找出消耗激增的时间点和对应功能模块；（2）分析 Token 分布，看是输入还是输出激增；（3）检查异常请求，看是否有查询触发无限循环或过度检索；（4）检查模型使用，看是否有错误配置导致大量请求使用昂贵模型；（5）立即止损：限制单请求 Token 上限、暂时禁用可疑功能、启用预算熔断。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">场景追问 2</p>
+      <div><h3>语义缓存命中率从 70% 降到 30%，怎么诊断和恢复？</h3><p>（1）检查查询模式是否变化；（2）检查相似度阈值是否需要调整；（3）检查缓存存储是否达到容量上限导致驱逐；（4）检查 embedding 模型版本变更是否导致向量空间漂移。恢复策略：重算缓存向量、调整阈值、扩大容量、针对新模式重训缓存策略。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">场景追问 3</p>
+      <div><h3>模型路由器频繁把简单任务路由到昂贵大模型，怎么优化？</h3><p>（1）分析错误路由的查询特征，找出导致误判的模式；（2）用新的正负样本重新训练路由器；（3）加入成本敏感的评估指标，不只考虑质量；（4）对路由到高成本模型的请求做二次检查；（5）设置路由阈值，边界情况倾向便宜模型。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《LLM API 的成本优化策略》。原文中的价格、折扣和百分比仅作为示例解释，本页未联网更新现价。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的六条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://ai.koombea.com/blog/llm-cost-optimization" target="_blank" rel="noopener noreferrer">LLM Cost Optimization: Complete Guide to Reducing AI Expenses by 80% · Koombea</a></li>
+          <li><a href="https://www.glukhov.org/post/2025/11/cost-effective-llm-applications" target="_blank" rel="noopener noreferrer">Reduce LLM Costs: Token Optimization Strategies · Glukhov</a></li>
+          <li><a href="https://aws.amazon.com/blogs/database/optimize-llm-response-costs-and-latency-with-effective-caching/" target="_blank" rel="noopener noreferrer">Optimize LLM Response Costs and Latency with Effective Caching · AWS</a></li>
+          <li><a href="https://redis.io/blog/llm-token-optimization-speed-up-apps/" target="_blank" rel="noopener noreferrer">LLM Token Optimization: Cut Costs &amp; Latency in 2026 · Redis</a></li>
+          <li><a href="https://blog.premai.io/how-to-save-90-on-llm-api-costs-without-losing-performance/" target="_blank" rel="noopener noreferrer">How to Save 90% on LLM API Costs Without Losing Performance · Prem AI</a></li>
+          <li><a href="https://openai.com/index/better-prompt-caching-for-gpt-6" target="_blank" rel="noopener noreferrer">OpenAI — Better prompt caching for GPT-6</a> — 更高缓存命中率、诊断工具、显式断点与控制项（2026-09-22）</li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章，也不表示其中的价格仍然有效。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>10-production-and-deployment/088-cost-optimization.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 2 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const QUESTIONS = Object.freeze({
+    q1: {
+      index: 1,
+      text: "月调用量大概在哪个区间？",
+      note: "调用量决定先上哪些策略。原文的决策树按量分档，低量优先做零成本优化。",
+      options: [
+        { value: "low", label: "少于 10K 次/月", hint: "先做 Prompt 优化和缓存" },
+        { value: "mid", label: "10K–100K 次/月", hint: "加路由；缓存和批处理看后两题" },
+        { value: "high", label: "100K–1M 次/月", hint: "加路由、微调；RAG 看输入规模" },
+        { value: "huge", label: "超过 1M 次/月", hint: "在 high 基础上评估自建推理" }
+      ]
+    },
+    q2: {
+      index: 2,
+      text: "请求的重复度有多高？",
+      note: "重复度高是语义缓存最直接的前提：大量问题只是换了一种问法。",
+      options: [
+        { value: "high", label: "高：FAQ / 客服 / 重复查询", hint: "相似问题反复出现" },
+        { value: "mid", label: "中：部分问题会重复", hint: "需要看命中率再决定" },
+        { value: "low", label: "低：每次输入都不同", hint: "语义缓存收益有限" }
+      ]
+    },
+    q3: {
+      index: 3,
+      text: "任务的时效要求是什么？",
+      note: "批处理用延迟换折扣；用户在页面等待结果的任务不适合。",
+      options: [
+        { value: "realtime", label: "实时：用户在等结果", hint: "不能用 Batch API" },
+        { value: "batch", label: "可批处理：离线任务", hint: "可以接受延迟" }
+      ]
+    },
+    q4: {
+      index: 4,
+      text: "输入里经常塞长文档吗？",
+      note: "把整篇文档塞进上下文，通常比检索相关片段贵得多；前提是检索质量足够。",
+      options: [
+        { value: "long", label: "是：长文档经常进上下文", hint: "考虑 RAG 替代" },
+        { value: "short", label: "否：短指令和少量上下文为主", hint: "RAG 不是当前重点" }
+      ]
+    }
+  });
+
+  const STRATEGIES = Object.freeze({
+    prompt: { name: "Prompt 优化", tier: "立即", example: "原文示例：-15–40%", why: "去掉冗余指令、结构化输出、限制输出长度。", caution: "输出 token 成本是输入的 2–5 倍（原文示例）。" },
+    prompt_cache: { name: "Prompt 缓存", tier: "短期", example: "原文示例：缓存命中 $0.30/M vs 正常 $3.00/M", why: "静态前缀放最前，后续请求复用。", caution: "缓存写入 $3.75/M，首次写入更贵（原文示例）。" },
+    semantic: { name: "语义缓存", tier: "短期", example: "原文示例：高重复场景 -73%", why: "相似请求直接返回缓存结果。", caution: "相似度阈值 0.95；答案时效性强时不适用。" },
+    routing: { name: "模型路由", tier: "短期", example: "原文示例：RouteLLM 约 -85%，保持 95% 质量", why: "简单任务走小模型，复杂任务走大模型。", caution: "路由误判会把简单任务送到贵模型。" },
+    rag: { name: "RAG 替代长上下文", tier: "短期", example: "原文示例：-70%+ 上下文 token", why: "检索相关片段代替整篇文档。", caution: "检索质量差会丢关键信息。" },
+    batch: { name: "批处理", tier: "中期", example: "原文示例：OpenAI Batch API 50% 折扣", why: "非实时任务离线跑，换取折扣。", caution: "有延迟，不适合用户等待。" },
+    finetune: { name: "微调小模型替代大模型", tier: "中期", example: "原文示例：-60–80%", why: "固定任务用专用小模型。", caution: "需要训练数据和持续维护。" },
+    selfhost: { name: "自建推理服务（vLLM）", tier: "中期", example: "原文示例：硬件 $10K–50K，6–12 个月回本", why: "月调用量超过 1M 时评估。", caution: "需要运维能力；回本周期是原文经验值。" }
+  });
+
+  const BASE = Object.freeze({
+    low: ["prompt", "prompt_cache"],
+    mid: ["prompt", "prompt_cache", "routing", "semantic", "batch"],
+    high: ["prompt", "prompt_cache", "routing", "semantic", "rag", "finetune", "batch"],
+    huge: ["prompt", "prompt_cache", "routing", "semantic", "rag", "finetune", "batch", "selfhost"]
+  });
+
+  const state = { current: "q1", history: [], answers: {} };
+  const byId = (id) => document.getElementById(id);
+
+  function renderPath() {
+    const host = byId("decision-path");
+    host.textContent = "";
+    state.history.forEach((entry) => {
+      const chip = document.createElement("span");
+      chip.className = "path-chip";
+      const label = entry.value.length > 12 ? entry.value.slice(0, 12) + "…" : entry.value;
+      chip.innerHTML = `<b>Q${entry.index}</b> ${label}`;
+      host.append(chip);
+    });
+  }
+
+  function renderQuestion() {
+    const question = QUESTIONS[state.current];
+    byId("question-card").hidden = false;
+    byId("decision-result").hidden = true;
+    byId("question-index").textContent = `问题 ${question.index} / 4`;
+    byId("question-title").textContent = question.text;
+    byId("question-note").textContent = question.note;
+    const host = byId("question-actions");
+    host.textContent = "";
+    question.options.forEach((option) => {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "button";
+      button.dataset.value = option.value;
+      button.innerHTML = `<strong>${option.label}</strong><br><span style="font-size:11px;color:var(--text-dim);">${option.hint}</span>`;
+      button.addEventListener("click", () => answer(option.value, option.label));
+      host.append(button);
+    });
+    byId("back-button").disabled = state.history.length === 0;
+    byId("state-summary").textContent = `已答 ${state.history.length} 题 · 当前 Q${question.index}`;
+    renderPath();
+  }
+
+  function buildResult() {
+    // 语义缓存、批处理、RAG 只由 Q2/Q3/Q4 决定，不能从基础组合里带进来。
+    const conditional = new Set(["semantic", "batch", "rag"]);
+    const keys = BASE[state.answers.q1].filter((key) => !conditional.has(key));
+    const add = (key) => { if (!keys.includes(key)) keys.push(key); };
+    const skipped = [];
+
+    if (state.answers.q2 === "high") {
+      add("semantic");
+    } else if (state.answers.q2 === "mid") {
+      skipped.push("重复度中等：默认不把语义缓存放进组合，先做小流量灰度验证后再决定。");
+    } else {
+      skipped.push("重复度低：语义缓存收益有限，原文把它放在高重复场景。");
+    }
+
+    if (state.answers.q3 === "batch") {
+      add("batch");
+    } else {
+      skipped.push("实时任务：不用批处理，Batch API 的折扣换的是延迟。");
+    }
+
+    if (state.answers.q4 === "long") {
+      add("rag");
+    } else {
+      skipped.push("输入以短指令为主：RAG 替代长上下文不是当前重点。");
+    }
+
+    const groups = { "立即": [], "短期": [], "中期": [] };
+    keys.forEach((key) => groups[STRATEGIES[key].tier].push(key));
+    return { keys, groups, skipped };
+  }
+
+  function renderResult() {
+    byId("question-card").hidden = true;
+    byId("decision-result").hidden = false;
+    const volumeLabels = { low: "少于 10K 次/月", mid: "10K–100K 次/月", high: "100K–1M 次/月", huge: "超过 1M 次/月" };
+    const { groups, skipped } = buildResult();
+    byId("result-level").textContent = `固定决策结果 · 月调用量 ${volumeLabels[state.answers.q1]}`;
+    byId("result-title").textContent = "策略组合建议";
+    byId("result-summary").textContent = "先按原文的调用量档位取基础组合，再按重复度、时效和输入规模加减。下面是方向，不是节省比例的计算。";
+
+    const host = byId("strategy-groups");
+    host.textContent = "";
+    ["立即", "短期", "中期"].forEach((tier) => {
+      const keys = groups[tier];
+      if (!keys.length) return;
+      const section = document.createElement("section");
+      section.className = "strategy-group";
+      const heading = document.createElement("h3");
+      heading.textContent = `${tier}投入 · ${keys.length} 项`;
+      section.append(heading);
+      const list = document.createElement("div");
+      list.className = "strategy-list";
+      keys.forEach((key) => {
+        const strategy = STRATEGIES[key];
+        const card = document.createElement("div");
+        card.className = "strategy-card";
+        card.innerHTML = `<b>${strategy.name}</b><span class="example">${strategy.example}</span><span>${strategy.why}</span><span>注意：${strategy.caution}</span>`;
+        list.append(card);
+      });
+      section.append(list);
+      host.append(section);
+    });
+
+    const skipHost = byId("not-priority");
+    if (skipped.length) {
+      skipHost.hidden = false;
+      skipHost.innerHTML = `<b>没有加进来的项：</b>${skipped.join("；")}`;
+    } else {
+      skipHost.hidden = true;
+    }
+
+    byId("result-foot").textContent = "再次强调：以上百分比和价格都是原文示例，未更新现价；不同策略的降幅不能相加。原文所称最高 80–90% 是组合策略的说法，本页不承诺你的场景可达。实际收益取决于流量结构、缓存命中率、路由准确率和任务时效。";
+    byId("back-button").disabled = state.history.length === 0;
+    byId("state-summary").textContent = "结论：策略组合建议 · 共回答 4 题";
+    byId("cost-announcement").textContent = `结论：策略组合建议。${byId("result-foot").textContent}`;
+    renderPath();
+  }
+
+  function answer(value, label) {
+    const question = QUESTIONS[state.current];
+    state.answers[state.current] = value;
+    state.history.push({ index: question.index, value: label });
+    const order = ["q1", "q2", "q3", "q4"];
+    const next = order[order.indexOf(state.current) + 1];
+    if (next) {
+      state.current = next;
+      renderQuestion();
+      byId("cost-announcement").textContent = `第 ${question.index} 题已选择${label}，进入问题 ${QUESTIONS[next].index}：${QUESTIONS[next].text}`;
+    } else {
+      renderResult();
+    }
+  }
+
+  function back() {
+    if (!state.history.length) return;
+    const last = state.history.pop();
+    const order = ["q1", "q2", "q3", "q4"];
+    state.current = order[last.index - 1];
+    delete state.answers[state.current];
+    renderQuestion();
+    byId("cost-announcement").textContent = `已返回问题 ${last.index}：${QUESTIONS[state.current].text}`;
+  }
+
+  function reset() {
+    state.current = "q1";
+    state.history = [];
+    state.answers = {};
+    renderQuestion();
+    byId("cost-announcement").textContent = "已重新开始，回到问题 1。";
+  }
+
+  byId("back-button").addEventListener("click", back);
+  byId("reset-button").addEventListener("click", reset);
+  renderQuestion();
+</script>
+</body>
+</html>

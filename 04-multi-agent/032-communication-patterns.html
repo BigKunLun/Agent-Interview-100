@@ -1,0 +1,1166 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>多 Agent 通信模式：消息传递、共享状态、黑板模式 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .cp-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .cp-patterns { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 var(--s-6); margin-top: var(--s-4); }
+  .cp-pattern { min-height: 40px; padding: 7px 13px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: 12px; color: var(--text-dim); }
+  .cp-pattern:hover { background: var(--surface-soft); }
+  .cp-pattern[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+  .cp-pattern small { display: block; font: 9px/1.4 var(--mono); font-weight: 400; color: inherit; opacity: .85; }
+  .cp-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+  .cp-board { min-width: 0; }
+  .cp-controller { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; padding: 7px 10px; border: 1px dashed var(--border-bright); border-radius: var(--r-1); background: var(--surface-soft); font-size: 10px; line-height: 1.55; color: var(--text-dim); }
+  .cp-controller b { font: 600 10px/1.5 var(--mono); color: var(--ink); }
+  .cp-controller .cp-chip { padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border-bright); background: var(--surface); color: var(--ink); font: 9px/1.5 var(--mono); }
+  .cp-roles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); margin-top: var(--s-3); }
+  .cp-role { min-width: 0; padding: 8px 9px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .cp-role.is-now { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(25,79,135,.12); }
+  .cp-role-head { display: flex; align-items: center; justify-content: space-between; gap: 5px; }
+  .cp-role-name { font-size: 12px; font-weight: 600; line-height: 1.4; }
+  .cp-role-name span { display: block; font: 9px/1.4 var(--mono); color: var(--text-dim); font-weight: 400; }
+  .cp-role-state { flex: 0 0 auto; padding: 1px 6px; border-radius: 999px; border: 1px solid var(--border-bright); background: var(--surface-soft); color: #4b514b; font: 9px/1.5 var(--mono); }
+  .cp-role-state.now { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+  .cp-role-state.done { border-color: #9fc59f; background: #eef7ee; color: #1b5e20; }
+  .cp-role p { margin-top: 4px; font-size: 9px; line-height: 1.5; color: var(--text-dim); }
+  .cp-canvas { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3); }
+  .cp-canvas-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 5px; margin-bottom: var(--s-2); }
+  .cp-canvas-head b { font: 600 11px/1.5 var(--mono); color: var(--ink); }
+  .cp-canvas-head span { font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .cp-msg { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 7px; padding: 6px 0; border-top: 1px dashed var(--border); }
+  .cp-msg:first-child { border-top: 0; }
+  .cp-msg.is-now { background: #f4f8fc; }
+  .cp-msg-time { font: 9px/1.6 var(--mono); color: var(--text-dim); padding-top: 2px; }
+  .cp-msg-body { min-width: 0; }
+  .cp-msg-route { font: 600 11px/1.5 var(--mono); color: var(--ink); }
+  .cp-msg-route em { font-style: normal; color: var(--accent); padding-inline: 3px; }
+  .cp-msg-type { display: inline-block; margin-left: 5px; padding: 0 5px; border: 1px solid var(--border-bright); border-radius: 3px; font: 9px/1.5 var(--mono); color: #4b514b; background: var(--surface-soft); }
+  .cp-msg p { margin-top: 1px; font-size: 10px; line-height: 1.55; color: var(--text-dim); overflow-wrap: anywhere; }
+  .cp-msg-state { float: right; font: 9px/1.5 var(--mono); color: #1b5e20; }
+  .cp-msg.is-now .cp-msg-state { color: var(--accent); font-weight: 600; }
+  .cp-empty { padding: var(--s-4) 0; text-align: center; font-size: 10px; color: var(--text-dim); }
+  .cp-waiting { margin-top: var(--s-2); padding: 5px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; font: 9px/1.55 var(--mono); color: var(--text-dim); background: var(--surface-soft); }
+  .cp-store { width: 100%; border-collapse: collapse; font-size: 10px; }
+  .cp-store th, .cp-store td { padding: 5px 6px; border-top: 1px solid var(--border); text-align: left; vertical-align: top; }
+  .cp-store thead th { border-top: 0; font: 9px/1.5 var(--mono); color: var(--text-dim); font-weight: 500; }
+  .cp-store td { overflow-wrap: anywhere; }
+  .cp-store .key { font: 600 10px/1.5 var(--mono); white-space: nowrap; }
+  .cp-store .val { color: var(--ink); }
+  .cp-store .val.empty { color: #6b716b; font-style: italic; }
+  .cp-store .who { font: 9px/1.5 var(--mono); color: var(--text-dim); white-space: nowrap; }
+  .cp-store tr.is-now td { background: var(--accent-dim); }
+  .cp-store tr.is-now .key { color: var(--accent); }
+  .cp-board-list { display: grid; gap: 5px; }
+  .cp-entry { border: 1px solid var(--border); border-left-width: 4px; border-radius: 4px; padding: 5px 7px; }
+  .cp-entry.public { border-left-color: var(--series-3); background: #fbfdfb; }
+  .cp-entry.private { border-left-color: var(--series-2); background: #fdf9f4; }
+  .cp-entry.is-now { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .cp-entry-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 5px; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .cp-entry-head b { font: 600 10px/1.5 var(--sans); color: var(--ink); }
+  .cp-entry p { margin-top: 1px; font-size: 10px; line-height: 1.55; color: var(--ink); overflow-wrap: anywhere; }
+  .cp-vis { padding: 0 5px; border-radius: 3px; border: 1px solid #b98a2f; background: #fffaf0; color: #6f4c0d; font: 9px/1.5 var(--mono); }
+  .cp-vis.pub { border-color: #9fc59f; background: #eef7ee; color: #1b5e20; }
+  .cp-private-note { margin-top: var(--s-2); border: 1px dashed var(--series-2); border-radius: 4px; padding: 5px 7px; background: #fdf9f4; font-size: 9px; line-height: 1.55; color: #6b3a1f; }
+  .cp-log { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 4px; }
+  .cp-log li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 6px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); font-size: 10px; line-height: 1.55; }
+  .cp-log li b { font: 600 9px/1.55 var(--mono); color: var(--accent); }
+  .cp-log li.is-now { border-color: var(--accent); background: #f4f8fc; }
+  .cp-panel { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: #f7f6f1; padding: var(--s-4); }
+  .cp-panel h2 { font: 600 19px/1.45 var(--serif); }
+  .cp-panel > p { margin-top: var(--s-2); font-size: 12px; line-height: 1.7; }
+  .cp-detail { margin-top: var(--s-3); border-top: 1px solid var(--border); }
+  .cp-detail div { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: 7px; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 10px; line-height: 1.55; }
+  .cp-detail dt { color: var(--text-dim); font: 9px/1.55 var(--mono); }
+  .cp-detail dd { margin: 0; overflow-wrap: anywhere; }
+  .cp-boundary { margin-top: var(--s-3); padding: 7px 9px; border: 1px solid #b98a2f; border-radius: 4px; background: #fffaf0; color: #5f430f; font-size: 10px; line-height: 1.6; }
+  .cp-boundary b { color: #4a340b; }
+  .cp-legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: var(--s-3); font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .cp-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .cp-dot { width: 8px; height: 8px; border-radius: 2px; border: 1px solid var(--border-bright); background: var(--surface); }
+  .cp-dot.done { background: #eef7ee; border-color: #9fc59f; }
+  .cp-dot.now { background: var(--accent-dim); border-color: var(--accent); }
+  .cp-figure { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px solid var(--border); }
+  .cp-figure h2 { font: 600 20px/1.45 var(--serif); }
+  .cp-figure p { margin-top: var(--s-2); font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+
+  .cp-diagram { margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .cp-diagram-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .cp-diagram-node { padding: 5px 9px; border: 1px solid var(--border-bright); border-radius: 4px; background: var(--surface-soft); font: 10px/1.5 var(--mono); }
+  .cp-diagram-node.decision { border-color: #b98a2f; background: #fffaf0; color: #5f430f; }
+  .cp-diagram-arrow { font: 11px/1 var(--mono); color: var(--text-dim); }
+  .cp-diagram-loop { margin-top: 5px; padding-left: 14px; border-left: 2px solid #b98a2f; font: 9px/1.6 var(--mono); color: #6f4c0d; }
+  .cp-diagram figcaption { margin-top: var(--s-3); font-size: 10px; line-height: 1.6; color: var(--text-dim); }
+
+  @media (max-width: 1000px) {
+    .cp-grid { grid-template-columns: 1fr; }
+    .cp-panel { margin-top: 0; }
+  }
+  @media (max-width: 720px) {
+    .cp-stage { padding: var(--s-4); }
+    .cp-patterns { padding: 0 var(--s-4); margin-top: var(--s-3); }
+    .cp-pattern { flex: 1 1 30%; padding: 6px 8px; font-size: 11px; }
+    .cp-role { padding: 6px; }
+    .cp-role-name { font-size: 11px; }
+    .cp-role-state { font-size: 8px; padding-inline: 4px; }
+    .cp-role p { font-size: 8px; }
+    .cp-msg { grid-template-columns: 40px minmax(0, 1fr); }
+    .cp-detail div { grid-template-columns: 70px minmax(0, 1fr); }
+    .cp-panel { padding: var(--s-3); }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">032 / 通信模式</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 8 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="031-what-is-multi-agent.html">← 上一页 · 什么是多 Agent 系统？与单 A…</a><a href="034-task-allocation-coordination.html">下一页 → · 如何设计 Agent 间的任务分配与…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">基础 · Multi-Agent · 可交互讲解</p>
+      <h1>三个 Agent，<br>怎么把话传对。</h1>
+    </div>
+    <div>
+      <p class="lead">多 Agent 之间交换信息有三种基本做法：消息传递像互相发快递，共享状态像共用一块白板，黑板模式像围着公告栏协作。三种做法解决的是“信息怎么流动”，不是“谁来指挥”。</p>
+      <p class="definition">关键边界：<strong>通信模式与编排模式是正交维度</strong>。同一条 Pipeline，既可以用消息传递实现，也可以用共享状态实现；选通信模式时，先看信息是定向送达还是全局共享。</p>
+      <div class="hero-meta"><span class="pill">基础</span><span class="pill">Multi-Agent</span><span class="pill">通信模式</span><span class="pill">固定教学数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="cp-caption-title">
+    <div class="player-top">
+      <div class="player-label">固定协作演播室 <small>同一份简报任务，三种通信方式</small></div>
+      <div class="controls" role="group" aria-label="通信模式演示控制">
+        <button type="button" class="button button-quiet" id="cp-reset">重置</button>
+        <button type="button" class="button" id="cp-prev" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="cp-next">下一步 →</button>
+      </div>
+    </div>
+    <div class="cp-patterns" role="group" aria-label="选择通信模式">
+      <button type="button" class="cp-pattern" data-pattern="msg" aria-pressed="true">消息传递<small>点对点 / 广播</small></button>
+      <button type="button" class="cp-pattern" data-pattern="state" aria-pressed="false">共享状态<small>读写同一份存储</small></button>
+      <button type="button" class="cp-pattern" data-pattern="board" aria-pressed="false">黑板模式<small>公共区 + 私有区</small></button>
+    </div>
+    <nav class="stage-nav" aria-label="五个固定协作步骤">
+      <ol style="--stages: 5">
+        <li><button type="button" class="stage-button" data-step="0" aria-current="step" aria-controls="cp-scene" aria-label="第 1 步：派发任务"><span class="stage-number">1</span><span>派发</span></button></li>
+        <li><button type="button" class="stage-button" data-step="1" aria-controls="cp-scene" aria-label="第 2 步：研究"><span class="stage-number">2</span><span>研究</span></button></li>
+        <li><button type="button" class="stage-button" data-step="2" aria-controls="cp-scene" aria-label="第 3 步：起草"><span class="stage-number">3</span><span>起草</span></button></li>
+        <li><button type="button" class="stage-button" data-step="3" aria-controls="cp-scene" aria-label="第 4 步：审阅"><span class="stage-number">4</span><span>审阅</span></button></li>
+        <li><button type="button" class="stage-button" data-step="4" aria-controls="cp-scene" aria-label="第 5 步：定稿"><span class="stage-number">5</span><span>定稿</span></button></li>
+      </ol>
+    </nav>
+    <div class="cp-stage scene" id="cp-scene" data-scene="communication">
+      <div class="cp-grid">
+        <section class="cp-board" aria-label="协作现场">
+          <div class="cp-controller" id="cp-controller"></div>
+          <div class="cp-roles" id="cp-roles"></div>
+          <div class="cp-canvas" id="cp-canvas"></div>
+          <div class="cp-legend" aria-hidden="true">
+            <span><i class="cp-dot done"></i>已完成</span>
+            <span><i class="cp-dot now"></i>本步</span>
+            <span><i class="cp-dot"></i>尚未执行</span>
+          </div>
+        </section>
+        <aside class="cp-panel" aria-labelledby="cp-caption-title">
+          <p class="figure-index" id="cp-figure">图 1 · 消息传递 · 第 1 / 5 步</p>
+          <h2 id="cp-caption-title">派发任务：只发给研究员。</h2>
+          <p id="cp-desc">协调器把任务装进一条结构化消息，只投递给研究员。写手和审阅员此刻看不到任务内容。</p>
+          <dl class="cp-detail" id="cp-detail"></dl>
+          <div class="cp-boundary" id="cp-boundary"><b>角色边界：</b>消息的 to 字段决定谁收件；没被点名的 Agent 不参与这一步。</div>
+          <div class="cp-figure">
+            <p class="figure-index" id="cp-figure-index">图 1 · 第 1 / 5 步</p>
+            <h2 id="cp-figure-title">第一句只到研究员手里。</h2>
+            <p id="cp-figure-desc">这是消息传递的默认形态：定向投递。广播是它的变体，会把同一条消息复制给所有 Agent。</p>
+          </div>
+        </aside>
+      </div>
+      <p class="demo-note">固定教学数据：任务、角色、消息内容、时间戳和状态都是写死的；页面只按当前步骤显示已经发生的事，不连接任何 Agent、消息队列或模型。原文引用的 13%–57%、53%–86% 等统计见下方“黑板模式”，均为原文数据、未联网核实。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 同一任务、三种通信路径</span><span id="cp-state-summary">消息传递 · 第 1 / 5 步 · 没有连接 Agent</span></div>
+  </section>
+  <p id="cp-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="msg-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">模式 1</p><h2 id="msg-title">消息传递：<br>定向投递，像发快递。</h2></div>
+      <p class="reading-intro">Agent 之间直接发结构化消息，可以点对点，也可以广播。它适合动态、针对性的信息共享，代价是路由逻辑和全局一致性都要自己管。</p>
+    </div>
+    <div class="prose">
+      <p>一条消息至少有五个字段：发送者、接收者、消息类型、数据负载和时间戳。生产环境通常把消息放进消息队列（如 RabbitMQ、Redis Streams），由队列保证异步送达和重试。</p>
+      <p class="code-label">点对点与广播 · 原文代码</p>
+      <pre><code>class MessageBus:
+    def __init__(self):
+        self.queues = {}  # agent_id → message_queue
+
+    async def send(self, from_agent: str, to_agent: str, message: dict):
+        """发送消息给特定 Agent"""
+        msg = {
+            "from": from_agent,
+            "to": to_agent,
+            "content": message,
+            "timestamp": datetime.now()
+        }
+        await self.queues[to_agent].put(msg)
+
+    async def broadcast(self, from_agent: str, message: dict):
+        """广播消息给所有 Agent"""
+        for agent_id, queue in self.queues.items():
+            if agent_id != from_agent:
+                await queue.put({"from": from_agent, "content": message})
+
+bus = MessageBus()
+await bus.send("researcher", "writer",
+    {"type": "research_complete", "data": findings})</code></pre>
+      <p><strong>优势：</strong>针对性强、延迟低、Agent 之间解耦。<strong>劣势：</strong>容易形成信息孤岛，路由逻辑复杂，难以保证全局一致。</p>
+      <div class="callout">
+        <p class="callout-label">容易混淆的地方</p>
+        <p>这里的“消息”不是自然语言聊天，而是带类型和字段的结构化数据。接收方按类型分支处理，不靠猜语气。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="state-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">模式 2</p><h2 id="state-title">共享状态：<br>所有人读写同一份文档。</h2></div>
+      <p class="reading-intro">所有 Agent 围绕一个状态存储读写，类似多人编辑同一份文档。好处是人人看到同一份全局视图，坏处是并发写要加锁，存储也可能成为瓶颈。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">LangGraph 风格的共享状态 · 原文代码</p>
+      <pre><code>from typing import TypedDict, Annotated
+
+class SharedState(TypedDict):
+    messages: list[str]
+    research_data: dict
+    draft: str
+    review_comments: list[str]
+    status: str
+
+def researcher_node(state: SharedState) -&gt; SharedState:
+    query = state["messages"][-1]
+    data = search(query)
+    return {"research_data": data, "status": "research_complete"}
+
+def writer_node(state: SharedState) -&gt; SharedState:
+    data = state["research_data"]
+    draft = generate_draft(data)
+    return {"draft": draft, "status": "draft_complete"}</code></pre>
+      <p><strong>优势：</strong>全局一致视图、状态可持久化、便于调试（直接检查状态快照）。<strong>劣势：</strong>可能成为吞吐瓶颈，需要锁机制防止竞态条件，存储本身有单点故障风险。</p>
+      <p class="code-label">并发控制 · 原文代码</p>
+      <pre><code>import asyncio
+
+class SafeSharedState:
+    def __init__(self):
+        self.state = {}
+        self.lock = asyncio.Lock()
+
+    async def update(self, agent_id: str, updates: dict):
+        async with self.lock:  # 确保原子更新
+            self.state.update(updates)
+            self.state["last_updated_by"] = agent_id</code></pre>
+      <p>共享状态的“共享”是数据层面的共享，不是消息层面的转发。Agent 不互相寄信，而是各自读写同一个键值空间；某一步读到什么，取决于上一步有没有写入。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="board-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">模式 3</p><h2 id="board-title">黑板模式：<br>公共公告栏，各自贡献。</h2></div>
+      <p class="reading-intro">经典 AI 架构模式：任务写在黑板上，控制器决定下一个谁行动，Agent 读取公共区、按专长处理、再把结果写回黑板，循环到问题解决。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">黑板与控制器 · 原文代码</p>
+      <pre><code>class Blackboard:
+    def __init__(self):
+        self.public_space = []    # 公共区域：所有 Agent 可见
+        self.private_spaces = {}  # 私有区域：各 Agent 独立空间
+
+    def post(self, agent_id: str, content: dict, visibility="public"):
+        entry = {
+            "author": agent_id,
+            "content": content,
+            "timestamp": datetime.now()
+        }
+        if visibility == "public":
+            self.public_space.append(entry)
+        else:
+            self.private_spaces.setdefault(agent_id, []).append(entry)
+
+    def read(self, agent_id: str) -> list:
+        return self.public_space + self.private_spaces.get(agent_id, [])
+
+class BlackboardSystem:
+    def __init__(self, blackboard, agents, controller):
+        self.blackboard = blackboard
+        self.agents = agents          # 专家 Agent 列表
+        self.controller = controller  # 控制器（决定谁行动）
+
+    async def run(self, task):
+        self.blackboard.post("system", {"task": task})
+        while not self.is_solved():
+            active_agent = self.controller.select(
+                self.blackboard, self.agents
+            )
+            result = await active_agent.process(
+                self.blackboard.read(active_agent.id)
+            )
+            self.blackboard.post(active_agent.id, result)</code></pre>
+      <p>黑板模式的关键特性是四点：<strong>自愿参与</strong>（Agent 按专长决定是否响应）、<strong>迭代精化</strong>（多轮读写逐步完善）、<strong>去中心化</strong>（控制器不必预先知道所有能力）、<strong>Token 高效</strong>（共享公共记忆，减少重复传递）。</p>
+      <div class="cp-diagram" role="group" aria-label="黑板模式流程图：任务发布、控制器选择、读取、处理、写回、判断是否解决，未解决回到控制器">
+        <div class="cp-diagram-row">
+          <span class="cp-diagram-node">任务发布上黑板</span><span class="cp-diagram-arrow">→</span>
+          <span class="cp-diagram-node">控制器选择 Agent</span><span class="cp-diagram-arrow">→</span>
+          <span class="cp-diagram-node">读取黑板</span><span class="cp-diagram-arrow">→</span>
+          <span class="cp-diagram-node">处理 · 贡献专长</span><span class="cp-diagram-arrow">→</span>
+          <span class="cp-diagram-node">写回黑板</span><span class="cp-diagram-arrow">→</span>
+          <span class="cp-diagram-node decision">问题解决？</span>
+        </div>
+        <p class="cp-diagram-loop">否 → 回到“控制器选择 Agent”，继续下一轮<br>是 → 输出最终方案</p>
+        <figcaption>离线可读版：原图是 Mermaid 流程图，回路从“问题解决？”回到“控制器选择 Agent”。Mermaid 源码见本节末尾。</figcaption>
+      </div>
+      <p><strong>研究结果（原文引用，未联网核实）：</strong>原文称黑板架构在端到端任务成功率上比 RAG 和 Master-Slave 模式提升 13%–57%。这是原文引用的研究结论，不是本页的实测数据。</p>
+      <details>
+        <summary>展开原文 Mermaid 源码</summary>
+        <pre><code>flowchart TD
+    A["任务发布上黑板"] --&gt; B["控制器选择 Agent"]
+    B --&gt; C["读取黑板"]
+    C --&gt; D["处理 · 贡献专长"]
+    D --&gt; E["写回黑板"]
+    E --&gt; Q{"问题解决？"}
+    Q -- "否" --&gt; B
+    Q -- "是" --&gt; F["最终方案"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    class A,B,C,D,E,F proc
+    class Q decision</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="compare-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三种模式对比</p><h2 id="compare-title">同一张表，<br>看清代价。</h2></div>
+      <p class="reading-intro">没有全面胜出的模式。选择时重点看耦合度、一致性要求和调试成本，而不是只看“先不先进”。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">消息传递、共享状态、黑板模式在通信方式、耦合度、扩展性、一致性、Token 效率、调试难度和落地示例上的对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">消息传递</th><th scope="col">共享状态</th><th scope="col">黑板模式</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">通信方式</th><td>点对点 / 广播</td><td>读写全局存储</td><td>读写共享空间</td></tr>
+            <tr><th scope="row">耦合度</th><td>低</td><td>中</td><td>低</td></tr>
+            <tr><th scope="row">扩展性</th><td>高</td><td>中（可能瓶颈）</td><td>高</td></tr>
+            <tr><th scope="row">一致性</th><td>最终一致</td><td>强一致</td><td>最终一致</td></tr>
+            <tr><th scope="row">Token 效率</th><td>低（重复传递）</td><td>中</td><td>高（共享上下文）</td></tr>
+            <tr><th scope="row">调试难度</th><td>高（追踪消息流）</td><td>低（检查状态）</td><td>中</td></tr>
+            <tr><th scope="row">落地示例</th><td>AutoGen GroupChat、消息队列</td><td>LangGraph State（编排框架内置）</td><td>LbMAS、Terrarium</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>实际选择指南</h3>
+      <p class="code-label">按场景选模式 · 原文代码</p>
+      <pre><code>def choose_pattern(scenario):
+    if scenario == "少量 Agent + 简单流程":
+        return "共享状态（LangGraph State）"
+    elif scenario == "Agent 数量多 + 动态组合":
+        return "黑板模式"
+    elif scenario == "异步处理 + 微服务架构":
+        return "消息传递（消息队列）"
+    elif scenario == "需要最大灵活性":
+        return "混合模式（消息传递 + 共享状态）"</code></pre>
+      <p>这张决策表是原文给出的经验规则，不是硬性判据。真实系统里常见的做法是混合：用共享状态保存全局事实，用消息传递处理异步通知。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">四个容易<br>答偏的点。</h2></div>
+      <p class="reading-intro">前两条是误区，后两条是面试追问；答案来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“消息传递就是聊天。”</h3><p>多 Agent 通信中的消息传递是结构化的、带类型的数据交换，不是自然语言对话。消息应包含类型、发送者、接收者、数据负载和时间戳。接收方按类型处理，不靠理解聊天语气。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“共享状态很简单，用全局变量就行。”</h3><p>生产环境中的共享状态需要锁机制、版本控制和持久化。多个 Agent 并发读写同一状态时，必须防止竞态条件；全局变量既不持久，也不处理并发。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>黑板模式和共享状态有什么本质区别？</h3><p>共享状态是被动的数据存储，Agent 按预定流程读写；黑板模式是主动的协作平台，Agent 自主观察黑板内容并决定是否参与。黑板有控制器决定执行顺序，Agent 有自愿参与的机制。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>如何处理 Agent 间的信息冗余？</h3><p>原文引用研究称 token 冗余率可达 53%–86%（原文数据，未联网核实）。常见做法是消息摘要（传摘要而非原文）、用黑板公共记忆替代个体记忆、以及去重机制。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《多 Agent 通信模式：消息传递、共享状态、黑板模式》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://arxiv.org/html/2510.01285v1" target="_blank" rel="noopener noreferrer">LLM-based Multi-Agent Blackboard System (arXiv)</a></li>
+          <li><a href="https://apxml.com/courses/agentic-llm-memory-architectures/chapter-5-multi-agent-systems/shared-awareness-coordination" target="_blank" rel="noopener noreferrer">Shared Awareness &amp; Coordination in Multi-Agent Systems (APXML)</a></li>
+          <li><a href="https://www.arxiv.org/pdf/2510.14312" target="_blank" rel="noopener noreferrer">Terrarium: Revisiting the Blackboard for Multi-Agent (arXiv)</a></li>
+          <li><a href="https://www.21medien.de/en/blog/implementing-multi-agent-systems" target="_blank" rel="noopener noreferrer">Implementing Multi-Agent Systems: Architecture Patterns (21medien)</a></li>
+          <li><a href="https://arxiv.org/html/2501.06322v1" target="_blank" rel="noopener noreferrer">Multi-Agent Collaboration Mechanisms: A Survey (arXiv)</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>04-multi-agent/032-communication-patterns.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 4 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const CP_ROLES = Object.freeze([
+    { id: "R", name: "研究员", note: "检索来源、核验事实" },
+    { id: "W", name: "写手", note: "起草简报、按意见改稿" },
+    { id: "V", name: "审阅员", note: "挑错、给修改意见" }
+  ]);
+
+  const CP_PATTERNS = Object.freeze({
+    msg: {
+      label: "消息传递",
+      kind: "定向投递",
+      steps: [
+        {
+          actor: "R",
+          controller: "控制器 C · 把任务只投递给研究员",
+          title: "派发任务：只发给研究员。",
+          desc: "协调器把任务装进一条结构化消息，只投递给研究员。写手和审阅员此刻看不到任务内容。",
+          detail: [["消息类型", "task"], ["接收者", "研究员"], ["负载", "Q3 竞品简报 · 3 家厂商"], ["时间", "+0s"]],
+          boundary: "消息的 to 字段决定谁收件；没被点名的 Agent 不参与这一步。",
+          figure: "第一句只到研究员手里。",
+          figureDesc: "这是消息传递的默认形态：定向投递。广播是它的变体，会把同一条消息复制给所有 Agent。"
+        },
+        {
+          actor: "R",
+          controller: "研究员 R · 处理完成后主动通知下游",
+          title: "研究完成：结果只发给写手。",
+          desc: "研究员把来源摘要装进 research_complete 消息，发给写手。协调器和审阅员没有收到这份负载。",
+          detail: [["消息类型", "research_complete"], ["发送者", "研究员"], ["负载", "12 条来源摘要"], ["时间", "+4s"]],
+          boundary: "研究员把结果交给写手，不等于审阅员也能看到来源原文；信息孤岛是这种模式的已知代价。",
+          figure: "第二条消息绕过协调器。",
+          figureDesc: "点对点消息不要求所有信息都回到中心。下游可以直接通信，但这也让全局追踪更困难。"
+        },
+        {
+          actor: "W",
+          controller: "写手 W · 收到研究摘要后开始起草",
+          title: "草稿完成：交给审阅员。",
+          desc: "写手只拿到研究摘要，生成 1,800 字草稿 v1，再发 draft_ready 给审阅员。",
+          detail: [["消息类型", "draft_ready"], ["接收者", "审阅员"], ["负载", "草稿 v1 · 1,800 字"], ["时间", "+9s"]],
+          boundary: "写手没有把草稿广播给所有人，只有审阅员收到；协调器要到定稿才重新出现。",
+          figure: "草稿走的是另一条边。",
+          figureDesc: "消息路径可以是一条链，也可以按需要改道。路径本身不固定，路由逻辑由系统自己维护。"
+        },
+        {
+          actor: "V",
+          controller: "审阅员 V · 只把意见回给写手",
+          title: "审阅意见：回到写手。",
+          desc: "审阅员给出 3 条修改意见，用 review_comments 发回写手。研究员看不到这 3 条意见。",
+          detail: [["消息类型", "review_comments"], ["接收者", "写手"], ["负载", "3 条修改意见"], ["时间", "+14s"]],
+          boundary: "意见只回给写手，研究员不参与改稿；如果修改需要补资料，写手必须再发一条消息给研究员。",
+          figure: "回信只回给作者。",
+          figureDesc: "消息传递的边界由地址决定。要让第三方知道，必须显式转发或广播。"
+        },
+        {
+          actor: "W",
+          controller: "写手 W · 改完后把终稿交回协调器",
+          title: "定稿：终稿回到协调器。",
+          desc: "写手按意见改成草稿 v2，发 final_ready 给协调器。整条链路一共 5 条消息。",
+          detail: [["消息类型", "final_ready"], ["接收者", "协调器"], ["负载", "草稿 v2 · 2,050 字"], ["时间", "+18s"]],
+          boundary: "协调器收到的是终稿，不是完整消息历史；要审计中间过程，得另外记录消息日志。",
+          figure: "五条消息，四个收件人。",
+          figureDesc: "消息传递把“谁需要知道什么”写进了地址。灵活，但路由和审计都要自己维护。"
+        }
+      ],
+      messages: [
+        { from: "C", to: "R", type: "task", payload: "Q3 竞品简报 · 3 家厂商", time: "+0s" },
+        { from: "R", to: "W", type: "research_complete", payload: "12 条来源摘要", time: "+4s" },
+        { from: "W", to: "V", type: "draft_ready", payload: "草稿 v1 · 1,800 字", time: "+9s" },
+        { from: "V", to: "W", type: "review_comments", payload: "3 条修改意见", time: "+14s" },
+        { from: "W", to: "C", type: "final_ready", payload: "草稿 v2 · 2,050 字", time: "+18s" }
+      ]
+    },
+    state: {
+      label: "共享状态",
+      kind: "读写同一份存储",
+      steps: [
+        {
+          actor: null,
+          controller: "控制器 C · 初始化共享状态，然后由字段驱动流程",
+          title: "初始化：先把任务写进状态。",
+          desc: "协调器创建共享状态，写入 task 和 status。此时还没有研究数据、草稿和审阅意见。",
+          detail: [["写入字段", "task、status"], ["读取字段", "无"], ["状态值", "assigned"], ["时间", "+0s"]],
+          boundary: "共享状态里只有数据，没有“消息”。谁下一步行动，由框架根据 status 或图结构决定。",
+          figure: "先有一份空文档。",
+          figureDesc: "初始化只写两个字段。未写入的键保持空缺，不会被提前填上未来结果。"
+        },
+        {
+          actor: "R",
+          controller: "研究员 R · 读取 task，写入研究结果",
+          title: "研究：读任务，写结果。",
+          desc: "研究员读取 task，检索后把 12 条来源摘要写进 research_data，并把 status 改成 research_complete。",
+          detail: [["读取字段", "task"], ["写入字段", "research_data、status"], ["写入值", "12 条来源摘要"], ["时间", "+4s"]],
+          boundary: "研究员只写自己负责的键；它没有改 draft，也没有改 review_comments。",
+          figure: "一次读，两个写。",
+          figureDesc: "共享状态的操作边界是字段：谁负责哪些键，应该在设计时写清楚。"
+        },
+        {
+          actor: "W",
+          controller: "写手 W · 读取 research_data，写入草稿",
+          title: "起草：读研究结果，写草稿。",
+          desc: "写手读取 research_data，生成 1,800 字草稿 v1，写入 draft，并把 status 改成 draft_complete。",
+          detail: [["读取字段", "research_data"], ["写入字段", "draft、status"], ["写入值", "草稿 v1 · 1,800 字"], ["时间", "+9s"]],
+          boundary: "写手能读到 research_data，是因为研究员上一步已经写入；读不到未来的审阅意见。",
+          figure: "读到什么，取决于上一步写了什么。",
+          figureDesc: "共享状态的时序靠字段版本和流程顺序保证，不靠消息到达顺序。"
+        },
+        {
+          actor: "V",
+          controller: "审阅员 V · 读取草稿，写入意见",
+          title: "审阅：读草稿，写意见。",
+          desc: "审阅员读取 draft，给出 3 条修改意见写入 review_comments，status 改为 review_needed。",
+          detail: [["读取字段", "draft"], ["写入字段", "review_comments、status"], ["写入值", "3 条修改意见"], ["时间", "+14s"]],
+          boundary: "审阅员写的是独立字段，不覆盖草稿；草稿仍然保留 v1，便于回溯。",
+          figure: "意见和草稿分开存。",
+          figureDesc: "把意见写成独立键，避免审阅员直接改稿造成覆盖；这是共享状态的设计细节。"
+        },
+        {
+          actor: "W",
+          controller: "写手 W · 读取意见，更新草稿",
+          title: "定稿：读意见，覆盖草稿。",
+          desc: "写手读取 review_comments，把 draft 更新为 v2，status 改为 final。研究数据和意见都还在。",
+          detail: [["读取字段", "review_comments"], ["写入字段", "draft、status"], ["写入值", "草稿 v2 · 2,050 字"], ["时间", "+18s"]],
+          boundary: "写手覆盖的是 draft 键；research_data 和 review_comments 没被删除，仍可审计。",
+          figure: "最后一份状态就是审计快照。",
+          figureDesc: "共享状态便于调试：直接看最终快照，就知道每个键最后由谁写成。"
+        }
+      ],
+      store: [
+        { key: "task", entries: [{ step: 0, value: "Q3 竞品简报 · 3 家厂商", by: "C" }] },
+        { key: "research_data", entries: [{ step: 1, value: "12 条来源摘要", by: "R" }] },
+        { key: "draft", entries: [
+          { step: 2, value: "草稿 v1 · 1,800 字", by: "W" },
+          { step: 4, value: "草稿 v2 · 2,050 字", by: "W" }
+        ] },
+        { key: "review_comments", entries: [{ step: 3, value: "3 条修改意见", by: "V" }] },
+        { key: "status", entries: [
+          { step: 0, value: "assigned", by: "C" },
+          { step: 1, value: "research_complete", by: "R" },
+          { step: 2, value: "draft_complete", by: "W" },
+          { step: 3, value: "review_needed", by: "V" },
+          { step: 4, value: "final", by: "W" }
+        ] }
+      ]
+    },
+    board: {
+      label: "黑板模式",
+      kind: "公共区 + 私有区",
+      steps: [
+        {
+          actor: null,
+          controller: "控制器 C · 把任务发布到公共区",
+          title: "发榜：任务写进公共区。",
+          desc: "协调器把任务发布到黑板公共区。所有 Agent 都能读到这一条，但还没有人贡献结果。",
+          detail: [["写入区域", "公共区"], ["条目", "任务 · Q3 竞品简报"], ["可见范围", "所有 Agent"], ["时间", "+0s"]],
+          boundary: "公共区对所有 Agent 可见；私有区只有作者自己读得到。",
+          figure: "公告栏先只有任务。",
+          figureDesc: "黑板模式从一条公共任务开始，控制器随后决定谁先行动。"
+        },
+        {
+          actor: "R",
+          controller: "控制器 C · 选择研究员先行动",
+          title: "研究员：读公共区，写结果。",
+          desc: "研究员读取公共区，检索后把 12 条来源摘要写进公共区；另外把“剔除 3 个低可信来源”写进自己的私有区。",
+          detail: [["读取", "公共区 1 条"], ["公共写入", "研究结果 · 12 条来源"], ["私有写入", "剔除记录 · 1 条"], ["时间", "+4s"]],
+          boundary: "私有笔记只有研究员自己可见。写手之后读公共区时，看不到这 1 条私有记录。",
+          figure: "一份结果，一份私人笔记。",
+          figureDesc: "公共区贡献结果，私有区保留过程。这是黑板模式和纯共享状态的一个区别。"
+        },
+        {
+          actor: "W",
+          controller: "控制器 C · 选择写手接着行动",
+          title: "写手：读公共区，写草稿。",
+          desc: "写手读取公共区的任务和研究结果，生成草稿 v1 并写回公共区。私有区仍是 0 条。",
+          detail: [["读取", "公共区 2 条"], ["写入", "草稿 v1 · 1,800 字"], ["可见私有", "0 条（不是作者）"], ["时间", "+9s"]],
+          boundary: "写手读不到研究员的私有剔除记录；它只基于公共结果起草。",
+          figure: "只读公共部分。",
+          figureDesc: "读操作按 Agent 身份拼接：公共区全量 + 自己的私有区。别人的私有区永远不可见。"
+        },
+        {
+          actor: "V",
+          controller: "控制器 C · 选择审阅员行动",
+          title: "审阅员：读草稿，写意见。",
+          desc: "审阅员读取公共区的任务、研究结果和草稿，写出 3 条修改意见到公共区。",
+          detail: [["读取", "公共区 3 条"], ["写入", "审阅意见 · 3 条"], ["可见私有", "0 条（不是作者）"], ["时间", "+14s"]],
+          boundary: "审阅意见写进公共区，所有 Agent 下一轮都能看到；不需要单独发给写手。",
+          figure: "意见也上公告栏。",
+          figureDesc: "公共区的写入对所有 Agent 生效，这是黑板模式 token 效率高的原因之一。"
+        },
+        {
+          actor: "W",
+          controller: "控制器 C · 再次选择写手，判断已解决",
+          title: "写手：读意见，更新草稿。",
+          desc: "写手读取公共区的 3 条审阅意见，把草稿更新为 v2 写回公共区。控制器判断问题已解决，输出最终方案。",
+          detail: [["读取", "公共区 4 条"], ["写入", "草稿 v2 · 2,050 字"], ["可见私有", "0 条（不是作者）"], ["时间", "+18s"]],
+          boundary: "控制器只决定谁行动，不替 Agent 改内容；写手更新的仍是自己的草稿条目。",
+          figure: "公共区留下完整协作记录。",
+          figureDesc: "每一轮都留下作者和时间戳；调试时可以按公共区顺序复盘，但别人的私有区仍然看不到。"
+        }
+      ],
+      entries: [
+        { author: "C", role: "协调器", kind: "任务", text: "Q3 竞品简报 · 3 家厂商", scope: "public", time: "+0s", step: 0 },
+        { author: "R", role: "研究员", kind: "结果", text: "12 条来源摘要，覆盖 3 家厂商", scope: "public", time: "+4s", step: 1 },
+        { author: "R", role: "研究员", kind: "私有笔记", text: "剔除 3 个低可信来源（仅自己可见）", scope: "private", time: "+4s", step: 1 },
+        { author: "W", role: "写手", kind: "草稿", text: "草稿 v1 · 1,800 字", scope: "public", time: "+9s", step: 2 },
+        { author: "V", role: "审阅员", kind: "意见", text: "3 条修改意见：数据口径、引用格式、结论强度", scope: "public", time: "+14s", step: 3 },
+        { author: "W", role: "写手", kind: "草稿", text: "草稿 v2 · 2,050 字", scope: "public", time: "+18s", step: 4 }
+      ]
+    }
+  });
+
+  const cpState = { pattern: "msg", step: 0 };
+  const cpById = (id) => document.getElementById(id);
+  const CP_NAMES = { C: "协调器", R: "研究员", W: "写手", V: "审阅员" };
+
+  function cpRoleStatus(patternKey, stepIndex, roleId) {
+    if (patternKey === "msg") {
+      const msg = CP_PATTERNS.msg.messages[stepIndex];
+      let involved = false;
+      for (let i = 0; i <= stepIndex; i += 1) {
+        const item = CP_PATTERNS.msg.messages[i];
+        if (item.from === roleId || item.to === roleId) involved = true;
+      }
+      if (msg.from === roleId) return { text: "本步发出", cls: "now" };
+      if (msg.to === roleId) return { text: "本步接收", cls: "now" };
+      if (involved) return { text: "已完成", cls: "done" };
+      return { text: "等待", cls: "" };
+    }
+    const pattern = CP_PATTERNS[patternKey];
+    const step = pattern.steps[stepIndex];
+    let acted = false;
+    for (let i = 0; i <= stepIndex; i += 1) {
+      if (pattern.steps[i].actor === roleId) acted = true;
+    }
+    if (step.actor === roleId) return { text: "本步读写", cls: "now" };
+    if (acted) return { text: "已完成", cls: "done" };
+    return { text: "等待", cls: "" };
+  }
+
+  function cpRenderRoles() {
+    const host = cpById("cp-roles");
+    host.textContent = "";
+    CP_ROLES.forEach((role) => {
+      const status = cpRoleStatus(cpState.pattern, cpState.step, role.id);
+      const card = document.createElement("div");
+      card.className = "cp-role" + (status.cls === "now" ? " is-now" : "");
+      const head = document.createElement("div");
+      head.className = "cp-role-head";
+      const name = document.createElement("div");
+      name.className = "cp-role-name";
+      name.textContent = role.name;
+      const code = document.createElement("span");
+      code.textContent = role.id + " · " + role.note;
+      name.append(code);
+      const badge = document.createElement("span");
+      badge.className = "cp-role-state " + status.cls;
+      badge.textContent = status.text;
+      head.append(name, badge);
+      card.append(head);
+      host.append(card);
+    });
+  }
+
+  function cpRenderMessagePanel() {
+    const pattern = CP_PATTERNS.msg;
+    const step = pattern.steps[cpState.step];
+    const canvas = cpById("cp-canvas");
+    canvas.textContent = "";
+    const head = document.createElement("div");
+    head.className = "cp-canvas-head";
+    const title = document.createElement("b");
+    title.textContent = "消息记录 · 只显示已发送";
+    const count = document.createElement("span");
+    count.textContent = `已发送 ${cpState.step + 1} / 5 条`;
+    head.append(title, count);
+    canvas.append(head);
+
+    pattern.messages.slice(0, cpState.step + 1).forEach((msg, index) => {
+      const row = document.createElement("div");
+      row.className = "cp-msg" + (index === cpState.step ? " is-now" : "");
+      const time = document.createElement("div");
+      time.className = "cp-msg-time";
+      time.textContent = msg.time;
+      const body = document.createElement("div");
+      body.className = "cp-msg-body";
+      const route = document.createElement("div");
+      route.className = "cp-msg-route";
+      route.append(document.createTextNode(`${CP_NAMES[msg.from]} ${msg.from}`));
+      const arrow = document.createElement("em");
+      arrow.textContent = "→";
+      route.append(arrow, document.createTextNode(`${CP_NAMES[msg.to]} ${msg.to}`));
+      const type = document.createElement("span");
+      type.className = "cp-msg-type";
+      type.textContent = msg.type;
+      route.append(type);
+      const state = document.createElement("span");
+      state.className = "cp-msg-state";
+      state.textContent = index === cpState.step ? "本步送达" : "已送达";
+      route.append(state);
+      const payload = document.createElement("p");
+      payload.textContent = "负载：" + msg.payload;
+      body.append(route, payload);
+      row.append(time, body);
+      canvas.append(row);
+    });
+
+    if (cpState.step < 4) {
+      const waiting = document.createElement("p");
+      waiting.className = "cp-waiting";
+      waiting.textContent = `后续 ${4 - cpState.step} 条消息尚未发送，本页不提前显示内容。`;
+      canvas.append(waiting);
+    }
+  }
+
+  function cpRenderStatePanel() {
+    const pattern = CP_PATTERNS.state;
+    const step = pattern.steps[cpState.step];
+    const canvas = cpById("cp-canvas");
+    canvas.textContent = "";
+    const head = document.createElement("div");
+    head.className = "cp-canvas-head";
+    const title = document.createElement("b");
+    title.textContent = "共享状态存储 · 当前快照";
+    const count = document.createElement("span");
+    count.textContent = step.actor ? `本步：${CP_NAMES[step.actor]} 读 / 写` : "本步：初始化";
+    head.append(title, count);
+    canvas.append(head);
+
+    const table = document.createElement("table");
+    table.className = "cp-store";
+    const thead = document.createElement("thead");
+    const hr = document.createElement("tr");
+    ["键", "当前值", "最后写入"].forEach((label) => {
+      const th = document.createElement("th");
+      th.scope = "col";
+      th.textContent = label;
+      hr.append(th);
+    });
+    thead.append(hr);
+    table.append(thead);
+    const tbody = document.createElement("tbody");
+
+    pattern.store.forEach((row) => {
+      const visibleEntries = row.entries.filter((entry) => entry.step <= cpState.step);
+      const latest = visibleEntries.length ? visibleEntries[visibleEntries.length - 1] : null;
+      const current = visibleEntries.some((entry) => entry.step === cpState.step);
+      const tr = document.createElement("tr");
+      if (current) tr.className = "is-now";
+      const key = document.createElement("td");
+      key.className = "key";
+      key.textContent = row.key;
+      const val = document.createElement("td");
+      val.className = "val" + (latest ? "" : " empty");
+      val.textContent = latest ? latest.value : "尚未写入";
+      const who = document.createElement("td");
+      who.className = "who";
+      who.textContent = latest ? (current ? "本步 " + latest.by : latest.by) : "—";
+      tr.append(key, val, who);
+      tbody.append(tr);
+    });
+    table.append(tbody);
+    canvas.append(table);
+
+    if (cpState.step < 4) {
+      const waiting = document.createElement("p");
+      waiting.className = "cp-waiting";
+      waiting.textContent = "后续步骤才会写入的字段显示为“尚未写入”，不提前展示未来值。";
+      canvas.append(waiting);
+    }
+  }
+
+  function cpRenderBoardPanel() {
+    const pattern = CP_PATTERNS.board;
+    const step = pattern.steps[cpState.step];
+    const canvas = cpById("cp-canvas");
+    canvas.textContent = "";
+    const head = document.createElement("div");
+    head.className = "cp-canvas-head";
+    const title = document.createElement("b");
+    title.textContent = "黑板 · 当前可见内容";
+    const count = document.createElement("span");
+    count.textContent = `公共区 ${pattern.entries.filter((e) => e.scope === "public" && e.step <= cpState.step).length} 条`;
+    head.append(title, count);
+    canvas.append(head);
+
+    const list = document.createElement("div");
+    list.className = "cp-board-list";
+    pattern.entries.filter((entry) => entry.scope === "public" && entry.step <= cpState.step).forEach((entry) => {
+      const item = document.createElement("div");
+      item.className = "cp-entry public" + (entry.step === cpState.step ? " is-now" : "");
+      const headRow = document.createElement("div");
+      headRow.className = "cp-entry-head";
+      const author = document.createElement("b");
+      author.textContent = `${entry.author} ${entry.role}`;
+      const time = document.createElement("span");
+      time.textContent = entry.time;
+      const kind = document.createElement("span");
+      kind.textContent = entry.kind;
+      const vis = document.createElement("span");
+      vis.className = "cp-vis pub";
+      vis.textContent = "公共";
+      headRow.append(author, time, kind, vis);
+      const text = document.createElement("p");
+      text.textContent = entry.text;
+      item.append(headRow, text);
+      list.append(item);
+    });
+    canvas.append(list);
+
+    const privateEntries = pattern.entries.filter((entry) => entry.scope === "private" && entry.step <= cpState.step);
+    if (privateEntries.length) {
+      const note = document.createElement("div");
+      note.className = "cp-private-note";
+      note.textContent = `研究员私有区：${privateEntries.length} 条 · 写手和审阅员看不到。本页只在你切到“黑板模式”时展示这条私有记录，用来对比可见范围。`;
+      canvas.append(note);
+    }
+
+    if (cpState.step < 4) {
+      const waiting = document.createElement("p");
+      waiting.className = "cp-waiting";
+      waiting.textContent = "后续轮次才写入的公共条目不会提前出现。";
+      canvas.append(waiting);
+    }
+  }
+
+  function cpRender() {
+    const pattern = CP_PATTERNS[cpState.pattern];
+    const step = pattern.steps[cpState.step];
+    cpById("cp-controller").textContent = "";
+    const chip = document.createElement("span");
+    chip.className = "cp-chip";
+    chip.textContent = "C 控制器";
+    const controllerText = document.createElement("span");
+    controllerText.textContent = step.controller;
+    cpById("cp-controller").append(chip, controllerText);
+
+    cpRenderRoles();
+    if (cpState.pattern === "msg") cpRenderMessagePanel();
+    else if (cpState.pattern === "state") cpRenderStatePanel();
+    else cpRenderBoardPanel();
+
+    cpById("cp-figure").textContent = `图 1 · ${pattern.label} · 第 ${cpState.step + 1} / 5 步`;
+    cpById("cp-caption-title").textContent = step.title;
+    cpById("cp-desc").textContent = step.desc;
+    const detail = cpById("cp-detail");
+    detail.textContent = "";
+    step.detail.forEach(([label, value]) => {
+      const row = document.createElement("div");
+      const dt = document.createElement("dt");
+      dt.textContent = label;
+      const dd = document.createElement("dd");
+      dd.textContent = value;
+      row.append(dt, dd);
+      detail.append(row);
+    });
+    cpById("cp-boundary").textContent = "";
+    const boundaryLabel = document.createElement("b");
+    boundaryLabel.textContent = "角色边界：";
+    cpById("cp-boundary").append(boundaryLabel, document.createTextNode(step.boundary));
+
+    cpById("cp-figure-index").textContent = `图 1 · 第 ${cpState.step + 1} / 5 步 · ${pattern.kind}`;
+    cpById("cp-figure-title").textContent = step.figure;
+    cpById("cp-figure-desc").textContent = step.figureDesc;
+
+    document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+      if (Number(button.dataset.step) === cpState.step) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    document.querySelectorAll("#explainer [data-pattern]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.pattern === cpState.pattern));
+    });
+    cpById("cp-prev").disabled = cpState.step === 0;
+    cpById("cp-next").disabled = cpState.step === 4;
+    cpById("cp-state-summary").textContent = `${pattern.label} · 第 ${cpState.step + 1} / 5 步 · 没有连接 Agent`;
+  }
+
+  function cpAnnounce(prefix) {
+    const pattern = CP_PATTERNS[cpState.pattern];
+    const step = pattern.steps[cpState.step];
+    cpById("cp-announcement").textContent = `${prefix}${pattern.label}，第 ${cpState.step + 1} 步，共 5 步。${step.title}`;
+  }
+
+  document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+    button.addEventListener("click", () => {
+      cpState.step = Number(button.dataset.step);
+      cpRender();
+      cpAnnounce("");
+    });
+  });
+  document.querySelectorAll("#explainer [data-pattern]").forEach((button) => {
+    button.addEventListener("click", () => {
+      cpState.pattern = button.dataset.pattern;
+      cpState.step = 0;
+      cpRender();
+      cpAnnounce("");
+    });
+  });
+  cpById("cp-prev").addEventListener("click", () => {
+    cpState.step = Math.max(0, cpState.step - 1);
+    cpRender();
+    cpAnnounce("");
+  });
+  cpById("cp-next").addEventListener("click", () => {
+    cpState.step = Math.min(4, cpState.step + 1);
+    cpRender();
+    cpAnnounce("");
+  });
+  cpById("cp-reset").addEventListener("click", () => {
+    cpState.pattern = "msg";
+    cpState.step = 0;
+    cpRender();
+    cpAnnounce("已重置。");
+  });
+  cpRender();
+</script>
+</body>
+</html>

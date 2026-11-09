@@ -1,0 +1,1123 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>主流 Coding Agent Harness 横评：Claude Code / Cursor / Aider / Cline / Codex CLI 在 Context / Tool / Permission / Sandbox 四维对比 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .hx-snapshot { display: flex; align-items: flex-start; gap: 9px; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .hx-snapshot::before { content: "快照"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .hx-snapshot strong { color: #4d3000; }
+  .hx-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid transparent; border-radius: 999px; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .hx-badge-neutral { background: #eef1ee; color: #3f463f; border-color: #c9cec9; }
+  .hx-badge-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .hx-badge-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .hx-badge-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .hx-badge-bad { background: #fbecec; color: #6d1717; border-color: #d9a3a3; }
+  .hx-kicker { font: 11px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .06em; }
+  .hx-tasks { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; }
+  .hx-task { min-height: 104px; padding: 10px 11px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); text-align: left; display: flex; flex-direction: column; gap: 5px; }
+  .hx-task:hover { background: var(--surface-soft); }
+  .hx-task[aria-pressed="true"] { border-color: #194f87; background: #eaf1f8; box-shadow: inset 0 0 0 1px #194f87; }
+  .hx-task b { font: 600 12px/1.5 var(--sans); }
+  .hx-task small { color: var(--text-dim); font-size: 10px; line-height: 1.6; }
+  .hx-task .hx-task-tag { margin-top: auto; color: #194f87; font: 10px/1.5 var(--mono); }
+  .hx-brief { margin-top: var(--s-3); padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .hx-brief h3 { font: 600 17px/1.4 var(--serif); margin-top: 2px; }
+  .hx-brief p { margin-top: var(--s-2); font-size: 12px; line-height: 1.75; color: var(--text-dim); }
+  .hx-priority { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; margin-top: var(--s-2); font-size: 11px; color: var(--text-dim); }
+  .hx-matrix-wrap { margin-top: var(--s-3); }
+  .hx-matrix { min-width: 760px; }
+  .hx-matrix th[scope="row"], .hx-matrix thead th:first-child { position: sticky; left: 0; z-index: 2; }
+  .hx-matrix th[scope="row"] { min-width: 108px; background: var(--surface); }
+  .hx-matrix thead th:first-child { z-index: 3; background: var(--surface-soft); }
+  .hx-matrix thead th { vertical-align: bottom; }
+  .hx-matrix thead th small { display: block; margin-top: 2px; color: var(--text-dim); font: 9px/1.5 var(--mono); }
+  .hx-matrix .hx-prio-head { background: #fbeccd; color: #6b4300; }
+  .hx-matrix .hx-prio { background: #fffdf6; }
+  .hx-cell { display: block; width: 100%; min-height: 62px; padding: 6px 7px; border: 1px solid transparent; border-radius: 5px; background: transparent; text-align: left; font-size: 11px; line-height: 1.55; color: var(--ink); }
+  .hx-cell:hover { background: var(--surface-soft); }
+  .hx-cell[aria-pressed="true"] { border-color: #194f87; background: #eaf1f8; }
+  .hx-cell small { display: block; margin-top: 3px; color: var(--text-dim); font: 9px/1.5 var(--mono); }
+  .hx-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: var(--s-2); font-size: 10px; color: var(--text-dim); }
+  .hx-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .hx-legend i { width: 11px; height: 11px; border: 1px solid var(--border-bright); border-radius: 2px; }
+  .hx-legend .is-prio { background: #fbeccd; border-color: #b98a2f; }
+  .hx-legend .is-pick { background: #eaf1f8; border-color: #194f87; }
+  .hx-detail { margin-top: var(--s-3); padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); min-height: 104px; }
+  .hx-detail h3 { font: 600 17px/1.4 var(--serif); margin-top: 2px; }
+  .hx-detail p { margin-top: 5px; font-size: 12px; line-height: 1.75; color: var(--text-dim); }
+  .hx-detail p strong { color: var(--ink); }
+  .hx-result { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); gap: var(--s-4); align-items: start; }
+  .hx-result-card { padding: 16px; border: 1px solid #9eb4c9; border-radius: var(--r-1); background: #eaf1f8; }
+  .hx-result-card h3 { font: 600 24px/1.3 var(--serif); color: #0f3d66; margin-top: 2px; }
+  .hx-result-card p { margin-top: var(--s-2); font-size: 12px; line-height: 1.75; color: #1f3f5c; }
+  .hx-result-side { padding: 14px 16px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .hx-result-side h4 { font: 600 13px/1.5 var(--sans); margin: 0; color: var(--ink); }
+  .hx-result-side h4 + p { margin-top: 3px; }
+  .hx-result-side p { font-size: 12px; line-height: 1.75; color: var(--text-dim); }
+  .hx-result-side h4:not(:first-child) { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px solid var(--border); }
+  .hx-result-side dl { margin: var(--s-2) 0 0; display: grid; gap: 5px; }
+  .hx-result-side dl div { display: grid; grid-template-columns: 70px minmax(0, 1fr); gap: 8px; font-size: 11px; line-height: 1.6; }
+  .hx-result-side dt { color: var(--text-dim); font-family: var(--mono); }
+  .hx-result-side dd { margin: 0; }
+  .hx-note { margin-top: var(--s-3); font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .hx-cheat { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: var(--s-4); }
+  .hx-cheat div { padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; line-height: 1.7; }
+  .hx-cheat b { display: block; font: 600 12px/1.5 var(--sans); margin-bottom: 2px; }
+  .hx-wide { min-width: 900px; }
+  .hx-sticky th:first-child, .hx-sticky td:first-child { position: sticky; left: 0; background: var(--surface); z-index: 1; }
+  .hx-sticky thead th:first-child { background: var(--surface-soft); z-index: 2; }
+  .hx-timeline { list-style: none; margin: var(--s-3) 0 0; padding: 0; border-left: 2px solid var(--border-bright); }
+  .hx-timeline li { position: relative; padding: 0 0 10px 16px; font-size: 12px; line-height: 1.7; }
+  .hx-timeline li::before { content: ""; position: absolute; left: -5px; top: 7px; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+  .hx-timeline b { display: inline-block; min-width: 66px; font: 600 11px/1.6 var(--mono); color: var(--accent); }
+  .hx-tree { margin-top: var(--s-3); background: #ebede7; border-radius: var(--r-1); padding: 14px; font-size: 12px; line-height: 1.8; overflow-x: auto; }
+  .hx-checkline { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--s-2); }
+  .hx-mono-note { font: 11px/1.7 var(--mono); color: var(--text-dim); }
+  .hx-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-3); }
+  .hx-two > section { min-width: 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .hx-two h4 { font: 600 13px/1.5 var(--sans); }
+  .hx-two p, .hx-two li { font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .hx-two p { margin-top: 3px; }
+  @media (max-width: 1000px) {
+    .hx-result { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .hx-snapshot { margin-inline: 0; font-size: 11px; }
+    .hx-tasks { grid-template-columns: 1fr; }
+    .hx-task { min-height: 0; }
+    .hx-cheat { grid-template-columns: 1fr; }
+    .hx-two { grid-template-columns: 1fr; }
+    .hx-brief { padding: 10px 12px; }
+    .hx-detail { padding: 10px 12px; }
+    .hx-result-card { padding: 12px; }
+    .hx-result-card h3 { font-size: 21px; }
+    .hx-matrix th[scope="row"] { min-width: 92px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">110 / Coding Harness 横评</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 7 / 9 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="100-testable-extensible-framework.html">← 上一页 · 如何设计可测试、可扩展的 Agent…</a><a href="../docs/diagram-standards.html">下一页 → · 配图标准(diagram-stand…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">高级 · Frameworks · 可交互讲解</p>
+      <h1>五个 Harness，<br>四种取舍。</h1>
+    </div>
+    <div>
+      <p class="lead">2026 年的 Coding Agent Harness 已经不是单一 CLI，而是由模型、上下文、工具、权限和运行时组成的多层架构。Claude Code、Cursor、Aider、Cline、Codex CLI 这五个产品，在 Context、Tool、Permission、Sandbox 四个维度上故意选了不同策略。问“哪个最好”之前，先问“在哪个维度、什么任务”。</p>
+      <p class="definition"><strong>关键边界：</strong>本页的产品版本、能力、价格、跑分与事故记录只按原文 2026 时点快照，统一标为“原文版本、未联网核实”。本页不运行任何 harness、命令或代码，也不做实时排名。互动区使用固定教学任务，推荐规则来自原文决策树，不是官方评测。</p>
+      <div class="hero-meta"><span class="pill">高级</span><span class="pill">Harness 横评</span><span class="pill">5 × 4 矩阵</span><span class="pill">原文快照</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="hx-title">
+    <div class="player-top">
+      <div class="player-label">Harness 选型台 <small>固定任务 · 四维对比 · 推荐</small></div>
+      <div class="controls" role="group" aria-label="Harness 选型演示控制">
+        <button type="button" class="button button-quiet" id="hx-reset">重置</button>
+        <button type="button" class="button" id="hx-back" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="hx-next">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="Harness 选型演示阶段">
+      <ol style="--stages: 3">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>选任务</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>看矩阵</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>看推荐</button></li>
+      </ol>
+    </nav>
+    <p class="hx-snapshot"><span><strong>原文版本、未联网核实：</strong>产品版本、模型名、跑分、CVE 与价格均为原文 2026 时点快照。本页不运行 Claude Code、Cursor、Aider、Cline 或 Codex CLI，不调用任何模型或命令，也不验证这些数字现在是否仍然成立。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="hx-index">阶段 1 / 3 · 固定任务，不读取真实仓库</p>
+      <h2 id="hx-title">先选一个任务，再看四维。</h2>
+      <p id="hx-subtitle">从原文决策树的五个“想要”里选一个。下一页用 5 × 4 矩阵对照五款 harness 的 Context / Tool / Permission / Sandbox 策略，最后一页才给出推荐和代价。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="hx-scene"></div>
+      <p class="demo-note" id="hx-note">固定教学任务：不读取真实仓库、不运行 harness、不联网；产品信息只按原文快照。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定任务 · 5 款 harness × 4 个维度</span><span id="hx-summary">阶段 1 / 3</span></div>
+  </section>
+  <p id="hx-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="hx-shape-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">形态总览</p><h2 id="hx-shape-title">同一道题，<br>五种解法。</h2></div>
+      <p class="reading-intro">五个 harness 都覆盖“模型 + 工具 + 权限 + 运行时”，但产品形态不同：全屏 CLI、VS Code fork、git-first 终端、IDE 扩展、Rust 终端。形态差异直接决定了它们在四个维度上的取舍。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data hx-sticky">
+          <caption class="sr-only">五大 Coding Agent Harness 形态总览，数据为原文 2026 时点快照</caption>
+          <thead><tr><th scope="col">Harness</th><th scope="col">形态</th><th scope="col">模型策略</th><th scope="col">标志特征</th><th scope="col">SWE-bench Verified 2026-Q1</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><strong>Claude Code</strong></th><td>全屏 CLI + IDE 集成</td><td>锁定 Claude（Opus 4.7 / Sonnet 4.6 / Haiku 4.5）</td><td>Hook + Skill + MCP + Subagent + Plugin 五件套；75% auto-compact；2026.3 新增 Ultrathink 深思考模式 + 语音输入</td><td>Opus 4.7 87.6% / Sonnet 4.5 80.9%</td></tr>
+            <tr><th scope="row"><strong>Cursor</strong></th><td>VS Code Fork + Composer</td><td>自家 Composer 模型 + 多模型可选</td><td>Cursor 3（2026-04）重建界面，引入 Agents Window（云端 VM）+ 并行 Agent 编排</td><td>Composer 78.4%（Cursor 3 发布数据）</td></tr>
+            <tr><th scope="row"><strong>Aider</strong></th><td>Git-first 终端</td><td>BYOM（OpenAI / Claude / 本地）</td><td>tree-sitter + PageRank repo map</td><td>70%+（Sonnet 4.6 配置）</td></tr>
+            <tr><th scope="row"><strong>Cline</strong></th><td>VS Code 扩展 + 2026-05 独立 SDK</td><td>BYOM（任意）</td><td>Plan/Act 显式分离；checkpoint 每步可回滚</td><td>Cline CLI + Opus 4.7 = Terminal Bench 2.0 74.2%</td></tr>
+            <tr><th scope="row"><strong>Codex CLI</strong></th><td>Rust 终端 App</td><td>OpenAI（gpt-5 / o5 / codex models）</td><td>OS 原生 Seatbelt/bubblewrap 沙箱 + AGENTS.md 标准</td><td>gpt-5-codex ~85%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="hx-mono-note">以上版本、模型名与跑分均为原文 2026 时点快照，未联网核实；本页不据此做实时排名。</p>
+      <div class="callout">
+        <p class="callout-label">为什么 Devin / Replit 不在主表</p>
+        <p>原文明确：Devin / Replit Agent 是“云端容器 VM + 浏览器入口”的云端 agent 产品，不是本地 harness，比较维度完全不同，只作为云端 sandbox 路线的参照。Devin 2.0（2026.2）支持多模型，自主任务完成率约 40%，入门价 $500/mo；它用“自治长度 + 异步交付”换“人工介入”，与五大本地 harness 的“人机协作”路线形成对照。这些数字同样是原文快照，未联网核实。</p>
+      </div>
+      <h3>Cheat sheet：先记住这 11 条</h3>
+      <div class="hx-cheat">
+        <div><b>四维口诀</b>Context（怎么记）/ Tool（怎么用）/ Permission（怎么审）/ Sandbox（怎么隔）。</div>
+        <div><b>Context 三流派</b>全塞 + compact（Claude Code）/ 检索式（Aider repo map）/ 云端（Cursor / Devin）。</div>
+        <div><b>Sandbox 路线</b>OS 原生（Codex Seatbelt/bubblewrap）vs 云端 VM（Devin / Replit / Cursor 3）vs 无沙箱靠人审批（Cline / Claude Code）。</div>
+        <div><b>五机制口诀</b>MCP = plumbing / Skill = how-to / Slash = button / Hook = guardrail / Subagent = isolation。</div>
+        <div><b>Hook vs Prompt</b>Hook 确定性（regardless of model）/ Prompt 概率性（model may skip）。</div>
+        <div><b>关键跑分</b>Cline CLI + Claude Opus 4.7 在 Terminal Bench 2.0 跑出 74.2%，超过 Claude Code 同模型 69.4%。</div>
+        <div><b>性价比（2026-09）</b>GPT-5.6 家族进 Kiro 后 Terminal-Bench 2.1 成功任务成本降约 82%，是 harness 与模型协同调优的原文案例。</div>
+        <div><b>模型-工具面耦合（2026-09）</b>Claude Agent SDK（TS）v0.3.268 起，TaskCreate/TodoWrite 类工具只在旧模型默认提供，新模型须显式列入 tools/allowedTools。</div>
+        <div><b>2026 三强新进展</b>Claude Code（Ultrathink + 语音输入，2026.3）/ Cursor 3（重建界面 + 并行 Agent 编排）/ Codex CLI（每周多个 alpha）。</div>
+        <div><b>2026 融合趋势</b>三大 harness 通过 MCP、Skill 等共享标准走向“merge into one stack”，能力趋同。</div>
+        <div><b>自主性另一极</b>Devin 2.0（2026.2，多模型，全自主异步工程师）完成率约 40%，$500/mo；社区共识是组合两个工具，而非单押。</div>
+      </div>
+      <p class="hx-note">以上 11 条均来自原文简短回答与 Cheat sheet；涉及版本、价格、跑分的条目为原文快照，未联网核实。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="hx-four-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四维对比</p><h2 id="hx-four-title">没有全能选手，<br>只有不同赌注。</h2></div>
+      <p class="reading-intro">每个 harness 都在四个维度上做了明确取舍。读表时不要只看“谁强”，要看“它为了这个强项放弃了什么”。</p>
+    </div>
+    <div class="prose">
+      <h3>维度 1 · Context：怎么记</h3>
+      <div class="table-wrap">
+        <table class="data hx-sticky">
+          <caption class="sr-only">五款 harness 的 Context 管理策略，原文 2026 快照</caption>
+          <thead><tr><th scope="col">Harness</th><th scope="col">策略</th><th scope="col">关键机制</th><th scope="col">Token 经济</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><strong>Claude Code</strong></th><td>全塞 + 自动 compact</td><td>75% 利用率时 compact；Memory tool 持久化；Skill progressive disclosure</td><td>200K 窗口，compact 后基本不丢；CLAUDE.md 自动 re-inject</td></tr>
+            <tr><th scope="row"><strong>Cursor</strong></th><td>云端 Composer 上下文池</td><td>@-mention 文件、Composer 自动 retrieve；Cursor 3 多窗口并发</td><td>自家模型适配，不公开具体策略</td></tr>
+            <tr><th scope="row"><strong>Aider</strong></th><td>外部检索 + 显式控制</td><td>tree-sitter AST 解析全 repo → PageRank 排序 → token 预算内塞入</td><td>默认 <code>--map-tokens=1024</code>，无 chat 文件时膨胀 8x</td></tr>
+            <tr><th scope="row"><strong>Cline</strong></th><td>IDE 上下文 + 文件批准</td><td>显式 add file / read file；每步全 transcript 可见</td><td>用户完全可控，配 BYOM 模型选</td></tr>
+            <tr><th scope="row"><strong>Codex CLI</strong></th><td>AGENTS.md + workdir 文件读取</td><td>自动读 monorepo 嵌套 AGENTS.md；32 KiB 硬上限静默截断</td><td>AGENTS.md 是核心 context 入口</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>关键对比：</strong>Claude Code 选择“全塞 + 智能压缩”，Aider 选择“外部检索”。前者 context 不丢、cross-file 推理强，模型直接看到原文；代价是 200K 窗口和 compact 算法依赖，长 trajectory 可能丢早期细节。后者让小窗口模型也能在大 repo 工作，显式控制、可解释；代价是 tree-sitter 不支持的语言失效，而且只给 outline 不给原文。</p>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">Claude Code 与 Aider 的 Context 流派对比</caption>
+          <thead><tr><th scope="col">对比</th><th scope="col">Claude Code 流派：全塞 + 智能压缩</th><th scope="col">Aider 流派：外部检索</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">优势</th><td>context 不丢，cross-file 推理强；模型直接看到原文</td><td>小窗口模型也能在大 repo 工作；显式控制，可解释</td></tr>
+            <tr><th scope="row">劣势</th><td>200K 窗口 + compact 算法依赖；长 trajectory 可能丢早期细节</td><td>tree-sitter 不支持的语言失效；仅给 outline 不给原文</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>维度 2 · Tool：怎么用</h3>
+      <div class="table-wrap">
+        <table class="data hx-sticky">
+          <caption class="sr-only">五款 harness 的工具协议与扩展机制，原文 2026 快照</caption>
+          <thead><tr><th scope="col">Harness</th><th scope="col">工具协议</th><th scope="col">Discovery</th><th scope="col">扩展机制</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><strong>Claude Code</strong></th><td>内置 + MCP（开放）+ Skill（按需加载）</td><td>MCP server 自动发现；Skill metadata 启动时常驻</td><td>MCP / Skill / Subagent / Hook / Plugin 五件套</td></tr>
+            <tr><th scope="row"><strong>Cursor</strong></th><td>内置 + MCP（2025-10 起支持）</td><td>编辑器 UI 配 MCP</td><td>Cursor Rules（<code>.cursor/rules/*.mdc</code>）</td></tr>
+            <tr><th scope="row"><strong>Aider</strong></th><td>git + 终端 + LLM-driven file edit</td><td>无插件机制，靠 prompt 触发</td><td>几乎不可扩展（哲学：保持简单）</td></tr>
+            <tr><th scope="row"><strong>Cline</strong></th><td>内置 read/write/exec + MCP</td><td>MCP marketplace；2026-05 SDK 后开放 plugin</td><td><code>@cline/sdk</code> plugin 注册 tool / 监听事件</td></tr>
+            <tr><th scope="row"><strong>Codex CLI</strong></th><td><code>shell_command</code> + <code>apply_patch</code>（深度耦合模型权重）</td><td>AGENTS.md / 自家 cookbook</td><td>Custom tools via <code>[tools.&lt;name&gt;]</code> 配置</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <p class="callout-label">关键观察 · apply_patch 的 post-training coupling</p>
+        <p>原文称 Codex 模型在 post-training 阶段被绑定到 <code>apply_patch</code> 的语法（OpenCode 团队 + HumanLayer 双重证实）。要让 Codex 在自家 harness 里发挥水平，必须模仿 Codex 的 <code>apply_patch</code> 签名。Claude 模型也类似：Opus 4.x / Sonnet 4.x 对 <code>str_replace_based_edit_tool</code> 与 <code>bash</code> 的偏好已写进权重。模型、harness、SDK 三者是深度耦合系统，不是可以任意拼接的零件。</p>
+      </div>
+
+      <h3>维度 3 · Permission：怎么审</h3>
+      <div class="table-wrap">
+        <table class="data hx-sticky">
+          <caption class="sr-only">五款 harness 的审批策略与硬拦能力，原文 2026 快照</caption>
+          <thead><tr><th scope="col">Harness</th><th scope="col">默认审批策略</th><th scope="col">升级机制</th><th scope="col">“硬拦”能力</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><strong>Claude Code</strong></th><td>Permission allowlist（<code>settings.json</code>）</td><td><code>--dangerously-skip-permissions</code> 跳过</td><td><strong>PreToolUse Hook <code>deny</code> 即使 bypass 模式也强拦</strong></td></tr>
+            <tr><th scope="row"><strong>Cursor</strong></th><td>编辑器内“Apply / Reject” diff</td><td>Composer 自动模式可批量批准</td><td>无强制硬拦</td></tr>
+            <tr><th scope="row"><strong>Aider</strong></th><td>自动 commit（git audit trail）</td><td><code>--yes</code> 跳过批准</td><td>无（靠 git revert）</td></tr>
+            <tr><th scope="row"><strong>Cline</strong></th><td><strong>每动作弹批准框（Plan / Act 模式）</strong></td><td>Auto-approve / YOLO mode</td><td>Checkpoint 每步快照可回滚</td></tr>
+            <tr><th scope="row"><strong>Codex CLI</strong></th><td>三档：<code>read-only</code> / <code>auto</code>（默认）/ <code>full access</code></td><td><code>:workspace</code> / <code>:danger-full-access</code> profile</td><td>沙箱内不需要硬拦（隔离）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="quote">Hook 是确定性（regardless of model behavior），Prompt 是概率性（model may skip）。</div>
+      <p>原文把这条差异称为 Coding Agent 从“玩具”到“生产工具”的核心分水岭。在 prompt 里写“提交前必须跑 lint”，模型可能跳过；写成 PreToolUse Hook（shell 脚本），则保证执行。HumanLayer 的总结是“success is silent, failures are verbose”：成功不污染 context，失败把错误注入 agent loop 让模型修。</p>
+
+      <h3>维度 4 · Sandbox：怎么隔</h3>
+      <div class="table-wrap">
+        <table class="data hx-sticky">
+          <caption class="sr-only">五款 harness 的沙箱路线与原文记录的风险，原文 2026 快照</caption>
+          <thead><tr><th scope="col">Harness</th><th scope="col">沙箱路线</th><th scope="col">实现</th><th scope="col">真实 CVE / 风险（原文）</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><strong>Claude Code</strong></th><td><strong>无沙箱</strong>（靠 permission allowlist + Hook）</td><td>host 直接执行；推荐配合 macOS Sandbox Manager</td><td>CVE-2025-66479（BashTool 空白 allowlist）/ SOCKS5 null-byte 注入（v2.0.24-v2.1.89）</td></tr>
+            <tr><th scope="row"><strong>Cursor</strong></th><td>本地无沙箱；Cursor 3 起 Agents Window = 云端 VM</td><td>默认本地直接跑</td><td>与 Claude Code 类似风险面</td></tr>
+            <tr><th scope="row"><strong>Aider</strong></th><td><strong>无沙箱</strong>（git 是唯一防线）</td><td>host 直接执行</td><td>依赖 git diff review 习惯</td></tr>
+            <tr><th scope="row"><strong>Cline</strong></th><td><strong>无沙箱</strong>（靠 Plan/Act 显式批准 + checkpoint）</td><td>host 直接执行</td><td>显式批准是首要防线</td></tr>
+            <tr><th scope="row"><strong>Codex CLI</strong></th><td><strong>OS 原生沙箱</strong></td><td>macOS Seatbelt / Linux/WSL2 bubblewrap / Windows Restricted Token+ACL</td><td><code>workspace-write</code> 默认网络关；<code>danger-full-access</code> 等于无</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">三种沙箱路线的本质权衡，原文 2026 快照</caption>
+          <thead><tr><th scope="col">对比</th><th scope="col">OS 原生（Codex）</th><th scope="col">云端 VM（Devin/Replit/Cursor 3）</th><th scope="col">无沙箱（Claude Code/Cline/Aider）</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">优势</th><td>本地零成本；文件直接 share</td><td>极致隔离（VM 级别）；可异步长跑（200 分钟自治）</td><td>零延迟、零基础设施；用户拥有完整 host 能力</td></tr>
+            <tr><th scope="row">劣势</th><td>平台差异（macOS ≠ Linux）；复杂规则维护</td><td>需要 cold start（10-60s）；egress / data exfil 风险</td><td>必须配 permission + Hook 防线；用户审批疲劳是大问题</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="hx-note">CVE、版本区间、cold start 与 200 分钟自治均为原文快照，未联网核实；本页不复现、不验证这些漏洞或运行时行为。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="hx-cc-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">五机制协同</p><h2 id="hx-cc-title">Claude Code 的生态，<br>强在分工。</h2></div>
+      <p class="reading-intro">原文认为 Claude Code 的扩展生态是 2026 最完整、最值得研究的 harness 范本。关键不是五个机制各自多强，而是它们各管一个独立的 context 问题，不能互相替代。</p>
+    </div>
+    <div class="prose">
+      <h3>发布时间线</h3>
+      <ol class="hx-timeline">
+        <li><b>2024-11</b>MCP（Model Context Protocol）—— 外部工具协议</li>
+        <li><b>2025-07</b>Subagents —— Context 隔离与并行</li>
+        <li><b>2025-09</b>Hooks —— 生命周期确定性触发</li>
+        <li><b>2025-10</b>Plugins —— 分发与打包</li>
+        <li><b>2025-10</b>Skills —— Progressive Disclosure 知识包</li>
+        <li><b>2026-02</b>Agent Teams —— 多 Subagent 编排</li>
+      </ol>
+      <p class="hx-note">时间线来自原文社区总结，未联网核实。</p>
+
+      <h3>五种机制的设计对照</h3>
+      <div class="table-wrap">
+        <table class="data hx-wide hx-sticky">
+          <caption class="sr-only">Slash Command、Skill、MCP、Subagent、Hook 五种机制对照</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">Slash Command</th><th scope="col">Skill</th><th scope="col">MCP</th><th scope="col">Subagent</th><th scope="col">Hook</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">触发</th><td>用户显式 <code>/cmd</code></td><td>模型自动判断</td><td>模型 tool_call</td><td>任务委派（Agent tool）</td><td>生命周期事件</td></tr>
+            <tr><th scope="row">加载成本</th><td>≈0（模板）</td><td>~30-50 tokens metadata</td><td>1k-50k+ tokens 起步</td><td>独立 context 隔离</td><td>注册时几乎为零</td></tr>
+            <tr><th scope="row">主要用途</th><td>重复 prompt 模板</td><td>流程化领域知识</td><td>外部世界访问</td><td>并行/隔离子任务</td><td>强制行为</td></tr>
+            <tr><th scope="row">文件结构</th><td>单 <code>.md</code> 文件</td><td>目录 + SKILL.md + 资源</td><td>server 进程</td><td><code>.claude/agents/*.md</code> + frontmatter</td><td><code>.claude/settings.json</code> hooks 字段</td></tr>
+            <tr><th scope="row">加载粒度</th><td>整体</td><td>三级渐进</td><td>全部 schema</td><td>独立 system prompt</td><td>不进 context</td></tr>
+            <tr><th scope="row">确定性</th><td>用户主动（确定性）</td><td>模型判断（概率性）</td><td>模型决策（概率性）</td><td>父 agent 决策（概率性）</td><td><strong>强制执行（确定性）</strong></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="quote">MCP = plumbing（管道）· Skill = how-to（手册）· Slash = button（按钮）· Subagent = isolation（隔间）· Hook = guardrail（护栏）</div>
+
+      <h3>Skill 的三级渐进加载</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">Skill Progressive Disclosure 的三级加载</caption>
+          <thead><tr><th scope="col">级别</th><th scope="col">加载时机</th><th scope="col">Token 成本</th><th scope="col">内容</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">L1 Metadata</th><td>启动时常驻</td><td>~50-100 tokens / Skill</td><td>YAML frontmatter 的 <code>name</code> + <code>description</code></td></tr>
+            <tr><th scope="row">L2 Instructions</th><td>Claude 判断相关时读取</td><td>~275-8000 tokens</td><td>SKILL.md body 主体</td></tr>
+            <tr><th scope="row">L3 Resources</th><td>bash 按需读取</td><td>无上限（不进 context）</td><td>bundled scripts / reference files</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>经济性证据：原文称 17 个官方 skill 全加载只需约 1700 token，等价于“知道几十种能力但只为一种付费”。核心机制不是把全部内容塞进 system prompt，而是 Claude 在 VM 中通过 bash 显式读取 SKILL.md；script 文件在执行时只把 stdout 注入 context，代码本身不消耗 token。这也是 2026 跨厂商采纳的开放标准之一（原文称 OpenAI / Google / GitHub / Cursor 在两个月内集成）。</p>
+      <details>
+        <summary>展开原文 SKILL.md 必填字段示例</summary>
+        <div class="source-content">
+          <pre><code>---
+name: pdf-processing  # ≤64字符，小写/数字/连字符，禁用 "anthropic"/"claude"
+description: Extract text and tables from PDF files. Use when working with PDFs.  # ≤1024字符
+---
+
+## Workflow
+
+1. Use `python scripts/extract.py &lt;file&gt;` to extract text
+2. ...</code></pre>
+          <p class="source-footnote">代码来自原文，只作转义文本展示，不执行。</p>
+        </div>
+      </details>
+
+      <h3>Hook：把“应该”变成“必须”</h3>
+      <p>原文按 cadence 给 Hook 事件分了组。这里的“12+”是原文口径，不是本页验证过的完整清单。</p>
+      <pre><code>Per session:    SessionStart / SessionEnd / Setup
+Per turn:       UserPromptSubmit / Stop / StopFailure
+Per tool call:  PreToolUse / PostToolUse / PostToolBatch
+Agent-related:  SubagentStart / SubagentStop / TaskCreated
+MCP-related:    PermissionRequest / PermissionDenied / Elicitation
+Async:          FileChanged / CwdChanged / PreCompact / PostCompact</code></pre>
+      <p>5 种 handler 类型：<code>command</code>（shell）/ <code>http</code>（POST 端点）/ <code>mcp_tool</code> / <code>prompt</code>（单轮 LLM 评估）/ <code>agent</code>（带工具的子 agent，实验性）。其中权限决策模型是 PreToolUse 独有。</p>
+      <details>
+        <summary>展开 Hook 配置、输出示例与 Exit code 约定</summary>
+        <div class="source-content">
+          <p class="code-label">.claude/settings.json</p>
+          <pre><code>{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node /path/to/check-destructive.js"
+          }
+        ]
+      }
+    ]
+  }
+}</code></pre>
+          <p class="code-label">check-destructive.js · 示例 hook 输出</p>
+          <pre><code>const input = JSON.parse(require('fs').readFileSync(0, 'utf-8'));
+if (input.tool_input.command.match(/rm -rf|git push --force/)) {
+  console.log(JSON.stringify({
+    permissionDecision: "deny",  // 即使 --dangerously-skip-permissions 也硬拦
+    reason: "Destructive command blocked by project policy"
+  }));
+  process.exit(0);
+}
+process.exit(0);  // allow</code></pre>
+          <ul>
+            <li><code>0</code> = 成功（解析 stdout JSON）；</li>
+            <li><strong><code>2</code> = blocking error（阻止动作）</strong>；</li>
+            <li>其他 = 非阻塞错误；</li>
+            <li>注意：<code>exit 1</code> 不阻断，必须 <code>exit 2</code> 才阻断。</li>
+          </ul>
+          <p><strong>Permission Decision 四值：</strong><code>allow</code> / <code>deny</code>（强拦）/ <code>ask</code>（强制升级用户审批）/ <code>defer</code>（走正常权限流程）。</p>
+          <p class="source-footnote">配置与代码来自原文，只作展示，不执行，也不代表本页验证过 Hook 行为。</p>
+        </div>
+      </details>
+
+      <h3>Subagent 与 MCP server 的边界</h3>
+      <div class="table-wrap">
+        <table class="data hx-wide hx-sticky">
+          <caption class="sr-only">Subagent 与 MCP server 的边界对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">Subagent</th><th scope="col">MCP server</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">本质</th><td>Claude 的另一个实例 + 独立 context</td><td>进程 / HTTP 服务 + 工具 schema</td></tr>
+            <tr><th scope="row">解决的问题</th><td>Context 隔离（防 poisoning）；并行探索</td><td>外部资源访问标准化（N×M 问题）</td></tr>
+            <tr><th scope="row">数据传递</th><td>父发 prompt → 子返回 string</td><td>model <code>tool_call</code> → server response</td></tr>
+            <tr><th scope="row">状态</th><td>子完整 context 不进父 context</td><td>server 自己管 state（HTTP）或 stdio</td></tr>
+            <tr><th scope="row">典型用例</th><td>多文件代码重构、深度调研、并行验证</td><td>数据库查询、文件系统、GitHub、Sentry</td></tr>
+            <tr><th scope="row">配置</th><td><code>.claude/agents/&lt;name&gt;.md</code></td><td><code>.claude/settings.json</code> 的 <code>mcpServers</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>Subagent 的两种语义：</strong>默认 fresh-context，每次启全新 200k 窗口，子任务跑完只返回最终 string，中间 tool_call 不进父 context；<code>CLAUDE_CODE_FORK_SUBAGENT=1</code> 的 fork 模式继承当前对话历史，代价是 fork 子 context 随父增长，且与 <code>--print</code> headless 模式不兼容。</p>
+
+      <h3>实战：提交前跑 lint，按需加载测试规范</h3>
+      <pre class="hx-tree"><code>需求拆解
+├── lint 必须每次都跑                  → Hook（确定性）
+│   └── PreToolUse on git commit / PostToolUse on Edit
+├── 测试规范按需加载                   → Skill（progressive disclosure）
+│   └── .claude/skills/testing-conventions/
+├── 测试要跨多文件分析                  → Subagent（隔离）
+│   └── .claude/agents/test-reviewer.md
+├── 查 Sentry 报错                     → MCP（外部世界访问）
+│   └── mcpServers: { sentry: { command: "...", args: [...] } }
+└── 用户显式入口                       → Slash Command
+    └── .claude/commands/run-tests.md → /run-tests</code></pre>
+      <p><strong>原文列出的四种错误用法：</strong>把 commit message format 做成 Skill（应放 CLAUDE.md / AGENTS.md，频繁触发不是按需）；指望 Skill 访问 GitHub（应用 MCP，Skill 没有工具能力，只有 bash 内 stdout）；把简单 prompt 模板做成 Skill（应用 Slash Command，Skill 太重）；在 prompt 里写“提交前必须跑 lint”（应该是 Hook，模型可能跳过）。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="hx-pick-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">选型与格局</p><h2 id="hx-pick-title">先问场景，<br>再问排名。</h2></div>
+      <p class="reading-intro">原文的选型逻辑不是“谁跑分高选谁”，而是从团队最看重的产品体验出发。SWE-bench 只能说明任务完成率，说明不了交互、可解释性和隔离强度。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">原文的团队选型决策树</caption>
+          <thead><tr><th scope="col">想要</th><th scope="col">推荐</th><th scope="col">原文依据</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">最完整生态 + 深度可扩展</th><td><strong>Claude Code</strong></td><td>五机制协同；锁 Claude 模型</td></tr>
+            <tr><th scope="row">VS Code 原生体验 + 多窗口并发</th><td><strong>Cursor</strong></td><td>Composer 自家模型 + Cursor 3 Agents Window</td></tr>
+            <tr><th scope="row">git-first + 极简 + 多模型</th><td><strong>Aider</strong></td><td>学习曲线最平，repo map 算法精妙</td></tr>
+            <tr><th scope="row">显式 HITL + checkpoint 安全网</th><td><strong>Cline</strong></td><td>Plan/Act 一等公民 + 2026-05 独立 SDK 跨 surface</td></tr>
+            <tr><th scope="row">原生 OS 沙箱 + AGENTS.md 标准</th><td><strong>Codex CLI</strong></td><td>Rust 重写，Seatbelt/bubblewrap 隔离</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <p class="callout-label">SWE-bench Verified ≠ 唯一指标</p>
+        <p>原文的判断是：harness 的产品体验差异远大于跑分差异。Cursor 在交互流畅度上领先，Aider 在 git 集成与可解释性上领先，Claude Code 在生态深度上领先，Codex CLI 在沙箱安全上领先，Cline 在显式可控性上领先。先问“我的场景看重哪个维度”，再选 harness。</p>
+      </div>
+      <h3>2026 的工具融合，改变了什么</h3>
+      <p>The New Stack 报道 Claude Code / Cursor / Codex 正通过插件和共享开放标准“merge into one stack”：MCP 让三者接同一批 server，Skill 这种 progressive disclosure 知识包在两个月内被 OpenAI / Google / GitHub / Cursor 集成，AGENTS.md / CLAUDE.md / <code>.cursor/rules</code> 也在收敛为相似的“项目指令文件”约定。原文的结论是：选型的护城河正从“功能差异”转移到“Context / Permission / Sandbox 的工程取舍与生态成熟度”——能力趋同后，谁的可控性、可审计性、隔离强度更好，谁更适合生产。</p>
+      <p>另一条并行路线是“人机协作 vs 全自主”的分工：五大本地 harness 做精细协作，Devin 2.0 这种全自主异步 agent 跑长周期大任务；社区主流做法是组合使用，而不是二选一。</p>
+      <p class="hx-note">以上趋势、合并说法与社区共识均来自原文 2026 时点，未联网核实；本页不预测产品未来版本。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="hx-myth-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="hx-myth-title">四个误区，<br>六个追问。</h2></div>
+      <p class="reading-intro">横评题最容易犯的错，是把“产品能力”当成“单维度排名”，或者把模型和 harness 当成可以任意拼接的零件。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <div class="misconception-label">误区 01</div>
+        <div><h3>“Claude Code 五机制可以互相替代”</h3><p>错。MCP / Skill / Slash / Subagent / Hook 各管一个独立的 context 问题，强行替代会过度设计或失效。常见错误：把 commit format 写成 Skill（应在 CLAUDE.md）、指望 Hook 给模型加知识（Hook 不进 context，应该是 Skill）、用 Skill 调 GitHub（应该用 MCP）。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 02</div>
+        <div><h3>“Hook 和 Prompt 是一回事，反正都是让模型做什么”</h3><p>这是 Coding Agent 从“玩具”到“生产工具”的核心分水岭。Hook = 确定性（regardless of model behavior），Prompt = 概率性（model may skip）。在 CLAUDE.md 写“提交前必须跑 lint”，模型可能跳过；写成 PreToolUse Hook，保证执行。这层分工不理解，就做不出可靠的代码 Agent。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 03</div>
+        <div><h3>“Cursor 3 的 Agents Window 让 Cursor 变成了 Devin”</h3><p>不完全。Cursor 3 引入云端 sandbox VM，但仍然以编辑器为主入口；Devin 则是“全自治长跑”（原文称 200 分钟自治再交付）。两者形态不同：Cursor 是“IDE + 异步 agent 加成”，Devin 是“独立 SWE 代理”。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 04</div>
+        <div><h3>“OpenAI Codex 模型可以无缝放到任何 harness 里”</h3><p>错。原文称 Codex 模型在 post-training 阶段被绑定到 <code>apply_patch</code> 工具签名，OpenCode 团队发现脱离这个签名性能会掉。Post-training coupling 是原文所说的 2026 行业硬约束——模型与 harness 是深度耦合系统。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 01</div>
+        <div><h3>Aider 的 repo map 算法核心是什么？</h3><p>tree-sitter 解析所有源文件成 AST → 提取 <code>name.definition.*</code> 和 <code>name.reference.*</code> 两类 tag → NetworkX 构建文件依赖图（A 引用 B 定义的符号 → 有向边）→ PageRank 排序（chat-mentioned files 50x 权重，well-named identifiers 10x 权重）→ token 预算下二分查找最大塞入量。默认 <code>--map-tokens=1024</code>，无 chat 文件时膨胀 8x。这是“小窗口模型在大 repo 上能工作”的核心算法。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 02</div>
+        <div><h3>为什么 PreToolUse Hook 的 deny 能强拦 --dangerously-skip-permissions？</h3><p>因为 Hook 是项目级别的配置约束，而非“用户偏好”。Anthropic 的设计哲学是：项目所有者可以设置“用户即使加了 bypass flag 也不能越的红线”，这对企业 / 团队 / 开源项目至关重要。具体到代码，PreToolUse Hook 的 <code>permissionDecision: "deny"</code> 在 permission system 层面短路了所有 upstream 判断。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 03</div>
+        <div><h3>Skill 的 Progressive Disclosure 与 RAG 的检索式有什么区别？</h3><p>表面相似，本质不同。RAG 是 query → embedding 检索 → top-k chunks 进 context，触发由“用户 query”驱动，粒度是 chunk；Skill 是模型读到 frontmatter description → 自主判断 → bash 读 SKILL.md，触发由“模型判断”驱动，粒度是“完整流程文档 + scripts”。Skill 的关键创新是“模型选择加载什么知识”，RAG 是“系统选择灌什么知识给模型”。前者更适合流程性知识（工作流、规范、检查清单），后者更适合事实性知识（文档、代码、数据）。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 04</div>
+        <div><h3>Cline 把 runtime 剥离成 @cline/sdk，对行业意味着什么？</h3><p>意味着 Harness 进入“runtime 独立化 + 多 surface 适配”阶段。同一份 agent runtime 可跑 IDE / CLI / Web / CI，session 跨 surface 迁移（VSCode 启动的会话可在终端继续）。原文预计 2026-2027 的方向是：与产品形态解耦，与模型 / 工具 / protocol 协同。Claude Code 同期也在做类似分层（Claude Agent SDK 与 Claude Code CLI 解耦）。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 05</div>
+        <div><h3>Devin 与 Replit Agent 为什么没纳入横评？</h3><p>因为它们不是“本地 harness”，而是“云端 agent 产品”，比较维度完全不同。Devin/Replit 的核心权衡是“自治长度 vs 失败重试经济学”（Devin 用 ACU 计费、Replit 200 分钟自治），而本题五个 harness 的核心权衡是“context / tool / permission / sandbox 四维选择”。两类产品形态适合两个不同问题：本地协作开发 vs 异步 SWE 代理。原文补充的 Devin 2.0 数据是：支持多模型后自主任务完成率约 40%、入门价 $500/mo；这正是讨论“全自主 Agent 可靠性”与“为何仍需 HITL”的硬论据。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 06</div>
+        <div><h3>2026 年三大工具在融合，是不是很快会变成一个工具？</h3><p>能力在趋同，但四维工程取舍不会合并。The New Stack 报道的“merge into one stack”指接口层标准化——MCP 统一工具协议、Skill 统一知识加载、AGENTS.md/CLAUDE.md 统一项目指令；但每个 harness 在 Context（全塞+compact vs 检索式 vs 云端）、Permission（Hook 硬拦 vs 显式批准 vs 沙箱隔离）、Sandbox（无 vs OS 原生 vs 云端 VM）上的根本赌注不同，这些是写进架构和模型权重的取舍，不会因插件互通而消失。选型逻辑从“比谁功能多”转向“比谁的可控性、可审计性、隔离强度更适合生产”。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="hx-sources-title">
+    <p class="eyebrow">参考资料</p>
+    <h2 class="source-heading" id="hx-sources-title">原文引用与延伸阅读</h2>
+    <p class="source-summary">以下链接来自原文。只有主动点击外链才会离开本页；本页不加载任何外部资源，也不验证链接当前是否可用。</p>
+    <details>
+      <summary>展开 8 组 / 30 条外部参考资料</summary>
+      <div class="source-content">
+        <h3>综合横评</h3>
+        <ul>
+          <li><a href="https://www.requesty.ai/blog/agentic-coding-tools-compared-2026-claude-code-cursor-codex-aider" rel="noreferrer noopener">Requesty — Agentic Coding Tools Compared 2026</a> — 五大 harness 详细产品对比</li>
+          <li><a href="https://thoughts.jock.pl/p/ai-coding-harness-agents-2026" rel="noreferrer noopener">thoughts.jock.pl — AI Coding Harness Agents 2026</a> — 行业评论与排名</li>
+          <li><a href="https://artificialanalysis.ai/agents/coding" rel="noreferrer noopener">Artificial Analysis — Coding Agents Leaderboard</a> — Terminal Bench / SWE-bench 实时跑分</li>
+          <li><a href="https://openai.com/index/gpt-5-6-in-kiro/" rel="noreferrer noopener">OpenAI — Advancing price-performance for developers with GPT-5.6 in Kiro</a> — Terminal-Bench 2.1 成功任务成本降约 82%（2026-08-24）</li>
+          <li><a href="https://github.com/anthropics/claude-agent-sdk-typescript/releases" rel="noreferrer noopener">Claude Agent SDK (TypeScript) Releases</a> — v0.3.268：Task/Todo 类工具默认面收窄到旧模型清单（2026-09）</li>
+          <li><a href="https://htek.dev/articles/all-agent-harnesses-live-comparison" rel="noreferrer noopener">htek.dev — All Agent Harnesses: The Live Comparison</a> — 持续更新的对比表</li>
+        </ul>
+        <h3>2026 竞争格局与工具融合</h3>
+        <ul>
+          <li><a href="https://thenewstack.io/ai-coding-tool-stack/" rel="noreferrer noopener">The New Stack — The AI Coding Tool Stack</a> — 三大工具通过插件与共享标准“merge into one stack”</li>
+          <li><a href="https://www.cosmicjs.com/blog/claude-code-vs-codex-vs-cursor" rel="noreferrer noopener">CosmicJS — Claude Code vs Codex vs Cursor</a> — 三强产品形态对比</li>
+          <li><a href="https://www.contextstudios.ai/blog/ai-coding-agents-showdown-claude-code-vs-cursor-vs-codex-2026" rel="noreferrer noopener">Context Studios — AI Coding Agents Showdown 2026</a> — 含 Claude Code Ultrathink 模式解读</li>
+          <li><a href="https://blog.arcbjorn.com/state-of-cli-coding-agents-2026" rel="noreferrer noopener">arcbjorn — State of CLI Coding Agents 2026</a> — CLI Agent 形态 2026 现状梳理</li>
+        </ul>
+        <h3>Claude Code 五机制深度</h3>
+        <ul>
+          <li><a href="https://www.anthropic.com/engineering/equipping-agents-for-the-real-world-with-agent-skills" rel="noreferrer noopener">Anthropic — Equipping Agents for the Real World with Agent Skills</a> — Progressive Disclosure 官方源头</li>
+          <li><a href="https://alexop.dev/posts/understanding-claude-code-full-stack/" rel="noreferrer noopener">alexop.dev — Understanding Claude Code's Full Stack</a> — 七层扩展全栈梳理</li>
+          <li><a href="https://code.claude.com/docs/en/hooks" rel="noreferrer noopener">code.claude.com/docs/en/hooks</a> — Hook 官方文档（12+ 事件、5 种 handler、Exit code 约定）</li>
+          <li><a href="https://code.claude.com/docs/en/sub-agents" rel="noreferrer noopener">code.claude.com/docs/en/sub-agents</a> — Subagent 官方文档</li>
+          <li><a href="https://www.newsletter.swirlai.com/p/agent-skills-progressive-disclosure" rel="noreferrer noopener">SwirlAI Newsletter — Agent Skills Progressive Disclosure</a> — 17 个官方 skill 的 token 经济实证</li>
+          <li><a href="https://www.morphllm.com/claude-code-skills-mcp-plugins" rel="noreferrer noopener">Morph — Claude Code Skills vs MCP vs Plugins</a> — 三件套实战对比</li>
+        </ul>
+        <h3>Aider Repo Map 算法</h3>
+        <ul>
+          <li><a href="https://aider.chat/2023/10/22/repomap.html" rel="noreferrer noopener">Aider — Building a Better Repo Map with Tree-Sitter</a> — tree-sitter + PageRank 算法原文</li>
+          <li><a href="https://deepwiki.com/Aider-AI/aider/4.1-repository-mapping-system" rel="noreferrer noopener">DeepWiki — Aider Repository Mapping System</a></li>
+        </ul>
+        <h3>Codex CLI 与 Sandbox</h3>
+        <ul>
+          <li><a href="https://developers.openai.com/codex/concepts/sandboxing" rel="noreferrer noopener">developers.openai.com/codex/concepts/sandboxing</a> — Seatbelt / bubblewrap / Restricted Token 官方说明</li>
+          <li><a href="https://developers.openai.com/codex/cli/features" rel="noreferrer noopener">developers.openai.com/codex/cli/features</a> — 三档 approval mode + permission profile</li>
+          <li><a href="https://developers.openai.com/codex/guides/agents-md" rel="noreferrer noopener">developers.openai.com/codex/guides/agents-md</a> — AGENTS.md 标准</li>
+        </ul>
+        <h3>Cline SDK 与 Plan/Act</h3>
+        <ul>
+          <li><a href="https://cline.bot/blog/introducing-cline-sdk-the-upgraded-agent-runtime" rel="noreferrer noopener">Cline Blog — Introducing the Cline SDK (2026-05-13)</a> — Runtime 与 IDE 解耦</li>
+          <li><a href="https://github.com/cline/cline" rel="noreferrer noopener">GitHub — cline/cline</a> — 5M+ 安装的 VS Code 扩展</li>
+          <li><a href="https://www.marktechpost.com/2026/05/14/cline-releases-cline-sdk-an-open-source-agent-runtime-now-powering-its-cli-and-kanban-with-ide-extensions-being-migrated/" rel="noreferrer noopener">MarkTechPost — Cline SDK Coverage</a></li>
+        </ul>
+        <h3>Harness Engineering 理论</h3>
+        <ul>
+          <li><a href="https://www.humanlayer.dev/blog/skill-issue-harness-engineering-for-coding-agents" rel="noreferrer noopener">HumanLayer — Skill Issue: Harness Engineering for Coding Agents</a> — “It's not a model problem. It's a configuration problem.”</li>
+          <li><a href="https://addyosmani.com/blog/agent-harness-engineering/" rel="noreferrer noopener">Addy Osmani — Agent Harness Engineering</a> — Ralph Loop / Sprint Contracts / Planner-Generator-Evaluator split</li>
+        </ul>
+        <h3>Cursor &amp; Devin &amp; Replit 参照</h3>
+        <ul>
+          <li><a href="https://cognition.ai/blog/devin-annual-performance-review-2025" rel="noreferrer noopener">Cognition — Devin's 2025 Performance Review</a></li>
+          <li><a href="https://blog.replit.com/introducing-agent-3-our-most-autonomous-agent-yet" rel="noreferrer noopener">Replit — Introducing Agent 3</a> — 200 分钟自治</li>
+          <li><a href="https://www.aibuilderclub.com/blog/best-ai-coding-agent-2026" rel="noreferrer noopener">AI Builder Club — Best AI Coding Agent 2026</a> — 含 Devin 2.0 多模型、~40% 完成率、$500/mo 定价</li>
+          <li><a href="https://www.totalum.app/blog/best-ai-coding-agents-2026" rel="noreferrer noopener">Totalum — Best AI Coding Agents 2026</a> — 含“组合两工具”社区共识</li>
+        </ul>
+        <p class="source-footnote">以上 30 条外链来自原文参考资料；产品版本、价格与跑分只按原文快照呈现，本页未联网核实。</p>
+      </div>
+    </details>
+    <details>
+      <summary>展开相关阅读（站内页面）</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="../03-tool-use/027-model-context-protocol.html">027 — MCP（Model Context Protocol）</a>：本题 Tool 维度依赖的协议标准</li>
+          <li><a href="096-framework-overview.html">096 — Framework Overview（LangChain / LlamaIndex / Haystack）</a>：Framework 层横评，与本题 Harness 横评形成对照</li>
+          <li><a href="098-framework-vs-custom.html">098 — 框架 vs 自研</a>：自研动机与本题“为什么大厂不用 LangGraph”互为补充</li>
+          <li><a href="099-assistants-api-vs-claude-sdk.html">099 — OpenAI Agents SDK vs Claude Agent SDK</a>：SDK 层对比，本题更上一层（产品级 harness）</li>
+          <li><a href="../01-agent-architecture/109-what-is-agent-harness.html">109 — 什么是 Agent Harness</a>：Harness 概念入门，本题的“基础篇”</li>
+        </ul>
+        <p class="source-footnote">以上站内链接目标均已构建；本页不联网，链接只在主动点击时跳转。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>11-frameworks/110-coding-agent-harness-comparison.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 7 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const DIMENSIONS = [
+    { id: "context", name: "Context", q: "怎么记" },
+    { id: "tool", name: "Tool", q: "怎么用" },
+    { id: "permission", name: "Permission", q: "怎么审" },
+    { id: "sandbox", name: "Sandbox", q: "怎么隔" }
+  ];
+
+  const HARNESSES = [
+    { id: "claude", name: "Claude Code", vendor: "Anthropic", strength: "生态深度" },
+    { id: "cursor", name: "Cursor", vendor: "Cursor Inc.", strength: "交互流畅度" },
+    { id: "aider", name: "Aider", vendor: "Paul Gauthier", strength: "git 集成与可解释性" },
+    { id: "cline", name: "Cline", vendor: "Cline.bot", strength: "显式可控性" },
+    { id: "codex", name: "Codex CLI", vendor: "OpenAI", strength: "沙箱安全" }
+  ];
+
+  const CELLS = {
+    claude: {
+      context: { label: "全塞 + 75% compact", detail: "200K 窗口，75% 利用率时自动 compact；Memory tool 持久化，CLAUDE.md 自动 re-inject。优势是 cross-file 推理强、模型直接看到原文；代价是依赖 compact 算法，长 trajectory 可能丢早期细节。" },
+      tool: { label: "MCP + Skill 五件套", detail: "内置工具 + MCP 开放协议 + Skill 按需加载；扩展机制是 MCP / Skill / Subagent / Hook / Plugin 五件套。原文称这是 2026 最完整、最值得研究的 harness 生态。" },
+      permission: { label: "allowlist + Hook 硬拦", detail: "默认 Permission allowlist（settings.json）；PreToolUse Hook 的 deny 即使 --dangerously-skip-permissions 也强拦。这是原文所说“项目级配置约束”而非用户偏好。" },
+      sandbox: { label: "无沙箱", detail: "host 直接执行，靠 permission allowlist + Hook 防线；原文建议配合 macOS Sandbox Manager。原文记录了 CVE-2025-66479 与 SOCKS5 null-byte 注入风险，本页不复现、不验证。" }
+    },
+    cursor: {
+      context: { label: "云端 Composer 上下文池", detail: "通过 @-mention 文件、Composer 自动 retrieve 组织上下文；Cursor 3 支持多窗口并发。原文称其自家模型适配，不公开具体 token 策略。" },
+      tool: { label: "内置 + MCP（2025-10）", detail: "内置工具加 MCP 支持，MCP 在编辑器 UI 中配置；扩展机制主要是 Cursor Rules（.cursor/rules/*.mdc）。" },
+      permission: { label: "编辑器 diff 批准", detail: "默认在编辑器内对 “Apply / Reject” diff 做批准；Composer 自动模式可批量批准。原文明确：无强制硬拦。" },
+      sandbox: { label: "本地无沙箱 / 云端 VM", detail: "默认本地直接跑，无沙箱；Cursor 3 起 Agents Window 提供云端 VM，但原文仍把编辑器作为主入口。风险面与 Claude Code 类似。" }
+    },
+    aider: {
+      context: { label: "tree-sitter + PageRank repo map", detail: "tree-sitter 解析全 repo 成 AST，按引用关系建图，PageRank 排序后在 token 预算内塞入。默认 --map-tokens=1024，无 chat 文件时膨胀 8x。" },
+      tool: { label: "git/终端，几乎不可扩展", detail: "工具面是 git + 终端 + LLM-driven file edit；原文明确“无插件机制，靠 prompt 触发”，扩展哲学是保持简单。" },
+      permission: { label: "自动 commit，git 审计", detail: "默认自动 commit，用 git audit trail 留痕；--yes 可跳过批准。原文明确：无硬拦，靠 git revert 兜底。" },
+      sandbox: { label: "无沙箱", detail: "host 直接执行，git 是唯一防线；原文称其安全性依赖用户的 git diff review 习惯。" }
+    },
+    cline: {
+      context: { label: "IDE 上下文 + 文件批准", detail: "显式 add file / read file，每一步完整 transcript 可见；用户完全可控，并可自选 BYOM 模型。" },
+      tool: { label: "内置 + MCP + SDK", detail: "内置 read/write/exec 加 MCP，MCP marketplace 提供发现；2026-05 SDK 后开放 plugin，可注册 tool、监听事件。" },
+      permission: { label: "Plan/Act 每步批准", detail: "每个动作弹批准框，Plan / Act 显式分离；支持 Auto-approve / YOLO mode。Checkpoint 每步快照可回滚，是原文强调的安全网。" },
+      sandbox: { label: "无沙箱", detail: "host 直接执行，靠 Plan/Act 显式批准 + checkpoint；原文把显式批准列为“首要防线”，不是沙箱隔离。" }
+    },
+    codex: {
+      context: { label: "AGENTS.md + 32 KiB 截断", detail: "自动读取 monorepo 嵌套的 AGENTS.md，作为核心 context 入口；原文称有 32 KiB 硬上限，超出会静默截断。" },
+      tool: { label: "shell_command + apply_patch", detail: "工具面是 shell_command 与 apply_patch，且与模型权重深度耦合；可通过 [tools.<name>] 配置自定义工具。" },
+      permission: { label: "三档 approval mode", detail: "三档：read-only / auto（默认）/ full access；可用 :workspace 或 :danger-full-access profile 升级。" },
+      sandbox: { label: "OS 原生 Seatbelt/bubblewrap", detail: "macOS Seatbelt、Linux/WSL2 bubblewrap、Windows Restricted Token+ACL；workspace-write 默认网络关，danger-full-access 等于无沙箱。" }
+    }
+  };
+
+  const TASKS = [
+    {
+      id: "ecosystem",
+      title: "要最完整生态 + 深度可扩展",
+      tag: "Claude Code 分支",
+      priority: ["tool", "permission"],
+      brief: "团队愿意锁定 Claude 模型，要求 Hook 确定性硬拦、Skill 按需加载、MCP 接内部系统，并接受“无沙箱，需要自己配 permission + Hook 防线”。",
+      pick: "claude",
+      why: "原文把 Claude Code 列为“最完整生态 + 深度可扩展”的答案：五机制协同覆盖工具、知识、隔离、强制行为和用户入口；PreToolUse Hook 提供其他本地 harness 没有的项目级硬拦。",
+      giveUp: "模型锁定 Claude；无沙箱，必须自己配 permission + Hook 防线，并接受审批疲劳与 host 执行风险。",
+      notFor: "必须 BYOM、必须强隔离无人值守、或团队不愿维护 Hook / Skill 配置时，别选它。"
+    },
+    {
+      id: "vscode",
+      title: "要 VS Code 原生 + 多窗口并发",
+      tag: "Cursor 分支",
+      priority: ["context", "sandbox"],
+      brief: "团队已经在 VS Code 里工作，希望保留编辑器主入口，同时让多个 Agent 并行跑任务；可以接受本地无沙箱或按需启用云端 VM。",
+      pick: "cursor",
+      why: "Cursor 是 VS Code Fork + Composer，Cursor 3 重建界面并引入 Agents Window（云端 VM）与并行 Agent 编排；原文称其在交互流畅度上领先。",
+      giveUp: "没有强制硬拦；Composer 的上下文策略不公开；默认本地直接跑，安全边界主要靠编辑器 diff 批准。",
+      notFor: "需要确定性 Hook 硬拦、完全自托管、或不允许把上下文交给云端 Composer 时，别选它。"
+    },
+    {
+      id: "gitfirst",
+      title: "要 git-first + 极简 + 多模型",
+      tag: "Aider 分支",
+      priority: ["context", "tool"],
+      brief: "小团队或个人开发者，想要终端里的 git 工作流、自动 commit 审计、BYOM 多模型选择，并接受工具面几乎没有扩展。",
+      pick: "aider",
+      why: "Aider 是 Git-first 终端，自动 commit 留下 audit trail；tree-sitter + PageRank repo map 让小窗口模型也能在大 repo 工作；BYOM 支持 OpenAI / Claude / 本地模型。",
+      giveUp: "几乎不可扩展，无 MCP / Skill 式生态；无沙箱、无硬拦，安全依赖 git diff review 和 revert。",
+      notFor: "需要 MCP 工具生态、企业级权限、强隔离或精细 HITL 时，别选它。"
+    },
+    {
+      id: "hitl",
+      title: "要显式 HITL + checkpoint 安全网",
+      tag: "Cline 分支",
+      priority: ["permission", "tool"],
+      brief: "高风险代码库，要求每个动作都能看到、能批准、能回滚；愿意用频繁中断换取可控性。",
+      pick: "cline",
+      why: "Cline 把 Plan/Act 做成一等公民，每个动作弹批准框，checkpoint 每步快照可回滚；2026-05 独立 SDK 让同一 runtime 跨 IDE / CLI / Web / CI。原文称其在显式可控性上领先。",
+      giveUp: "无沙箱，host 直接执行；每步审批会带来中断和审批疲劳；Auto-approve / YOLO 一旦打开就绕过了主要防线。",
+      notFor: "长时无人值守、高频批量任务、或团队无法承受每步审批成本时，别选它。"
+    },
+    {
+      id: "sandbox",
+      title: "要原生 OS 沙箱 + AGENTS.md 标准",
+      tag: "Codex CLI 分支",
+      priority: ["sandbox", "permission"],
+      brief: "需要 OS 级隔离、默认网络关闭、三档审批，并接受 OpenAI 模型与 apply_patch 的强耦合。",
+      pick: "codex",
+      why: "Codex CLI 用 macOS Seatbelt / Linux bubblewrap / Windows Restricted Token+ACL 做 OS 原生沙箱，workspace-write 默认网络关；三档 approval mode 让隔离与审批配合，AGENTS.md 是核心 context 入口。原文称其在沙箱安全上领先。",
+      giveUp: "平台差异需要分别维护规则；apply_patch 与模型权重强耦合，换 harness 可能掉性能；生态比 Claude Code 窄。",
+      notFor: "必须 BYOM、需要跨平台完全一致的沙箱规则、或追求最完整扩展生态时，别选它。"
+    }
+  ];
+
+  const STAGE_META = [
+    { title: "先选一个任务，再看四维。", subtitle: "从原文决策树的五个“想要”里选一个。下一页用 5 × 4 矩阵对照五款 harness 的 Context / Tool / Permission / Sandbox 策略，最后一页才给出推荐和代价。" },
+    { title: "五个产品，四个维度，一张表。", subtitle: "矩阵只高亮当前任务的重点维度，不提前公布推荐。点任意单元格，查看该 harness 在该维度的策略和代价。" },
+    { title: "推荐不是排名，是取舍。", subtitle: "下面是原文决策树对当前任务给出的首选，以及你为它放弃了什么、什么时候不该选。产品数据仍为原文快照。" }
+  ];
+
+  const state = { stage: 0, taskId: TASKS[0].id, cell: null };
+  const byId = (id) => document.getElementById(id);
+  const task = () => TASKS.find((item) => item.id === state.taskId) || TASKS[0];
+  const dimName = (id) => (DIMENSIONS.find((item) => item.id === id) || DIMENSIONS[0]).name;
+  const harnessById = (id) => HARNESSES.find((item) => item.id === id) || HARNESSES[0];
+
+  function priorityBadges(ids) {
+    return ids.map((id) => `<span class="hx-badge hx-badge-info">${dimName(id)}</span>`).join("");
+  }
+
+  function taskScene() {
+    const current = task();
+    const cards = TASKS.map((item) => `
+      <button type="button" class="hx-task" data-task="${item.id}" aria-pressed="${item.id === current.id}">
+        <b>${item.title}</b>
+        <small>${item.brief}</small>
+        <span class="hx-task-tag">重点 ${item.priority.map(dimName).join(" / ")}</span>
+      </button>`).join("");
+    return `
+      <div class="hx-tasks" role="group" aria-label="选择固定教学任务">${cards}</div>
+      <div class="hx-brief">
+        <p class="hx-kicker">固定任务 · 教学案例</p>
+        <h3>${current.title}</h3>
+        <p>${current.brief}</p>
+        <div class="hx-priority">重点维度：${priorityBadges(current.priority)}</div>
+        <p class="hx-note">任务文案与推荐分支来自原文决策树；选任务不会读取真实仓库，也不会运行任何 harness。</p>
+      </div>`;
+  }
+
+  function matrixCell(harness, dim) {
+    const cell = CELLS[harness.id][dim.id];
+    const selected = Boolean(state.cell && state.cell.harness === harness.id && state.cell.dim === dim.id);
+    return `<td class="${task().priority.includes(dim.id) ? "hx-prio" : ""}">
+      <button type="button" class="hx-cell" data-harness="${harness.id}" data-dim="${dim.id}" aria-pressed="${selected}">
+        ${cell.label}<small>${harness.name} · ${dim.name}</small>
+      </button>
+    </td>`;
+  }
+
+  function matrixHead() {
+    return `<thead><tr><th scope="col">Harness</th>${DIMENSIONS.map((dim) => `<th scope="col" class="${task().priority.includes(dim.id) ? "hx-prio-head" : ""}">${dim.name}<small>${dim.q}</small></th>`).join("")}</tr></thead>`;
+  }
+
+  function matrixBody() {
+    return `<tbody>${HARNESSES.map((harness) => `<tr><th scope="row"><strong>${harness.name}</strong><br><small class="hx-mono-note">${harness.strength}</small></th>${DIMENSIONS.map((dim) => matrixCell(harness, dim)).join("")}</tr>`).join("")}</tbody>`;
+  }
+
+  function detailHTML() {
+    if (!state.cell) {
+      return `<p class="hx-kicker">5 × 4 矩阵</p>
+        <h3>点任意单元格查看</h3>
+        <p>先对照当前任务的重点维度，再点开具体策略；推荐会在下一步给出。</p>
+        <p class="hx-note">矩阵只展示原文策略，不给产品排名；本页不运行任何 harness。</p>`;
+    }
+    const harness = harnessById(state.cell.harness);
+    const dim = DIMENSIONS.find((item) => item.id === state.cell.dim) || DIMENSIONS[0];
+    const cell = CELLS[harness.id][dim.id];
+    return `<p class="hx-kicker">${harness.name} · ${harness.vendor} · ${dim.name}（${dim.q}）</p>
+      <h3>${cell.label}</h3>
+      <p>${cell.detail}</p>
+      <p class="hx-note">原文版本、未联网核实；本页不运行该 harness。</p>`;
+  }
+
+  function matrixScene() {
+    const current = task();
+    return `
+      <div class="hx-priority">当前任务：${current.title} · 重点维度：${priorityBadges(current.priority)}</div>
+      <div class="table-wrap hx-matrix-wrap">
+        <table class="data hx-matrix">
+          <caption class="sr-only">五大 Coding Agent Harness 在 Context、Tool、Permission、Sandbox 四维的策略矩阵，可横向滚动</caption>
+          ${matrixHead()}
+          ${matrixBody()}
+        </table>
+      </div>
+      <div class="hx-legend">
+        <span><i class="is-prio"></i>当前任务的重点维度列</span>
+        <span><i class="is-pick"></i>已选单元格（点任意格查看）</span>
+        <span>首列固定，窄屏可横向滚动</span>
+      </div>
+      <div class="hx-detail" id="hx-detail">${detailHTML()}</div>
+      <p class="hx-note">矩阵与说明来自原文四维对比表；本页没有给格子打“强 / 弱”分，只保留原文策略描述。</p>`;
+  }
+
+  function resultScene() {
+    const current = task();
+    const pick = harnessById(current.pick);
+    const rows = DIMENSIONS.map((dim) => `<div><dt>${dim.name}</dt><dd>${CELLS[pick.id][dim.id].label}</dd></div>`).join("");
+    return `
+      <div class="hx-result">
+        <section class="hx-result-card" aria-label="推荐结果">
+          <p class="hx-kicker">原文决策树推荐 · 固定教学任务</p>
+          <h3>${pick.name}</h3>
+          <p>${current.why}</p>
+          <div class="hx-checkline"><span class="hx-badge hx-badge-info">${pick.vendor}</span><span class="hx-badge hx-badge-warn">原文版本、未联网核实</span></div>
+        </section>
+        <section class="hx-result-side" aria-label="推荐代价与四维摘要">
+          <h4>你放弃了什么</h4>
+          <p>${current.giveUp}</p>
+          <h4>什么时候别选</h4>
+          <p>${current.notFor}</p>
+          <h4>${pick.name} 的四维摘要</h4>
+          <dl>${rows}</dl>
+        </section>
+      </div>
+      <p class="hx-note">推荐来自原文“团队选型决策树”，不是官方评测或实时排名。产品版本、能力、价格与跑分均为原文 2026 时点快照，未联网核实；本页没有运行任何 harness，也不代表这些结论现在仍然成立。</p>`;
+  }
+
+  const SCENES = [taskScene, matrixScene, resultScene];
+
+  function summaryFor(stage) {
+    if (stage === 0) return `阶段 1 / 3 · ${task().title}`;
+    if (stage === 1) return `阶段 2 / 3 · 5 × 4 矩阵 · 重点 ${task().priority.map(dimName).join(" / ")}`;
+    return `阶段 3 / 3 · 推荐 ${harnessById(task().pick).name}`;
+  }
+
+  function renderStage(stage) {
+    state.stage = stage;
+    byId("hx-scene").innerHTML = SCENES[stage]();
+    byId("hx-title").textContent = STAGE_META[stage].title;
+    byId("hx-subtitle").textContent = STAGE_META[stage].subtitle;
+    byId("hx-index").textContent = `阶段 ${stage + 1} / 3 · 固定教学数据，不运行 harness`;
+    byId("hx-summary").textContent = summaryFor(stage);
+    byId("hx-back").disabled = stage === 0;
+    byId("hx-next").disabled = stage === SCENES.length - 1;
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      if (Number(button.dataset.stage) === stage) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    bindSceneControls();
+    byId("hx-announcement").textContent = `${STAGE_META[stage].title}。${STAGE_META[stage].subtitle}`;
+  }
+
+  function selectTask(id) {
+    state.taskId = id;
+    state.cell = null;
+    document.querySelectorAll("[data-task]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.task === id));
+    });
+    const brief = document.querySelector(".hx-brief");
+    if (brief) {
+      const current = task();
+      brief.innerHTML = `<p class="hx-kicker">固定任务 · 教学案例</p>
+        <h3>${current.title}</h3>
+        <p>${current.brief}</p>
+        <div class="hx-priority">重点维度：${priorityBadges(current.priority)}</div>
+        <p class="hx-note">任务文案与推荐分支来自原文决策树；选任务不会读取真实仓库，也不会运行任何 harness。</p>`;
+    }
+    byId("hx-summary").textContent = summaryFor(0);
+    byId("hx-announcement").textContent = `已选任务：${task().title}；重点维度 ${task().priority.map(dimName).join("、")}`;
+  }
+
+  function selectCell(harnessId, dimId) {
+    state.cell = { harness: harnessId, dim: dimId };
+    document.querySelectorAll(".hx-cell").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.harness === harnessId && button.dataset.dim === dimId));
+    });
+    const detail = byId("hx-detail");
+    if (detail) detail.innerHTML = detailHTML();
+    const harness = harnessById(harnessId);
+    byId("hx-announcement").textContent = `已查看：${harness.name} 的 ${dimName(dimId)} 策略。${CELLS[harnessId][dimId].detail}`;
+  }
+
+  function bindSceneControls() {
+    document.querySelectorAll("[data-task]").forEach((button) => {
+      button.addEventListener("click", () => selectTask(button.dataset.task));
+    });
+    document.querySelectorAll("[data-harness][data-dim]").forEach((button) => {
+      button.addEventListener("click", () => selectCell(button.dataset.harness, button.dataset.dim));
+    });
+  }
+
+  byId("hx-reset").addEventListener("click", () => {
+    state.taskId = TASKS[0].id;
+    state.cell = null;
+    renderStage(0);
+  });
+  byId("hx-back").addEventListener("click", () => renderStage(Math.max(0, state.stage - 1)));
+  byId("hx-next").addEventListener("click", () => renderStage(Math.min(SCENES.length - 1, state.stage + 1)));
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (Number(button.dataset.stage) === 1) state.cell = null;
+      renderStage(Number(button.dataset.stage));
+    });
+  });
+
+  renderStage(0);
+</script>
+</body>
+</html>

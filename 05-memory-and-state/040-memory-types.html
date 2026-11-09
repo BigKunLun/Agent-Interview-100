@@ -1,0 +1,924 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Agent 记忆的类型：短期记忆、长期记忆、工作记忆 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  /* 040 记忆类型 */
+  .mem-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .mem-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) 68px minmax(0, 1fr); gap: var(--s-4); align-items: stretch; }
+  .mem-panel { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .mem-panel-head { display: flex; justify-content: space-between; gap: var(--s-3); align-items: flex-start; flex-wrap: wrap; }
+  .mem-panel h2 { font-size: 16px; line-height: 1.5; font-weight: 600; }
+  .mem-panel .figure-index { margin-bottom: 4px; }
+  .mem-badge { font: 11px/1.6 var(--mono); color: var(--accent); background: var(--accent-dim); border: 1px solid #b9cde0; border-radius: 999px; padding: 2px 8px; white-space: nowrap; }
+  .budget-track { display: flex; height: 34px; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; background: var(--surface-soft); }
+  .budget-seg { height: 100%; transition: width var(--med) var(--ease); }
+  .budget-scale { display: flex; justify-content: space-between; margin-top: 5px; font: 10px/1.4 var(--mono); color: var(--text-dim); }
+  .budget-calc { margin-top: var(--s-3); font: 12px/1.7 var(--mono); color: var(--ink); background: var(--surface-soft); border-radius: 4px; padding: 7px 9px; overflow-wrap: anywhere; }
+  .budget-legend { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 5px 10px; }
+  .budget-legend li { display: flex; align-items: baseline; gap: 6px; min-width: 0; font-size: 11px; line-height: 1.5; color: var(--text-dim); }
+  .budget-legend li > span:nth-child(2) { min-width: 0; overflow-wrap: anywhere; }
+  .swatch { width: 9px; height: 9px; border-radius: 2px; flex: 0 0 auto; position: relative; top: 1px; }
+  .budget-legend b { margin-left: auto; font: 11px/1.5 var(--mono); color: var(--ink); white-space: nowrap; }
+  .budget-legend .is-zero { opacity: .42; }
+  .mem-panel-note { margin-top: var(--s-3); font-size: 11px; line-height: 1.6; color: var(--text-dim); }
+  .mem-arrows { display: flex; flex-direction: column; justify-content: center; gap: var(--s-4); align-items: center; }
+  .mem-arrow { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; line-height: 1.3; color: var(--text-dim); text-align: center; }
+  .mem-arrow span { font-size: 22px; line-height: 1; }
+  .mem-arrow b { font-weight: 500; }
+  .mem-arrow.is-active { color: var(--accent); }
+  .mem-arrow.is-pending { color: #8a6d3b; }
+  .store-count { margin-top: var(--s-3); font-size: 12px; color: var(--text-dim); }
+  .store-count strong { font: 600 26px/1.1 var(--serif); color: var(--ink); margin-right: 4px; }
+  .store-list { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 5px; }
+  .store-item { display: flex; justify-content: space-between; gap: 8px; padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; font-size: 11px; background: var(--surface-soft); }
+  .store-item b { font-family: var(--mono); font-weight: 500; }
+  .store-item.is-new { border-color: #d9a441; background: #fff8e8; }
+  .mem-caption { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border); }
+  .mem-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; }
+  .mem-caption > p:not(.figure-index):not(.mem-action) { margin-top: var(--s-2); font-size: var(--t-small); color: var(--text-dim); max-width: 62em; }
+  .mem-action { display: inline-block; margin-top: var(--s-3); padding: 4px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font: 11px/1.6 var(--mono); color: var(--accent); background: var(--accent-dim); }
+  .memory-map { display: grid; grid-template-columns: 1fr 90px 1fr; gap: var(--s-3); align-items: center; margin-top: var(--s-5); }
+  .map-side { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .map-side.external { background: #f2f7f1; }
+  .map-label { font: 11px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .map-side h3 { font-size: 15px; margin-top: 2px; }
+  .map-side ul { margin: var(--s-3) 0 0; padding-left: 1.1em; font-size: 11px; color: var(--text-dim); }
+  .map-side li { margin-block: 3px; }
+  .map-link { display: flex; flex-direction: column; gap: 10px; align-items: center; text-align: center; font-size: 10px; color: var(--text-dim); }
+  .map-link b { display: block; font-weight: 500; }
+  .map-link span { font-size: 20px; line-height: 1; color: var(--accent); }
+  .memory-map figcaption { grid-column: 1 / -1; }
+  .manage-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .manage-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .manage-card h3 { margin-top: 0; font-size: 16px; }
+  .manage-card p { margin-top: var(--s-2); font-size: 12px; color: var(--text-dim); }
+  @media (max-width: 900px) {
+    .mem-grid { grid-template-columns: 1fr; }
+    .mem-arrows { flex-direction: row; justify-content: center; gap: var(--s-5); }
+    .mem-arrow { flex-direction: row; gap: 6px; }
+    .mem-arrow span { transform: rotate(90deg); font-size: 18px; }
+    .memory-map { grid-template-columns: 1fr; }
+    .map-link { flex-direction: row; justify-content: center; gap: var(--s-4); }
+    .map-link span { transform: rotate(90deg); }
+  }
+  @media (max-width: 720px) {
+    .mem-stage { padding: var(--s-4); }
+    .budget-legend { grid-template-columns: 1fr; }
+    .manage-grid { grid-template-columns: 1fr; }
+    .mem-caption h2 { font-size: 22px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">040 / Agent 记忆类型</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 4 / 10 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="../04-multi-agent/033-orchestration-patterns.html">← 上一页 · Agent 编排模式</a><a href="../06-planning-and-reasoning/049-cot-and-tot.html">下一页 → · 推理策略详解</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">基础 · Memory &amp; State · 可交互讲解</p>
+      <h1>LLM 不记事，<br>记忆是工程层。</h1>
+    </div>
+    <div>
+      <p class="lead">短期记忆是当前会话的对话历史，长期记忆是外部存储里、需要检索才能使用的知识，工作记忆是当前这一步真正放进上下文窗口的全部信息。三者配合，Agent 才显得“记得住”。</p>
+      <p class="definition">关键边界：<strong>LLM 本身无状态</strong>。每次 API 调用相互独立，模型不会自动记住上一轮。所有跨轮、跨会话的记忆，都由应用代码负责存储、检索并重新放进 Prompt。</p>
+      <div class="hero-meta"><span class="pill">基础</span><span class="pill">Memory &amp; State</span><span class="pill">三类记忆</span><span class="pill">固定教学预算</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="mem-step-title">
+    <div class="player-top">
+      <div class="player-label">一次客服会话里的三种记忆 <small>固定教学数据 · 示例预算 8,000 tokens</small></div>
+      <div class="controls" role="group" aria-label="记忆协作演示控制">
+        <button type="button" class="button button-quiet" id="mem-reset">重置</button>
+        <button type="button" class="button" id="mem-prev" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="mem-next">下一步 →</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="记忆协作六步">
+      <ol style="--stages: 6">
+        <li><button type="button" class="stage-button" data-step="1" aria-current="step" aria-controls="mem-scene" aria-label="第 1 步：新会话"><span class="stage-number">1</span><span>开始</span></button></li>
+        <li><button type="button" class="stage-button" data-step="2" aria-controls="mem-scene" aria-label="第 2 步：检索长期记忆"><span class="stage-number">2</span><span>检索</span></button></li>
+        <li><button type="button" class="stage-button" data-step="3" aria-controls="mem-scene" aria-label="第 3 步：工具结果进入窗口"><span class="stage-number">3</span><span>工具</span></button></li>
+        <li><button type="button" class="stage-button" data-step="4" aria-controls="mem-scene" aria-label="第 4 步：工作记忆组装完成"><span class="stage-number">4</span><span>组装</span></button></li>
+        <li><button type="button" class="stage-button" data-step="5" aria-controls="mem-scene" aria-label="第 5 步：固化到长期记忆"><span class="stage-number">5</span><span>固化</span></button></li>
+        <li><button type="button" class="stage-button" data-step="6" aria-controls="mem-scene" aria-label="第 6 步：新会话窗口清零"><span class="stage-number">6</span><span>新会话</span></button></li>
+      </ol>
+    </nav>
+    <div class="mem-stage scene" id="mem-scene" data-scene="memory">
+      <div class="mem-grid">
+        <section class="mem-panel" aria-labelledby="window-title">
+          <div class="mem-panel-head">
+            <div><p class="figure-index">上下文窗口 ≈ RAM</p><h2 id="window-title">工作记忆：模型这次能看到的全部内容</h2></div>
+            <span class="mem-badge" id="window-badge">860 / 8,000</span>
+          </div>
+          <div class="budget-track" id="budget-track" role="img" aria-label="上下文窗口已用 860 / 8000 tokens"></div>
+          <div class="budget-scale"><span>0</span><span>4,000</span><span>8,000 tokens</span></div>
+          <p class="budget-calc" id="budget-calc">800 + 60 = 860 tokens · 剩余 7,140</p>
+          <ul class="budget-legend" id="budget-legend"></ul>
+          <p class="mem-panel-note" id="message-count">对话历史：1 条消息 · 60 tokens</p>
+        </section>
+        <div class="mem-arrows" aria-hidden="true" id="mem-arrows">
+          <div class="mem-arrow" data-arrow="in"><span>←</span><b>检索加载</b></div>
+          <div class="mem-arrow" data-arrow="out"><span>→</span><b>固化存储</b></div>
+        </div>
+        <section class="mem-panel" aria-labelledby="store-title">
+          <div class="mem-panel-head">
+            <div><p class="figure-index">外部存储 ≈ 硬盘</p><h2 id="store-title">长期记忆：跨会话保留，必须检索</h2></div>
+          </div>
+          <p class="store-count"><strong id="store-count">12</strong> 条长期记忆</p>
+          <ul class="store-list" id="store-list">
+            <li class="store-item"><span>用户画像</span><b>1</b></li>
+            <li class="store-item"><span>历史工单摘要</span><b>7</b></li>
+            <li class="store-item"><span>政策与流程笔记</span><b>4</b></li>
+            <li class="store-item is-new" id="store-new" hidden><span>本次固化：退款偏好</span><b>1</b></li>
+          </ul>
+          <p class="mem-panel-note" id="store-note">外部存储有 12 条，但还没有检索；模型此刻看不到它们。</p>
+        </section>
+      </div>
+      <div class="mem-caption">
+        <p class="figure-index" id="mem-position">图 1 · 第 1 / 6 步</p>
+        <h2 id="mem-step-title">新会话开始：窗口里只有 System Prompt 和新问题。</h2>
+        <p id="mem-step-description">用户发来新问题。窗口里只有 System Prompt 和新消息：800 + 60 = 860 tokens。LLM 看不到任何历史，因为它没有状态。</p>
+        <p class="mem-action" id="mem-action">写入窗口：System Prompt 800 + 用户问题 60</p>
+      </div>
+      <p class="demo-note">固定教学数据：8,000 token 预算、各段 token 数、外部存储条目数都为演示而设，不代表任何模型的真实上限或真实用户数据。本页不调用模型，也不读写任何真实存储。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 算术由页面脚本实时计算</span><span id="mem-state-summary">第 1 / 6 步 · 没有连接模型或数据库</span></div>
+  </section>
+  <p id="mem-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="essence-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">记忆的本质</p><h2 id="essence-title">模型没有记忆，<br>应用才有。</h2></div>
+      <p class="reading-intro">这是理解三类记忆的前提：LLM 每次调用都从零开始，记忆是应用在请求之外维护、再拼回请求里的数据。</p>
+    </div>
+    <div class="prose">
+      <div class="callout">
+        <p class="callout-label">核心事实</p>
+        <p><strong>LLM 本身是无状态的。</strong>每次 API 调用都是独立的——模型不会“记住”之前的调用。</p>
+        <p>产品层面的“记忆”（如 ChatGPT 记住你的名字）是在 LLM 之上工程化实现的记忆层，不是模型的固有能力。构建 Agent 时，你需要自己实现这个记忆层。</p>
+      </div>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">LLM 与应用代码在记忆中的分工</caption>
+          <thead><tr><th scope="col">角色</th><th scope="col">本次请求内负责</th><th scope="col">请求之外负责</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">LLM</th><td>读取本次上下文，生成回答</td><td>不保存任何状态</td></tr>
+            <tr><th scope="row">应用代码</th><td>组装 Prompt、调用模型</td><td>保存对话、检索长期记忆、决定哪些内容进入下一次请求</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>所以“记忆”不是一个模型开关，而是一套数据流：应用把历史、检索结果和工具输出拼成上下文，模型只对这一次拼接出来的内容做推理。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="stm-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">短期记忆 · STM</p><h2 id="stm-title">当前会话的<br>对话历史。</h2></div>
+      <p class="reading-intro">短期记忆就是本次会话累积的 messages。它直接可用，不需要检索；会话结束或窗口溢出，它就消失。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">短期记忆 = 上下文窗口中的对话历史 · 原文代码</p>
+      <pre><code>conversation_history = [
+    {"role": "user", "content": "帮我查一下订单 #12345"},
+    {"role": "assistant", "content": "订单 #12345 已发货，预计明天到达"},
+    {"role": "user", "content": "物流单号是多少？"},
+    # Agent 可以回答，因为"订单 #12345"在短期记忆中
+]
+
+# LLM 调用时，完整对话历史作为输入
+response = llm.invoke(messages=conversation_history)</code></pre>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">短期记忆的五个特征</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">短期记忆</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">存储位置</th><td>LLM 的上下文窗口（Context Window）</td></tr>
+            <tr><th scope="row">生命周期</th><td>当前会话</td></tr>
+            <tr><th scope="row">容量限制</th><td>受上下文窗口大小限制（原文示例：4K–200K tokens）</td></tr>
+            <tr><th scope="row">访问方式</th><td>直接可用，无需检索</td></tr>
+            <tr><th scope="row">丢失时机</th><td>会话结束、上下文窗口溢出</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>注意“直接可用”的含义：它已经在本轮请求的 <code>messages</code> 里，不需要额外查询。一旦会话关闭，这份列表只存在于你的应用侧；模型侧不会保留。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="ltm-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">长期记忆 · LTM</p><h2 id="ltm-title">外部存储加检索，<br>跨会话保留。</h2></div>
+      <p class="reading-intro">长期记忆不在模型里，而在向量数据库、关系数据库或其他外部系统中。要用的时候，先检索，再把结果放进当前窗口。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">长期记忆 = 外部存储 + 检索 · 原文代码</p>
+      <pre><code>class LongTermMemory:
+    def __init__(self, vector_db, relational_db):
+        self.vector_db = vector_db      # 语义检索
+        self.relational_db = relational_db  # 结构化查询
+
+    def store(self, memory: dict):
+        """存储记忆到外部系统"""
+        # 向量化存储（用于语义检索）
+        embedding = embed(memory["content"])
+        self.vector_db.upsert(
+            id=memory["id"],
+            vector=embedding,
+            metadata=memory["metadata"]
+        )
+        # 结构化存储（用于精确查询）
+        self.relational_db.insert(memory)
+
+    def retrieve(self, query: str, top_k: int = 5) -> list:
+        """基于语义相似度检索相关记忆"""
+        query_embedding = embed(query)
+        results = self.vector_db.search(query_embedding, top_k=top_k)
+        return results</code></pre>
+
+      <h3>长期记忆的三个认知子类型（LangMem 框架）</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">语义记忆、情景记忆、程序记忆的定义、示例、存储与检索方式</caption>
+          <thead><tr><th scope="col">子类型</th><th scope="col">定义</th><th scope="col">示例</th><th scope="col">存储</th><th scope="col">检索</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">语义记忆（Semantic）</th><td>事实和知识——Agent 知道的东西</td><td>用户偏好、产品知识、规则</td><td>向量数据库 Collection 或结构化 Profile</td><td>按语义相似度搜索</td></tr>
+            <tr><th scope="row">情景记忆（Episodic）</th><td>经历和事件——Agent 做过的事</td><td>成功解决问题的完整交互记录</td><td>带上下文的完整交互日志</td><td>按情境相似度检索（类似 few-shot）</td></tr>
+            <tr><th scope="row">程序记忆（Procedural）</th><td>技能和流程——Agent 知道怎么做</td><td>System Prompt 中的规则和步骤</td><td>Prompt 模板、规则引擎</td><td>通常固定加载，不动态检索</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>三种子类型可以同时存在：语义记忆回答“用户喜欢什么”，情景记忆回答“上次类似问题怎么解决”，程序记忆回答“这类任务按什么步骤做”。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="wm-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">工作记忆 · Working Memory</p><h2 id="wm-title">当前这一步，<br>能想到的全部信息。</h2></div>
+      <p class="reading-intro">工作记忆不是另一块存储，它就是当前上下文窗口的内容总和：System Prompt、对话历史、检索到的长期记忆、工具结果。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">工作记忆 = 当前上下文窗口中的所有信息 · 原文代码</p>
+      <pre><code>working_memory = {
+    "system_prompt": "你是客服助手...",           # 程序记忆
+    "user_profile": "用户偏好：简洁回答",          # 从长期记忆检索
+    "relevant_docs": ["退款政策: ...", "退货流程: ..."],  # RAG 检索
+    "conversation": [...],                        # 短期记忆
+    "tool_results": {"order_status": "shipped"},  # 工具调用结果
+}
+
+# 所有这些组合起来 = Agent 当前"能想到"的全部信息
+context_window = format_for_llm(working_memory)
+response = llm.invoke(context_window)</code></pre>
+
+      <div class="callout">
+        <p class="callout-label">操作系统类比</p>
+        <p>上下文窗口（工作记忆）≈ RAM：当前运行的程序可直接访问，容量有限。</p>
+        <p>长期记忆（外部存储）≈ 硬盘：大容量，但需要读取操作才能进入内存。</p>
+      </div>
+
+      <figure class="memory-map">
+        <div class="map-side">
+          <p class="map-label">上下文窗口 ≈ RAM</p>
+          <h3>工作记忆（容量有限）</h3>
+          <ul>
+            <li>System Prompt（程序记忆）</li>
+            <li>对话历史（短期记忆）</li>
+            <li>检索到的长期记忆</li>
+            <li>工具结果</li>
+          </ul>
+        </div>
+        <div class="map-link" aria-hidden="true">
+          <div><span>←</span><b>检索加载</b></div>
+          <div><span>→</span><b>固化存储</b></div>
+        </div>
+        <div class="map-side external">
+          <p class="map-label">外部存储 ≈ 硬盘</p>
+          <h3>长期记忆（大容量）</h3>
+          <ul>
+            <li>向量库：语义检索</li>
+            <li>关系库：精确查询</li>
+          </ul>
+        </div>
+        <figcaption class="demo-note">图 2 · 工作记忆是窗口内的内容总和；长期记忆在窗口外，靠“检索加载”和“固化存储”两条边与窗口交换数据。上方互动按同一结构演示。</figcaption>
+      </figure>
+
+      <details>
+        <summary>查看原文 Mermaid 源码</summary>
+        <pre><code>flowchart TD
+    subgraph WM["上下文窗口 ≈ RAM（工作记忆，容量有限）"]
+        SP["System Prompt&lt;br/&gt;（程序记忆）"]
+        CH["对话历史&lt;br/&gt;（短期记忆）"]
+        LT["检索到的长期记忆"]
+        TR["工具结果"]
+    end
+    subgraph EXT["外部存储 ≈ 硬盘（长期记忆，大容量）"]
+        VDB["向量库&lt;br/&gt;语义检索"]
+        RDB["关系库&lt;br/&gt;精确查询"]
+    end
+    EXT -- "检索加载" --&gt; WM
+    WM -- "固化存储" --&gt; EXT
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    class SP,CH,LT,TR proc
+    class VDB,RDB store</code></pre>
+        <p class="source-footnote">源码按原文保留，仅做 HTML 转义；本页用左侧静态图和上方互动呈现同一双向关系。</p>
+      </details>
+
+      <p>MemGPT 正是基于这个类比，实现了类似操作系统虚拟内存的机制——自动在“内存”（上下文窗口）和“磁盘”（外部存储）之间移动数据。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="manage-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">记忆管理</p><h2 id="manage-title">固化、遗忘、<br>按需加载。</h2></div>
+      <p class="reading-intro">记忆不是只进不出。应用要决定哪些短期记忆值得固化、哪些长期记忆该衰减删除、当前问题又该加载哪些条目。</p>
+    </div>
+    <div class="prose">
+      <div class="manage-grid">
+        <div class="manage-card"><h3>固化 consolidate</h3><p>给短期记忆打重要性分数，超过阈值的写入长期记忆。</p></div>
+        <div class="manage-card"><h3>遗忘 forget</h3><p>按时间衰减降低相关性；低访问次数且低相关性的条目删除。</p></div>
+        <div class="manage-card"><h3>加载 load</h3><p>按当前查询检索 top_k 条长期记忆，放进工作记忆。</p></div>
+      </div>
+      <p class="code-label">记忆在 STM 和 LTM 之间的流转 · 原文代码</p>
+      <pre><code>class MemoryManager:
+    """记忆在 STM 和 LTM 之间的流转"""
+
+    def consolidate(self, short_term_memory):
+        """将重要的短期记忆转化为长期记忆"""
+        for memory in short_term_memory:
+            importance = self.score_importance(memory)
+            if importance &gt; self.threshold:
+                self.long_term.store(memory)
+
+    def forget(self, long_term_memory):
+        """遗忘机制：清除低价值的长期记忆"""
+        for memory in long_term_memory:
+            # 时间衰减：越老的记忆权重越低
+            memory.relevance *= 0.95
+            # 频率加权：经常被访问的记忆保留
+            if memory.access_count &lt; 2 and memory.relevance &lt; 0.1:
+                self.long_term.delete(memory.id)
+
+    def load_to_working(self, query):
+        """将相关长期记忆加载到工作记忆"""
+        relevant = self.long_term.retrieve(query, top_k=5)
+        self.working_memory.update(relevant)</code></pre>
+      <p>代码里的 <code>0.95</code> 衰减系数、访问次数 <code>2</code>、相关性阈值 <code>0.1</code> 和 <code>top_k=5</code> 都是原文示例参数，不是通用最佳值；真实系统要按业务调整。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="agemem-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">研究进展 · AgeMem</p><h2 id="agemem-title">把记忆操作<br>变成工具。</h2></div>
+      <p class="reading-intro">2026 年 1 月提出的 AgeMem 框架，让 Agent 在任务执行中自己决定何时存储、检索、更新、摘要或丢弃信息。</p>
+    </div>
+    <div class="prose">
+      <p>和固定流水线里的 <code>consolidate</code>/<code>forget</code> 不同，AgeMem 把“什么时候动记忆”也交给 Agent 决策：记忆操作被暴露成一组工具，Agent 根据当前任务自主调用。</p>
+      <p class="code-label">AgeMem：记忆操作即工具 · 原文代码</p>
+      <pre><code>memory_tools = [
+    {"name": "memory_store", "description": "存储重要信息到长期记忆"},
+    {"name": "memory_retrieve", "description": "从长期记忆中检索相关信息"},
+    {"name": "memory_update", "description": "更新已有的记忆条目"},
+    {"name": "memory_summarize", "description": "将多条记忆合并为摘要"},
+    {"name": "memory_forget", "description": "删除不再需要的记忆"},
+]
+# Agent 在任务执行中自主调用这些工具管理记忆</code></pre>
+      <p>这仍然是工程层实现：工具由应用暴露，真正的存储由应用执行。区别在于“记忆管理策略”从固定代码变成了 Agent 的运行时决策。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="memory-tool-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">官方原语 · Anthropic Memory Tool</p><h2 id="memory-tool-title">memory_20250818：<br>文件接口式的官方记忆。</h2></div>
+      <p class="reading-intro">Anthropic 在 2025-08 通过 Claude Developer Platform 推出 Memory Tool，把记忆做成 client/server 模式的工具原语。</p>
+    </div>
+    <div class="prose">
+      <p>服务端只暴露文件接口（list/read/create/update/delete），由客户端持久化到任意存储后端（本地 FS、S3、SQLite、Redis 等），Claude 在 agentic loop 中按需调用。</p>
+      <p class="code-label">声明并调用 Memory Tool · 原文代码</p>
+      <pre><code>import anthropic
+
+client = anthropic.Anthropic()
+
+# 1) 声明 Memory Tool（type 字段是 server-managed 标识，与 web_search 同范式）
+memory_tool = {
+    "type": "memory_20250818",
+    "name": "memory",                       # 工具固定名
+}
+
+# 2) 调用 Claude，启用 context-management beta 与 memory beta
+response = client.messages.create(
+    model="claude-sonnet-4-5",
+    max_tokens=2048,
+    tools=[memory_tool],
+    extra_headers={"anthropic-beta": "context-management-2025-06-27"},
+    messages=[
+        {"role": "user", "content": "总结一下我上次说的项目偏好"}
+    ],
+)
+
+# 3) Claude 会返回 tool_use 形如：
+#    {"type": "tool_use", "name": "memory",
+#     "input": {"command": "view", "path": "/memories"}}
+#    客户端在本地文件系统/数据库里实现 view/create/str_replace/insert/delete/rename
+#    把结果作为 tool_result 回灌，Claude 在下一轮继续 read/write
+
+# 4) 与上下文编辑（context_editing）配合：当工具结果累计接近上限，
+#    自动清掉旧的 tool_result block，但保留写入 memory 文件的那一份
+#    → 实现"长寿命 agent + 紧凑 context window"</code></pre>
+      <div class="callout">
+        <p class="callout-label">关键特性</p>
+        <p><strong>客户端持有数据所有权：</strong>服务器不存任何记忆内容，便于满足 GDPR/合规。</p>
+        <p><strong>与 context editing 协同：</strong>旧的 tool_result 会被服务端策略性清理，但 memory 文件保留。</p>
+        <p><strong>跨会话共享：</strong>把同一份 memory 文件挂到多个 Claude 会话/Agent，实现团队级或个人长期画像。</p>
+        <p><strong>比向量数据库更简单：</strong>路径 + 文本读写，模型自己决定存什么，不依赖额外的 embedding 服务。</p>
+      </div>
+      <p>原文称这是目前 LLM 厂商提供的最完整的“官方记忆原语”，与 Anthropic Skills、Structured Outputs 一起构成 2025-2026 Claude Platform 的三大新原语。</p>
+      <p>注意：本页只展示原文代码，不调用 Anthropic API，也不读写任何真实记忆文件。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="relation-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三种记忆的关系</p><h2 id="relation-title">位置、容量、<br>持久性都不同。</h2></div>
+      <p class="reading-intro">短期记忆和工作记忆都在上下文窗口内，但内容范围不同；长期记忆在窗口外，容量近乎无限，但每次使用都要检索。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">短期记忆、工作记忆、长期记忆在位置、容量、持久性、访问速度和内容上的对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">短期记忆</th><th scope="col">工作记忆</th><th scope="col">长期记忆</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">位置</th><td>上下文窗口</td><td>上下文窗口</td><td>外部存储</td></tr>
+            <tr><th scope="row">容量</th><td>受窗口限制</td><td>受窗口限制</td><td>近乎无限</td></tr>
+            <tr><th scope="row">持久性</th><td>会话级</td><td>请求级</td><td>永久</td></tr>
+            <tr><th scope="row">访问速度</th><td>即时</td><td>即时</td><td>需检索</td></tr>
+            <tr><th scope="row">内容</th><td>对话历史</td><td>STM + 检索的 LTM</td><td>所有历史知识</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>一句话区分：短期记忆是“聊过什么”，工作记忆是“这一次请求里有什么”，长期记忆是“存在外面、需要去取什么”。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">五个容易<br>被追问的点。</h2></div>
+      <p class="reading-intro">前两条是误区，后三条是面试追问；答案都来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“上下文窗口越大，就不需要长期记忆了。”</h3><p>即使 200K token 的窗口，也无法存储数月的用户交互历史。更重要的是，窗口越大成本越高，且 LLM 在超长上下文中的注意力会分散（“lost in the middle” 问题）。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“短期记忆和工作记忆是一回事。”</h3><p>短期记忆是对话历史的累积；工作记忆是当前步骤可用的全部信息（包括从长期记忆检索的内容）。工作记忆 = 短期记忆 + 检索的长期记忆 + System Prompt + 工具结果。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>如何决定什么信息值得存入长期记忆？</h3><p>用重要性评分：（1）用户明确要求记住的信息（高优先级）；（2）影响未来决策的事实（如用户偏好）；（3）成功解决问题的范例（情景记忆）。避免存储临时性信息和中间推理步骤。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>MemGPT 的核心思想是什么？</h3><p>将上下文窗口视为有限的“内存”资源，实现类似操作系统虚拟内存的层级管理。Agent 可以在核心记忆（RAM/上下文窗口）和归档记忆（磁盘/外部存储）之间主动移动数据，创造“无限记忆”的体验。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 3</p>
+      <div><h3>“LLM 无状态”这个前提会一直成立吗？</h3><p>不一定。它描述的是当前主流架构，不是理论必然。Metis 这类记忆基础模型把记忆状态放进模型内部，通过 memory attention 访问历史压缩信息，更新只需一次前向传播、不需要梯度，推理时权重冻结而记忆状态自主演化——这时“无状态”就不再成立了。面试时的稳妥答法：说清楚这是当前工程现实和它成立的原因（每次 API 调用独立、KV cache 不跨请求保留），再指出已有把记忆内化进底座的研究方向。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《Agent 记忆的类型：短期记忆、长期记忆、工作记忆》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的八条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://mem0.ai/blog/memory-in-agents-what-why-and-how/" target="_blank" rel="noopener noreferrer">Agent Memory: What, Why and How · Mem0</a></li>
+          <li><a href="https://langchain-ai.github.io/langmem/concepts/conceptual_guide/" target="_blank" rel="noopener noreferrer">LangMem: Long-term Memory Concepts · LangChain</a></li>
+          <li><a href="https://arxiv.org/abs/2601.01885" target="_blank" rel="noopener noreferrer">AgeMem: Unified Long-Term and Short-Term Memory · arXiv</a></li>
+          <li><a href="https://www.letta.com/blog/agent-memory" target="_blank" rel="noopener noreferrer">Agent Memory: How to Build Agents that Learn and Remember · Letta</a></li>
+          <li><a href="https://docs.langchain.com/oss/python/concepts/memory" target="_blank" rel="noopener noreferrer">Memory Overview · LangChain Docs</a></li>
+          <li><a href="https://docs.anthropic.com/en/docs/build-with-claude/tool-use/memory-tool" target="_blank" rel="noopener noreferrer">Anthropic Memory Tool (memory_20250818) · Official Docs</a></li>
+          <li><a href="https://www.anthropic.com/engineering/memory-and-context-management" target="_blank" rel="noopener noreferrer">Building agents with the Claude Developer Platform: Memory Tool · Anthropic Engineering</a></li>
+          <li><a href="https://arxiv.org/abs/2607.26760" target="_blank" rel="noopener noreferrer">Metis: Memory Foundation Model · arXiv</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>05-memory-and-state/040-memory-types.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 2 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const MEM_BUDGET = 8000;
+  const MEM_SEGMENTS = Object.freeze([
+    { key: "system", label: "System Prompt（程序记忆）", color: "var(--series-1)" },
+    { key: "profile", label: "用户画像（检索自 LTM）", color: "#b45309" },
+    { key: "docs", label: "政策文档（检索自 LTM）", color: "var(--series-3)" },
+    { key: "tool", label: "工具结果", color: "#0f766e" },
+    { key: "conversation", label: "对话历史（STM）", color: "var(--series-4)" }
+  ]);
+  const MEM_STEPS = Object.freeze([
+    {
+      title: "新会话开始：窗口里只有 System Prompt 和新问题。",
+      description: "用户发来新问题。窗口里只有 System Prompt 和新消息：800 + 60 = 860 tokens。LLM 看不到任何历史，因为它没有状态。",
+      action: "写入窗口：System Prompt 800 + 用户问题 60",
+      tokens: { system: 800, profile: 0, docs: 0, tool: 0, conversation: 60 },
+      messages: "对话历史：1 条消息 · 60 tokens",
+      ltm: 12,
+      storeNote: "外部存储有 12 条，但还没有检索；模型此刻看不到它们。",
+      arrow: "none"
+    },
+    {
+      title: "应用检索长期记忆，把相关条目加载进窗口。",
+      description: "应用按问题语义检索长期记忆，把用户画像（200）和政策文档（1,900）加载进窗口。外部存储本身不参与推理。",
+      action: "从外部加载：用户画像 200 + 政策文档 1,900",
+      tokens: { system: 800, profile: 200, docs: 1900, tool: 0, conversation: 60 },
+      messages: "对话历史：1 条消息 · 60 tokens",
+      ltm: 12,
+      storeNote: "检索了 1 条画像和 2 篇政策，共 2,100 tokens 进入窗口。",
+      arrow: "in",
+      inLabel: "检索加载 2,100"
+    },
+    {
+      title: "工具结果进入工作记忆，但不进入长期记忆。",
+      description: "工具返回订单状态，结果（420）作为一条新内容进入窗口。它属于工作记忆，不是长期记忆。",
+      action: "写入窗口：订单状态 420",
+      tokens: { system: 800, profile: 200, docs: 1900, tool: 420, conversation: 60 },
+      messages: "对话历史：1 条消息 · 60 tokens",
+      ltm: 12,
+      storeNote: "工具结果不写入长期记忆，只留在当前窗口。",
+      arrow: "none"
+    },
+    {
+      title: "多轮之后，五类内容共同组成工作记忆。",
+      description: "多轮对话后，窗口里同时有 System Prompt、检索结果、工具结果和对话历史，共 5 类内容。这就是工作记忆的完整组成。",
+      action: "窗口重算：对话历史增长到 1,350",
+      tokens: { system: 800, profile: 200, docs: 1900, tool: 420, conversation: 1350 },
+      messages: "对话历史：5 条消息 · 1,350 tokens",
+      ltm: 12,
+      storeNote: "窗口已装入 5 类内容；长期记忆仍是 12 条。",
+      arrow: "none"
+    },
+    {
+      title: "回合结束前，重要信息被固化到外部存储。",
+      description: "回合结束前，应用把“用户偏好简洁回答”固化到长期记忆：外部 12 → 13 条。窗口占用不变，固化不是把内容塞回 Prompt。",
+      action: "写入外部：退款偏好 80（窗口不变）",
+      tokens: { system: 800, profile: 200, docs: 1900, tool: 420, conversation: 1350 },
+      messages: "对话历史：5 条消息 · 1,350 tokens",
+      ltm: 13,
+      storeNote: "新增 1 条：退款偏好（80 tokens 摘要）。外部 13 条，窗口占用不变。",
+      arrow: "out",
+      outLabel: "固化 80"
+    },
+    {
+      title: "新会话：窗口清零，长期记忆还在，但模型看不到。",
+      description: "新会话开始，窗口清空后重新装入 845 tokens（800 + 45）。长期记忆仍是 13 条，但模型看不到它们；要恢复上下文，应用必须再次检索。",
+      action: "窗口重置：800 + 45；外部 13 条待检索",
+      tokens: { system: 800, profile: 0, docs: 0, tool: 0, conversation: 45 },
+      messages: "对话历史：1 条新消息 · 45 tokens",
+      ltm: 13,
+      storeNote: "13 条仍在外部。新会话若不检索，模型就不知道上一轮聊过什么。",
+      arrow: "pending",
+      inLabel: "需要时再检索"
+    }
+  ]);
+
+  const memState = { step: 1 };
+  const byId = (id) => document.getElementById(id);
+  const formatNum = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+  function memUsed(data) {
+    return MEM_SEGMENTS.reduce((sum, seg) => sum + (data.tokens[seg.key] || 0), 0);
+  }
+
+  function renderMem(announce = true) {
+    const data = MEM_STEPS[memState.step - 1];
+    const used = memUsed(data);
+    const remaining = MEM_BUDGET - used;
+    const percent = ((used / MEM_BUDGET) * 100).toFixed(1);
+
+    const track = byId("budget-track");
+    track.textContent = "";
+    const parts = [];
+    MEM_SEGMENTS.forEach((seg) => {
+      const value = data.tokens[seg.key] || 0;
+      if (value <= 0) return;
+      const piece = document.createElement("div");
+      piece.className = "budget-seg";
+      piece.style.width = ((value / MEM_BUDGET) * 100).toFixed(3) + "%";
+      piece.style.background = seg.color;
+      piece.title = `${seg.label}：${formatNum(value)} tokens`;
+      track.append(piece);
+      parts.push(formatNum(value));
+    });
+    track.setAttribute("aria-label", `上下文窗口已用 ${formatNum(used)} / ${formatNum(MEM_BUDGET)} tokens，占 ${percent}%。`);
+
+    byId("window-badge").textContent = `${formatNum(used)} / ${formatNum(MEM_BUDGET)} · ${percent}%`;
+    byId("budget-calc").textContent = `${parts.join(" + ")} = ${formatNum(used)} tokens · 剩余 ${formatNum(remaining)}`;
+    byId("message-count").textContent = data.messages;
+
+    const legend = byId("budget-legend");
+    legend.textContent = "";
+    MEM_SEGMENTS.forEach((seg) => {
+      const value = data.tokens[seg.key] || 0;
+      const item = document.createElement("li");
+      if (value === 0) item.className = "is-zero";
+      const swatch = document.createElement("span");
+      swatch.className = "swatch";
+      swatch.style.background = seg.color;
+      const label = document.createElement("span");
+      label.textContent = seg.label;
+      const num = document.createElement("b");
+      num.textContent = formatNum(value);
+      item.append(swatch, label, num);
+      legend.append(item);
+    });
+
+    byId("store-count").textContent = String(data.ltm);
+    byId("store-note").textContent = data.storeNote;
+    byId("store-new").hidden = data.ltm < 13;
+
+    const inArrow = document.querySelector('[data-arrow="in"]');
+    const outArrow = document.querySelector('[data-arrow="out"]');
+    inArrow.className = "mem-arrow";
+    outArrow.className = "mem-arrow";
+    inArrow.querySelector("b").textContent = data.inLabel || "检索加载";
+    outArrow.querySelector("b").textContent = data.outLabel || "固化存储";
+    if (data.arrow === "in") inArrow.classList.add("is-active");
+    if (data.arrow === "out") outArrow.classList.add("is-active");
+    if (data.arrow === "pending") inArrow.classList.add("is-pending");
+
+    byId("mem-position").textContent = `图 1 · 第 ${memState.step} / ${MEM_STEPS.length} 步`;
+    byId("mem-step-title").textContent = data.title;
+    byId("mem-step-description").textContent = data.description;
+    byId("mem-action").textContent = data.action;
+    byId("mem-state-summary").textContent = `第 ${memState.step} / ${MEM_STEPS.length} 步 · 没有连接模型或数据库`;
+
+    document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+      if (Number(button.dataset.step) === memState.step) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    byId("mem-prev").disabled = memState.step === 1;
+    byId("mem-next").disabled = memState.step === MEM_STEPS.length;
+
+    if (announce) {
+      byId("mem-announcement").textContent = `第 ${memState.step} 步，共 ${MEM_STEPS.length} 步。${data.title}${data.description}`;
+    }
+  }
+
+  function setMemStep(step, announce = true) {
+    memState.step = Math.max(1, Math.min(MEM_STEPS.length, step));
+    renderMem(announce);
+  }
+
+  document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+    button.addEventListener("click", () => setMemStep(Number(button.dataset.step)));
+  });
+  byId("mem-prev").addEventListener("click", () => setMemStep(memState.step - 1));
+  byId("mem-next").addEventListener("click", () => setMemStep(memState.step + 1));
+  byId("mem-reset").addEventListener("click", () => {
+    setMemStep(1);
+    byId("mem-announcement").textContent = "已重置，回到第 1 步。";
+  });
+  renderMem(false);
+</script>
+</body>
+</html>

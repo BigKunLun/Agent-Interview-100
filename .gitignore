@@ -12,11 +12,13 @@ auto-loop-state.md
 auto-loop-log.md
 
 # Docs
-# docs/ 默认忽略，仅放行 index.md 与 diagram-standards.md（见下方例外规则）
+# docs/ 默认忽略，仅放行 index 与 diagram-standards 的 Markdown / HTML
 !docs/
 docs/*
 !docs/index.md
+!docs/index.html
 !docs/diagram-standards.md
+!docs/diagram-standards.html
 
 # Working reports (Phase 1/2/4 临时输出)
 .work/

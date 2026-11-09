@@ -1,0 +1,1030 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Re-ranking 的原理与实现：Cross-Encoder vs Bi-Encoder · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  /* 017 两阶段重排 */
+  .re-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .re-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); gap: var(--s-5); align-items: start; }
+  .re-card { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .re-card h2 { font-size: 16px; line-height: 1.5; font-weight: 600; }
+  .re-card .figure-index { margin-bottom: 3px; }
+  .re-query-box { padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .re-query-label { font-size: var(--t-label); color: var(--text-dim); }
+  .re-query-text { font: 500 20px/1.55 var(--mono); margin-top: var(--s-3); letter-spacing: -.02em; }
+  .re-note { margin-top: var(--s-3); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .re-pipeline { list-style: none; margin: var(--s-4) 0 0; padding: 0; display: grid; gap: 9px; }
+  .re-pipeline li { display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 9px; align-items: start; font-size: 12px; line-height: 1.6; color: var(--text-dim); }
+  .re-pipeline b { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 11px/1 var(--mono); color: var(--text-dim); }
+  .re-pipeline strong { display: block; color: var(--ink); font-size: 13px; font-weight: 600; }
+  .re-list { list-style: none; margin: var(--s-3) 0 0; padding: 0; border-top: 1px solid var(--border); }
+  .re-row { display: grid; grid-template-columns: 26px minmax(0, 1fr) 58px; gap: 9px; width: 100%; align-items: center; min-height: 54px; padding: 8px 6px; border: 0; border-bottom: 1px solid var(--border); background: transparent; text-align: left; }
+  .re-row:hover { background: var(--accent-dim); }
+  .re-row.is-selected { background: var(--accent-dim); box-shadow: inset 3px 0 0 var(--accent); }
+  .re-row.is-cut { opacity: .62; }
+  .re-rank { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 11px/1 var(--mono); color: var(--text-dim); }
+  .re-row.is-cut .re-rank { border-style: dashed; }
+  .re-main { min-width: 0; }
+  .re-title { display: block; font-size: 13px; line-height: 1.45; font-weight: 600; overflow-wrap: anywhere; }
+  .re-meta { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: 4px; }
+  .re-flag { font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .re-flag.ok { color: #1b5e20; }
+  .re-flag.warn { color: #8b1a1a; }
+  .re-track { display: inline-block; width: 76px; height: 8px; border-left: 1px solid var(--border-bright); background: var(--surface-soft); vertical-align: middle; }
+  .re-bar { display: block; height: 8px; background: var(--series-1); }
+  .re-bar.ce { background: var(--series-2); }
+  .re-score { font: 12px/1.4 var(--mono); text-align: right; font-variant-numeric: tabular-nums; }
+  .re-score small { display: block; font-size: 9px; color: var(--text-dim); }
+  .re-cutline { display: flex; align-items: center; gap: 9px; padding: 7px 6px; color: #8b1a1a; font: 11px/1.5 var(--mono); border-bottom: 1px dashed #d99b9b; background: #fff6f6; }
+  .re-cutline span { flex: 0 0 auto; }
+  .re-cutline::after { content: ""; flex: 1 1 auto; border-top: 1px dashed #d99b9b; }
+  .re-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 11px; color: var(--text-dim); margin-top: var(--s-3); }
+  .re-legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .re-swatch { display: inline-block; width: 16px; height: 8px; background: var(--series-1); }
+  .re-swatch.ce { background: var(--series-2); }
+  .re-ce-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s-3); flex-wrap: wrap; margin-top: var(--s-3); }
+  .re-ce-head p { font-size: 12px; color: var(--text-dim); }
+  .re-reveal { min-height: 40px; padding: 7px 13px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: transparent; font-size: 12px; white-space: nowrap; }
+  .re-reveal:hover:not(:disabled) { background: var(--surface-soft); }
+  .re-reveal:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+  .re-pair { display: block; font: 10px/1.5 var(--mono); color: var(--text-dim); overflow-wrap: anywhere; }
+  .re-inspector { margin: 0 var(--s-6) var(--s-5); border: 1px solid var(--border-bright); border-radius: var(--r-1); padding: var(--s-4); background: var(--surface-soft); }
+  .re-inspector-head { display: flex; justify-content: space-between; gap: var(--s-3); align-items: baseline; flex-wrap: wrap; }
+  .re-inspector-head h3 { font-size: 16px; line-height: 1.5; font-weight: 600; }
+  .re-inspector-head span { font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .re-inspector p { font-size: 12px; line-height: 1.7; color: var(--text-dim); margin-top: 5px; }
+  .re-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-3); }
+  .re-stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-1); padding: 9px 11px; min-width: 0; }
+  .re-stat span { display: block; font-size: 10px; color: var(--text-dim); }
+  .re-stat strong { display: block; font: 600 16px/1.5 var(--mono); margin-top: 2px; overflow-wrap: anywhere; }
+  .re-why { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px solid var(--border); font-size: 12px; line-height: 1.7; }
+  .re-why strong { color: var(--ink); }
+  .re-compare { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-4); margin-top: var(--s-3); }
+  .re-compare h3 { font-size: 13px; font-weight: 600; line-height: 1.5; }
+  .re-compare p { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .re-move { font: 11px/1.4 var(--mono); white-space: nowrap; }
+  .re-move.up { color: #1b5e20; }
+  .re-move.down { color: #8b1a1a; }
+  .re-move.flat { color: var(--text-dim); }
+  .re-final-note { margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3) var(--s-4); font-size: 12px; line-height: 1.75; }
+  .re-final-note strong { color: #8b1a1a; }
+  .re-caption { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border); }
+  .re-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; }
+  .re-caption p:not(.figure-index):not(.re-action) { margin-top: var(--s-2); font-size: var(--t-small); color: var(--text-dim); max-width: 64em; }
+  .re-action { display: inline-block; margin-top: var(--s-3); padding: 4px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font: 11px/1.6 var(--mono); color: var(--accent); background: var(--accent-dim); }
+  .re-two-lane { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: var(--s-4); margin-top: var(--s-4); }
+  .re-lane { border: 1px solid var(--border); border-radius: var(--r-1); padding: var(--s-4); background: var(--surface); min-width: 0; }
+  .re-lane h3 { font-size: 14px; line-height: 1.5; font-weight: 600; }
+  .re-lane p { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
+  .re-lane-flow { display: grid; gap: 7px; margin-top: var(--s-3); }
+  .re-lane-node { border: 1px solid var(--border-bright); border-radius: 5px; padding: 7px 9px; font: 11px/1.5 var(--mono); background: var(--surface-soft); overflow-wrap: anywhere; }
+  .re-lane-node.accent { border-color: #9eb4c9; background: var(--accent-dim); }
+  .re-lane-arrow { text-align: center; color: var(--text-dim); font-size: 12px; line-height: 1; }
+  .re-lane-split { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .re-token-example { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .re-token-example div { border: 1px solid var(--border); border-radius: var(--r-1); padding: var(--s-3); background: var(--surface); font-size: 12px; line-height: 1.7; }
+  .re-token-example strong { display: block; font-size: 12px; }
+  .re-token-example code { font-size: 11px; overflow-wrap: anywhere; }
+  .re-scalability { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-4); margin-top: var(--s-4); }
+  .re-scalability div { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); font-size: var(--t-small); }
+  .re-scalability strong { display: block; font: 600 26px/1.3 var(--mono); letter-spacing: -.03em; margin-bottom: 5px; }
+  @media (max-width: 900px) {
+    .re-grid, .re-compare, .re-two-lane { grid-template-columns: 1fr; }
+    .re-stats { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 720px) {
+    .re-stage { padding: var(--s-4); }
+    .re-card { padding: var(--s-3); }
+    .re-query-text { font-size: 17px; }
+    .re-inspector { margin: 0 var(--s-4) var(--s-4); padding: var(--s-3); }
+    .re-stats { grid-template-columns: 1fr; }
+    .re-caption h2 { font-size: 22px; }
+    .re-scalability, .re-token-example { grid-template-columns: 1fr; }
+    .re-track { width: 56px; }
+    .re-row { grid-template-columns: 24px minmax(0, 1fr) 52px; gap: 7px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">017 / Re-ranking 重排</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 15 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="015-embedding-model-selection.html">← 上一页 · Embedding 模型选择与微调策…</a><a href="018-agentic-rag.html">下一页 → · 什么是 Agentic RAG？它与…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · RAG · 可交互讲解</p>
+      <h1>先召回，<br>再精排。</h1>
+    </div>
+    <div>
+      <p class="lead">Bi-Encoder 把查询和文档分别编码成向量，速度快，适合从百万文档里召回候选；Cross-Encoder 把查询和文档拼在一起联合编码，精度高，但每对都要完整推理。生产系统先用前者取 Top-100，再用后者重排 Top-5。</p>
+      <p class="definition">关键边界：<strong>两阶段分工由可扩展性决定</strong>。Cross-Encoder 无法预计算文档表示，每次查询都要对候选逐对推理，所以只能处理少量候选；它不是“更大的 Bi-Encoder”。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">RAG</span><span class="pill">Bi-Encoder / Cross-Encoder</span><span class="pill">固定教学数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-label="两阶段重排演示">
+    <div class="player-top">
+      <div class="player-label">两阶段重排演示 <small>固定 10 篇候选，看召回与精排如何改变顺序</small></div>
+      <div class="controls" role="group" aria-label="重排演示控制">
+        <button type="button" class="button button-quiet" id="re-reset">重置</button>
+        <button type="button" class="button" id="re-prev" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="re-next">下一步 →</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="重排演示四个步骤">
+      <ol style="--stages: 4">
+        <li><button type="button" class="stage-button" data-step="0" aria-current="step" aria-controls="re-scene" aria-label="第 1 步：查询进入"><span class="stage-number">1</span><span>查询</span></button></li>
+        <li><button type="button" class="stage-button" data-step="1" aria-controls="re-scene" aria-label="第 2 步：Bi-Encoder 召回"><span class="stage-number">2</span><span>召回</span></button></li>
+        <li><button type="button" class="stage-button" data-step="2" aria-controls="re-scene" aria-label="第 3 步：Cross-Encoder 精排"><span class="stage-number">3</span><span>精排</span></button></li>
+        <li><button type="button" class="stage-button" data-step="3" aria-controls="re-scene" aria-label="第 4 步：重排结果"><span class="stage-number">4</span><span>重排</span></button></li>
+      </ol>
+    </nav>
+    <div class="re-stage scene" id="re-scene" data-scene="rerank">
+
+      <section class="re-scene" data-panel="0">
+        <div class="re-grid">
+          <div>
+            <div class="re-query-box">
+              <p class="re-query-label">固定教学查询</p>
+              <p class="re-query-text">RAG 系统应该怎么选重排序模型？</p>
+              <p class="re-note">查询进入检索层。接下来的分数、排名和截断位置都是写死的教学数据，用来演示两阶段的分工，不调用任何模型。</p>
+            </div>
+          </div>
+          <div class="re-card">
+            <p class="figure-index">两阶段流水线 · 全貌</p>
+            <h2>同一批文档，先后经过两个编码器。</h2>
+            <ol class="re-pipeline">
+              <li><b aria-hidden="true">1</b><div><strong>Bi-Encoder 召回</strong>查询和每篇文档分别编码；文档向量可以离线预计算。先从 10 篇里取分数最高的 6 篇。</div></li>
+              <li><b aria-hidden="true">2</b><div><strong>Cross-Encoder 精排</strong>把查询和每个候选拼成一对输入，逐对推理出相关性分数；只处理这 6 对。</div></li>
+              <li><b aria-hidden="true">3</b><div><strong>截断后送入 LLM</strong>按精排分数取前 4 篇，拼成上下文交给生成模型。</div></li>
+            </ol>
+            <p class="re-note">原文的标准量级是 Bi-Encoder 取 Top-100、Cross-Encoder 重排后取 Top-5；本页缩小到 10 篇和 6 个候选，便于逐条看清分数变化。</p>
+          </div>
+        </div>
+        <div class="re-caption">
+          <p class="figure-index">图 1 · 第 1 / 4 步</p>
+          <h2 id="re-caption-title">查询先变成一个向量，文档才有机会被召回。</h2>
+          <p>Bi-Encoder 在查询到达前就把文档编码好，因此召回很快；代价是文档向量里没有这次查询的上下文。精排模型晚一点才看到查询和文档的组合，所以更准，也更贵。</p>
+          <p class="re-action">下一步：看 10 篇固定文档的 Bi-Encoder 分数</p>
+        </div>
+      </section>
+
+      <section class="re-scene" data-panel="1" hidden>
+        <div class="re-card">
+          <div class="re-ce-head">
+            <div><p class="figure-index">第 2 步 · 第一阶段</p><h2>Bi-Encoder 召回 Top-6</h2></div>
+            <p>按余弦相似度排序 · 分数为固定教学数据</p>
+          </div>
+          <ul class="re-list" id="re-recall-list" aria-label="按 Bi-Encoder 分数排序的十篇文档"></ul>
+          <div class="re-legend">
+            <span><i class="re-swatch"></i>Bi-Encoder 分数</span>
+            <span>虚线以上：进入精排候选</span>
+            <span>点击任一行，查看两阶段名次</span>
+          </div>
+        </div>
+        <div class="re-caption">
+          <p class="figure-index">图 2 · 第 2 / 4 步</p>
+          <h2>高相似度不等于高相关。</h2>
+          <p>第 3 名的文档讲的是向量索引参数，和第 5 名的 RAG 评估指标一样，都因为共享“向量、检索、评估”这些词而拿到不低的相似度。Bi-Encoder 只能比较压缩后的整体向量，分不清主题是否真的对题。</p>
+          <p class="re-action">下一步：让 Cross-Encoder 逐对看查询和文档</p>
+        </div>
+      </section>
+
+      <section class="re-scene" data-panel="2" hidden>
+        <div class="re-card">
+          <div class="re-ce-head">
+            <div><p class="figure-index">第 3 步 · 第二阶段</p><h2>Cross-Encoder 逐对打分</h2></div>
+            <div><button type="button" class="re-reveal" id="re-ce-next">运行下一对 →</button></div>
+          </div>
+          <p class="re-note" id="re-ce-status">0 / 6 对已打分。每次只推理一对 (query, doc)，这也是它慢的原因。</p>
+          <ul class="re-list" id="re-ce-list" aria-label="六个候选的 Cross-Encoder 逐对打分"></ul>
+          <div class="re-legend">
+            <span><i class="re-swatch ce"></i>Cross-Encoder 分数</span>
+            <span>未打分的行保持“待推理”</span>
+          </div>
+        </div>
+        <div class="re-caption">
+          <p class="figure-index">图 3 · 第 3 / 4 步</p>
+          <h2>查询和文档一起进模型，分数才会对题。</h2>
+          <p>Cross-Encoder 能看到查询和文档之间的细粒度匹配，所以能把“讲了检索但没讲选型”的候选压下去。代价是每个候选都要单独跑一次完整推理，不能像 Bi-Encoder 那样复用文档向量。</p>
+          <p class="re-action">下一步：按精排分数重新排序并截断</p>
+        </div>
+      </section>
+
+      <section class="re-scene" data-panel="3" hidden>
+        <div class="re-card">
+          <div class="re-ce-head">
+            <div><p class="figure-index">第 4 步 · 结果</p><h2>重排前后对照</h2></div>
+            <p>左：召回顺序 · 右：精排顺序</p>
+          </div>
+          <div class="re-compare">
+            <div>
+              <h3>Bi-Encoder 候选顺序</h3>
+              <p>6 个候选，按召回分数</p>
+              <ul class="re-list" id="re-before-list" aria-label="重排前的候选顺序"></ul>
+            </div>
+            <div>
+              <h3>Cross-Encoder 重排后</h3>
+              <p>前 4 篇送入 LLM</p>
+              <ul class="re-list" id="re-after-list" aria-label="重排后的候选顺序"></ul>
+            </div>
+          </div>
+          <div class="re-final-note" id="re-final-note"></div>
+        </div>
+        <div class="re-caption">
+          <p class="figure-index">图 4 · 第 4 / 4 步</p>
+          <h2>重排改变的是顺序，也决定了谁被丢掉。</h2>
+          <p>召回阶段排第 3、第 6 的两篇文档，精排后掉到候选末尾并被截掉；召回时排第 4 的 Cross-Encoder 说明升到第 2。最终送入 LLM 的是精排前 4 篇。</p>
+          <p class="re-action">重排完成 · 4 篇文档进入上下文</p>
+        </div>
+      </section>
+
+      <div class="re-inspector" id="re-inspector" aria-live="polite">
+        <div class="re-inspector-head"><h3 id="re-inspector-title">文档 D3</h3><span id="re-inspector-id">固定教学数据</span></div>
+        <p id="re-inspector-text"></p>
+        <div class="re-stats">
+          <div class="re-stat"><span>Bi-Encoder 分数</span><strong id="re-stat-bi">0.81</strong></div>
+          <div class="re-stat"><span>Cross-Encoder 分数</span><strong id="re-stat-ce">待推理</strong></div>
+          <div class="re-stat"><span>最终位置</span><strong id="re-stat-final">候选</strong></div>
+        </div>
+        <p class="re-why" id="re-inspector-why"></p>
+      </div>
+      <p class="demo-note">固定教学数据：查询、10 篇文档、两阶段分数、Top-6 截断和 Top-4 输出都是写死的；分数变化由本页脚本按固定值排序，不调用模型、向量数据库或网络。文档内容为演示编写。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 排序由页面脚本计算</span><span id="re-state-summary">第 1 / 4 步 · 没有连接模型</span></div>
+  </section>
+  <p id="re-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">为什么需要重排序</p><h2 id="why-title">第一阶段很快，<br>但会丢信息。</h2></div>
+      <p class="reading-intro">Bi-Encoder 从百万级文档中快速找出 Top-K 候选，但排序精度有限；重排序用更精确的模型重新打分，确保送入 LLM 的上下文最相关。</p>
+    </div>
+    <div class="prose">
+      <h3>精度损失来自架构，不是模型太小</h3>
+      <ul>
+        <li>Bi-Encoder 必须把文档的所有可能含义压缩进单一向量，信息不可避免地丢失。</li>
+        <li>它编码文档时没有查询的上下文，因为文档向量通常在查询到达前就已算好。</li>
+        <li>因此第一阶段的排序可能不够精确，需要第二阶段重新打分。</li>
+      </ul>
+      <p>重排序不改变候选集合，只改变候选的先后顺序，并决定最终哪些文档进入上下文。它治不了“相关文档根本没被召回”的问题，这个问题要靠召回阶段的 K 和索引策略解决。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="encoders-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">两种编码器</p><h2 id="encoders-title">独立编码，<br>还是联合编码。</h2></div>
+      <p class="reading-intro">核心差别只有一句话：查询和文档是否放进同一个模型一起看。这个差别决定了精度、速度和能否预计算。</p>
+    </div>
+    <div class="prose">
+      <div class="re-two-lane">
+        <div class="re-lane">
+          <h3>Bi-Encoder：各编各的</h3>
+          <p>文档向量可离线预计算并缓存。</p>
+          <div class="re-lane-flow">
+            <div class="re-lane-split">
+              <div class="re-lane-node">Query</div>
+              <div class="re-lane-node">Doc</div>
+            </div>
+            <div class="re-lane-arrow" aria-hidden="true">↓</div>
+            <div class="re-lane-split">
+              <div class="re-lane-node">Encoder</div>
+              <div class="re-lane-node">Encoder</div>
+            </div>
+            <div class="re-lane-arrow" aria-hidden="true">↓</div>
+            <div class="re-lane-split">
+              <div class="re-lane-node">q_vector</div>
+              <div class="re-lane-node">d_vector</div>
+            </div>
+            <div class="re-lane-arrow" aria-hidden="true">↓</div>
+            <div class="re-lane-node accent">余弦相似度 → score</div>
+          </div>
+        </div>
+        <div class="re-lane">
+          <h3>Cross-Encoder：拼起来一起看</h3>
+          <p>每一对 query-doc 都要完整推理，不能预计算。</p>
+          <div class="re-lane-flow">
+            <div class="re-lane-node">Query + Doc 拼接</div>
+            <div class="re-lane-arrow" aria-hidden="true">↓</div>
+            <div class="re-lane-node">Transformer</div>
+            <div class="re-lane-arrow" aria-hidden="true">↓</div>
+            <div class="re-lane-node accent">score（0~1）</div>
+          </div>
+        </div>
+      </div>
+      <p class="re-note">离线可读示意：上半部分是 Bi-Encoder 的独立编码与向量相似度；下半部分是 Cross-Encoder 的联合编码。原图是 Mermaid，源码见下方折叠块。</p>
+      <details>
+        <summary>查看原文 Mermaid 源码（需在支持 Mermaid 的编辑器中渲染）</summary>
+        <pre><code>flowchart TD
+    subgraph bi["Bi-Encoder（独立编码，文档向量可预计算缓存）"]
+        Q1["Query"] --&gt; E1["Encoder"] --&gt; V1["q_vector"]
+        D1["Doc"] --&gt; E2["Encoder"] --&gt; V2["d_vector"]
+        V1 --&gt; S1["余弦相似度 → score"]
+        V2 --&gt; S1
+    end
+    subgraph ce["Cross-Encoder（联合编码，每对 query-doc 都需完整推理）"]
+        P["Query + Doc 拼接"] --&gt; T1["Transformer"] --&gt; S2["score (0~1)"]
+    end
+    bi --- ce
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class E1,E2,T1 proc
+    class V1,V2,S1,S2 store
+    class Q1,D1,P neutral</code></pre>
+      </details>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">Bi-Encoder 与 Cross-Encoder 在编码方式、精度、速度、可扩展性、用途和预计算能力上的对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">Bi-Encoder</th><th scope="col">Cross-Encoder</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">编码方式</th><td>Query 和 Doc 独立编码</td><td>Query 和 Doc 拼接后联合编码</td></tr>
+            <tr><th scope="row">精度</th><td>中等</td><td>高，查询感知的文档表示</td></tr>
+            <tr><th scope="row">速度</th><td>极快，文档向量可预计算</td><td>极慢，每对需完整推理</td></tr>
+            <tr><th scope="row">可扩展性</th><td class="num">10 万文档编码 10 万次</td><td class="num">10 万文档编码 10 万对</td></tr>
+            <tr><th scope="row">用途</th><td>第一阶段：召回候选</td><td>第二阶段：精确重排</td></tr>
+            <tr><th scope="row">预计算</th><td>可以</td><td>不可以</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="scale-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">可扩展性的本质差异</p><h2 id="scale-title">为什么 Cross-Encoder<br>只能重排少量候选。</h2></div>
+      <p class="reading-intro">假设数据库有 100,000 个文档。两种编码器要做的推理次数不在一个量级，这不是换更快的 GPU 就能抹平的差距。</p>
+    </div>
+    <div class="prose">
+      <div class="re-scalability">
+        <div><strong>100,001</strong>Bi-Encoder：编码 100,000 个文档（一次性、可离线）+ 编码 1 个查询。文档向量能复用。</div>
+        <div><strong>100,000</strong>Cross-Encoder：每次查询都要编码 100,000 对 (query, doc)。每次查询都重来。</div>
+      </div>
+      <p>即便用小型 Cross-Encoder（如 ms-marco-MiniLM）在 V100 GPU 上对 100,000 个文档逐对打分，单次查询也需数分钟到数十分钟（取决于 batch size 与硬件），完全无法在交互式 RAG 中接受。这就是 Cross-Encoder 只用于重排 20–100 个候选的原因。</p>
+      <div class="callout"><p class="callout-label">原文量级</p><p>标准流水线是“Bi-Encoder 检索 Top-100 → Cross-Encoder 重排 Top-5”。K 太小会漏掉相关文档，太大则拖慢重排；重排后取 3–10 个送入 LLM，取决于上下文窗口大小。</p></div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="pipeline-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">两阶段检索流水线</p><h2 id="pipeline-title">标准架构长<br>什么样。</h2></div>
+      <p class="reading-intro">下面是原文代码：第一阶段用 SentenceTransformer 召回 Top-100，第二阶段用 CrossEncoder 对候选逐对打分，排序后取 Top-5。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文代码 · 两阶段重排</p>
+      <pre><code>from sentence_transformers import SentenceTransformer, CrossEncoder
+
+# 第 1 阶段：Bi-Encoder 召回 Top-100
+bi_encoder = SentenceTransformer("all-MiniLM-L6-v2")
+query_embedding = bi_encoder.encode(query)
+candidates = vector_db.search(query_embedding, top_k=100)
+
+# 第 2 阶段：Cross-Encoder 重排 → Top-5
+cross_encoder = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+pairs = [(query, doc.content) for doc in candidates]
+scores = cross_encoder.predict(pairs)
+
+# 按重排分数排序，取 Top-5
+reranked = sorted(
+    zip(candidates, scores),
+    key=lambda x: x[1],
+    reverse=True
+)[:5]
+
+# 将 Top-5 送入 LLM 生成回答
+context = "\n\n".join([doc.content for doc, score in reranked])</code></pre>
+      <p>这段代码省略了查询、向量库连接和生成调用，只保留两阶段之间的数据流：候选列表和对应的重排分数。真实实现还要处理空候选、超时和重排模型不可用时的降级。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="effect-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">实际效果与常用方案</p><h2 id="effect-title">重排是高质量 RAG<br>的必选项。</h2></div>
+      <p class="reading-intro">LLM 的输出质量直接取决于上下文质量。没有重排序的系统通常会把不够相关的文档送进上下文，导致回答偏离主题或混入无关信息。</p>
+    </div>
+    <div class="prose">
+      <p>原文的判断很直接：重排序阶段对高质量 RAG 是不可妥协的。召回解决“有没有找到”，重排解决“送进去的是不是最对题的那几篇”。</p>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">常用重排序方案的类型与特点</caption>
+          <thead><tr><th scope="col">方案</th><th scope="col">类型</th><th scope="col">特点</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><code>cross-encoder/ms-marco-MiniLM-L-6-v2</code></th><td>开源</td><td>轻量级，速度快</td></tr>
+            <tr><th scope="row">Cohere Rerank API</th><td>商业 API</td><td>高质量，开箱即用</td></tr>
+            <tr><th scope="row">Jina AI Rerank</th><td>商业 API</td><td>性价比高</td></tr>
+            <tr><th scope="row"><code>bge-reranker-v2-m3</code></th><td>开源</td><td>多语言支持</td></tr>
+            <tr><th scope="row">ColBERT</th><td>开源</td><td>晚期交互模型，精度接近 Cross-Encoder，速度更快</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文推荐用 MTEB Leaderboard 的 Reranking 排行榜选择模型，Average 列是综合质量的良好代理指标。本页只按原文转述，不提供实时榜单或价格。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="integration-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">框架集成</p><h2 id="integration-title">在 LangChain<br>和 Cohere 里怎么接。</h2></div>
+      <p class="reading-intro">两种常见接法：用 LangChain 的 ContextualCompressionRetriever 包住现有检索器，或直接调用 Cohere Rerank API。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文代码 · LangChain 与 Cohere</p>
+      <pre><code># LangChain 集成
+from langchain.retrievers import ContextualCompressionRetriever
+from langchain.retrievers.document_compressors import CrossEncoderReranker
+from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+
+model = HuggingFaceCrossEncoder(model_name="cross-encoder/ms-marco-MiniLM-L-6-v2")
+compressor = CrossEncoderReranker(model=model, top_n=5)
+retriever = ContextualCompressionRetriever(
+    base_compressor=compressor,
+    base_retriever=vector_retriever  # 第一阶段检索器
+)
+
+# Cohere Rerank API
+import cohere
+co = cohere.Client("API_KEY")
+reranked = co.rerank(
+    model="rerank-v3.5",  # Cohere 2024-12 发布的多语言新版，可替代 rerank-english-v3.0
+    query=query,
+    documents=[doc.content for doc in candidates],
+    top_n=5
+)</code></pre>
+      <p>API Key 不应写死在源码里；生产环境应通过密钥管理服务注入。这里的 <code>"API_KEY"</code> 只是原文占位符。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="colbert-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">进阶：ColBERT</p><h2 id="colbert-title">介于两者之间的<br>晚期交互。</h2></div>
+      <p class="reading-intro">ColBERT 像 Bi-Encoder 一样独立编码查询和文档，但不把文档压成单一向量，而是保留 token 级向量，检索时做细粒度交互。</p>
+    </div>
+    <div class="prose">
+      <div class="re-token-example">
+        <div><strong>Bi-Encoder</strong><code>doc → [single vector] → dot product</code></div>
+        <div><strong>Cross-Encoder</strong><code>[query + doc] → [score] → full attention</code></div>
+        <div><strong>ColBERT</strong><code>doc → [token vectors] → late interaction (MaxSim)</code></div>
+      </div>
+      <p>ColBERT 的精度接近 Cross-Encoder，速度接近 Bi-Encoder，是一个有前景的方向。它仍然需要为每个 token 存向量，索引体积比单向量方案大，这是采用时要单独评估的成本。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">四个容易<br>被追问的点。</h2></div>
+      <p class="reading-intro">前两条是误区，后两条是面试追问；答案都来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“Bi-Encoder 精度低是因为模型小。”</h3><p>精度差异是架构本质决定的。Bi-Encoder 编码文档时没有查询上下文，无论模型多大，信息压缩的损失都存在。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“直接用 Cross-Encoder 做全量检索更好。”</h3><p>计算上不可行。10 万文档 × 单次查询 = 10 万次推理，延迟不可接受。Cross-Encoder 只适合重排少量候选。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>Top-K 的 K 设多少？</h3><p>第一阶段检索 50–100 个候选：K 太小会漏掉相关文档，太大会拖慢重排。第二阶段重排后取 3–10 个送入 LLM，取决于上下文窗口大小。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>Cross-Encoder 对长文档有什么问题？</h3><p>很多模型把输入截断到 token 窗口长度（如 512 tokens），可能切掉文档最相关的部分。解决方案是先分块再重排，或使用支持长上下文的重排模型。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《Re-ranking 的原理与实现：Cross-Encoder vs Bi-Encoder》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.pinecone.io/learn/series/rag/rerankers/" target="_blank" rel="noopener noreferrer">Rerankers and Two-Stage Retrieval · Pinecone</a></li>
+          <li><a href="https://www.velodb.io/glossary/bi-encoder-vs-cross-encoder" target="_blank" rel="noopener noreferrer">Bi-Encoder vs Cross-Encoder in IR and RAG · VeloDB</a></li>
+          <li><a href="https://python.langchain.com/docs/integrations/document_transformers/cross_encoder_reranker/" target="_blank" rel="noopener noreferrer">Cross Encoder Reranker · LangChain</a></li>
+          <li><a href="https://www.elastic.co/docs/solutions/search/ranking/semantic-reranking" target="_blank" rel="noopener noreferrer">Semantic Reranking · Elastic</a></li>
+          <li><a href="https://watercrawl.dev/blog/Beyond-Simple-Embeddings" target="_blank" rel="noopener noreferrer">Beyond Simple Embeddings: Bi-Encoders and Cross-Encoders · WaterCrawl</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>02-rag/017-reranking-strategies.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 3 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const RE_RECALL_K = 6;
+  const RE_FINAL_K = 4;
+  const RE_DOCS = Object.freeze([
+    { id: "D1", title: "Cross-Encoder 逐对打分", text: "把查询和文档拼接后联合编码，输出 0~1 的相关性分数；每对都要完整推理。", bi: 0.78, ce: 0.93, why: "Bi-Encoder 只看文档本身，分数中等；Cross-Encoder 看到查询后把它排到第 2。" },
+    { id: "D2", title: "Bi-Encoder 独立编码", text: "查询和文档分别编码成向量，用余弦相似度比较；文档向量可以离线预计算。", bi: 0.83, ce: 0.71, why: "主题接近，所以召回分数最高；精排发现它讲的是编码方式，不是在回答选型问题，名次下降。" },
+    { id: "D3", title: "两阶段检索流水线", text: "先用 Bi-Encoder 召回 50~100 个候选，再用 Cross-Encoder 重排取 3~10 个送入 LLM。", bi: 0.81, ce: 0.95, why: "召回第 2、精排第 1。它直接回答选型和 Top-K，是最终上下文里最相关的一篇。" },
+    { id: "D4", title: "ColBERT 晚期交互", text: "保留 token 级向量，用 MaxSim 做细粒度交互，精度接近 Cross-Encoder，速度快于逐对推理。", bi: 0.76, ce: 0.84, why: "是可选的重排方案之一，精排后保持在前 3，进入最终上下文。" },
+    { id: "D5", title: "HNSW 索引参数", text: "向量索引的 ef、M 等参数影响召回率和延迟；它属于召回层，不解决查询与文档的精细匹配。", bi: 0.79, ce: 0.22, why: "共享“向量、检索”词汇所以召回第 3；Cross-Encoder 看出它讲索引参数，精排掉到候选末尾并被截断。" },
+    { id: "D6", title: "RAG 评估指标", text: "检索命中率、上下文相关性和回答忠实度是评估 RAG 的不同环节。", bi: 0.74, ce: 0.18, why: "和查询共享“RAG”主题，召回进入候选；但它讨论评估，不讨论重排模型，精排后被截断。" },
+    { id: "D7", title: "报销流程", text: "员工需要在月底前提交发票和审批单。与重排序模型选择无关。", bi: 0.66, ce: 0.02, why: "召回分数最低，没有进入候选；这类文档本来就不该进入上下文。" },
+    { id: "D8", title: "MTEB Reranking 榜单", text: "按 Reranking 任务的 Average 指标挑选重排模型，是原文推荐的选型入口。", bi: 0.72, ce: 0.88, why: "内容相关，但 Bi-Encoder 只排第 7，被 Top-6 截断；Cross-Encoder 根本没机会看到它。这说明召回 K 决定上限。" },
+    { id: "D9", title: "512 token 截断", text: "很多 Cross-Encoder 只读前 512 个 token，长文档要先分块再重排。", bi: 0.70, ce: 0.81, why: "内容相关，但 Bi-Encoder 只排第 8，同样被召回截断；它本来可以进入精排前 4。" },
+    { id: "D10", title: "Top-5 送入 LLM", text: "重排后的前 5 个文档拼成上下文，交给 LLM 生成回答。", bi: 0.68, ce: 0.63, why: "主题相关但信息量低，召回第 9，未进入候选。" }
+  ]);
+
+  const RE_BI_ORDER = [...RE_DOCS].sort((a, b) => b.bi - a.bi || a.id.localeCompare(b.id));
+  RE_BI_ORDER.forEach((doc, index) => { doc.biRank = index + 1; });
+  const RE_RECALLED = RE_BI_ORDER.slice(0, RE_RECALL_K);
+  const RE_CE_ORDER = [...RE_RECALLED].sort((a, b) => b.ce - a.ce || a.id.localeCompare(b.id));
+  RE_CE_ORDER.forEach((doc, index) => { doc.ceRank = index + 1; });
+  RE_RECALLED.forEach((doc) => { doc.recalled = true; });
+
+  const reState = { step: 0, selected: "D3", revealed: 0 };
+  const reById = (id) => document.getElementById(id);
+
+  function reFind(id) { return RE_DOCS.find((doc) => doc.id === id); }
+
+  function reDocsForCurrent() {
+    if (reState.step === 1) return RE_BI_ORDER;
+    if (reState.step === 2) return RE_RECALLED;
+    return RE_DOCS;
+  }
+
+  function reDocButton(doc, { order, ceMode = false, movement = false } = {}) {
+    const li = document.createElement("li");
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "re-row";
+    button.dataset.doc = doc.id;
+    button.setAttribute("aria-pressed", String(doc.id === reState.selected));
+    if (!doc.recalled) button.classList.add("is-cut");
+    if (doc.id === reState.selected) button.classList.add("is-selected");
+
+    const rank = document.createElement("span");
+    rank.className = "re-rank";
+    rank.textContent = String(order);
+
+    const main = document.createElement("span");
+    main.className = "re-main";
+    const title = document.createElement("span");
+    title.className = "re-title";
+    title.textContent = doc.title;
+    const meta = document.createElement("span");
+    meta.className = "re-meta";
+    const flag = document.createElement("span");
+    flag.className = "re-flag";
+    if (ceMode) {
+      const revealed = order <= reState.revealed;
+      flag.textContent = revealed ? "已推理 · 点击查看" : "待推理";
+      flag.className += revealed ? " ok" : "";
+    } else if (!doc.recalled) {
+      flag.textContent = "召回截断 · 不进入精排";
+      flag.className += " warn";
+    } else {
+      flag.textContent = movement ? "进入最终 Top-4" : "进入精排候选";
+      flag.className += " ok";
+    }
+    const track = document.createElement("span");
+    track.className = "re-track";
+    const bar = document.createElement("span");
+    const scoreValue = ceMode ? (order <= reState.revealed ? doc.ce : 0) : doc.bi;
+    bar.className = "re-bar" + (ceMode ? " ce" : "");
+    bar.style.width = `${Math.round(scoreValue * 100)}%`;
+    track.append(bar);
+    meta.append(flag, track);
+    main.append(title, meta);
+
+    const score = document.createElement("span");
+    score.className = "re-score";
+    if (ceMode) {
+      score.innerHTML = order <= reState.revealed ? `${doc.ce.toFixed(2)}<small>CE</small>` : `—<small>CE</small>`;
+    } else {
+      score.innerHTML = `${doc.bi.toFixed(2)}<small>BE</small>`;
+    }
+
+    button.append(rank, main, score);
+    button.addEventListener("click", () => reSelect(doc.id));
+    li.append(button);
+    return li;
+  }
+
+  function reRenderRecall() {
+    const list = reById("re-recall-list");
+    list.textContent = "";
+    RE_BI_ORDER.forEach((doc, index) => {
+      if (index === RE_RECALL_K) {
+        const cut = document.createElement("li");
+        cut.className = "re-cutline";
+        cut.innerHTML = "<span>Top-6 截断线：以下文档不进入精排</span>";
+        list.append(cut);
+      }
+      list.append(reDocButton(doc, { order: index + 1 }));
+    });
+  }
+
+  function reRenderCe() {
+    const list = reById("re-ce-list");
+    list.textContent = "";
+    RE_RECALLED.forEach((doc, index) => {
+      list.append(reDocButton(doc, { order: index + 1, ceMode: true }));
+    });
+    const remaining = RE_RECALL_K - reState.revealed;
+    reById("re-ce-status").textContent = remaining
+      ? `${reState.revealed} / ${RE_RECALL_K} 对已打分。每次只推理一对 (query, doc)，这也是它慢的原因。`
+      : `${RE_RECALL_K} / ${RE_RECALL_K} 对已打分。6 个候选全部有了精排分数，可以重排了。`;
+    reById("re-ce-next").disabled = remaining === 0;
+    reById("re-ce-next").textContent = remaining ? "运行下一对 →" : "6 对已完成";
+  }
+
+  function reRenderCompare() {
+    const before = reById("re-before-list");
+    before.textContent = "";
+    RE_RECALLED.forEach((doc, index) => before.append(reDocButton(doc, { order: index + 1 })));
+
+    const after = reById("re-after-list");
+    after.textContent = "";
+    RE_CE_ORDER.forEach((doc, index) => {
+      const li = document.createElement("li");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "re-row" + (doc.id === reState.selected ? " is-selected" : "");
+      if (index >= RE_FINAL_K) button.classList.add("is-cut");
+      button.dataset.doc = doc.id;
+      button.setAttribute("aria-pressed", String(doc.id === reState.selected));
+
+      const rank = document.createElement("span");
+      rank.className = "re-rank";
+      rank.textContent = String(index + 1);
+
+      const main = document.createElement("span");
+      main.className = "re-main";
+      const title = document.createElement("span");
+      title.className = "re-title";
+      title.textContent = doc.title;
+      const meta = document.createElement("span");
+      meta.className = "re-meta";
+      const moveRank = doc.biRank - (index + 1);
+      const move = document.createElement("span");
+      move.className = "re-move " + (moveRank > 0 ? "up" : moveRank < 0 ? "down" : "flat");
+      move.textContent = moveRank > 0 ? `↑ 升 ${moveRank} 位` : moveRank < 0 ? `↓ 降 ${Math.abs(moveRank)} 位` : "→ 不变";
+      const flag = document.createElement("span");
+      flag.className = "re-flag " + (index < RE_FINAL_K ? "ok" : "warn");
+      flag.textContent = index < RE_FINAL_K ? "送入 LLM" : "截断";
+      meta.append(move, flag);
+      main.append(title, meta);
+
+      const score = document.createElement("span");
+      score.className = "re-score";
+      score.innerHTML = `${doc.ce.toFixed(2)}<small>CE</small>`;
+      button.append(rank, main, score);
+      button.addEventListener("click", () => reSelect(doc.id));
+      li.append(button);
+      after.append(li);
+    });
+
+    reById("re-final-note").innerHTML =
+      `最终送入 LLM：<strong>${RE_CE_ORDER.slice(0, RE_FINAL_K).map((doc) => doc.id).join("、")}</strong>。` +
+      `召回时排第 3 的 D5（0.79）和排第 6 的 D6（0.74）被精排压到末尾并截断；` +
+      `D8（0.88）和 D9（0.81）内容其实相关，但 Bi-Encoder 只排第 7、第 8，连候选都没进。` +
+      `这里的 0.88 和 0.81 是教学数据里假设的 Cross-Encoder 分数，真实系统不会给未召回文档打分。`;
+  }
+
+  function reRenderInspector(announce = false) {
+    const doc = reFind(reState.selected) || RE_DOCS[0];
+    reById("re-inspector-title").textContent = `${doc.id} · ${doc.title}`;
+    reById("re-inspector-id").textContent = doc.recalled ? "已进入精排候选" : "未进入精排候选";
+    reById("re-inspector-text").textContent = doc.text;
+    const allRevealed = reState.step >= 3 || reState.revealed >= RE_RECALL_K;
+    const ceKnown = doc.recalled && (allRevealed || (reState.step === 2 && doc.biRank <= reState.revealed));
+    reById("re-stat-bi").textContent = `${doc.bi.toFixed(2)} · 第 ${doc.biRank} 名`;
+    reById("re-stat-ce").textContent = ceKnown
+      ? `${doc.ce.toFixed(2)}` + (allRevealed ? ` · 候选内第 ${doc.ceRank} 名` : " · 已打分（排名待全部完成）")
+      : (doc.recalled ? "待推理" : "未打分");
+    reById("re-stat-final").textContent = ceKnown && allRevealed
+      ? (doc.ceRank <= RE_FINAL_K ? `第 ${doc.ceRank} 名 · 送入` : `第 ${doc.ceRank} 名 · 截断`)
+      : (doc.recalled ? "候选" : "未进入候选");
+    reById("re-inspector-why").innerHTML = `<strong>为什么：</strong>${doc.why}`;
+    if (announce) {
+      reById("re-announcement").textContent = `${doc.id}，${doc.title}。Bi-Encoder 分数 ${doc.bi.toFixed(2)}，全库第 ${doc.biRank} 名。` +
+        (doc.recalled ? `Cross-Encoder 分数 ${doc.ce.toFixed(2)}，候选内第 ${doc.ceRank} 名。` : "没有进入精排候选。");
+    }
+  }
+
+  function reUpdateSelection() {
+    document.querySelectorAll("#explainer .re-row").forEach((row) => {
+      const selected = row.dataset.doc === reState.selected;
+      row.classList.toggle("is-selected", selected);
+      row.setAttribute("aria-pressed", String(selected));
+    });
+  }
+
+  function reSelect(id) {
+    reState.selected = id;
+    reRenderInspector(true);
+    reUpdateSelection();
+  }
+
+  function reRenderAllRows() {
+    if (reState.step === 1) reRenderRecall();
+    if (reState.step === 2) reRenderCe();
+    if (reState.step === 3) reRenderCompare();
+  }
+
+  const RE_CAPTIONS = [
+    { index: "图 1 · 第 1 / 4 步", title: "查询先变成一个向量，文档才有机会被召回。", desc: "Bi-Encoder 在查询到达前就把文档编码好，因此召回很快；代价是文档向量里没有这次查询的上下文。精排模型晚一点才看到查询和文档的组合，所以更准，也更贵。", action: "下一步：看 10 篇固定文档的 Bi-Encoder 分数" },
+    { index: "图 2 · 第 2 / 4 步", title: "高相似度不等于高相关。", desc: "第 3 名的文档讲的是向量索引参数，和第 6 名的 RAG 评估指标一样，都因为共享“向量、检索、评估”这些词而拿到不低的相似度。Bi-Encoder 只能比较压缩后的整体向量，分不清主题是否真的对题。", action: "下一步：让 Cross-Encoder 逐对看查询和文档" },
+    { index: "图 3 · 第 3 / 4 步", title: "查询和文档一起进模型，分数才会对题。", desc: "Cross-Encoder 能看到查询和文档之间的细粒度匹配，所以能把“讲了检索但没讲选型”的候选压下去。代价是每个候选都要单独跑一次完整推理，不能像 Bi-Encoder 那样复用文档向量。", action: "下一步：按精排分数重新排序并截断" },
+    { index: "图 4 · 第 4 / 4 步", title: "重排改变的是顺序，也决定了谁被丢掉。", desc: "召回阶段排第 3、第 6 的两篇文档，精排后掉到候选末尾并被截掉；召回时排第 4 的 Cross-Encoder 说明升到第 2。最终送入 LLM 的是精排前 4 篇。", action: "重排完成 · 4 篇文档进入上下文" }
+  ];
+
+  function reRender(announce = true) {
+    document.querySelectorAll("#explainer [data-panel]").forEach((panel) => {
+      panel.hidden = Number(panel.dataset.panel) !== reState.step;
+    });
+    document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+      if (Number(button.dataset.step) === reState.step) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    reRenderAllRows();
+    reRenderInspector(false);
+
+    const caption = RE_CAPTIONS[reState.step];
+    const activePanel = document.querySelector(`#explainer [data-panel="${reState.step}"]`);
+    const captionHost = activePanel.querySelector(".re-caption");
+    captionHost.querySelector(".figure-index").textContent = caption.index;
+    captionHost.querySelector("h2").textContent = caption.title;
+    captionHost.querySelector("p:not(.figure-index):not(.re-action)").textContent = caption.desc;
+    captionHost.querySelector(".re-action").textContent = caption.action;
+
+    reById("re-prev").disabled = reState.step === 0;
+    reById("re-next").disabled = reState.step === 3;
+    reById("re-next").textContent = reState.step === 3 ? "已完成" : "下一步 →";
+    reById("re-state-summary").textContent = `第 ${reState.step + 1} / 4 步 · 没有连接模型`;
+
+    if (announce) {
+      reById("re-announcement").textContent = `第 ${reState.step + 1} 步，共 4 步。${caption.title}`;
+    }
+  }
+
+  function reGoto(step) {
+    reState.step = Math.max(0, Math.min(3, step));
+    if (reState.step === 2) reState.revealed = Math.max(reState.revealed, 0);
+    reRender(true);
+  }
+
+  reById("re-prev").addEventListener("click", () => reGoto(reState.step - 1));
+  reById("re-next").addEventListener("click", () => reGoto(reState.step + 1));
+  reById("re-reset").addEventListener("click", () => {
+    reState.step = 0;
+    reState.selected = "D3";
+    reState.revealed = 0;
+    reRender(true);
+  });
+  document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+    button.addEventListener("click", () => reGoto(Number(button.dataset.step)));
+  });
+  reById("re-ce-next").addEventListener("click", () => {
+    if (reState.revealed >= RE_RECALL_K) return;
+    reState.revealed += 1;
+    const doc = RE_RECALLED[reState.revealed - 1];
+    reRenderCe();
+    reRenderInspector(false);
+    reById("re-announcement").textContent = `第 ${reState.revealed} 对已打分：${doc.id} ${doc.title}，Cross-Encoder 分数 ${doc.ce.toFixed(2)}。`;
+    if (reState.revealed === RE_RECALL_K) {
+      reById("re-state-summary").textContent = "6 对全部打分 · 没有连接模型";
+    }
+  });
+
+  reRender(false);
+</script>
+</body>
+</html>

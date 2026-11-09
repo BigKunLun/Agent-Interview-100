@@ -1,0 +1,880 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>如何实现动态工具发现和注册？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .td-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .td-head { display: flex; justify-content: space-between; gap: var(--s-4); align-items: end; flex-wrap: wrap; }
+  .td-head h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; }
+  .td-head > p { font-size: var(--t-small); color: var(--text-dim); max-width: 37em; }
+  .td-controls { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-2); margin-top: var(--s-4); padding: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .td-control label { display: block; font-size: 10px; letter-spacing: .04em; color: var(--text-dim); margin-bottom: 3px; }
+  .td-control select { width: 100%; min-height: 38px; padding: 5px 7px; border: 1px solid var(--border-bright); border-radius: 5px; background: var(--surface); color: var(--ink); font-size: 12px; }
+  .td-layout { display: grid; grid-template-columns: minmax(0, 1.12fr) minmax(0, .88fr); gap: var(--s-4); margin-top: var(--s-4); align-items: start; }
+  .td-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .td-card h3 { font-size: 14px; line-height: 1.5; font-weight: 600; }
+  .td-reg-head { display: flex; justify-content: space-between; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+  .td-toggle { min-height: 34px; padding: 4px 9px; border: 1px solid var(--border-bright); border-radius: 5px; background: var(--surface); font-size: 10.5px; }
+  .td-toggle:hover { background: var(--surface-soft); }
+  .td-toggle[aria-pressed="true"] { border-color: #a5cfa8; background: #f4f8f4; color: #1b5e20; }
+  .td-reg-note { margin-top: 6px; font-size: 10.5px; line-height: 1.6; color: var(--text-dim); min-height: 34px; }
+  .td-summary { display: flex; flex-wrap: wrap; gap: 5px; margin-top: var(--s-2); }
+  .td-chip { display: inline-flex; align-items: center; gap: 4px; padding: 1px 7px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-soft); font: 9.5px/1.7 var(--mono); color: var(--text-dim); }
+  .td-chip b { color: var(--ink); font-weight: 600; }
+  .td-table-wrap { overflow-x: auto; margin-top: var(--s-3); border: 1px solid var(--border); border-radius: 5px; }
+  .td-table { width: 100%; min-width: 440px; border-collapse: collapse; font-size: 11px; }
+  .td-table th, .td-table td { padding: 5px 7px; border-bottom: 1px solid var(--border); border-right: 1px solid var(--border); text-align: left; vertical-align: middle; }
+  .td-table th:last-child, .td-table td:last-child { border-right: 0; }
+  .td-table tbody tr:last-child td, .td-table tbody tr:last-child th { border-bottom: 0; }
+  .td-table thead th { background: var(--surface-soft); color: var(--text-dim); font-size: 9.5px; font-weight: 500; white-space: nowrap; }
+  .td-table tbody th { font: 600 10px/1.5 var(--mono); white-space: nowrap; }
+  .td-table td { font-size: 10.5px; }
+  .td-table td:first-child { font-family: var(--mono); }
+  .td-table tr.is-blocked th, .td-table tr.is-blocked td { color: #6a6f6a; background: #f7f6f1; }
+  .td-table tr.is-available th { color: #1b2a1d; }
+  .td-status { display: inline-flex; align-items: center; padding: 0 6px; border-radius: 4px; font: 9px/1.7 var(--mono); white-space: nowrap; }
+  .td-status.ok { color: #1b5e20; background: #e8f5e9; border: 1px solid #a5cfa8; }
+  .td-status.role { color: #6b3f00; background: #fff4d6; border: 1px solid #e0c98a; }
+  .td-status.auth { color: #8b1a1a; background: #fdecec; border: 1px solid #dda8a8; }
+  .td-status.stage { color: #0d3f6e; background: #e7f0f9; border: 1px solid #a9c4de; }
+  .td-status.flag { color: #5d625d; background: #f1f0eb; border: 1px dashed #b9beb4; }
+  .td-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: var(--s-3); }
+  .td-metric { border: 1px solid var(--border); border-radius: 5px; padding: 7px 9px; background: var(--surface-soft); }
+  .td-metric dt { font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .td-metric dd { margin: 1px 0 0; font: 600 14px/1.4 var(--mono); }
+  .td-metric dd small { font: 400 10px/1.4 var(--sans); color: var(--text-dim); }
+  .td-candidates { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 6px; }
+  .td-candidate { display: grid; grid-template-columns: 108px minmax(0, 1fr) 34px; gap: 7px; align-items: center; padding: 6px 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface-soft); }
+  .td-candidate span:first-child { font: 10px/1.4 var(--mono); overflow-wrap: anywhere; }
+  .td-candidate-bar { height: 7px; border-radius: 999px; background: #e4e6df; overflow: hidden; }
+  .td-candidate-bar i { display: block; height: 100%; background: var(--accent); border-radius: 999px; }
+  .td-candidate em { font: 10px/1 var(--mono); color: var(--text-dim); font-style: normal; text-align: right; }
+  .td-empty { border: 1px dashed var(--border-bright); border-radius: 5px; padding: 9px 10px; font-size: 10.5px; line-height: 1.6; color: var(--text-dim); }
+  .td-candidate-note { margin-top: 7px; font-size: 10px; line-height: 1.6; color: var(--text-dim); }
+  .td-caption { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border); }
+  .td-caption h2 { font-size: var(--t-h2); line-height: 1.4; }
+  .td-caption p:not(.figure-index) { margin-top: 6px; font-size: var(--t-small); color: var(--text-dim); max-width: 66em; }
+  .td-readflow { display: grid; gap: 6px; margin-top: var(--s-4); padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .td-readflow-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+  .td-node { padding: 6px 10px; border: 1px solid var(--border-bright); border-radius: 5px; background: var(--surface-soft); font-size: 11.5px; line-height: 1.5; }
+  .td-node.hot { border-color: #a9c4de; background: #eef5fb; }
+  .td-node.done { border-color: #a5cfa8; background: #f4f8f4; }
+  .td-arrow { color: var(--text-dim); font: 12px/1 var(--mono); }
+  .td-readflow-note { margin-top: 3px; font-size: 10.5px; line-height: 1.6; color: var(--text-dim); }
+  .td-code { font-size: 11px; }
+  .td-mermaid { font-size: 10.5px; }
+  @media (max-width: 1000px) {
+    .td-layout { grid-template-columns: 1fr; }
+    .td-controls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px) {
+    .td-stage { padding: var(--s-4); }
+    .td-head h2 { font-size: 23px; }
+    .td-controls { grid-template-columns: 1fr; }
+    .td-table { min-width: 0; }
+    .td-table thead th:nth-child(2), .td-table tbody td:nth-child(2) { display: none; }
+    .td-table th, .td-table td { padding: 5px 5px; }
+    .td-metrics { grid-template-columns: 1fr 1fr; }
+    .td-candidate { grid-template-columns: 92px minmax(0, 1fr) 30px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">029 / 动态工具发现</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 5 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="028-parallel-vs-sequential-tools.html">← 上一页 · 并行工具调用 vs 顺序工具调用的设…</a><a href="030-tool-use-security.html">下一页 → · 工具使用的安全性</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">高级 · Tool Use · 可交互讲解</p>
+      <h1>别一次全给，<br>用到才找。</h1>
+    </div>
+    <div>
+      <p class="lead">动态工具发现，是 Agent 在运行时而不是编译时发现和使用工具。它解决两个问题：工具定义占满上下文，以及工具太多导致选择准确率下降。常见实现有 MCP 动态发现、语义检索、上下文过滤、ITR 和集中注册中心。</p>
+      <p class="definition">关键边界：<strong>发现不只是性能优化，也是权限机制。</strong>按角色、认证状态和会话阶段过滤，才能做到最小权限。本页注册表与检索分数都是固定教学数据，不连接真实注册中心。</p>
+      <div class="hero-meta"><span class="pill">高级</span><span class="pill">Tool Use</span><span class="pill">Tool RAG / 注册表</span><span class="pill">本地演示</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="demo-title">
+    <div class="player-top">
+      <div class="player-label">工具发现演练台 <small>12 个固定工具，过滤后再检索</small></div>
+      <div class="controls" role="group" aria-label="工具发现演示控制">
+        <button type="button" class="button button-quiet" id="td-reset">重置</button>
+      </div>
+    </div>
+    <div class="td-stage scene" data-scene="tool-discovery">
+      <div class="td-head">
+        <div>
+          <p class="figure-index">图 1 · 固定教学数据</p>
+          <h2 id="demo-title">先按上下文过滤，再按意图检索。</h2>
+        </div>
+        <p>注册表默认 12 个工具。改角色、认证状态、会话阶段或查询，观察可用工具和检索候选怎么变；还可以模拟运行时注册一个新工具。</p>
+      </div>
+
+      <div class="td-controls">
+        <div class="td-control"><label for="td-role">用户角色</label><select id="td-role"><option value="support">客服</option><option value="sales">销售</option><option value="admin">管理员</option></select></div>
+        <div class="td-control"><label for="td-auth">认证状态</label><select id="td-auth"><option value="yes">已登录并授权</option><option value="no">未登录</option></select></div>
+        <div class="td-control"><label for="td-stage">会话阶段</label><select id="td-stage"><option value="browse">浏览</option><option value="purchase">购买</option></select></div>
+        <div class="td-control"><label for="td-query">用户查询</label><select id="td-query"></select></div>
+      </div>
+
+      <div class="td-layout">
+        <div class="td-card">
+          <div class="td-reg-head">
+            <h3>固定工具注册表</h3>
+            <button type="button" class="td-toggle" id="td-toggle-export" aria-pressed="false">注册 export_report</button>
+          </div>
+          <p class="td-reg-note" id="td-reg-note">运行时注册会广播 notifications/tools/list_changed（本地模拟），Client 重新拉取后才能看到新工具。</p>
+          <div class="td-summary" id="td-summary"></div>
+          <div class="td-table-wrap">
+            <table class="td-table" id="td-table">
+              <caption class="sr-only">固定工具注册表：工具名、类别、当前可用状态与过滤原因</caption>
+              <thead><tr><th scope="col">工具</th><th scope="col">类别</th><th scope="col">状态</th></tr></thead>
+              <tbody id="td-table-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="td-panel">
+          <div class="td-card">
+            <h3>发现流水线</h3>
+            <dl class="td-metrics">
+              <div class="td-metric"><dt>注册表工具</dt><dd id="td-reg-count">12</dd></div>
+              <div class="td-metric"><dt>过滤后可用</dt><dd id="td-avail-count">—</dd></div>
+              <div class="td-metric"><dt>检索候选</dt><dd id="td-cand-count">—</dd></div>
+              <div class="td-metric"><dt>候选上下文</dt><dd id="td-token-count">—</dd></div>
+            </dl>
+            <p class="td-candidate-note" id="td-token-note">按每个工具 500 tokens 的固定估算，不冒充真实 token 计数。</p>
+          </div>
+
+          <div class="td-card">
+            <h3>语义检索候选（top-3）</h3>
+            <ol class="td-candidates" id="td-candidates"></ol>
+            <p class="td-candidate-note" id="td-candidate-note">检索只缩小范围，最终由 LLM 在候选里选择。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="td-caption">
+        <p class="figure-index">图 2 · 先权限，后相关性</p>
+        <h2>过滤决定“能不能用”，检索决定“先看哪个”。</h2>
+        <p>角色、认证、阶段和 Feature Flag 把可用工具缩小；语义检索再从这个集合里挑 top-k。顺序不能反：先检索后过滤，可能把权限不足的工具带进上下文。</p>
+      </div>
+      <p class="demo-note">固定教学数据：12 个工具、角色权限、认证要求、会话阶段、Feature Flag、查询分数和注册事件都是写死的。页面在本地按规则过滤和排序，不连接注册中心、不做向量检索、不调用模型、也不发起 MCP 通知。500 tokens / 工具的估算仅用于演示上下文差距，不是实测值。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 不连接注册中心</span><span id="td-state-summary">客服 · 已登录 · 浏览 · 12 个工具</span></div>
+  </section>
+  <p id="td-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">为什么需要</p><h2 id="why-title">工具定义会吃上下文，<br>也会拉低选择准确率。</h2></div>
+      <p class="reading-intro">静态加载把全部工具塞进 System Prompt，工具越多，token 成本和选错概率一起上升。</p>
+    </div>
+    <div class="prose">
+      <p>原文给出的对照：所有工具静态塞入时，50 个工具、每个约 500 tokens，就是 25,000+ tokens 仅用于工具定义；动态方式只放相关的三个，约 1,500 tokens。原文还引用 Anthropic 内部测试：58 个工具可消耗约 55k tokens。这些是<strong>原文引用值，未联网核实</strong>，不是本页实测。</p>
+      <pre><code>静态方式（所有工具塞进 System Prompt）：
+工具 1 定义 (500 tokens)
+工具 2 定义 (500 tokens)
+...
+工具 50 定义 (500 tokens)
+总计: 25,000+ tokens 仅用于工具定义
+
+动态方式（按需加载相关工具）：
+工具 A 定义 (500 tokens) ← 相关
+工具 B 定义 (500 tokens) ← 相关
+工具 C 定义 (500 tokens) ← 可能相关
+总计: 1,500 tokens</code></pre>
+      <p>除了成本，工具数量还会降低选择准确率。工具越多，描述越容易重叠，模型越难在相邻选项里选对。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mcp-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">方式 1</p><h2 id="mcp-title">MCP：注册即通知，<br>Client 重新拉取。</h2></div>
+      <p class="reading-intro">MCP 原生支持工具动态发现和热更新。Server 注册或注销工具后广播 list_changed，Client 重新 tools/list 刷新清单。</p>
+    </div>
+    <div class="prose">
+      <div class="td-readflow" role="img" aria-label="MCP 动态发现时序：Server 运行时注册或注销工具，向 Client 发送 notifications/tools/list_changed，Client 重新 tools/list，Server 返回最新列表，Client 更新 Agent 可用工具">
+        <div class="td-readflow-row"><span class="td-node hot">Server 运行时注册 / 注销工具</span><span class="td-arrow" aria-hidden="true">→</span><span class="td-node">广播 notifications/tools/list_changed</span></div>
+        <div class="td-readflow-row"><span class="td-node">Client 重新 tools/list</span><span class="td-arrow" aria-hidden="true">→</span><span class="td-node done">Server 返回最新工具列表</span><span class="td-arrow" aria-hidden="true">→</span><span class="td-node done">更新 Agent 可用工具清单</span></div>
+        <p class="td-readflow-note">离线可读示意：通知加拉取。原图是 Mermaid 时序图，源码见下方折叠块。</p>
+      </div>
+      <details>
+        <summary>查看原文 Mermaid 源码（需在支持 Mermaid 的编辑器中渲染）</summary>
+        <pre class="td-mermaid"><code>sequenceDiagram
+    participant S as MCP Server
+    participant C as MCP Client
+    participant A as Agent(LLM)
+    S-&gt;&gt;S: 运行时注册 / 注销工具
+    S--&gt;&gt;C: notifications/tools/list_changed
+    C-&gt;&gt;S: tools/list（重新拉取）
+    S--&gt;&gt;C: 返回最新工具列表
+    C-&gt;&gt;A: 更新可用工具清单</code></pre>
+      </details>
+      <pre><code>class DynamicMCPServer:
+    def __init__(self):
+        self.tools = {}
+
+    async def register_tool(self, tool):
+        self.tools[tool.name] = tool
+        await self.notify("notifications/tools/list_changed")
+
+    async def unregister_tool(self, tool_name):
+        del self.tools[tool_name]
+        await self.notify("notifications/tools/list_changed")
+
+    async def handle_tools_list(self):
+        return [tool.to_schema() for tool in self.tools.values()]</code></pre>
+      <p>典型场景：用户登录后按权限暴露不同工具；会话从“浏览”进入“购买”时，新增支付相关工具。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="rag-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">方式 2</p><h2 id="rag-title">工具超过 50 个，<br>先用语义检索缩小。</h2></div>
+      <p class="reading-intro">把工具描述编码成向量，按用户意图检索 top-k，只把相关工具传给 LLM。</p>
+    </div>
+    <div class="prose">
+      <pre><code>class ToolRegistry:
+    def __init__(self, tools: list[dict]):
+        self.model = SentenceTransformer("all-MiniLM-L6-v2")
+        self.tools = tools
+        descriptions = [t["description"] for t in tools]
+        self.embeddings = self.model.encode(descriptions)
+        dim = self.embeddings.shape[1]
+        self.index = faiss.IndexFlatIP(dim)
+        faiss.normalize_L2(self.embeddings)
+        self.index.add(self.embeddings)
+
+    def discover(self, query: str, top_k: int = 5) -&gt; list[dict]:
+        query_vec = self.model.encode([query])
+        faiss.normalize_L2(query_vec)
+        scores, indices = self.index.search(query_vec, top_k)
+        return [
+            self.tools[idx] for idx, score in zip(indices[0], scores[0])
+            if score &gt; 0.3
+        ]</code></pre>
+      <p>检索选错工具时有两层保护：top-k 取 5 到 8 个而不是 top-1，给模型更多选项；最终仍由 LLM 做选择，检索只缩小范围。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="filter-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">方式 3</p><h2 id="filter-title">同一份工具表，<br>不同上下文不同可见性。</h2></div>
+      <p class="reading-intro">按用户权限、认证状态、会话阶段和 Feature Flag 过滤工具。这既是性能优化，也是最小权限控制。</p>
+    </div>
+    <div class="prose">
+      <pre><code>class ContextAwareToolFilter:
+    def __init__(self, all_tools):
+        self.all_tools = all_tools
+
+    def get_available_tools(self, context: dict) -&gt; list:
+        available = []
+        for tool in self.all_tools:
+            if not self.user_has_permission(context["user"], tool):
+                continue
+            if tool.requires_auth and not context.get("authenticated"):
+                continue
+            if tool.stage and tool.stage != context.get("session_stage"):
+                continue
+            if tool.feature_flag and not is_enabled(tool.feature_flag):
+                continue
+            available.append(tool)
+        return available</code></pre>
+      <p>过滤顺序通常是权限 → 认证 → 阶段 → Flag。先做便宜且静态的检查，再做语义检索，能少算很多无关向量。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="itr-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">方式 4 与 5</p><h2 id="itr-title">每一步只取最小集，<br>规模化再上注册中心。</h2></div>
+      <p class="reading-intro">ITR 按当前步骤检索最小必要的指令片段和工具子集；集中注册中心则把多 Server 的工具元数据、健康和搜索索引统一管理。</p>
+    </div>
+    <div class="prose">
+      <p><strong>Instruction-Tool Retrieval（ITR）</strong>：每一步都基于当前步骤上下文，重新检索相关指令和工具，而不是一次加载全部。原文给出的预期收益是显著降低每步 context tokens、提升选择准确率、降低端到端成本，具体幅度因任务和工具规模而异。原文提到可减少约 95% 上下文开销，该数字为<strong>原文引用，未联网核实</strong>。</p>
+      <pre><code>class InstructionToolRetriever:
+    def retrieve_for_step(self, agent_state, step_context):
+        relevant_instructions = self.retrieve_instructions(step_context)
+        relevant_tools = self.retrieve_tools(step_context)
+        return {
+            "system_prompt": relevant_instructions,
+            "tools": relevant_tools,
+        }</code></pre>
+      <p><strong>集中式工具注册中心</strong>：登记工具的元数据、所属 Server、注册时间和状态，维护健康检查和语义搜索索引。Server 注册时批量写入，下线时按 server_id 移除，再重建索引。</p>
+      <pre><code>class CentralToolRegistry:
+    def __init__(self):
+        self.registry = {}
+        self.health_checks = {}
+        self.search_index = None
+
+    def register(self, server_id: str, tools: list[dict]):
+        for tool in tools:
+            self.registry[tool["name"]] = {
+                "server": server_id,
+                "schema": tool,
+                "registered_at": datetime.now(),
+                "status": "active"
+            }
+        self._rebuild_index()
+
+    def deregister(self, server_id: str):
+        self.registry = {
+            k: v for k, v in self.registry.items()
+            if v["server"] != server_id
+        }
+        self._rebuild_index()
+
+    def search(self, query: str, top_k: int = 5) -&gt; list:
+        return self.search_index.query(query, top_k)</code></pre>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="compare-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">方式对比</p><h2 id="compare-title">规模、延迟、<br>灵活性和复杂度。</h2></div>
+      <p class="reading-intro">下表按原文对比表整理。工具规模和延迟开销是相对档位，不是硬阈值。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">五种动态工具发现方式的规模、延迟、灵活性与实现复杂度对比</caption>
+          <thead><tr><th scope="col">方式</th><th scope="col">工具规模</th><th scope="col">延迟开销</th><th scope="col">灵活性</th><th scope="col">实现复杂度</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">MCP 动态发现</th><td>中等（10–50）</td><td>低</td><td>高</td><td>中</td></tr>
+            <tr><th scope="row">语义检索</th><td>大（50–1000+）</td><td>中（检索耗时）</td><td>高</td><td>中</td></tr>
+            <tr><th scope="row">上下文过滤</th><td>中等（10–50）</td><td>极低</td><td>中</td><td>低</td></tr>
+            <tr><th scope="row">ITR</th><td>大（50+）</td><td>中</td><td>高</td><td>高</td></tr>
+            <tr><th scope="row">集中注册中心</th><td>大（100+）</td><td>中</td><td>极高</td><td>高</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>选型可以按规模递进：工具少用上下文过滤；超过 50 个加语义检索；每步都要最小集就上 ITR；多 Server、多团队共享时才需要集中注册中心。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="pitfalls-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="pitfalls-title">四个问题，<br>别把发现只当优化。</h2></div>
+      <p class="reading-intro">前两个是误区，后两个是追问。</p>
+    </div>
+    <div>
+      <div class="misconception">
+        <p class="misconception-label">误区 1</p>
+        <div><h3>“把所有工具都放进 System Prompt 最简单可靠。”</h3><p><strong>工具超过 20 个后，选择准确率明显下降，上下文窗口也被大量占用。</strong>动态发现是规模化的必要手段，不是可有可无的优化。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">误区 2</p>
+        <div><h3>“动态发现只是性能优化。”</h3><p><strong>它也是安全机制。</strong>通过动态过滤，可以按用户权限和认证状态实时调整可用工具，落实最小权限原则。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 1</p>
+        <div><h3>语义检索选错了工具怎么办？</h3><p>两层保护：检索取 top-k（5 到 8 个）而不是 top-1，给 LLM 更多选项；LLM 仍然做最终选择。检索是缩小范围，不是替代判断。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 2</p>
+        <div><h3>动态工具发现和 Agent 编排有什么关系？</h3><p>动态发现决定 Agent 的能力边界：能做什么，取决于它能发现哪些工具。多 Agent 系统中，不同 Agent 可能连接不同的 MCP Server，拥有不同的发现范围。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《如何实现动态工具发现和注册？》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的六条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.speakeasy.com/mcp/tool-design/dynamic-tool-discovery" target="_blank" rel="noopener noreferrer">Dynamic Tool Discovery in MCP · Speakeasy</a></li>
+          <li><a href="https://nordicapis.com/7-benefits-of-a-centralized-mcp-tool-registry/" target="_blank" rel="noopener noreferrer">7 Benefits of a Centralized MCP Tool Registry · Nordic APIs</a></li>
+          <li><a href="https://arxiv.org/abs/2302.04761" target="_blank" rel="noopener noreferrer">Toolformer: Language Models Can Teach Themselves to Use Tools · arXiv</a></li>
+          <li><a href="https://arxiv.org/abs/2305.16504" target="_blank" rel="noopener noreferrer">ToolBench: On the Tool Manipulation Capability of Open-source LLMs · arXiv</a></li>
+          <li><a href="https://github.com/agentic-community/mcp-gateway-registry/blob/main/docs/dynamic-tool-discovery.md" target="_blank" rel="noopener noreferrer">MCP Gateway Registry: Dynamic Tool Discovery · GitHub</a></li>
+          <li><a href="https://medium.com/ai-simplified-in-plain-english/how-dynamic-tool-discovery-with-mcp-is-rewriting-the-rules-of-autonomy-5cce7475d6e2" target="_blank" rel="noopener noreferrer">How Dynamic Tool Discovery with MCP Is Rewriting the Rules of Autonomy · Medium</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>03-tool-use/029-dynamic-tool-discovery.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 4 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const TD_ROLE_LABEL = { support: "客服", sales: "销售", admin: "管理员" };
+  const TD_STAGE_LABEL = { browse: "浏览", purchase: "购买", any: "不限" };
+  const TD_CAT_LABEL = { customer_service: "客服", product_info: "产品信息", billing: "账单", reporting: "报表" };
+
+  const TD_BASE_TOOLS = [
+    { name: "query_orders", cat: "customer_service", roles: ["support", "sales", "admin"], auth: true, stage: "any", flag: true, desc: "查询订单状态与物流" },
+    { name: "create_ticket", cat: "customer_service", roles: ["support", "admin"], auth: true, stage: "any", flag: true, desc: "创建支持工单" },
+    { name: "get_profile", cat: "customer_service", roles: ["support", "admin"], auth: true, stage: "any", flag: true, desc: "读取用户资料" },
+    { name: "send_email", cat: "customer_service", roles: ["support", "sales", "admin"], auth: true, stage: "purchase", flag: true, desc: "发送客户邮件" },
+    { name: "search_docs", cat: "product_info", roles: ["support", "sales", "admin"], auth: false, stage: "any", flag: true, desc: "检索产品文档与错误码" },
+    { name: "get_pricing", cat: "product_info", roles: ["sales", "admin"], auth: true, stage: "any", flag: true, desc: "查询产品价格" },
+    { name: "check_compatibility", cat: "product_info", roles: ["support", "sales", "admin"], auth: false, stage: "any", flag: true, desc: "检查版本兼容性" },
+    { name: "get_invoice", cat: "billing", roles: ["sales", "admin"], auth: true, stage: "any", flag: true, desc: "查询账单与发票" },
+    { name: "process_refund", cat: "billing", roles: ["admin"], auth: true, stage: "purchase", flag: true, desc: "处理退款" },
+    { name: "update_payment", cat: "billing", roles: ["admin"], auth: true, stage: "purchase", flag: true, desc: "修改支付方式" },
+    { name: "list_reports", cat: "reporting", roles: ["sales", "admin"], auth: true, stage: "any", flag: true, desc: "列出可用报表" },
+    { name: "delete_record", cat: "reporting", roles: ["admin"], auth: true, stage: "purchase", flag: false, desc: "删除记录（高风险）" }
+  ];
+
+  const TD_EXPORT_TOOL = { name: "export_report", cat: "reporting", roles: ["sales", "admin"], auth: true, stage: "any", flag: true, desc: "导出报表" };
+
+  const TD_QUERIES = [
+    {
+      id: "order",
+      label: "查询订单 A12345 的物流状态",
+      scores: { query_orders: 0.92, get_profile: 0.44, create_ticket: 0.38, search_docs: 0.22 }
+    },
+    {
+      id: "invoice",
+      label: "上个月的发票怎么开？",
+      scores: { get_invoice: 0.89, process_refund: 0.46, query_orders: 0.31, list_reports: 0.28 }
+    },
+    {
+      id: "sso",
+      label: "怎么配置 SSO 单点登录？",
+      scores: { search_docs: 0.9, check_compatibility: 0.52, get_pricing: 0.28 }
+    },
+    {
+      id: "pricing",
+      label: "对比两个版本的价格",
+      scores: { get_pricing: 0.87, check_compatibility: 0.61, search_docs: 0.34 }
+    },
+    {
+      id: "export",
+      label: "导出上季度销售报告",
+      scores: { export_report: 0.93, list_reports: 0.71, get_invoice: 0.57, search_docs: 0.29 }
+    }
+  ];
+
+  const TD_STATE = { role: "support", auth: "yes", stage: "browse", query: "order", exportRegistered: false };
+  const tdById = (id) => document.getElementById(id);
+
+  function tdTools() {
+    return TD_STATE.exportRegistered ? TD_BASE_TOOLS.concat([TD_EXPORT_TOOL]) : TD_BASE_TOOLS;
+  }
+
+  function tdFilter(tool) {
+    if (!tool.roles.includes(TD_STATE.role)) return "role";
+    if (tool.auth && TD_STATE.auth !== "yes") return "auth";
+    if (tool.stage !== "any" && tool.stage !== TD_STATE.stage) return "stage";
+    if (!tool.flag) return "flag";
+    return "ok";
+  }
+
+  function tdReasonLabel(reason) {
+    return { role: "角色无权", auth: "未认证", stage: "阶段不符", flag: "Flag 关闭" }[reason] || "可用";
+  }
+
+  function tdRenderQueries() {
+    const select = tdById("td-query");
+    select.textContent = "";
+    TD_QUERIES.forEach((q) => {
+      const option = document.createElement("option");
+      option.value = q.id;
+      option.textContent = q.label;
+      select.append(option);
+    });
+    select.value = TD_STATE.query;
+  }
+
+  function tdCompute() {
+    const tools = tdTools();
+    const statuses = tools.map((tool) => ({ tool, reason: tdFilter(tool) }));
+    const available = statuses.filter((s) => s.reason === "ok").map((s) => s.tool);
+    const query = TD_QUERIES.find((q) => q.id === TD_STATE.query);
+    const scored = available
+      .map((tool) => ({ tool, score: query.scores[tool.name] || 0 }))
+      .filter((item) => item.score > 0.3)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+    return { tools, statuses, available, scored, query };
+  }
+
+  function tdRenderSummary(result) {
+    const counts = { role: 0, auth: 0, stage: 0, flag: 0 };
+    result.statuses.forEach((s) => { if (s.reason !== "ok") counts[s.reason] += 1; });
+    const host = tdById("td-summary");
+    host.textContent = "";
+    const chips = [
+      ["可用", result.available.length],
+      ["角色", counts.role],
+      ["未认证", counts.auth],
+      ["阶段", counts.stage],
+      ["Flag", counts.flag]
+    ];
+    chips.forEach(([label, value]) => {
+      const chip = document.createElement("span");
+      chip.className = "td-chip";
+      chip.textContent = label + " ";
+      const b = document.createElement("b");
+      b.textContent = String(value);
+      chip.append(b);
+      host.append(chip);
+    });
+  }
+
+  function tdRenderTable(result) {
+    const body = tdById("td-table-body");
+    body.textContent = "";
+    result.statuses.forEach(({ tool, reason }) => {
+      const tr = document.createElement("tr");
+      tr.className = reason === "ok" ? "is-available" : "is-blocked";
+      const th = document.createElement("th");
+      th.scope = "row";
+      th.textContent = tool.name;
+      const cat = document.createElement("td");
+      cat.textContent = TD_CAT_LABEL[tool.cat] || tool.cat;
+      const statusCell = document.createElement("td");
+      const badge = document.createElement("span");
+      badge.className = "td-status " + (reason === "ok" ? "ok" : reason);
+      badge.textContent = reason === "ok" ? "可用" : tdReasonLabel(reason);
+      statusCell.append(badge);
+      tr.append(th, cat, statusCell);
+      body.append(tr);
+    });
+  }
+
+  function tdRenderCandidates(result) {
+    const host = tdById("td-candidates");
+    host.textContent = "";
+    if (!result.scored.length) {
+      const empty = document.createElement("li");
+      empty.className = "td-empty";
+      empty.textContent = "过滤后没有工具的分数超过 0.30。Agent 应回复无法处理，或请用户补充信息。";
+      host.append(empty);
+    } else {
+      result.scored.forEach(({ tool, score }) => {
+        const li = document.createElement("li");
+        li.className = "td-candidate";
+        const name = document.createElement("span");
+        name.textContent = tool.name;
+        const bar = document.createElement("span");
+        bar.className = "td-candidate-bar";
+        const fill = document.createElement("i");
+        fill.style.width = Math.round(score * 100) + "%";
+        bar.append(fill);
+        const value = document.createElement("em");
+        value.textContent = score.toFixed(2);
+        li.append(name, bar, value);
+        host.append(li);
+      });
+    }
+    const note = tdById("td-candidate-note");
+    if (result.scored.length) {
+      note.textContent = "候选 " + result.scored.length + " 个，按固定分数排序；LLM 仍可在这几个工具里改选。";
+    } else {
+      note.textContent = "当前查询没有可用候选，这不是“工具选择失败”，而是能力边界被上下文限制。";
+    }
+  }
+
+  function tdRenderMetrics(result) {
+    const total = result.tools.length;
+    const available = result.available.length;
+    const candidates = result.scored.length;
+    const staticTokens = total * 500;
+    const candidateTokens = candidates * 500;
+    const save = total ? Math.round((1 - candidates / total) * 100) : 0;
+    tdById("td-reg-count").textContent = String(total);
+    tdById("td-avail-count").textContent = String(available);
+    tdById("td-cand-count").textContent = String(candidates);
+    tdById("td-token-count").textContent = candidateTokens + " tokens";
+    tdById("td-token-note").textContent = candidates === 0
+      ? "固定估算：候选 0 × 500；全量 " + total + " × 500 = " + staticTokens + " tokens。当前没有候选，不能把“省了 100%”当成优化收益。"
+      : "固定估算：候选 " + candidates + " × 500；全量 " + total + " × 500 = " + staticTokens + " tokens。相对全量少 " + save + "%。";
+    tdById("td-state-summary").textContent = TD_ROLE_LABEL[TD_STATE.role] + " · " + (TD_STATE.auth === "yes" ? "已登录" : "未登录") + " · " + TD_STAGE_LABEL[TD_STATE.stage] + " · 注册表 " + total + " · 候选 " + candidates;
+  }
+
+  function tdRender() {
+    const result = tdCompute();
+    tdRenderSummary(result);
+    tdRenderTable(result);
+    tdRenderCandidates(result);
+    tdRenderMetrics(result);
+    const toggle = tdById("td-toggle-export");
+    toggle.setAttribute("aria-pressed", String(TD_STATE.exportRegistered));
+    toggle.textContent = TD_STATE.exportRegistered ? "注销 export_report" : "注册 export_report";
+    tdById("td-reg-note").textContent = TD_STATE.exportRegistered
+      ? "本地模拟：export_report 已注册，并广播 notifications/tools/list_changed；Client 重新 tools/list 后可看到它。"
+      : "本地模拟：export_report 未注册。点击注册会广播 list_changed，Client 重新拉取后才能看到新工具。";
+  }
+
+  function tdAnnounce() {
+    const result = tdCompute();
+    tdById("td-announcement").textContent = "角色 " + TD_ROLE_LABEL[TD_STATE.role] + "，认证 " + (TD_STATE.auth === "yes" ? "已登录" : "未登录") + "，阶段 " + TD_STAGE_LABEL[TD_STATE.stage] + "。注册表 " + result.tools.length + " 个工具，过滤后 " + result.available.length + " 个，检索候选 " + result.scored.length + " 个。";
+  }
+
+  ["td-role", "td-auth", "td-stage", "td-query"].forEach((id) => {
+    tdById(id).addEventListener("change", () => {
+      if (id === "td-role") TD_STATE.role = tdById(id).value;
+      if (id === "td-auth") TD_STATE.auth = tdById(id).value;
+      if (id === "td-stage") TD_STATE.stage = tdById(id).value;
+      if (id === "td-query") TD_STATE.query = tdById(id).value;
+      tdRender();
+      tdAnnounce();
+    });
+  });
+
+  tdById("td-toggle-export").addEventListener("click", () => {
+    TD_STATE.exportRegistered = !TD_STATE.exportRegistered;
+    tdRender();
+    tdAnnounce();
+  });
+
+  tdById("td-reset").addEventListener("click", () => {
+    TD_STATE.role = "support";
+    TD_STATE.auth = "yes";
+    TD_STATE.stage = "browse";
+    TD_STATE.query = "order";
+    TD_STATE.exportRegistered = false;
+    tdById("td-role").value = "support";
+    tdById("td-auth").value = "yes";
+    tdById("td-stage").value = "browse";
+    tdById("td-query").value = "order";
+    tdRender();
+    tdAnnounce();
+  });
+
+  tdRenderQueries();
+  tdRender();
+</script>
+</body>
+</html>

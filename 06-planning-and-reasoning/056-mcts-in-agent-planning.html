@@ -1,0 +1,1203 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Monte Carlo Tree Search 在 Agent 规划中的应用 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  /* 056 MCTS */
+  .m-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .m-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+  .m-caption > p:not(.figure-index) { margin-top: var(--s-2); font-size: var(--t-small); color: var(--text-dim); max-width: 66em; }
+  .m-phase-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: var(--s-4); }
+  .m-phase { display: flex; gap: 8px; align-items: flex-start; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: 10px 11px; min-width: 0; }
+  .m-phase-num { display: inline-grid; place-items: center; width: 22px; height: 22px; flex: 0 0 auto; border: 1px solid var(--border-bright); border-radius: 50%; background: var(--surface); font: 11px/1 var(--mono); color: var(--text-dim); }
+  .m-phase b { display: block; font-size: 12px; line-height: 1.4; }
+  .m-phase p { margin-top: 3px; font-size: 11px; line-height: 1.55; color: var(--text-dim); }
+  .m-result { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: var(--s-4); }
+  .m-result-card { border: 1px solid #2e7d32; border-radius: var(--r-1); background: #f1f8f1; padding: 10px 12px; min-width: 0; }
+  .m-result-card span { display: block; font: 10px/1.5 var(--mono); color: #2f5d33; letter-spacing: .04em; }
+  .m-result-card b { display: block; margin-top: 2px; font-size: 13px; line-height: 1.5; color: #1b5e20; }
+  .m-result-card p { margin-top: 3px; font-size: 11px; line-height: 1.55; color: #2f5d33; }
+  .m-tree-wrap { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border); }
+  .m-tree-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-3); flex-wrap: wrap; font: 11px/1.6 var(--mono); color: var(--text-dim); }
+  .m-tree-head b { color: var(--ink); font-weight: 600; }
+  .m-path { margin-top: var(--s-3); font-size: 12px; color: var(--text-dim); }
+  .m-path code { color: var(--accent); font-size: 12px; }
+  .m-tree { position: relative; display: grid; grid-template-columns: repeat(var(--cols, 4), minmax(0, 300px)); grid-template-rows: repeat(3, auto); gap: 14px 30px; align-items: center; justify-content: center; margin-top: var(--s-3); }
+  .m-tree .m-links { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; overflow: visible; }
+  .m-links path { fill: none; stroke: #9aa29a; stroke-width: 1; }
+  .m-links path.is-path { stroke: var(--accent); stroke-width: 2; }
+  .m-node { position: relative; z-index: 1; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); padding: 8px 10px; min-width: 0; }
+  .m-node[data-node="root"] { grid-column: 1; grid-row: 2; }
+  .m-node[data-node="a"] { grid-column: 2; grid-row: 1; }
+  .m-node[data-node="b"] { grid-column: 2; grid-row: 2; }
+  .m-node[data-node="c"] { grid-column: 2; grid-row: 3; }
+  .m-node[data-node="b1"] { grid-column: 3; grid-row: 2; }
+  .m-node[data-node="c1"] { grid-column: 3; grid-row: 3; }
+  .m-node[data-node="b1a"] { grid-column: 4; grid-row: 2; }
+  .m-name { display: block; font-weight: 600; font-size: 12px; line-height: 1.4; }
+  .m-detail { display: block; margin-top: 2px; font-size: 10px; line-height: 1.45; color: var(--text-dim); }
+  .m-badges { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+  .m-badge { padding: 0 5px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-soft); font: 10px/1.6 var(--mono); white-space: nowrap; }
+  .m-state { display: block; margin-top: 4px; font: 10px/1.4 var(--mono); color: var(--text-dim); }
+  .m-node.is-path { border-color: var(--accent); background: var(--accent-dim); box-shadow: inset 0 0 0 1px #9eb4c9; }
+  .m-node.is-path .m-state { color: #143f6b; font-weight: 600; }
+  .m-node.is-visited { border-color: #9aa89a; background: #f4f7f4; }
+  .m-node.is-visited .m-state { color: #2f5d33; }
+  .m-node.is-best { border-color: #2e7d32; background: #f1f8f1; box-shadow: inset 0 0 0 2px #cfe3cf; }
+  .m-node.is-best .m-state { color: #1b5e20; font-weight: 600; }
+  .m-node.is-idle { border-style: dashed; }
+  .m-node.is-low { border-color: #b45309; background: #fff8e8; }
+  .m-node.is-low .m-state { color: #8a5a00; }
+  .m-lower { display: grid; grid-template-columns: minmax(0, 1fr) 218px; gap: var(--s-4); margin-top: var(--s-4); align-items: start; }
+  .m-ucb { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 12px 14px; min-width: 0; }
+  .m-ucb-title { font: 600 11px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .m-ucb-group { margin-top: 8px; }
+  .m-ucb-group + .m-ucb-group { margin-top: 10px; padding-top: 10px; border-top: 1px dashed var(--border); }
+  .m-ucb-group h4 { margin: 0 0 5px; font: 11px/1.5 var(--mono); color: var(--ink); }
+  .m-ucb table { width: 100%; border-collapse: collapse; font-size: 11px; font-variant-numeric: tabular-nums; }
+  .m-ucb th, .m-ucb td { padding: 4px 5px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+  .m-ucb th { font-size: 10px; font-weight: 500; color: var(--text-dim); background: var(--surface-soft); white-space: nowrap; }
+  .m-ucb td.num, .m-ucb th.num { text-align: right; font-family: var(--mono); white-space: nowrap; }
+  .m-ucb tr.is-pick td { background: var(--accent-dim); font-weight: 600; }
+  .m-ucb-note { margin-top: 7px; font-size: 10px; line-height: 1.55; color: var(--text-dim); }
+  .m-stats { display: grid; gap: 6px; }
+  .m-stat { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 9px 11px; }
+  .m-stat span { font-size: 10px; color: var(--text-dim); }
+  .m-stat b { font: 600 22px/1.1 var(--serif); }
+  .m-loop { display: grid; grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr); grid-template-rows: auto 44px auto; gap: 8px; margin-top: var(--s-4); }
+  .m-loop-box { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 12px 14px; min-width: 0; }
+  .m-loop-box b { display: block; margin-top: 3px; font-size: 14px; }
+  .m-loop-box p { margin-top: 3px; font-size: 11px; line-height: 1.55; color: var(--text-dim); }
+  .m-loop-num { font: 11px/1.4 var(--mono); color: var(--text-dim); }
+  .m-loop-arrow { display: grid; place-items: center; font-size: 18px; color: var(--text-dim); }
+  .m-loop-center { display: grid; place-items: center; text-align: center; font: 10px/1.6 var(--mono); color: var(--text-dim); border: 1px dashed var(--border-bright); border-radius: 999px; }
+  .m-loop-box[data-loop="1"] { grid-column: 1; grid-row: 1; }
+  .m-loop-arrow[data-loop="12"] { grid-column: 2; grid-row: 1; }
+  .m-loop-box[data-loop="2"] { grid-column: 3; grid-row: 1; }
+  .m-loop-arrow[data-loop="41"] { grid-column: 1; grid-row: 2; }
+  .m-loop-center { grid-column: 2; grid-row: 2; }
+  .m-loop-arrow[data-loop="23"] { grid-column: 3; grid-row: 2; }
+  .m-loop-box[data-loop="4"] { grid-column: 1; grid-row: 3; }
+  .m-loop-arrow[data-loop="34"] { grid-column: 2; grid-row: 3; }
+  .m-loop-box[data-loop="3"] { grid-column: 3; grid-row: 3; }
+  .m-phase-table td, .m-phase-table th { vertical-align: top; }
+  .m-final-note { font-size: 11px; line-height: 1.6; color: var(--text-dim); }
+  .m-final-table td:first-child { width: 72px; }
+  .m-final-table td:last-child { width: 58%; }
+  @media (max-width: 900px) {
+    .m-tree { display: block; }
+    .m-tree .m-links { display: none; }
+    .m-node { margin-top: 8px; }
+    .m-node[data-depth="1"] { margin-left: 18px; }
+    .m-node[data-depth="2"] { margin-left: 36px; }
+    .m-node[data-depth="3"] { margin-left: 54px; }
+    .m-node[data-depth="1"], .m-node[data-depth="2"], .m-node[data-depth="3"] { box-shadow: -1px 0 0 var(--border-bright); }
+    .m-lower { grid-template-columns: 1fr; }
+    .m-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px) {
+    .m-stage { padding: var(--s-4); }
+    .m-caption h2 { font-size: 22px; }
+    .m-phase-strip, .m-result { grid-template-columns: 1fr 1fr; }
+    .m-phase { padding: 8px 9px; }
+    .m-loop { grid-template-columns: minmax(0, 1fr) 28px minmax(0, 1fr); grid-template-rows: auto 34px auto; gap: 6px; }
+    .m-loop-box { padding: 9px 10px; }
+    .m-loop-box b { font-size: 13px; }
+    .m-loop-arrow { font-size: 15px; }
+    .m-stats { grid-template-columns: 1fr 1fr 1fr; }
+    .m-stat { padding: 7px 8px; flex-direction: column; gap: 2px; }
+    .m-stat b { font-size: 19px; }
+    .m-ucb { padding: 10px; }
+    .m-node[data-depth="1"] { margin-left: 12px; }
+    .m-node[data-depth="2"] { margin-left: 24px; }
+    .m-node[data-depth="3"] { margin-left: 36px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .m-node { transition: none; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">056 / MCTS 树搜索</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 5 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="055-reasoning-models.html">← 上一页 · 2026 推理 / Agent 模型…</a><a href="103-agentic-rl-grpo.html">下一页 → · Agentic-RL 是什么？如何用…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">高级 · Planning &amp; Reasoning · 可交互讲解</p>
+      <h1>先向前模拟，<br>再决定走哪一步。</h1>
+    </div>
+    <div>
+      <p class="lead">MCTS 在决策树上反复做四件事：按 UCB1 选择、扩展候选、评估价值、把结果回传。它用多次浅评估换一个更稳的选择，弥补 LLM 一次生成不能回溯的短板。</p>
+      <p class="definition">关键边界：MCTS 是近似搜索，不保证最优。原文 LATS 用 LLM 同时做动作生成、环境模拟、价值评估和反思，HumanEval 报告 94.4%（GPT-4）。这些是<strong>原文版本、未联网核实</strong>，不是本页实测。</p>
+      <div class="hero-meta"><span class="pill">高级</span><span class="pill">Planning &amp; Reasoning</span><span class="pill">树搜索</span><span class="pill">固定教学数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="m-step-title">
+    <div class="player-top">
+      <div class="player-label">MCTS 四步循环 <small>固定树 · 5 轮迭代 · 访问次数与价值都可见</small></div>
+      <div class="controls" role="group" aria-label="MCTS 演示控制">
+        <button type="button" class="button button-quiet" id="m-reset">重置</button>
+        <button type="button" class="button" id="m-prev" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="m-next">下一步 →</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="MCTS 六步演示">
+      <ol style="--stages: 6">
+        <li><button type="button" class="stage-button" data-step="1" aria-current="step" aria-controls="m-scene" aria-label="第 1 轮：扩展根节点并模拟 A"><span class="stage-number">1</span><span>第 1 轮</span></button></li>
+        <li><button type="button" class="stage-button" data-step="2" aria-controls="m-scene" aria-label="第 2 轮：选择 B 并模拟 B1"><span class="stage-number">2</span><span>第 2 轮</span></button></li>
+        <li><button type="button" class="stage-button" data-step="3" aria-controls="m-scene" aria-label="第 3 轮：选择 C 并模拟 C1"><span class="stage-number">3</span><span>第 3 轮</span></button></li>
+        <li><button type="button" class="stage-button" data-step="4" aria-controls="m-scene" aria-label="第 4 轮：选择 B1 并扩展 B1a"><span class="stage-number">4</span><span>第 4 轮</span></button></li>
+        <li><button type="button" class="stage-button" data-step="5" aria-controls="m-scene" aria-label="第 5 轮：沿唯一子节点下探到 B1a"><span class="stage-number">5</span><span>第 5 轮</span></button></li>
+        <li><button type="button" class="stage-button" data-step="6" aria-controls="m-scene" aria-label="返回访问次数最多的路径"><span class="stage-number">6</span><span>返回</span></button></li>
+      </ol>
+    </nav>
+    <div class="m-stage scene" id="m-scene" data-scene="mcts">
+      <div class="m-caption">
+        <p class="figure-index" id="m-position">图 1 · 第 1 / 6 轮</p>
+        <h2 id="m-step-title">先扩展根节点，再模拟 A。</h2>
+        <p id="m-step-description">根节点还没有子节点，本轮选择只能落在根上。扩展生成 A、B、C 三个候选；模拟只评估第一条 A，得到 0.35。</p>
+      </div>
+
+      <div class="m-phase-strip" id="m-phases" aria-label="本轮四步"></div>
+      <div class="m-result" id="m-result" hidden></div>
+
+      <div class="m-tree-wrap">
+        <div class="m-tree-head"><span><b>搜索树</b> · 节点显示 N（访问次数）与 Q（平均价值）</span><span>c = 1.414 · 价值范围 0–1</span></div>
+        <p class="m-path">本轮路径：<code id="m-path-text">root → A</code></p>
+        <div class="m-tree" role="group" aria-labelledby="m-tree-title">
+          <p class="sr-only" id="m-tree-title">MCTS 搜索树：根节点下有三个候选 A、B、C；B 下有 B1，B1 下有 B1a；C 下有 C1。每个节点显示访问次数与平均价值。</p>
+          <svg class="m-links" aria-hidden="true"></svg>
+          <div class="m-node is-path" data-node="root" data-depth="0">
+            <span class="m-name">root</span>
+            <span class="m-detail">目标：周六 30 人团建</span>
+            <span class="m-badges"><span class="m-badge" data-badge="n">N=0</span><span class="m-badge" data-badge="q">Q=–</span></span>
+            <span class="m-state" data-state>本轮路径</span>
+          </div>
+          <div class="m-node" data-node="a" data-depth="1" hidden>
+            <span class="m-name">A · 查天气</span>
+            <span class="m-detail">结果：周六有雨</span>
+            <span class="m-badges"><span class="m-badge" data-badge="n">N=0</span><span class="m-badge" data-badge="q">Q=–</span></span>
+            <span class="m-state" data-state>待生成</span>
+          </div>
+          <div class="m-node" data-node="b" data-depth="1" hidden>
+            <span class="m-name">B · 查场地</span>
+            <span class="m-detail">结果：营地有空位</span>
+            <span class="m-badges"><span class="m-badge" data-badge="n">N=0</span><span class="m-badge" data-badge="q">Q=–</span></span>
+            <span class="m-state" data-state>待生成</span>
+          </div>
+          <div class="m-node" data-node="b1" data-depth="2" hidden>
+            <span class="m-name">B1 · 确认档期</span>
+            <span class="m-detail">结果：周六可订</span>
+            <span class="m-badges"><span class="m-badge" data-badge="n">N=0</span><span class="m-badge" data-badge="q">Q=–</span></span>
+            <span class="m-state" data-state>待生成</span>
+          </div>
+          <div class="m-node" data-node="b1a" data-depth="3" hidden>
+            <span class="m-name">B1a · 加订雨棚</span>
+            <span class="m-detail">结果：雨天有备用</span>
+            <span class="m-badges"><span class="m-badge" data-badge="n">N=0</span><span class="m-badge" data-badge="q">Q=–</span></span>
+            <span class="m-state" data-state>待生成</span>
+          </div>
+          <div class="m-node" data-node="c" data-depth="1" hidden>
+            <span class="m-name">C · 先订餐</span>
+            <span class="m-detail">结果：餐厅满员</span>
+            <span class="m-badges"><span class="m-badge" data-badge="n">N=0</span><span class="m-badge" data-badge="q">Q=–</span></span>
+            <span class="m-state" data-state>待生成</span>
+          </div>
+          <div class="m-node" data-node="c1" data-depth="2" hidden>
+            <span class="m-name">C1 · 找备选</span>
+            <span class="m-detail">结果：等位 2 小时</span>
+            <span class="m-badges"><span class="m-badge" data-badge="n">N=0</span><span class="m-badge" data-badge="q">Q=–</span></span>
+            <span class="m-state" data-state>待生成</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="m-lower">
+        <div class="m-ucb" id="m-ucb" aria-live="off"></div>
+        <div class="m-stats" aria-label="搜索统计">
+          <div class="m-stat"><span>累计模拟</span><b id="m-stat-sims">0</b></div>
+          <div class="m-stat"><span>根访问 N</span><b id="m-stat-root">0</b></div>
+          <div class="m-stat"><span>树内最高 Q</span><b id="m-stat-best">–</b></div>
+        </div>
+      </div>
+
+      <p class="demo-note">固定教学数据：任务、候选动作、评估值 0.35 / 0.75 / 0.20 / 0.95、UCB1 参数 c=1.414 和 5 轮迭代都为演示而设，不是模型实时输出。本页不调用模型，也不执行真实环境动作；数字只用来说明“选择 → 扩展 → 模拟 → 回传”的机制。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 树上的 N 与 Q 由页面脚本按轮更新</span><span id="m-state-summary">第 1 / 6 轮 · 没有连接模型</span></div>
+  </section>
+  <p id="m-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="m-loop-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">一 · 四步循环</p><h2 id="m-loop-title">每一轮，<br>都回到选择。</h2></div>
+      <p class="reading-intro">MCTS 把决策表示成一棵树：节点是状态，边是动作。它不靠一次生成定输赢，而是把有限的预算分给更有希望的路径。</p>
+    </div>
+    <div class="prose">
+      <p>一轮迭代包含四步，走完第四步就回到第一步，直到预算用完。四个步骤的顺序固定，区别只在每一轮选中哪个节点。</p>
+
+      <div class="m-loop" role="group" aria-label="MCTS 四步循环：选择、扩展、模拟、反向传播，回到选择">
+        <div class="m-loop-box" data-loop="1"><span class="m-loop-num">1</span><b>选择 Selection</b><p>从根节点出发，每层选 UCB1 最高的子节点，直到到达叶节点。</p></div>
+        <div class="m-loop-arrow" data-loop="12" aria-hidden="true">→</div>
+        <div class="m-loop-box" data-loop="2"><span class="m-loop-num">2</span><b>扩展 Expansion</b><p>在叶节点生成新的候选动作，作为它的子节点。</p></div>
+        <div class="m-loop-arrow" data-loop="41" aria-hidden="true">↑</div>
+        <div class="m-loop-center">下一轮<br>回到 1</div>
+        <div class="m-loop-arrow" data-loop="23" aria-hidden="true">↓</div>
+        <div class="m-loop-box" data-loop="4"><span class="m-loop-num">4</span><b>反向传播</b><p>把评估值沿路径回写，路径上每个节点都更新访问次数和价值。</p></div>
+        <div class="m-loop-arrow" data-loop="34" aria-hidden="true">←</div>
+        <div class="m-loop-box" data-loop="3"><span class="m-loop-num">3</span><b>模拟 Simulation</b><p>评估新节点的价值。原文的 LLM 实现直接让模型打 0–1 分。</p></div>
+      </div>
+      <p class="demo-note">图 2 · 四步构成闭环；本页互动按同一顺序逐轮展开，但不逐步拆分四步，而是每轮展示四步的完整结果。</p>
+
+      <h3>四步里，谁在做事</h3>
+      <div class="table-wrap">
+        <table class="data m-phase-table">
+          <caption class="sr-only">MCTS 四步在经典算法和原文 LLM 实现中的分工</caption>
+          <thead><tr><th scope="col">步骤</th><th scope="col">经典 MCTS</th><th scope="col">原文的 LLM 实现</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">选择</th><td>按 UCB1 从根走到叶节点。</td><td>同一套 UCB1；LLM 不参与选择。</td></tr>
+            <tr><th scope="row">扩展</th><td>枚举或采样合法动作。</td><td>LLM 生成 3 个可能的下一步行动。</td></tr>
+            <tr><th scope="row">模拟</th><td>随机走子到终局，得到回报。</td><td>LLM 直接评估当前路径达到目标的概率，输出 0–1。</td></tr>
+            <tr><th scope="row">回传</th><td>更新路径上节点的访问次数和价值。</td><td>同一套统计更新；LATS 还会调用环境 step 得到观察。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <p class="callout-label">关键区别</p>
+        <p>原文的“模拟”不是 AlphaGo 式的随机走子，而是一次 <strong>LLM 价值评估</strong>。这让 MCTS 能用在没有模拟器的任务上，代价是每一步都要花模型调用，而且评估本身可能不准。</p>
+      </div>
+
+      <h3>UCB1：利用与探索的折中</h3>
+      <p>选择步骤用 UCB1 给每个子节点打分。分数由两部分相加：<strong>Q</strong> 是平均价值，负责利用；<strong>探索项</strong> 随访问次数下降，负责给访问少的节点机会。</p>
+      <p class="code-label">UCB1 · 原文公式</p>
+      <pre><code>UCB1 = Q + c × √(ln N / n)
+
+Q = 节点的平均价值（value / visits）
+N = 父节点的访问次数
+n = 当前子节点的访问次数
+c = 探索权重，原文代码默认 1.414</code></pre>
+      <p>原文代码对未访问节点直接返回无穷大，所以每个候选至少会被评估一次。之后 Q 高的节点被反复利用，访问少的节点靠探索项重新获得机会。</p>
+
+      <details>
+        <summary>查看原文 MCTS 四步循环 Mermaid 源码</summary>
+        <pre><code>flowchart TD
+    S["1. 选择 Selection&lt;br/&gt;UCB1：胜率高+访问少优先"] --&gt; E["2. 扩展 Expansion&lt;br/&gt;在叶节点生成新子节点"]
+    E --&gt; SIM["3. 模拟 Simulation&lt;br/&gt;LLM 评估新节点价值"]
+    SIM --&gt; B["4. 反向传播 Backpropagation&lt;br/&gt;更新路径上所有节点统计"]
+    B -- "进入下一轮迭代" --&gt; S
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class S,E,B proc
+    class SIM agent</code></pre>
+        <p class="source-footnote">源码按原文保留，仅做 HTML 转义；本页的闭环图和互动按同一循环关系呈现。</p>
+      </details>
+    </div>
+  </section>
+  <section class="reading" aria-labelledby="m-impl-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">二 · LLM Agent 中的实现</p><h2 id="m-impl-title">LLM 负责生成，<br>统计负责选择。</h2></div>
+      <p class="reading-intro">原文的 <code>LLM_MCTS</code> 把扩展和评估交给模型，把选择与回传统一交给 UCB1 统计。LATS 在此基础上加入环境交互和自我反思。</p>
+    </div>
+    <div class="prose">
+      <h3>一次迭代的骨架</h3>
+      <p>搜索循环很短：选中节点、扩展、评估、回传。迭代次数用完以后，返回访问次数最多的子节点，而不是单次评分最高的节点。</p>
+      <p class="code-label">原文 search 方法节选</p>
+      <pre><code>for _ in range(self.num_iterations):
+    node = self.select(root)              # 1. 选择
+    child = await self.expand(node)       # 2. 扩展
+    value = await self.simulate(child)    # 3. 模拟
+    self.backpropagate(child, value)      # 4. 反向传播
+
+return max(root.children, key=lambda c: c.visits)</code></pre>
+      <p>原文默认 <code>num_iterations=50</code>。扩展时让 LLM 生成 3 个候选动作；模拟时让 LLM 给当前路径打 0–1 分；回传把同一个价值累加到路径上每个节点。</p>
+
+      <p class="code-label">UCB1 实现 · 原文代码</p>
+      <pre><code>def ucb1(self, exploration_weight=1.414):
+    """UCB1：平衡探索与利用"""
+    if self.visits == 0:
+        return float('inf')  # 未访问的节点优先
+    exploitation = self.value / self.visits
+    exploration = exploration_weight * math.sqrt(
+        math.log(self.parent.visits) / self.visits
+    )
+    return exploitation + exploration</code></pre>
+      <p>注意 <code>math.log(self.parent.visits)</code>：探索项会随父节点总访问量缓慢增长。父节点被访问得越多，所有子节点的探索项都会变大，搜索更愿意试新分支；单个子节点自己访问得越多，它的探索项反而越小。</p>
+
+      <details>
+        <summary>展开原文 MCTSNode 与 LLM_MCTS 完整代码</summary>
+        <pre><code>import math
+
+class MCTSNode:
+    def __init__(self, state, parent=None):
+        self.state = state          # 当前推理状态
+        self.parent = parent
+        self.children = []
+        self.visits = 0
+        self.value = 0.0
+
+    def ucb1(self, exploration_weight=1.414):
+        """UCB1：平衡探索与利用"""
+        if self.visits == 0:
+            return float('inf')  # 未访问的节点优先
+        exploitation = self.value / self.visits
+        exploration = exploration_weight * math.sqrt(
+            math.log(self.parent.visits) / self.visits
+        )
+        return exploitation + exploration
+
+class LLM_MCTS:
+    """将 MCTS 与 LLM 结合的规划器"""
+
+    def __init__(self, llm, num_iterations=50):
+        self.llm = llm
+        self.num_iterations = num_iterations
+
+    async def search(self, problem):
+        root = MCTSNode(state=problem)
+
+        for _ in range(self.num_iterations):
+            # 1. 选择：沿 UCB1 最高的路径向下
+            node = self.select(root)
+
+            # 2. 扩展：用 LLM 生成可能的下一步
+            child = await self.expand(node)
+
+            # 3. 模拟：用 LLM 评估这条路径的价值
+            value = await self.simulate(child)
+
+            # 4. 反向传播：更新路径上的统计值
+            self.backpropagate(child, value)
+
+        # 返回访问次数最多的子节点（最稳健的选择）
+        return max(root.children, key=lambda c: c.visits)
+
+    def select(self, node):
+        while node.children:
+            node = max(node.children, key=lambda c: c.ucb1())
+        return node
+
+    async def expand(self, node):
+        """用 LLM 生成多个候选动作"""
+        actions = await self.llm.invoke(f"""
+        当前状态：{node.state}
+        请生成 3 个可能的下一步行动。
+        """)
+        for action in actions:
+            child = MCTSNode(
+                state=self.apply_action(node.state, action),
+                parent=node
+            )
+            node.children.append(child)
+        return node.children[0]  # 返回第一个新节点用于模拟
+
+    async def simulate(self, node):
+        """用 LLM 评估当前路径的价值（0-1）"""
+        evaluation = await self.llm.invoke(f"""
+        评估以下推理路径达到最终目标的可能性（0-1分）：
+        路径：{self.get_path(node)}
+        目标：{self.goal}
+        """)
+        return float(evaluation)
+
+    def backpropagate(self, node, value):
+        while node:
+            node.visits += 1
+            node.value += value
+            node = node.parent</code></pre>
+      </details>
+
+      <h3>LATS：让 LLM 同时扮演四个角色</h3>
+      <p>LATS（Language Agent Tree Search，ICML 2024）把 MCTS 用到 LLM Agent 上。同一个 LLM 同时承担四个角色：</p>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">LATS 中 LLM 承担的四个角色</caption>
+          <thead><tr><th scope="col">角色</th><th scope="col">做什么</th><th scope="col">对应 MCTS 步骤</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Action Generator</th><td>生成候选动作。</td><td>扩展</td></tr>
+            <tr><th scope="row">Environment Simulator</th><td>执行动作，得到观察结果。</td><td>扩展 / 模拟</td></tr>
+            <tr><th scope="row">Value Function</th><td>评估状态价值。</td><td>模拟</td></tr>
+            <tr><th scope="row">Self-Reflection</th><td>失败后总结原因，反思结果影响后续搜索。</td><td>额外机制，贯穿搜索</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Self-Reflection 是 LATS 的核心创新。节点到达终止失败时，模型反思失败原因，并把反思存下来指导后续搜索。原文明确提醒：它不是“额外装饰”，而是搜索的一部分。</p>
+      <p>原文代码里 LATS 的示例配置是 <code>n_samples=5</code>、<code>depth=7</code>。这两个是示例参数，不代表所有任务的推荐值。</p>
+
+      <details>
+        <summary>展开原文 LATS 代码</summary>
+        <pre><code>class LATS:
+    """Language Agent Tree Search (ICML 2024)"""
+
+    def __init__(self, llm, environment, n_samples=5, depth=7):
+        self.llm = llm
+        self.env = environment
+        self.n_samples = n_samples
+        self.depth = depth
+
+    async def solve(self, task):
+        root = LATSNode(observation=task)
+
+        for iteration in range(self.n_samples):
+            node = self.select(root)
+
+            # LATS 的关键创新：LLM 同时充当多个角色（决策、生成、评估、反思）
+            # Self-Reflection 是 LATS 的核心创新之一，不应视为"额外"
+
+            # 角色 1：Action Generator（生成候选动作）
+            actions = await self.generate_actions(node)
+
+            # 角色 2：Environment Simulator（模拟执行结果）
+            for action in actions:
+                observation = await self.env.step(action)
+                child = LATSNode(observation=observation, action=action)
+                node.add_child(child)
+
+            # 角色 3：Value Function（评估状态价值）
+            for child in node.children:
+                value = await self.evaluate_state(child)
+                child.value = value
+
+            # 角色 4：Self-Reflection（核心创新——从失败中学习并指导后续搜索）
+            if self.is_terminal_failure(node):
+                reflection = await self.reflect_on_failure(node)
+                # 反思被存储，影响后续搜索
+                self.reflections.append(reflection)
+
+            self.backpropagate(node)
+
+        return self.get_best_trajectory(root)</code></pre>
+  </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="m-perf-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三 · 性能与对比</p><h2 id="m-perf-title">多花的调用，<br>换来更高的成功率。</h2></div>
+      <p class="reading-intro">LATS 在 HumanEval 和 WebShop 上报告了明显的提升。下面的数字只按原文 2024 年论文口径，标为“原文数据、未联网核实”，不是本页实测。</p>
+    </div>
+    <div class="prose">
+      <h3>HumanEval 编程任务</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">HumanEval 上五种方法的 Pass@1，原文 2024 数据</caption>
+          <thead><tr><th scope="col">方法</th><th scope="col" class="num">Pass@1</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">直接生成</th><td class="num">82.0%</td></tr>
+            <tr><th scope="row">CoT</th><td class="num">83.5%</td></tr>
+            <tr><th scope="row">Reflexion</th><td class="num">91.0%</td></tr>
+            <tr><th scope="row">ToT (DFS)</th><td class="num">89.0%</td></tr>
+            <tr><th scope="row">LATS (MCTS)</th><td class="num">94.4%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="source-footnote">原文数据：GPT-4，HumanEval，LATS 论文口径；未联网核实，不代表当前模型或当前榜单。</p>
+
+      <h3>WebShop 网页导航任务</h3>
+      <div class="callout">
+        <p class="callout-label">原文数据、未联网核实</p>
+        <p>ReAct 40% → LATS 75%，原文按相对提升写作 <strong>87.5%</strong>（(75−40)÷40）。这是该论文设置下的结果，不是所有网页任务都能复现。</p>
+      </div>
+
+      <h3>MCTS 与其他搜索策略</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">Greedy、BFS、DFS 与 MCTS 四种搜索策略的对比</caption>
+          <thead><tr><th scope="col">策略</th><th scope="col">搜索方式</th><th scope="col">优势</th><th scope="col">劣势</th><th scope="col">LLM 调用</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Greedy (CoT)</th><td>单路径，无回溯</td><td>最快、最便宜</td><td>容易卡在局部最优</td><td>1 次</td></tr>
+            <tr><th scope="row">BFS (ToT)</th><td>逐层扩展所有候选</td><td>保证找到最浅的解</td><td>内存消耗大，不适合深搜索</td><td>O(b^d)</td></tr>
+            <tr><th scope="row">DFS (ToT)</th><td>深入一条路，失败回溯</td><td>内存高效</td><td>可能陷入无解的深分支</td><td>O(b*d)</td></tr>
+            <tr><th scope="row">MCTS (LATS)</th><td>UCB1 引导的自适应搜索</td><td>探索-利用平衡，渐进最优</td><td>需要大量迭代，成本最高</td><td>O(N*b)，N=迭代次数</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>这里的 b 是分支因子，d 是深度，N 是迭代次数。MCTS 不把预算平均分给所有分支，而是根据已看到的回报动态分配，这是它和 BFS/DFS 的主要区别。</p>
+
+      <h3>LATS 与 Reflexion 的区别</h3>
+      <p>Reflexion 是线性的：失败一次，写反思，再从头试一次。LATS 是树形的：它保留多条候选路径，用反思信息影响搜索，并在树里回溯。LATS 包含反思能力，但搜索策略更系统。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="m-cost-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四 · 成本与适用场景</p><h2 id="m-cost-title">先算调用账，<br>再决定搜不搜。</h2></div>
+      <p class="reading-intro">MCTS 的每一轮迭代都要多次调用模型：生成动作、评估价值，LATS 还要执行环境动作。它适合高价值、能容忍延迟的任务，不适合实时对话。</p>
+    </div>
+    <div class="prose">
+      <h3>五种降本手段</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">原文列出的五种 MCTS 成本控制手段</caption>
+          <thead><tr><th scope="col">手段</th><th scope="col">原文做法</th><th scope="col">代价</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">减少迭代次数</th><td>从 50 降到 10–20。</td><td>牺牲少量质量，换取大幅降本。</td></tr>
+            <tr><th scope="row">缩小分支因子</th><td>每步生成 2–3 个候选，而非 5–10 个。</td><td>候选变少，可能漏掉好路径。</td></tr>
+            <tr><th scope="row">用小模型做模拟</th><td>扩展用大模型，评估用小模型。</td><td>评估准确性下降。</td></tr>
+            <tr><th scope="row">早期终止</th><td>找到足够好的方案就停止。</td><td>放弃追求最优。</td></tr>
+            <tr><th scope="row">缓存重复状态</th><td>相同状态不重复评估。</td><td>需要状态归一化和缓存管理。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>什么时候值得用</h3>
+      <ul>
+        <li><strong>适合</strong>：高价值任务，例如代码生成、复杂分析、需要比较多条方案的规划；这些任务允许较高延迟，也愿意为成功率付费。</li>
+        <li><strong>不适合</strong>：实时对话、低延迟 API、简单事实查询；这些场景用 CoT 或单次 ReAct 更划算。</li>
+        <li><strong>生产折中</strong>：多数团队用简化版，减少迭代次数、缩小搜索空间，只在关键决策点做树搜索。</li>
+      </ul>
+      <div class="callout">
+        <p class="callout-label">面试时可讲的一句话</p>
+        <p>MCTS 买的是“多试几条路再决定”，不是“一定找到最优”。如果任务错一次代价很高、又等得起，这笔调用账通常划算；如果用户等不起，搜索越完整越拖累体验。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="m-mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="m-mis-title">四个容易被<br>追问的点。</h2></div>
+      <p class="reading-intro">前两条是误区，后两条是面试追问；答案都来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“MCTS 只适合棋类游戏。”</h3><p>MCTS 是通用搜索框架。LATS 证明它在编程、网页导航、推理等 Agent 任务上都有效。关键是要定义好“状态”“动作”和“价值函数”，而 LLM 可以同时充当这三者。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“MCTS 保证找到最优解。”</h3><p>MCTS 是近似算法，理论上要无限迭代才收敛到最优。实际迭代次数有限，只能找到“足够好”的方案。相比贪心搜索，它通过探索-利用平衡显著降低了陷入局部最优的风险，但这不是保证。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>“LATS 和 Reflexion 有什么区别？”</h3><p>Reflexion 从失败中学习并重试，是线性的；LATS 在搜索树中探索多条路径，并用反思信息引导搜索，是树形的。LATS 包含 Reflexion 的自我反思能力，但搜索策略更系统。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>“MCTS 在生产 Agent 系统中实用吗？”</h3><p>对高价值、允许高延迟的任务很实用，例如代码生成、复杂分析。对实时对话等低延迟场景，成本太高。生产中常用简化版：减少迭代次数、缩小搜索空间。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="m-source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="m-source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《Monte Carlo Tree Search 在 Agent 规划中的应用》。原文用来说明本题，不代表其论文数字已通过本页复核。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://arxiv.org/abs/2310.04406" target="_blank" rel="noopener noreferrer">Language Agent Tree Search (LATS) · ICML 2024 · arXiv</a></li>
+          <li><a href="https://github.com/lapisrocks/LanguageAgentTreeSearch" target="_blank" rel="noopener noreferrer">LATS Official Implementation · GitHub</a></li>
+          <li><a href="https://proceedings.neurips.cc/paper_files/paper/2024/file/76ec4dc30e9faaf0e4b6093eaa377218-Paper-Conference.pdf" target="_blank" rel="noopener noreferrer">ReST-MCTS*: LLM Self-Training via Process Reward Guided Tree Search · NeurIPS 2024</a></li>
+          <li><a href="https://aclanthology.org/2025.emnlp-main.532.pdf" target="_blank" rel="noopener noreferrer">DSG-MCTS: Dynamic Strategy-Guided MCTS for LLM Reasoning · EMNLP 2025</a></li>
+          <li><a href="https://www.promptingguide.ai/research/thoughtsculpt" target="_blank" rel="noopener noreferrer">ThoughtSculpt: Reasoning with MCTS · Prompt Engineering Guide</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>06-planning-and-reasoning/056-mcts-in-agent-planning.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 5 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const MCTS_STAGES = Object.freeze([
+    {
+      label: "第 1 轮",
+      title: "先扩展根节点，再模拟 A。",
+      desc: "根节点还没有子节点，本轮选择只能落在根上。扩展生成 A、B、C 三个候选；模拟只评估第一条 A，得到 0.35。",
+      path: ["root", "a"],
+      pathText: "root → A",
+      phases: [
+        ["选择", "根没有子节点，选中根。"],
+        ["扩展", "生成 A 查天气、B 查场地、C 订餐。"],
+        ["模拟", "LLM 评估 root→A：0.35。"],
+        ["回传", "A 与 root 各 +1，root Q=0.350。"]
+      ],
+      nodes: {
+        root: ["is-path", 1, "0.350", "本轮路径"],
+        a: ["is-path", 1, "0.350", "已模拟 0.35"],
+        b: ["is-idle", 0, null, "已生成 · 未访问"],
+        c: ["is-idle", 0, null, "已生成 · 未访问"]
+      },
+      ucb: null,
+      ucbNote: "本轮没有可比较的子节点：根节点还没有子节点，选择直接落在根上。",
+      stats: { sims: 1, root: 1, best: "0.350" }
+    },
+    {
+      label: "第 2 轮",
+      title: "B、C 还没访问过，第二轮先选 B。",
+      desc: "A 已访问一次，B 和 C 还没访问。原文的 UCB1 对未访问节点返回无穷大，所以 B、C 优先；固定顺序取 B。B 扩展出 B1，模拟得到 0.75。",
+      path: ["root", "b", "b1"],
+      pathText: "root → B → B1",
+      phases: [
+        ["选择", "A 的 UCB=0.350；B、C 未访问，UCB=∞。按固定顺序先选 B。"],
+        ["扩展", "B 生成子节点 B1：确认营地档期。"],
+        ["模拟", "LLM 评估 root→B→B1：0.75。"],
+        ["回传", "B1、B、root 各 +1；root N=2，Q=0.550。"]
+      ],
+      nodes: {
+        root: ["is-path", 2, "0.550", "本轮路径"],
+        a: ["is-visited", 1, "0.350", "已访问"],
+        b: ["is-path", 1, "0.750", "本轮路径"],
+        b1: ["is-path", 1, "0.750", "已模拟 0.75"],
+        c: ["is-idle", 0, null, "未访问"]
+      },
+      ucb: [
+        {
+          parent: "root", parentN: 1,
+          rows: [
+            { name: "A", n: 1, q: "0.350", explore: "0.000", ucb: "0.350" },
+            { name: "B", n: 0, q: "–", explore: "–", ucb: "∞", pick: true },
+            { name: "C", n: 0, q: "–", explore: "–", ucb: "∞" }
+          ],
+          note: "B 与 C 同为 ∞；按固定候选顺序取 B。"
+        }
+      ],
+      stats: { sims: 2, root: 2, best: "0.750" }
+    },
+    {
+      label: "第 3 轮",
+      title: "UCB 为无穷大的节点优先，第三轮选 C。",
+      desc: "root 已有 2 次访问。A 的 UCB 是 1.527，B 是 1.927，但 C 未访问、UCB 为无穷大，所以第三轮选 C。C1 的模拟价值只有 0.20。",
+      path: ["root", "c", "c1"],
+      pathText: "root → C → C1",
+      phases: [
+        ["选择", "root N=2：A 1.527、B 1.927；C 未访问，UCB=∞，选 C。"],
+        ["扩展", "C 生成子节点 C1：找备选餐厅。"],
+        ["模拟", "LLM 评估 root→C→C1：0.20。"],
+        ["回传", "C1、C、root 各 +1；root N=3，Q=0.433。"]
+      ],
+      nodes: {
+        root: ["is-path", 3, "0.433", "本轮路径"],
+        a: ["is-visited", 1, "0.350", "已访问"],
+        b: ["is-visited", 1, "0.750", "已访问"],
+        b1: ["is-visited", 1, "0.750", "已访问"],
+        c: ["is-path", 1, "0.200", "本轮路径"],
+        c1: ["is-path", 1, "0.200", "已模拟 0.20"]
+      },
+      ucb: [
+        {
+          parent: "root", parentN: 2,
+          rows: [
+            { name: "A", n: 1, q: "0.350", explore: "1.177", ucb: "1.527" },
+            { name: "B", n: 1, q: "0.750", explore: "1.177", ucb: "1.927" },
+            { name: "C", n: 0, q: "–", explore: "–", ucb: "∞", pick: true }
+          ],
+          note: "C 未访问，UCB=∞，直接胜出。"
+        }
+      ],
+      stats: { sims: 3, root: 3, best: "0.750" }
+    },
+    {
+      label: "第 4 轮",
+      title: "B 的 UCB 最高，深入 B1 后再扩展。",
+      desc: "三个候选都访问过，开始按 UCB 比较：B 2.232 最高。选择沿 B 下到 B1，扩展出 B1a，模拟得到 0.95，B 分支的平均价值升到 0.850。",
+      path: ["root", "b", "b1", "b1a"],
+      pathText: "root → B → B1 → B1a",
+      phases: [
+        ["选择", "root N=3：A 1.832、B 2.232、C 1.682，选 B；B 只有 B1，继续下到 B1。"],
+        ["扩展", "B1 生成子节点 B1a：加订雨天备用棚。"],
+        ["模拟", "LLM 评估 root→B→B1→B1a：0.95。"],
+        ["回传", "B1a、B1、B、root 各 +1；B 的 Q 升到 0.850。"]
+      ],
+      nodes: {
+        root: ["is-path", 4, "0.563", "本轮路径"],
+        a: ["is-visited", 1, "0.350", "已访问"],
+        b: ["is-path", 2, "0.850", "本轮路径"],
+        b1: ["is-path", 2, "0.850", "本轮路径"],
+        b1a: ["is-path", 1, "0.950", "已模拟 0.95"],
+        c: ["is-visited", 1, "0.200", "已访问"],
+        c1: ["is-visited", 1, "0.200", "已访问"]
+      },
+      ucb: [
+        {
+          parent: "root", parentN: 3,
+          rows: [
+            { name: "A", n: 1, q: "0.350", explore: "1.482", ucb: "1.832" },
+            { name: "B", n: 1, q: "0.750", explore: "1.482", ucb: "2.232", pick: true },
+            { name: "C", n: 1, q: "0.200", explore: "1.482", ucb: "1.682" }
+          ],
+          note: "B 同时有较高的 Q 和尚未饱和的访问次数，UCB 最高。"
+        }
+      ],
+      stats: { sims: 4, root: 4, best: "0.950" }
+    },
+    {
+      label: "第 5 轮",
+      title: "B 仍然最高，然后沿唯一子节点下探到 B1a。",
+      desc: "第 5 轮 root 仍选 B，但差距很小：B 2.027，A 2.015。B 层只有 B1，B1 层只有 B1a，沿唯一子节点一路下探，不做同级比较。",
+      path: ["root", "b", "b1", "b1a"],
+      pathText: "root → B → B1 → B1a",
+      phases: [
+        ["选择", "root N=4：B 2.027 最高，A 2.015，C 1.865，选 B。B 只有 B1，B1 只有 B1a，沿唯一子节点下探。"],
+        ["扩展", "B1a 已是完整方案，不再生成子节点。"],
+        ["模拟", "再次评估 B1a：仍是 0.95。"],
+        ["回传", "B1a、B1、B、root 各 +1；root N=5，Q=0.640。"]
+      ],
+      nodes: {
+        root: ["is-path", 5, "0.640", "本轮路径"],
+        a: ["is-visited", 1, "0.350", "已访问"],
+        b: ["is-path", 3, "0.883", "本轮路径"],
+        b1: ["is-path", 3, "0.883", "本轮路径"],
+        b1a: ["is-path", 2, "0.950", "本轮路径 · 再次模拟"],
+        c: ["is-visited", 1, "0.200", "已访问"],
+        c1: ["is-visited", 1, "0.200", "已访问"]
+      },
+      ucb: [
+        {
+          parent: "root", parentN: 4,
+          rows: [
+            { name: "A", n: 1, q: "0.350", explore: "1.665", ucb: "2.015" },
+            { name: "B", n: 2, q: "0.850", explore: "1.177", ucb: "2.027", pick: true },
+            { name: "C", n: 1, q: "0.200", explore: "1.665", ucb: "1.865" }
+          ],
+          note: "B 只比 A 高 0.012；如果继续迭代，A 很可能被重新访问。"
+        }
+      ],
+      ucbExtra: {
+        title: "沿树下探",
+        note: "B 层只有 B1，B1 层只有 B1a。每层只有一个子节点，直接沿唯一边下探，不需要同级 UCB 比较。"
+      },
+      stats: { sims: 5, root: 5, best: "0.950" }
+    },
+    {
+      label: "返回",
+      title: "返回访问次数最多的路径，不按单次 Q 排序。",
+      desc: "迭代预算用完。MCTS 从根开始逐层取访问次数最多的子节点：B（N=3）→ B1（N=3）→ B1a（N=2）。最终方案是查场地、确认档期、加订雨棚。",
+      path: ["root", "b", "b1", "b1a"],
+      pathText: "root → B → B1 → B1a",
+      phases: null,
+      result: [
+        ["返回规则", "访问次数最多", "从根开始逐层取 N 最大的子节点。"],
+        ["选中路径", "B → B1 → B1a", "查场地 → 确认档期 → 加订雨棚。"],
+        ["结果价值", "Q = 0.950", "这是 B1a 的平均价值，也是树内最高。"]
+      ],
+      nodes: {
+        root: ["is-path", 5, "0.640", "根节点"],
+        a: ["is-low", 1, "0.350", "访问少"],
+        b: ["is-best", 3, "0.883", "访问最多"],
+        b1: ["is-best", 3, "0.883", "返回路径"],
+        b1a: ["is-best", 2, "0.950", "Q 最高"],
+        c: ["is-low", 1, "0.200", "访问少"],
+        c1: ["is-low", 1, "0.200", "访问少"]
+      },
+      ucb: null,
+      finalCompare: [
+        { name: "B", n: 3, q: "0.883", note: "访问最多，进入返回路径" },
+        { name: "B1", n: 3, q: "0.883", note: "B 的唯一子节点" },
+        { name: "B1a", n: 2, q: "0.950", note: "路径终点，Q 最高" },
+        { name: "A", n: 1, q: "0.350", note: "只模拟一次" },
+        { name: "C", n: 1, q: "0.200", note: "只模拟一次" }
+      ],
+      ucbNote: "返回按访问次数，不按 Q 排序；B1a 属于 B 分支。",
+      stats: { sims: 5, root: 5, best: "0.950" }
+    }
+  ]);
+
+  const MCTS_NODES = ["root", "a", "b", "c", "b1", "c1", "b1a"];
+  const MCTS_EDGES = [["root", "a"], ["root", "b"], ["root", "c"], ["b", "b1"], ["b1", "b1a"], ["c", "c1"]];
+  const mState = { step: 1 };
+  const mById = (id) => document.getElementById(id);
+
+  function mPhasesHTML(phases) {
+    return phases.map((phase, index) =>
+      `<div class="m-phase"><span class="m-phase-num">${index + 1}</span><div><b>${phase[0]}</b><p>${phase[1]}</p></div></div>`
+    ).join("");
+  }
+
+  function mResultHTML(result) {
+    return result.map((card) =>
+      `<div class="m-result-card"><span>${card[0]}</span><b>${card[1]}</b><p>${card[2]}</p></div>`
+    ).join("");
+  }
+
+  function mUcbHTML(groups, extra) {
+    const extraHTML = extra
+      ? `<div class="m-ucb-group"><h4>${extra.title}</h4><p class="m-ucb-note">${extra.note}</p></div>`
+      : "";
+    return `<p class="m-ucb-title">UCB1 比较</p>` + groups.map((group) => {
+      const rows = group.rows.map((row) => {
+        const cls = row.pick ? ' class="is-pick" aria-current="true"' : "";
+        const pickNote = row.pick ? '<span class="sr-only">（选中）</span>' : "";
+        return `<tr${cls}><td>${row.name}${pickNote}</td><td class="num">${row.n}</td><td class="num">${row.q}</td><td class="num">${row.explore}</td><td class="num">${row.ucb}</td></tr>`;
+      }).join("");
+      return `<div class="m-ucb-group"><h4>父节点 ${group.parent} · N=${group.parentN}</h4>
+        <table>
+          <thead><tr><th scope="col">子节点</th><th scope="col" class="num">N</th><th scope="col" class="num">Q</th><th scope="col" class="num">探索项</th><th scope="col" class="num">UCB1</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <p class="m-ucb-note">${group.note}</p></div>`;
+    }).join("") + extraHTML;
+  }
+
+  function mFinalTableHTML(stage) {
+    const rows = stage.finalCompare.map((row) =>
+      `<tr><td>${row.name}</td><td class="num">${row.n}</td><td class="num">${row.q}</td><td>${row.note}</td></tr>`
+    ).join("");
+    return `<p class="m-ucb-title">返回时的节点对照</p>
+      <div class="m-ucb-group"><h4>按访问次数选择</h4>
+        <table class="m-final-table">
+          <thead><tr><th scope="col">节点</th><th scope="col" class="num">N</th><th scope="col" class="num">Q</th><th scope="col">说明</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <p class="m-ucb-note">${stage.ucbNote}</p></div>`;
+  }
+
+  function drawMLinks() {
+    const tree = document.querySelector(".m-tree");
+    if (!tree) return;
+    const svg = tree.querySelector(".m-links");
+    if (!svg) return;
+    while (svg.firstChild) svg.removeChild(svg.firstChild);
+    if (window.matchMedia("(max-width: 900px)").matches) return;
+    const box = tree.getBoundingClientRect();
+    const width = box.width;
+    const height = box.height;
+    if (!width || !height) return;
+    svg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+    const stage = MCTS_STAGES[mState.step - 1];
+    MCTS_EDGES.forEach(([parent, child]) => {
+      const parentEl = tree.querySelector(`[data-node="${parent}"]`);
+      const childEl = tree.querySelector(`[data-node="${child}"]`);
+      if (!parentEl || !childEl || parentEl.hidden || childEl.hidden) return;
+      const pr = parentEl.getBoundingClientRect();
+      const cr = childEl.getBoundingClientRect();
+      const x1 = pr.right - box.left;
+      const y1 = pr.top + pr.height / 2 - box.top;
+      const x2 = cr.left - box.left;
+      const y2 = cr.top + cr.height / 2 - box.top;
+      const midX = (x1 + x2) / 2;
+      const parentIndex = stage.path.indexOf(parent);
+      const onPath = parentIndex !== -1 && stage.path[parentIndex + 1] === child;
+      const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
+      pathEl.setAttribute("d", `M${x1.toFixed(1)} ${y1.toFixed(1)} H${midX.toFixed(1)} V${y2.toFixed(1)} H${x2.toFixed(1)}`);
+      if (onPath) pathEl.setAttribute("class", "is-path");
+      svg.appendChild(pathEl);
+    });
+  }
+
+  let mDrawFrame = 0;
+  function scheduleMLinks() {
+    if (mDrawFrame) cancelAnimationFrame(mDrawFrame);
+    mDrawFrame = requestAnimationFrame(() => {
+      mDrawFrame = 0;
+      drawMLinks();
+    });
+  }
+
+  function renderMCTS(announce = true) {
+    const stage = MCTS_STAGES[mState.step - 1];
+
+    MCTS_NODES.forEach((id) => {
+      const el = document.querySelector(`.m-node[data-node="${id}"]`);
+      if (!el) return;
+      const data = stage.nodes[id];
+      if (!data) {
+        el.hidden = true;
+        return;
+      }
+      el.hidden = false;
+      el.className = `m-node ${data[0]}`;
+      el.querySelector('[data-badge="n"]').textContent = `N=${data[1]}`;
+      el.querySelector('[data-badge="q"]').textContent = data[2] ? `Q=${data[2]}` : "Q=–";
+      el.querySelector("[data-state]").textContent = data[3];
+    });
+
+    let maxDepth = 0;
+    MCTS_NODES.forEach((id) => {
+      const el = document.querySelector(`.m-node[data-node="${id}"]`);
+      if (el && !el.hidden) maxDepth = Math.max(maxDepth, Number(el.dataset.depth));
+    });
+    const treeEl = document.querySelector(".m-tree");
+    if (treeEl) treeEl.style.setProperty("--cols", String(maxDepth + 1));
+
+    const phasesEl = mById("m-phases");
+    const resultEl = mById("m-result");
+    if (stage.phases) {
+      phasesEl.hidden = false;
+      resultEl.hidden = true;
+      phasesEl.innerHTML = mPhasesHTML(stage.phases);
+    } else {
+      phasesEl.hidden = true;
+      resultEl.hidden = false;
+      resultEl.innerHTML = mResultHTML(stage.result);
+    }
+
+    const ucbEl = mById("m-ucb");
+    if (stage.ucb) ucbEl.innerHTML = mUcbHTML(stage.ucb, stage.ucbExtra);
+    else if (stage.finalCompare) ucbEl.innerHTML = mFinalTableHTML(stage);
+    else ucbEl.innerHTML = `<p class="m-ucb-title">UCB1 比较</p><p class="m-ucb-note">${stage.ucbNote}</p>`;
+
+    mById("m-position").textContent = `图 1 · 第 ${mState.step} / ${MCTS_STAGES.length} 轮`;
+    mById("m-step-title").textContent = stage.title;
+    mById("m-step-description").textContent = stage.desc;
+    mById("m-path-text").textContent = stage.pathText;
+    mById("m-stat-sims").textContent = String(stage.stats.sims);
+    mById("m-stat-root").textContent = String(stage.stats.root);
+    mById("m-stat-best").textContent = stage.stats.best;
+    mById("m-state-summary").textContent = `${stage.label} · 第 ${mState.step} / ${MCTS_STAGES.length} 轮 · 没有连接模型`;
+
+    document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+      if (Number(button.dataset.step) === mState.step) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    mById("m-prev").disabled = mState.step === 1;
+    mById("m-next").disabled = mState.step === MCTS_STAGES.length;
+
+    if (announce) {
+      mById("m-announcement").textContent = `第 ${mState.step} 轮，共 ${MCTS_STAGES.length} 轮。${stage.title}${stage.desc}`;
+    }
+    scheduleMLinks();
+  }
+
+  function setMCSTStep(step, announce = true) {
+    mState.step = Math.max(1, Math.min(MCTS_STAGES.length, step));
+    renderMCTS(announce);
+  }
+
+  document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+    button.addEventListener("click", () => setMCSTStep(Number(button.dataset.step)));
+  });
+  mById("m-prev").addEventListener("click", () => setMCSTStep(mState.step - 1));
+  mById("m-next").addEventListener("click", () => setMCSTStep(mState.step + 1));
+  mById("m-reset").addEventListener("click", () => {
+    setMCSTStep(1);
+    mById("m-announcement").textContent = "已重置，回到第 1 轮。";
+  });
+  window.addEventListener("resize", scheduleMLinks);
+  window.addEventListener("load", scheduleMLinks);
+  renderMCTS(false);
+</script>
+</body>
+</html>

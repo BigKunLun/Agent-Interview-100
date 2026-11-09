@@ -1,0 +1,1764 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Agent Loop 设计：循环控制、终止条件与错误恢复 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .loop-scenarios { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 0 var(--s-6); margin-top: var(--s-4); }
+  .scenario-button { min-height: 44px; padding: 8px 13px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: var(--t-small); }
+  .scenario-button:hover { background: var(--surface-soft); }
+  .scenario-button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .scenario-task { flex: 1 1 260px; font-size: var(--t-label); color: var(--text-dim); min-width: 0; }
+  .budget-bar { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); margin: var(--s-4) var(--s-6) 0; padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .budget-control { min-width: 0; }
+  .budget-control label { display: flex; justify-content: space-between; gap: var(--s-2); font-size: var(--t-label); font-weight: 600; }
+  .budget-control output { font-family: var(--mono); font-weight: 400; color: var(--accent); }
+  .budget-control input[type="range"] { width: 100%; margin-top: 8px; accent-color: var(--accent); }
+  .budget-note { grid-column: 1 / -1; font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .loop-stage { padding: var(--s-4) var(--s-6) var(--s-5); }
+  .loop-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: var(--s-5); }
+  .run-panel { min-width: 0; }
+  .round-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; }
+  .round-title { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; }
+  .round-task { margin-top: 4px; font-size: var(--t-label); color: var(--text-dim); }
+  .phase-stack { display: grid; gap: 8px; margin-top: var(--s-4); }
+  .phase-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px 14px; transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease); }
+  .phase-card.is-current { border-color: var(--accent); background: var(--accent-dim); }
+  .phase-card.is-done { border-color: #9eb4c9; }
+  .phase-card.is-locked { opacity: .42; }
+  .phase-label { font: var(--t-label)/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .phase-text { margin-top: 2px; font-size: var(--t-small); overflow-wrap: anywhere; }
+  .phase-text code { font-size: 12px; background: var(--surface-soft); padding: 1px 4px; border-radius: 3px; }
+  .return-note { margin-top: var(--s-3); padding-left: 22px; position: relative; font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .return-note::before { content: "↑"; position: absolute; left: 4px; top: 0; color: var(--accent); }
+  .meter-row { display: grid; grid-template-columns: 1fr auto; gap: 6px 10px; margin-top: var(--s-4); font-size: var(--t-label); }
+  .meter { grid-column: 1 / -1; height: 8px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-soft); overflow: hidden; }
+  .meter-fill { height: 100%; width: 0; background: var(--accent); transition: width var(--med) var(--ease); }
+  .meter-fill.warn { background: #c2410c; }
+  .check-panel { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .check-heading { font-size: var(--t-small); font-weight: 600; }
+  .check-order { margin-top: 4px; font-size: 10px; line-height: 1.6; color: var(--text-dim); }
+  .check-list { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 7px; }
+  .check-item { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 8px; padding: 8px; border: 1px solid var(--border); border-radius: var(--r-1); }
+  .check-mark { display: grid; place-items: center; width: 18px; height: 18px; border: 1px solid var(--border-bright); border-radius: 50%; font: 600 11px/1 var(--mono); color: var(--text-dim); }
+  .check-name { font-size: 12px; font-weight: 600; line-height: 1.4; }
+  .check-detail { margin-top: 1px; font: 10px/1.6 var(--mono); color: var(--text-dim); overflow-wrap: anywhere; }
+  .check-item.is-pending { opacity: .55; }
+  .check-item.is-pass .check-mark { border-color: var(--border-bright); color: var(--text-dim); }
+  .check-item.is-hit { border-color: #c2410c; background: #fdf1ea; }
+  .check-item.is-hit .check-mark { border-color: #c2410c; background: #c2410c; color: #fff; }
+  .check-item.is-decisive { box-shadow: inset 3px 0 0 #c2410c; }
+  .check-item.is-success { border-color: var(--accent); background: var(--accent-dim); }
+  .check-item.is-success .check-mark { border-color: var(--accent); background: var(--accent); color: #fff; }
+  .check-item.is-success.is-decisive { box-shadow: inset 3px 0 0 var(--accent); }
+  .verdict { margin-top: var(--s-4); border: 1px solid var(--border-bright); border-left: 4px solid var(--accent); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .verdict[data-tone="stop"] { border-left-color: #c2410c; }
+  .verdict h3 { margin-top: 2px; font-size: var(--t-h3); line-height: 1.5; }
+  .verdict p { margin-top: 6px; font-size: var(--t-label); line-height: 1.7; }
+  .verdict ul { margin: 8px 0 0; padding-left: 1.2em; font-size: 11px; line-height: 1.7; }
+  .verdict li + li { margin-top: 3px; }
+  .verdict-kicker { font: var(--t-label)/1.6 var(--mono); letter-spacing: .05em; color: var(--text-dim); }
+  .loop-map { display: grid; grid-template-columns: minmax(0, 1fr) 34px minmax(0, 1fr); grid-template-rows: auto 30px auto; gap: 6px; max-width: 620px; margin-top: var(--s-4); }
+  .loop-node { display: grid; place-items: center; min-height: 74px; padding: 10px 8px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); text-align: center; font-size: var(--t-small); line-height: 1.5; }
+  .loop-node b { display: block; font: 600 10px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .06em; }
+  .loop-node.check { border-color: var(--accent); background: var(--accent-dim); }
+  .loop-arrow { display: grid; place-items: center; color: var(--text-dim); font-size: 18px; line-height: 1; }
+  .loop-arrow.return { color: var(--accent); }
+  .node-thought { grid-column: 1; grid-row: 1; }
+  .arrow-right { grid-column: 2; grid-row: 1; }
+  .node-action { grid-column: 3; grid-row: 1; }
+  .arrow-down { grid-column: 3; grid-row: 2; }
+  .node-observe { grid-column: 3; grid-row: 3; }
+  .arrow-left { grid-column: 2; grid-row: 3; }
+  .node-check { grid-column: 1; grid-row: 3; }
+  .arrow-up { grid-column: 1; grid-row: 2; }
+  .loop-exits { display: flex; flex-wrap: wrap; gap: 7px; margin-top: var(--s-3); max-width: 620px; }
+  .exit-chip { padding: 5px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); font-size: 11px; }
+  .exit-chip.stop { border-color: #c2410c; color: #8a2c0a; background: #fdf1ea; }
+  .fault-stack { display: grid; gap: 6px; max-width: 760px; margin-top: var(--s-4); }
+  .fault-layer { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: var(--s-4); padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .fault-layer.cheap { border-left: 3px solid #2e7d32; }
+  .fault-layer.costly { border-left: 3px solid #c2410c; }
+  .fault-num { font: 600 10px/1.8 var(--mono); color: var(--text-dim); letter-spacing: .05em; }
+  .fault-layer h4 { margin: 0; font-size: var(--t-body); line-height: 1.5; }
+  .fault-layer p { margin-top: 3px; font-size: var(--t-label); line-height: 1.7; color: var(--text-dim); }
+  .step-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); margin-top: var(--s-4); }
+  .step-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .step-card h3 { margin: 0; font-size: var(--t-body); }
+  .step-card p { margin-top: 4px; font-size: var(--t-label); color: var(--text-dim); }
+  @media (max-width: 1000px) {
+    .loop-scenarios, .budget-bar, .loop-stage { padding-inline: var(--s-5); margin-inline: 0; }
+  }
+  @media (max-width: 720px) {
+    .loop-scenarios { padding-inline: var(--s-4); }
+    .budget-bar { grid-template-columns: 1fr; margin-inline: var(--s-4); padding: var(--s-3); }
+    .loop-stage { padding: var(--s-4); }
+    .loop-grid { grid-template-columns: 1fr; gap: var(--s-5); }
+    .loop-map { grid-template-columns: minmax(0, 1fr) 26px minmax(0, 1fr); grid-template-rows: auto 24px auto; }
+    .loop-node { min-height: 64px; font-size: 12px; padding: 8px 5px; }
+    .loop-node b { font-size: 9px; }
+    .fault-layer { grid-template-columns: 56px minmax(0, 1fr); padding: var(--s-3); gap: var(--s-3); }
+    .step-grid { grid-template-columns: 1fr; }
+    .scenario-button { padding-inline: 10px; font-size: 12px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">006 / Agent Loop</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 2 / 10 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="../README.html">← 上一页 · Agent Interview 10…</a><a href="../04-multi-agent/033-orchestration-patterns.html">下一页 → · Agent 编排模式</a></div>
+    </nav>
+    <main id="main-content">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">中级 · Agent 架构 · 可交互讲解</p>
+          <h1>循环要能转，<br>也要能停。</h1>
+        </div>
+        <div>
+          <p class="lead">Agent 和单次 LLM 调用的区别，是“推理→行动→观察”的循环。生产级 Agent Loop 要同时做两件事：用外部强制控制什么时候停，用四层容错处理出错之后怎么恢复。</p>
+          <p class="definition"><strong>终止权必须留在系统手里。</strong>最大迭代、预算、重复检测和无进展检测都是兜底；Agent 自报“做完了”只是一条待验证的声明，高风险场景还要由外部验证来裁定算不算完成。</p>
+          <div class="hero-meta"><span class="pill">中级</span><span class="pill">Agent 架构</span><span class="pill">循环终止</span><span class="pill">四层容错</span></div>
+        </div>
+      </header>
+
+      <section class="walkthrough" id="explainer" aria-labelledby="demo-title">
+        <div class="player-top">
+          <div class="player-label">终止条件沙盘 <small>三条固定轨迹，逐阶段检查</small></div>
+          <div class="controls" role="group" aria-label="循环演示控制">
+            <button type="button" class="button button-quiet" id="reset-button">重置</button>
+            <button type="button" class="button" id="back-button" disabled>上一步</button>
+            <button type="button" class="button button-primary" id="next-button">下一步 →</button>
+            <button type="button" class="button" id="auto-button" aria-pressed="false">连续执行</button>
+          </div>
+        </div>
+
+        <nav class="stage-nav" aria-label="循环轮次">
+          <ol id="stage-list" style="--stages: 4"></ol>
+        </nav>
+
+        <div class="loop-scenarios" role="group" aria-label="选择固定轨迹">
+          <button type="button" class="scenario-button" data-scenario="converge" aria-pressed="true">正常收敛</button>
+          <button type="button" class="scenario-button" data-scenario="loop" aria-pressed="false">原地打转</button>
+          <button type="button" class="scenario-button" data-scenario="stall" aria-pressed="false">换参数空转</button>
+          <span class="scenario-task" id="scenario-task">任务：定位结账接口 500 错误的根因</span>
+        </div>
+
+        <div class="budget-bar">
+          <div class="budget-control">
+            <label for="max-turns">最大迭代次数 <output id="max-turns-out" for="max-turns">8</output></label>
+            <input id="max-turns" type="range" min="3" max="8" step="1" value="8">
+          </div>
+          <div class="budget-control">
+            <label for="token-budget">Token 预算 <output id="token-budget-out" for="token-budget">12,000</output></label>
+            <input id="token-budget" type="range" min="4000" max="24000" step="1000" value="12000">
+          </div>
+          <p class="budget-note">固定教学数据：每轮 token 数是预设值；滑块只改变判定阈值，不会重新调用模型。金额与墙钟预算的落地方式见正文第六节。</p>
+        </div>
+
+        <div class="scene-caption">
+          <p class="figure-index" id="round-index">演示 · 第 1 / 4 轮 · 推理</p>
+          <h2 id="demo-title">先推理：下一步做什么？</h2>
+          <p id="scene-subtitle">固定教学轨迹：定位结账接口 500 错误的根因。每个阶段点击“下一步”推进。</p>
+        </div>
+
+        <div class="scene-host">
+          <div class="loop-stage">
+            <div class="loop-grid">
+              <div class="run-panel">
+                <div class="round-head">
+                  <div>
+                    <p class="round-title" id="round-title">第 1 轮</p>
+                    <p class="round-task" id="round-task">固定轨迹，不调用模型</p>
+                  </div>
+                  <span class="pill" id="run-status">运行中</span>
+                </div>
+                <div class="phase-stack">
+                  <div class="phase-card is-current" id="phase-thought">
+                    <p class="phase-label">1 · 推理</p>
+                    <p class="phase-text" id="thought-text">先看 logs 目录里有哪些日志文件。</p>
+                  </div>
+                  <div class="phase-card is-locked" id="phase-action">
+                    <p class="phase-label">2 · 行动</p>
+                    <p class="phase-text" id="action-text">等待推理阶段。</p>
+                  </div>
+                  <div class="phase-card is-locked" id="phase-observation">
+                    <p class="phase-label">3 · 观察</p>
+                    <p class="phase-text" id="observation-text">等待行动结果。</p>
+                  </div>
+                </div>
+                <p class="return-note" id="return-note">观察结果后执行终止检查；未触发就回到推理。</p>
+                <div class="meter-row">
+                  <span>Token 用量 <strong id="token-used">0</strong> / <span id="token-cap">12,000</span></span>
+                  <span id="token-pct">0%</span>
+                  <div class="meter"><div class="meter-fill" id="token-meter"></div></div>
+                  <span>轮次 <strong id="turn-used">0</strong> / <span id="turn-cap">4</span></span>
+                  <span id="phase-state">推理阶段</span>
+                </div>
+              </div>
+
+              <div class="check-panel">
+                <p class="check-heading">本轮终止检查</p>
+                <p class="check-order">本演示的判定顺序：成功 → 预算 → 轮数 → 重复 → 无进展。第一条命中的条件决定结局。</p>
+                <ol class="check-list" id="check-list">
+                  <li class="check-item is-pending" id="check-success"><span class="check-mark" aria-hidden="true">?</span><div><p class="check-name">成功完成</p><p class="check-detail">等待观察结果</p></div></li>
+                  <li class="check-item is-pending" id="check-budget"><span class="check-mark" aria-hidden="true">?</span><div><p class="check-name">Token 预算</p><p class="check-detail">等待观察结果</p></div></li>
+                  <li class="check-item is-pending" id="check-turns"><span class="check-mark" aria-hidden="true">?</span><div><p class="check-name">最大迭代次数</p><p class="check-detail">等待观察结果</p></div></li>
+                  <li class="check-item is-pending" id="check-duplicate"><span class="check-mark" aria-hidden="true">?</span><div><p class="check-name">重复输出</p><p class="check-detail">等待观察结果</p></div></li>
+                  <li class="check-item is-pending" id="check-progress"><span class="check-mark" aria-hidden="true">?</span><div><p class="check-name">连续无进展</p><p class="check-detail">等待观察结果</p></div></li>
+                </ol>
+                <div class="verdict" id="verdict" data-tone="stop" hidden>
+                  <p class="verdict-kicker" id="verdict-kicker">终止判定</p>
+                  <h3 id="verdict-title"></h3>
+                  <p id="verdict-summary"></p>
+                  <ul id="verdict-points"></ul>
+                </div>
+              </div>
+            </div>
+            <p class="demo-note">三条轨迹、每轮 token 数和目标状态都是固定教学数据。判定由本页脚本计算，不调用任何模型，也不执行工具。演示用的状态指纹简化为“已完成目标 + 本轮状态摘要”，真实实现还会哈希关键文件。</p>
+          </div>
+        </div>
+        <div class="walkthrough-foot"><span>固定教学数据 · 判定在本地浏览器完成</span><span id="state-summary">第 1 / 4 轮 · 推理 · 0 / 12,000 tokens</span></div>
+      </section>
+      <p id="loop-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+      <section class="reading" aria-labelledby="essence-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">一、本质</p><h2 id="essence-title">Agent 的定义特征，<br>就是循环。</h2></div>
+          <p class="reading-intro">单次 LLM 调用只生成一次回答；Agent 用 LLM 推理、执行工具、观察结果，再带着新状态回到推理，直到完成或被迫停止。</p>
+        </div>
+        <div class="prose">
+          <p>循环体只有三步：推理、行动、观察。真正决定 Agent 能不能安全跑在生产上的，是循环外面的终止检查，以及出错后的恢复路径。</p>
+          <p class="code-label">单次调用与 Agent Loop · 原文代码</p>
+          <pre><code># 单次 LLM 调用
+response = llm.generate(prompt)
+
+# Agent Loop
+while not done:
+    thought = llm.reason(state)        # 推理
+    action_result = execute(thought)    # 行动
+    state = observe(action_result)      # 观察
+    done = check_termination(state)     # 终止检查</code></pre>
+
+          <figure>
+            <div class="loop-map" role="img" aria-label="Agent 循环：推理到行动，行动到观察，观察到终止检查，终止检查未完成时回到推理，形成回路">
+              <div class="loop-node node-thought"><span><b>1</b>推理<br>LLM 思考</span></div>
+              <span class="loop-arrow arrow-right" aria-hidden="true">→</span>
+              <div class="loop-node node-action"><span><b>2</b>行动<br>工具调用</span></div>
+              <span class="loop-arrow arrow-down" aria-hidden="true">↓</span>
+              <div class="loop-node node-observe"><span><b>3</b>观察<br>执行结果</span></div>
+              <span class="loop-arrow arrow-left" aria-hidden="true">←</span>
+              <div class="loop-node check node-check"><span><b>4</b>终止检查<br>目标 / 预算 / 循环</span></div>
+              <span class="loop-arrow return arrow-up" aria-hidden="true">↑</span>
+            </div>
+            <div class="loop-exits">
+              <span class="exit-chip">目标达成 → 最终答案</span>
+              <span class="exit-chip stop">达到上限 / 触发循环 → 优雅降级</span>
+            </div>
+            <figcaption class="demo-note">图 1 · 四个节点构成回路：未完成就沿左侧箭头回到推理；完成或触发兜底条件时才离开循环。终止条件与错误恢复是两条不同的出口。</figcaption>
+          </figure>
+
+          <details>
+            <summary>查看原文 Mermaid 循环图源码</summary>
+            <pre><code>flowchart TD
+    T["目标"] --&gt; R["推理&lt;br/&gt;LLM 思考"]
+    R --&gt; A["行动&lt;br/&gt;工具调用"]
+    A --&gt; O["观察&lt;br/&gt;执行结果"]
+    O --&gt; Q1{"目标达成?"}
+    Q1 -- "是" --&gt; F["最终答案"]
+    Q1 -- "否" --&gt; Q2{"达迭代上限?"}
+    Q2 -- "否" --&gt; R
+    Q2 -- "是" --&gt; D["优雅降级&lt;br/&gt;总结进度后返回"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class T,R,A,O,F proc
+    class Q1,Q2 decision
+    class D err</code></pre>
+            <p class="source-footnote">源码按原文保留，仅做 HTML 转义。上方回路图把“否 → 回到推理”画成左侧回边，而不是单向串行。</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="why-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">二、终止控制</p><h2 id="why-title">死循环不显眼，<br>但会烧掉预算。</h2></div>
+          <p class="reading-intro">传统代码的死循环一眼可见；Agent 的循环陷阱更微妙，因为判断“是否完成”的是概率模型，而不是确定性的条件表达式。</p>
+        </div>
+        <div class="prose">
+          <ul>
+            <li><strong>误解终止信号</strong>：LLM 的概率性本质可能让它错过已经出现的完成信号。</li>
+            <li><strong>目标模糊</strong>：像“研究 X”这样的任务没有明确完成定义，容易引发“无限好奇心”。</li>
+            <li><strong>失败后反复重试</strong>：工具调用失败后，Agent 可能反复执行同一个操作。</li>
+            <li><strong>工具选择混乱</strong>：工具过多或描述模糊时，模型容易在工具之间打转。</li>
+          </ul>
+          <div class="callout">
+            <p class="callout-label">核心原则</p>
+            <p><strong>外部强制（External Enforcement）</strong>：由系统而不是 Agent 自身保证终止。Agent 可以主动声明完成，但系统必须有独立的兜底条件。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="strategies-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">三、五种终止策略</p><h2 id="strategies-title">一层不够，<br>要叠五层。</h2></div>
+          <p class="reading-intro">五种策略解决不同问题：步数上限防跑飞，语义完成看目标，重复检测抓循环，预算监控守成本，子 Agent 信号处理多 Agent 协作。</p>
+        </div>
+        <div class="prose">
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">五种终止策略的机制与作用</caption>
+              <thead><tr><th scope="col">策略</th><th scope="col">机制</th><th scope="col">主要作用</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">最大迭代次数</th><td>固定循环上限，超过就退出</td><td>最基础的兜底，防无限循环</td></tr>
+                <tr><th scope="row">语义完成检测</th><td>终止标记或结构化字段</td><td>让“完成”成为可判定的信号</td></tr>
+                <tr><th scope="row">重复输出检测</th><td>滑动窗口内动作或输出重复</td><td>抓住原地打转</td></tr>
+                <tr><th scope="row">资源预算监控</th><td>token、金额、时间上限</td><td>控制成本与延迟</td></tr>
+                <tr><th scope="row">子 Agent 信号</th><td>事件、标志或特定返回值</td><td>多 Agent 系统中的协作终止</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>1. 最大迭代次数</h3>
+          <p>最基础也最关键。循环次数写死在 harness 里，不依赖模型判断。LangChain 的 <code>AgentExecutor</code> 默认 15 次；Google ADK 的 <code>LoopAgent</code> 允许自定义上限。</p>
+          <p class="code-label">最大迭代与优雅降级 · 原文代码</p>
+          <pre><code>class AgentLoop:
+    def __init__(self, max_iterations: int = 15):
+        self.max_iterations = max_iterations
+
+    def run(self, task: str) -&gt; str:
+        for i in range(self.max_iterations):
+            result = self.step(task)
+            if result.is_final:
+                return result.answer
+        # 达到上限：优雅降级
+        return self.graceful_degradation()</code></pre>
+
+          <h3>2. 语义完成检测</h3>
+          <p>让 Agent 输出明确的终止标记，例如要求它以 <code>FINAL_ANSWER: ...</code> 结尾；或者用结构化输出，把 <code>final_answer</code> 字段是否为空作为完成信号。</p>
+          <pre><code>class AgentResponse(BaseModel):
+    thought: str
+    action: Optional[ToolCall]
+    final_answer: Optional[str]  # 非 None 时表示完成</code></pre>
+          <p>终止标记只是让完成可判定，不代表完成一定正确。高风险任务还需要外部验证，见第八节。</p>
+
+          <h3>3. 重复输出检测</h3>
+          <p>维护最近若干轮的动作或输出，在一个窗口里检查是否有重复。下面的实现用 3 轮窗口：窗口内去重后变短，就说明出现了重复。</p>
+          <pre><code>def detect_loop(history: list[str], window: int = 3) -&gt; bool:
+    """检测 Agent 是否在重复相同的操作"""
+    recent = history[-window:]
+    return len(set(recent)) &lt; len(recent)  # 有重复则判定为循环</code></pre>
+
+          <h3>4. 资源预算监控</h3>
+          <p>同时记录 token 和金额，任一项超限就停止。第六节会把它扩展成四类预算统一的 <code>RunBudget</code>。</p>
+          <pre><code>class ResourceBudget:
+    def __init__(self, max_tokens: int = 100_000, max_cost: float = 1.0):
+        self.max_tokens = max_tokens
+        self.max_cost = max_cost
+        self.used_tokens = 0
+        self.used_cost = 0.0
+
+    def check(self) -&gt; bool:
+        return self.used_tokens &lt; self.max_tokens and self.used_cost &lt; self.max_cost</code></pre>
+
+          <h3>5. 子 Agent 信号终止</h3>
+          <p>在多 Agent 系统中，子 Agent 可以通过事件、标志或特定返回值，向 Orchestrator 发出终止信号。它解决的是“谁来汇总停止意图”，不能替代单 Agent 内部的步数与预算兜底。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="architecture-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">四、架构差异</p><h2 id="architecture-title">默认继续，<br>还是默认终止？</h2></div>
+          <p class="reading-intro">不同架构把终止权放在不同位置。这个选择直接影响安全性：默认继续的架构需要更强的外部兜底。</p>
+        </div>
+        <div class="prose">
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">四种架构的终止方式与特点</caption>
+              <thead><tr><th scope="col">架构</th><th scope="col">终止方式</th><th scope="col">特点</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">ReAct</th><td>LLM 在 response 中生成终止 token（如 <code>Final Answer:</code>）</td><td>默认继续，主动终止</td></tr>
+                <tr><th scope="row">MemGPT</th><td><code>request_heartbeat</code> 默认为 False</td><td>默认终止，主动继续</td></tr>
+                <tr><th scope="row">Plan-and-Execute</th><td>计划中的所有步骤执行完毕</td><td>确定性终止</td></tr>
+                <tr><th scope="row">现代 Agent</th><td>多步工具调用 + 自导向终止条件</td><td>混合策略</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>“默认终止 vs 默认继续”是一个关键设计决策。MemGPT 的设计哲学是默认终止更安全：Agent 必须显式请求继续执行，而不是依赖 LLM 自己判断什么时候该停。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="degrade-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">五、优雅降级</p><h2 id="degrade-title">到上限时，<br>交半成品也比崩溃好。</h2></div>
+          <p class="reading-intro">达到迭代上限时，不应直接崩溃或返回空结果。系统要让模型用已有进度整理出当前条件下最好的答案。</p>
+        </div>
+        <div class="prose">
+          <pre><code>def graceful_degradation(self):
+    """优雅降级：总结已有进度，而非直接失败"""
+    return self.llm.generate(
+        f"你已达到最大步数限制。基于以下已完成的工作，"
+        f"给出你目前能提供的最佳答案：\n{self.state.summary()}"
+    )</code></pre>
+          <div class="step-grid">
+            <div class="step-card"><h3>进度总结</h3><p>汇报已完成和未完成的部分，让用户知道拿到了什么。</p></div>
+            <div class="step-card"><h3>状态检查点</h3><p>保存当前状态，后续可以从这里恢复，而不是从头再跑。</p></div>
+            <div class="step-card"><h3>模型降级</h3><p>切换到更便宜的模型完成剩余整理工作，控制成本。</p></div>
+            <div class="step-card"><h3>人工升级</h3><p>通知人类介入处理，适合高风险或需要业务判断的任务。</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="budget-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">六、预算分层与无进展检测</p><h2 id="budget-title">同一个位置，<br>每轮结束查一次。</h2></div>
+          <p class="reading-intro">预算和重复检测落在 harness 上，是同一个循环位置：每轮结束检查。四类预算放进一个对象，重复检测升级成“看状态有没有变”。</p>
+        </div>
+        <div class="prose">
+          <h3>四类预算统一落地</h3>
+          <p><code>RunBudget</code> 初始化时记录 <code>started_at</code>，每轮结束调用 <code>check()</code>，返回已用比例、剩余额度，以及是否进入软停区（已用 ≥ 80%）。四类预算是轮数、token、金额、墙钟时间。</p>
+          <p>时间预算用单调时钟，并扣掉人工审批的等待时间——用户思考 10 分钟不该算 Agent 超时。</p>
+          <details>
+            <summary>展开 RunBudget 完整实现（原文代码）</summary>
+            <pre><code>import time
+from dataclasses import dataclass
+
+
+@dataclass
+class BudgetStatus:
+    exhausted: bool          # 任一预算用完：硬停
+    soft_stop: bool          # 任一预算到 80%：软停
+    used_ratio: float
+    remaining_turns: int
+    remaining_tokens: int
+    remaining_cost_usd: float
+    remaining_seconds: float
+
+
+class RunBudget:
+    def __init__(self, max_turns: int, max_tokens: int,
+                 max_cost_usd: float, max_wall_seconds: float,
+                 soft_ratio: float = 0.8):
+        self.max_turns = max_turns
+        self.max_tokens = max_tokens
+        self.max_cost_usd = max_cost_usd
+        self.max_wall_seconds = max_wall_seconds
+        self.soft_ratio = soft_ratio
+
+        self.turns = 0
+        self.tokens = 0
+        self.cost_usd = 0.0
+        self.approval_wait = 0.0
+        self.started_at = time.monotonic()
+
+    def add_turn(self, tokens: int, cost_usd: float) -&gt; None:
+        self.turns += 1
+        self.tokens += tokens
+        self.cost_usd += cost_usd
+
+    def add_approval_wait(self, seconds: float) -&gt; None:
+        """人工审批的等待时间不计入墙钟预算"""
+        self.approval_wait += seconds
+
+    def check(self) -&gt; BudgetStatus:
+        elapsed = time.monotonic() - self.started_at - self.approval_wait
+        used = max(
+            self.turns / self.max_turns,
+            self.tokens / self.max_tokens,
+            self.cost_usd / self.max_cost_usd,
+            elapsed / self.max_wall_seconds,
+        )
+        return BudgetStatus(
+            exhausted=used &gt;= 1.0,
+            soft_stop=used &gt;= self.soft_ratio,
+            used_ratio=used,
+            remaining_turns=max(0, self.max_turns - self.turns),
+            remaining_tokens=max(0, self.max_tokens - self.tokens),
+            remaining_cost_usd=max(0.0, self.max_cost_usd - self.cost_usd),
+            remaining_seconds=max(0.0, self.max_wall_seconds - elapsed),
+        )</code></pre>
+          </details>
+
+          <h3>无进展检测：看状态指纹，不看参数</h3>
+          <p>只看参数是否相同挡不住参数微调：模型给查询词加个引号、把 offset 从 10 改成 11，调用序列看起来不同，状态其实没动。更可靠的做法是对状态取指纹：已完成子目标集合、工作区关键文件哈希、最近 K 条工具结果摘要，三样拼起来做 SHA-256。</p>
+          <p>相邻两轮指纹相同，就说明这一轮没有产生任何可观测变化。连续 2–3 轮（经验值）无进展就该介入，不要等预算耗尽。</p>
+          <details>
+            <summary>展开 ProgressTracker 完整实现（原文代码）</summary>
+            <pre><code>import hashlib
+import json
+
+
+class ProgressTracker:
+    def __init__(self, key_files: list[str], recent_k: int = 5,
+                 max_stale_turns: int = 2):  # 2-3 是经验值
+        self.key_files = key_files
+        self.recent_k = recent_k
+        self.max_stale_turns = max_stale_turns
+        self.last_fingerprint: str | None = None
+        self.stale_turns = 0
+
+    @staticmethod
+    def _file_digest(path: str) -&gt; str:
+        try:
+            with open(path, "rb") as f:
+                return hashlib.sha256(f.read()).hexdigest()
+        except FileNotFoundError:
+            return "missing"
+
+    def fingerprint(self, completed_goals: set[str],
+                    recent_results: list[str]) -&gt; str:
+        payload = {
+            "goals": sorted(completed_goals),
+            "files": {p: self._file_digest(p) for p in self.key_files},
+            "results": [r[:200] for r in recent_results[-self.recent_k:]],
+        }
+        return hashlib.sha256(
+            json.dumps(payload, sort_keys=True, ensure_ascii=False).encode()
+        ).hexdigest()
+
+    def observe(self, completed_goals: set[str],
+                recent_results: list[str]) -&gt; bool:
+        """返回 True 表示连续多轮状态没变，需要介入"""
+        current = self.fingerprint(completed_goals, recent_results)
+        if current == self.last_fingerprint:
+            self.stale_turns += 1
+        else:
+            self.last_fingerprint = current
+            self.stale_turns = 0
+        return self.stale_turns &gt;= self.max_stale_turns</code></pre>
+          </details>
+
+          <h3>软停与硬停分层</h3>
+          <p>硬停到 100% 由 harness 直接终止，不再调用模型，保证预算不超支。软停只注入一条系统提示，要求模型收尾：写明剩余轮数和时间、已完成的子目标，先给结论再列未完成项。模型因此有机会把已有成果整理成可交付的答案，而不是被突然截断。</p>
+          <p>软停只注入一次，避免每轮重复占上下文。两者职责不同：<strong>软停管体验，硬停管兜底</strong>。只做软停，模型可能无视提示继续跑；只做硬停，结果无法交付。</p>
+          <details>
+            <summary>展开软停注入与每轮检查代码（原文代码）</summary>
+            <pre><code>SOFT_STOP_NOTICE = (
+    "预算即将用尽：剩余 {turns} 轮、约 {seconds:.0f} 秒。"
+    "已完成的子目标：{done}。"
+    "请立即停止探索：先给出现有条件下的结论，再列出未完成项。"
+)
+
+
+async def step(self, messages):
+    status = self.budget.check()
+    if status.exhausted:
+        return self.finalize_by_harness()      # 硬停：不再调用模型
+
+    if status.soft_stop and not self.soft_stop_sent:
+        self.soft_stop_sent = True             # 只注入一次
+        messages.append({"role": "system", "content": SOFT_STOP_NOTICE.format(
+            turns=status.remaining_turns,
+            seconds=status.remaining_seconds,
+            done="、".join(sorted(self.state.completed_goals)),
+        )})
+
+    turn = await self.llm.step(messages)
+    self.budget.add_turn(turn.usage.total_tokens, turn.usage.cost_usd)
+
+    if self.progress.observe(self.state.completed_goals,
+                             self.state.recent_results):
+        self.escalate_stall()                  # 无进展：总结、换策略或转人工
+
+    return turn</code></pre>
+          </details>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="rootcause-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">七、根因分析</p><h2 id="rootcause-title">上限是症状，<br>不是疾病。</h2></div>
+          <p class="reading-intro">如果 Agent 反复触及上限，真正的问题通常在任务定义、工具描述或提示词里。盲目调大上限只会增加成本和延迟。</p>
+        </div>
+        <div class="prose">
+          <ol>
+            <li><strong>目标模糊</strong>：缺少明确的完成标准，Agent 不知道做到什么程度算结束。</li>
+            <li><strong>工具签名不清</strong>：工具描述有歧义，LLM 不知道选哪个。</li>
+            <li><strong>停止条件弱</strong>：没有教会 LLM 识别“已完成”。</li>
+            <li><strong>Prompt 设计差</strong>：没有在 System Prompt 中定义终止规则。</li>
+          </ol>
+          <p>对应地，修复顺序应该是补完成标准、改工具描述、加终止规则，最后才考虑调整上限。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="verify-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">八、验收也要外部化</p><h2 id="verify-title">停下来，<br>不等于做对了。</h2></div>
+          <p class="reading-intro">终止控制回答“什么时候该停”，但外部强制还有第二个落点：Agent 停下来之后声称“做完了”，这个“做完了”由谁裁定？</p>
+        </div>
+        <div class="prose">
+          <p>多数实现默认 Agent 自评——输出 <code>FINAL_ANSWER</code> 就算任务完成，等于把终止权外部化了，<strong>验收权</strong>却还留在 Agent 手里。而语义错误（代码能编译、能跑、却干错事）恰恰在这一步无法自查。</p>
+          <p>SemaPLC（2026-08）在工业 PLC 代码生成（可编程逻辑控制器，改错会造成物理后果）这类高风险场景把它做成硬门禁——<strong>verification-gated</strong>（以验证为闸门）：Agent 不能自判完成，“我做完了”只是一个待验证的声明；必须由<strong>日志化的外部检查</strong>全通过才算完成——规格核对、编译、实机运行时行为，任一不过就回到循环继续修。</p>
+          <p>检查是分层的，越往后越接近真实：前两层停留在静态与语法层面，第三层才触及语义正确性，只做前两层正好漏掉最危险的那类错误。</p>
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">终止控制的三个环节与责任归属</caption>
+              <thead><tr><th scope="col">环节</th><th scope="col">谁说了算</th><th scope="col">对应机制</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">什么时候必须停</th><td>系统</td><td>迭代上限、资源预算、重复检测</td></tr>
+                <tr><th scope="row">算不算做完</th><td><strong>外部验证</strong></td><td>规格核对 + 编译 + 运行时行为，全程日志化</td></tr>
+                <tr><th scope="row">没做完怎么收场</th><td>系统</td><td>优雅降级、检查点、人工升级</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>中间这一格空着的系统，前后两格做得再好也只是“按时停下来了”，不代表“做对了”。任务风险越高（改生产代码、控制物理设备、动钱），越该把这一格补成硬门禁。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="errors-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">九、错误的特殊性</p><h2 id="errors-title">Agent 的错误，<br>会顺着循环放大。</h2></div>
+          <p class="reading-intro">传统应用的错误通常局部可见；Agent 的错误会进入下一轮推理，被当成新事实继续使用。</p>
+        </div>
+        <div class="prose">
+          <div class="step-grid">
+            <div class="step-card"><h3>级联放大</h3><p>一次工具调用失败会影响后续所有决策，错误被写进上下文继续传播。</p></div>
+            <div class="step-card"><h3>语义错误</h3><p>LLM 生成的代码可能通过编译但执行错误操作，例如删除而不是更新。</p></div>
+            <div class="step-card"><h3>状态失同步</h3><p>Agent 对环境的内部认知与实际状态不一致，后续判断建立在错误前提上。</p></div>
+            <div class="step-card"><h3>概率性</h3><p>同样的输入可能产生不同的错误，难以用固定用例完全覆盖。</p></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="fault-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">十、四层容错模型</p><h2 id="fault-title">从便宜到贵，<br>逐层兜底。</h2></div>
+          <p class="reading-intro">先处理最常见的瞬态错误，再逐层升级到模型降级、错误分类和检查点恢复。顺序不能反：重试中间件应放在降级中间件之前。</p>
+        </div>
+        <div class="prose">
+          <figure>
+            <div class="fault-stack" role="img" aria-label="四层容错：第一层重试与指数退避，第二层模型降级链，第三层错误分类路由，第四层检查点恢复">
+              <div class="fault-layer cheap"><span class="fault-num">第一层<br>成本最低</span><div><h4>重试 + 指数退避 + 抖动</h4><p>应对网络超时、限流等瞬态错误。先重试主模型几次，再考虑降级。</p></div></div>
+              <div class="fault-layer"><span class="fault-num">第二层</span><div><h4>模型降级链</h4><p>主模型 → 备用模型 → 跨供应商回退，处理持续不可用。</p></div></div>
+              <div class="fault-layer"><span class="fault-num">第三层</span><div><h4>错误分类路由</h4><p>瞬态→重试，语义→换法，权限→人工，致命→终止。不是所有错误都该重试。</p></div></div>
+              <div class="fault-layer costly"><span class="fault-num">第四层<br>成本最高</span><div><h4>检查点恢复</h4><p>定期保存状态，崩溃后从检查点重启，避免长任务从头再来。</p></div></div>
+            </div>
+            <figcaption class="demo-note">图 2 · 四层防线由廉到贵：重试退避 → 模型降级链 → 错误分类路由 → 检查点恢复，逐层兜底。错误恢复与正常终止分开处理，不能混成一条路径。</figcaption>
+          </figure>
+          <details>
+            <summary>查看原文 Mermaid 容错四层图源码</summary>
+            <pre><code>flowchart TD
+    E0["错误发生"] --- S1
+    subgraph S1["第一层 —— 重试 + 指数退避 + 抖动"]
+        L1["应对网络超时 / 限流等&lt;br/&gt;瞬态错误，成本最低"]
+    end
+    subgraph S2["第二层 —— 模型降级链"]
+        L2["主模型 → 备用模型&lt;br/&gt;→ 跨供应商回退"]
+    end
+    subgraph S3["第三层 —— 错误分类路由"]
+        L3["瞬态→重试 语义→换法&lt;br/&gt;权限→人工 致命→终止"]
+    end
+    subgraph S4["第四层 —— 检查点恢复"]
+        L4["定期保存状态&lt;br/&gt;崩溃后从检查点重启"]
+    end
+    S1 --- S2 --- S3 --- S4
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class E0 err
+    class L1,L2,L3,L4 proc</code></pre>
+            <p class="source-footnote">源码按原文保留，仅做 HTML 转义；上方四层卡片按同一顺序呈现。</p>
+          </details>
+
+          <h3>第一层：重试 + 指数退避 + 抖动</h3>
+          <p>处理最常见的瞬态错误（网络超时、API 限流）。退避时间按指数增长，再加一点随机抖动，避免多个客户端同时重试造成尖峰。</p>
+          <pre><code>import random
+import time
+
+class RetryWithBackoff:
+    def __init__(self, max_retries=3, base_delay=1.0, max_delay=60.0):
+        self.max_retries = max_retries
+        self.base_delay = base_delay
+        self.max_delay = max_delay
+
+    def execute(self, func, *args):
+        for attempt in range(self.max_retries):
+            try:
+                return func(*args)
+            except TransientError as e:
+                if attempt == self.max_retries - 1:
+                    raise
+                delay = min(
+                    self.base_delay * (2 ** attempt) + random.uniform(0, 1),
+                    self.max_delay
+                )
+                time.sleep(delay)</code></pre>
+          <p><strong>关键设计决策</strong>：重试中间件应放在降级中间件之前。先重试主模型几次，再降级到备用模型，避免主模型短暂不可用就过早降级。</p>
+
+          <h3>第二层：模型降级链</h3>
+          <p>当主模型持续不可用时，切换到备用模型。每个供应商至少定义一个备选模型，并设置跨供应商降级（如 Anthropic → OpenAI）。</p>
+          <pre><code>class ModelFallbackChain:
+    def __init__(self):
+        self.chain = [
+            {"provider": "anthropic", "model": "claude-sonnet-4-5-20250929"},
+            {"provider": "anthropic", "model": "claude-haiku-4-5-20251001"},
+            {"provider": "openai", "model": "gpt-4o-mini"},  # 跨供应商降级
+        ]
+
+    def call(self, prompt: str) -&gt; str:
+        for model_config in self.chain:
+            try:
+                return self._call_model(model_config, prompt)
+            except (RateLimitError, ServiceUnavailableError):
+                continue
+        raise AllModelsFailedError("所有模型均不可用")</code></pre>
+
+          <h3>第三层：错误分类与路由</h3>
+          <p><strong>不是所有错误都应该重试。</strong>正确分类错误是高效容错的关键：限流需要重试，工具返回垃圾数据需要让 LLM 换个方式调用，权限错误需要人工介入，致命错误应终止并报告。</p>
+          <details>
+            <summary>展开 ErrorClassifier 与 ErrorHandler 代码（原文代码）</summary>
+            <pre><code>class ErrorClassifier:
+    def classify(self, error: Exception) -&gt; ErrorType:
+        if isinstance(error, (TimeoutError, RateLimitError)):
+            return ErrorType.TRANSIENT      # → 重试
+        elif isinstance(error, ToolOutputError):
+            return ErrorType.LLM_RECOVERABLE  # → 让 LLM 换个方式调用
+        elif isinstance(error, AuthorizationError):
+            return ErrorType.HUMAN_REQUIRED   # → 通知人类
+        elif isinstance(error, InvalidToolInput):
+            return ErrorType.PROMPT_FIXABLE   # → 重新格式化输入
+        else:
+            return ErrorType.FATAL            # → 终止并报告
+
+class ErrorHandler:
+    def handle(self, error: Exception, context: AgentState):
+        error_type = self.classifier.classify(error)
+
+        if error_type == ErrorType.TRANSIENT:
+            return self.retry_with_backoff(context)
+        elif error_type == ErrorType.LLM_RECOVERABLE:
+            return self.ask_llm_to_reformulate(context)
+        elif error_type == ErrorType.HUMAN_REQUIRED:
+            return self.escalate_to_human(context)
+        elif error_type == ErrorType.PROMPT_FIXABLE:
+            return self.fix_and_retry(context)
+        else:
+            return self.abort_with_summary(context)</code></pre>
+          </details>
+
+          <h3>第四层：检查点与状态恢复</h3>
+          <p>对于长时间运行的 Agent 任务，定期保存状态。每步完成后写入当前步骤、已完成动作、部分结果和时间戳；崩溃后按 <code>thread_id</code> 从最近检查点恢复。</p>
+          <pre><code>class CheckpointManager:
+    def __init__(self, storage):
+        self.storage = storage
+
+    def save(self, thread_id: str, state: AgentState):
+        """在每步完成后保存检查点"""
+        self.storage.save({
+            "thread_id": thread_id,
+            "step": state.current_step,
+            "completed_actions": state.history,
+            "partial_results": state.results,
+            "timestamp": time.time()
+        })
+
+    def restore(self, thread_id: str) -&gt; AgentState:
+        """从最近的检查点恢复"""
+        checkpoint = self.storage.load(thread_id)
+        return AgentState.from_checkpoint(checkpoint)</code></pre>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="cascade-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">十一、级联失败预防</p><h2 id="cascade-title">假设每个依赖<br>都可能不可用。</h2></div>
+          <p class="reading-intro">Agent 系统中的单点故障不只影响一个功能——它会在每次工具调用、每次重试、每个 token 中放大。核心原则：假设 LLM、Agent 组件和外部数据源都可能不可用。</p>
+        </div>
+        <div class="prose">
+          <p>断路器模式把失败挡在上游：连续失败达到阈值后进入 <code>OPEN</code>，后续调用快速失败，不再把请求压到已经不可用的服务上；等待恢复时间后进入 <code>HALF_OPEN</code> 试探，成功则回到 <code>CLOSED</code>。</p>
+          <p class="code-label">断路器 · 原文代码</p>
+          <pre><code>class CircuitBreaker:
+    def __init__(self, failure_threshold=5, recovery_timeout=60):
+        self.failures = 0
+        self.threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.state = "CLOSED"  # CLOSED → OPEN → HALF_OPEN
+        self.last_failure_time = None
+
+    def call(self, func, *args):
+        if self.state == "OPEN":
+            if time.time() - self.last_failure_time &gt; self.recovery_timeout:
+                self.state = "HALF_OPEN"
+            else:
+                raise CircuitOpenError("服务不可用，快速失败")
+
+        try:
+            result = func(*args)
+            self._on_success()
+            return result
+        except Exception as e:
+            self._on_failure()
+            raise
+
+    def _on_failure(self):
+        self.failures += 1
+        self.last_failure_time = time.time()
+        if self.failures &gt;= self.threshold:
+            self.state = "OPEN"
+
+    def _on_success(self):
+        self.failures = 0
+        self.state = "CLOSED"</code></pre>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="order-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">十二、实施顺序</p><h2 id="order-title">先做便宜的重试，<br>最后做检查点。</h2></div>
+          <p class="reading-intro">容错机制不需要一次做完。按“覆盖最常见故障、代码最少”的顺序推进，每层都能独立验证。</p>
+        </div>
+        <div class="prose">
+          <ol>
+            <li><strong>重试策略先行</strong>：用最少代码处理最常见的故障。</li>
+            <li><strong>模型降级其次</strong>：定义备选模型和跨供应商回退。</li>
+            <li><strong>错误分类第三</strong>：区分瞬态错误、LLM 可恢复错误、需人工错误。</li>
+            <li><strong>检查点最后</strong>：生产环境用持久化存储，通过 <code>thread_id</code> 支持恢复。</li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="misconception-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="misconception-title">十四条，<br>按原文顺序。</h2></div>
+          <p class="reading-intro">前 5 条关于循环终止，中间 4 条关于错误恢复，后 5 条是场景追问；编号与原文一致。</p>
+        </div>
+
+        <div class="misconception">
+          <p class="misconception-label">循环 · 1 误区</p>
+          <div><h3>“设大一点的 max_iterations 就行。”</h3><p>盲目增大上限只会增加成本和延迟。应该先分析为什么达到上限，修复根因（目标不清、工具不当、Prompt 不佳）。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">循环 · 2 误区</p>
+          <div><h3>“让 LLM 自己决定什么时候停。”</h3><p>LLM 可能无法可靠判断任务完成。必须在系统层面设置硬性终止条件作为兜底。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">循环 · 3 追问</p>
+          <div><h3>如何设定合理的 max_iterations？</h3><p>根据任务类型估算：简单问答 3–5 步，多步研究 10–15 步，复杂分析 20–30 步。建议从小值开始，通过观测实际使用情况逐步调整。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">循环 · 4 追问</p>
+          <div><h3>Agent 的两个循环（Inner Loop / Outer Loop）是什么？</h3><p>Inner Loop 是单次任务内的“思考-行动-观察”循环。Outer Loop 是跨任务的“执行-评估-改进”循环（如 Reflexion 的自我反思机制）。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">循环 · 5 追问</p>
+          <div><h3>终止条件外部化了，为什么还需要外部验证完成？</h3><p>这是两件事：终止控制管“什么时候必须停”，完成判定管“算不算做完”。多数实现让 Agent 输出 <code>FINAL_ANSWER</code> 就自动认定完成，验收权还在 Agent 手里，而语义错误（代码能编译但干错事）恰恰无法自查。SemaPLC（2026-08）在工业 PLC 代码生成场景做成硬门禁：Agent 不能自判完成，必须由日志化的外部检查（规格核对、编译、实机运行时行为）全通过才算完成。风险越高的场景越该补上这道门禁。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">恢复 · 6 误区</p>
+          <div><h3>“所有错误都重试就行。”</h3><p>限流需要重试，但工具返回垃圾数据需要让 LLM 重新构造查询，权限错误需要人工介入。错误分类是高效容错的前提。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">恢复 · 7 误区</p>
+          <div><h3>“Agent 自己能处理所有错误。”</h3><p>语义错误（生成的代码逻辑错误）和状态失同步（Agent 的认知与实际不符）需要外部验证机制。不能完全依赖 Agent 自我纠错。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">恢复 · 8 追问</p>
+          <div><h3>如何处理 Agent 的“幻觉式修复”？</h3><p>（1）工具调用结果做独立验证；（2）关键操作后检查状态一致性；（3）Human-in-the-Loop 审核关键修复。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">恢复 · 9 追问</p>
+          <div><h3>容错机制本身的成本如何控制？</h3><p>重试和降级会增加延迟和费用。设置总预算（token 上限 + 金额上限 + 时间上限），达到任一上限就优雅终止。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">场景 · 10</p>
+          <div><h3>Agent 反复调用同一个工具，参数略有不同但总是失败，如何修复？</h3><p>（1）设置 <code>max_tool_retries</code> 限制单工具重试次数；（2）工具返回明确错误信息，说明为什么失败；（3）错误分类，判断是瞬态错误还是需要 LLM 调整策略的错误；（4）检查工具 Schema 是否清晰、LLM 是否理解参数约束；（5）加入重复检测，连续 N 次调用同一工具时强制停止或请求人工干预。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">场景 · 11</p>
+          <div><h3>多 Agent 系统中 A 和 B 反复互相传递任务而无法进展，如何修复？</h3><p>（1）限制 Handoff 次数，超过阈值强制终止或转给 Supervisor Agent；（2）每次传递时要求携带“进展状态”，状态无变化则中断；（3）加入超时机制；（4）在 Handoff 点记录完整 Trace，复现时检查是哪个 Agent 的决策导致死循环；（5）设计“逃生路由”，转给兜底 Agent 或返回用户友好错误。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">场景 · 12</p>
+          <div><h3>Agent 在生产环境突然频繁产生幻觉，输出不存在的引用和数据，如何定位？</h3><p>（1）检查模型或 prompt 版本最近是否更新，如有则紧急回滚；（2）对比最近 24 小时和正常时期的 Trace，找出变化的模式；（3）检查检索系统的输出质量，可能是检索失效导致 Agent 只能依赖自身知识；（4）加入幻觉检测护栏，对引用来源进行验证；（5）启用人工审核通道，高风险输出转人工确认。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">场景 · 13</p>
+          <div><h3>RAG 检索结果与用户查询完全无关，Recall 接近 0，如何修复？</h3><p>（1）检查 embedding 模型是否匹配语料语言，重新选择或训练适配的模型；（2）检查分块策略是否破坏语义完整性，调整为语义分块或重叠分块；（3）检查向量数据库索引是否损坏，必要时重建索引；（4）检查查询是否包含语料中未出现的领域术语，加入查询扩展或同义词映射；（5）加入混合检索（BM25 + 向量）兜底。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">场景 · 14 追问</p>
+          <div><h3>软停和硬停为什么不能合并成一个？</h3><p>硬停保证预算不超支，但模型在循环中途被切断，用户只拿到一个错误。软停提前到 80% 注入提示，让模型用剩余预算把已有结果整理成结论，并说明哪些子目标没完成。两者职责不同：软停管体验，硬停管兜底。只做软停，模型可能无视提示继续跑；只做硬停，结果无法交付。</p></div>
+        </div>
+      </section>
+
+      <section class="source-section" aria-labelledby="source-title">
+        <p class="eyebrow">技术细节，按需展开</p>
+        <h2 class="source-heading" id="source-title">原文参考资料</h2>
+        <p class="source-summary">讲解依据《Agent Loop 设计：循环控制、终止条件与错误恢复》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+        <details>
+          <summary>展开原文列出的十一条参考链接</summary>
+          <div class="source-content">
+            <ul>
+              <li><a href="https://planoai.dev/blog/the-two-agentic-loops-how-to-design-and-scale-agentic-apps" target="_blank" rel="noopener noreferrer">The Two Agentic Loops: How to Design and Scale Agentic Apps · Plano</a></li>
+              <li><a href="https://www.glean.com/ai-glossary/agent-loop" target="_blank" rel="noopener noreferrer">Agent Loop Definition: How AI Agents Use Iterative Processes · Glean</a></li>
+              <li><a href="https://python.langchain.com/v0.1/docs/modules/agents/how_to/max_iterations/" target="_blank" rel="noopener noreferrer">Cap the Max Number of Iterations · LangChain</a></li>
+              <li><a href="https://www.letta.com/blog/letta-v1-agent" target="_blank" rel="noopener noreferrer">Rearchitecting Letta's Agent Loop: Lessons from ReAct, MemGPT, &amp; Claude Code · Letta</a></li>
+              <li><a href="https://google.github.io/adk-docs/agents/workflow-agents/loop-agents/" target="_blank" rel="noopener noreferrer">Loop Agents · Google ADK</a></li>
+              <li><a href="https://dev.to/klement_gunndu/4-fault-tolerance-patterns-every-ai-agent-needs-in-production-jih" target="_blank" rel="noopener noreferrer">4 Fault Tolerance Patterns Every AI Agent Needs in Production · DEV Community</a></li>
+              <li><a href="https://www.gocodeo.com/post/error-recovery-and-fallback-strategies-in-ai-agent-development" target="_blank" rel="noopener noreferrer">Error Recovery and Fallback Strategies in AI Agent Development · GoCodeo</a></li>
+              <li><a href="https://www.willvelida.com/posts/preventing-cascading-failures-ai-agents" target="_blank" rel="noopener noreferrer">Preventing Cascading Failures in AI Agents · Will Velida</a></li>
+              <li><a href="https://sparkco.ai/blog/mastering-retry-logic-agents-a-deep-dive-into-2025-best-practices" target="_blank" rel="noopener noreferrer">Mastering Retry Logic Agents: 2025 Best Practices · SparkCo</a></li>
+              <li><a href="https://temporal.io/blog/error-handling-in-distributed-systems" target="_blank" rel="noopener noreferrer">Error Handling in Distributed Systems · Temporal</a></li>
+              <li><a href="https://arxiv.org/abs/2608.18565" target="_blank" rel="noopener noreferrer">SemaPLC: Project-Grounded, Verification-Gated Agent Harness for PLC Code · arXiv</a></li>
+            </ul>
+            <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+          </div>
+        </details>
+      </section>
+    </main>
+    <footer><span>Agent-Interview-100 · <code>01-agent-architecture/006-agent-loop-and-error-recovery.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 2 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const SCENARIOS = {
+    converge: {
+      name: "正常收敛",
+      task: "定位结账接口 500 错误的根因",
+      allGoals: ["找到日志文件", "定位错误接口", "定位异常堆栈", "确认根因"],
+      rounds: [
+        {
+          thought: "先看 logs 目录里有哪些日志文件。",
+          action: "list_dir(path=\"logs\")",
+          actionShort: "list_dir(logs)",
+          signature: "list_dir|logs",
+          observation: "返回 3 个文件：app.log、db.log、gateway.log。",
+          goals: ["找到日志文件"],
+          stateKey: "files:app,db,gateway",
+          tokens: 1800
+        },
+        {
+          thought: "网关日志最可能记录 5xx，先在 gateway.log 里搜。",
+          action: "grep(file=\"gateway.log\", pattern=\"5\\d\\d\")",
+          actionShort: "grep(gateway.log, 5xx)",
+          signature: "grep|gateway.log|5xx",
+          observation: "17 条 500，全部指向 /checkout。",
+          goals: ["找到日志文件", "定位错误接口"],
+          stateKey: "endpoint:/checkout",
+          tokens: 2400
+        },
+        {
+          thought: "看应用日志里 /checkout 的异常堆栈。",
+          action: "grep(file=\"app.log\", pattern=\"checkout.*Exception\")",
+          actionShort: "grep(app.log, checkout.*Exception)",
+          signature: "grep|app.log|checkout.*Exception",
+          observation: "NullPointerException at PaymentMapper.java:88。",
+          goals: ["找到日志文件", "定位错误接口", "定位异常堆栈"],
+          stateKey: "stack:PaymentMapper:88",
+          tokens: 2600
+        },
+        {
+          thought: "读 80–95 行，确认空指针来自哪个字段。",
+          action: "read_file(path=\"src/PaymentMapper.java\", range=\"80-95\")",
+          actionShort: "read_file(PaymentMapper.java, 80-95)",
+          signature: "read_file|PaymentMapper.java|80-95",
+          observation: "第 88 行的 coupon 字段没有判空。",
+          goals: ["找到日志文件", "定位错误接口", "定位异常堆栈", "确认根因"],
+          stateKey: "rootcause:coupon-null-check",
+          tokens: 2200,
+          complete: true
+        }
+      ]
+    },
+    loop: {
+      name: "原地打转",
+      task: "修复结账接口的 500 错误",
+      allGoals: ["列出日志", "筛出 5xx", "定位异常堆栈"],
+      rounds: [
+        {
+          thought: "先列出日志文件。",
+          action: "list_dir(path=\"logs\")",
+          actionShort: "list_dir(logs)",
+          signature: "list_dir|logs",
+          observation: "返回 app.log、db.log、gateway.log。",
+          goals: ["列出日志"],
+          stateKey: "files:app,db,gateway",
+          tokens: 1500
+        },
+        {
+          thought: "在 app.log 里搜 5xx。",
+          action: "grep(file=\"app.log\", pattern=\"5\\d\\d\")",
+          actionShort: "grep(app.log, 5xx)",
+          signature: "grep|app.log|5xx",
+          observation: "42 条 5xx，没有堆栈。",
+          goals: ["列出日志", "筛出 5xx"],
+          stateKey: "app:42-no-stack",
+          tokens: 2300
+        },
+        {
+          thought: "先读日志开头，看看格式。",
+          action: "read_file(path=\"app.log\", range=\"1-40\")",
+          actionShort: "read_file(app.log, 1-40)",
+          signature: "read_file|app.log|1-40",
+          observation: "前 40 行是启动日志，没有时间戳。",
+          goals: ["列出日志", "筛出 5xx"],
+          stateKey: "app:startup-lines",
+          tokens: 1800
+        },
+        {
+          thought: "再搜一次 5xx，确认结果。",
+          action: "grep(file=\"app.log\", pattern=\"5\\d\\d\")",
+          actionShort: "grep(app.log, 5xx)",
+          signature: "grep|app.log|5xx",
+          observation: "还是 42 条 5xx，没有堆栈。",
+          goals: ["列出日志", "筛出 5xx"],
+          stateKey: "app:42-no-stack",
+          tokens: 2300
+        }
+      ]
+    },
+    stall: {
+      name: "换参数空转",
+      task: "确认缓存 TTL 配置是否生效",
+      allGoals: ["搜到 TTL 配置", "确认配置生效位置"],
+      rounds: [
+        {
+          thought: "先搜 cache.log 里的 TTL。",
+          action: "grep(file=\"cache.log\", pattern=\"TTL\")",
+          actionShort: "grep(cache.log, TTL)",
+          signature: "grep|cache.log|TTL",
+          observation: "6 处 TTL 配置，值都是 300s。",
+          goals: ["搜到 TTL 配置"],
+          stateKey: "ttl:6x300s",
+          tokens: 2100
+        },
+        {
+          thought: "换小写再搜一次，避免大小写漏掉。",
+          action: "grep(file=\"cache.log\", pattern=\"ttl\")",
+          actionShort: "grep(cache.log, ttl)",
+          signature: "grep|cache.log|ttl",
+          observation: "还是那 6 处 TTL 配置，值都是 300s。",
+          goals: ["搜到 TTL 配置"],
+          stateKey: "ttl:6x300s",
+          tokens: 2100
+        },
+        {
+          thought: "再换成完整配置名搜一次。",
+          action: "grep(file=\"cache.log\", pattern=\"time.to.live\")",
+          actionShort: "grep(cache.log, time.to.live)",
+          signature: "grep|cache.log|time.to.live",
+          observation: "仍然只有 6 处 TTL 配置，值还是 300s。",
+          goals: ["搜到 TTL 配置"],
+          stateKey: "ttl:6x300s",
+          tokens: 2100
+        }
+      ]
+    }
+  };
+
+  const CHECK_IDS = ["success", "budget", "turns", "duplicate", "progress"];
+  const state = {
+    scenario: "converge",
+    round: 0,
+    phase: 0,
+    maxTurns: 8,
+    tokenBudget: 12000,
+    autoTimer: null
+  };
+
+  const byId = (id) => document.getElementById(id);
+
+  function formatNumber(value) {
+    return value.toLocaleString("en-US");
+  }
+
+  function fingerprint(goals, stateKey) {
+    const text = goals.slice().sort().join("|") + "::" + stateKey;
+    let hash = 2166136261;
+    for (let i = 0; i < text.length; i += 1) {
+      hash ^= text.charCodeAt(i);
+      hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(16).padStart(8, "0");
+  }
+
+  function evaluate(scenario, maxTurns, tokenBudget, lastRound) {
+    const trace = [];
+    let tokens = 0;
+    let lastFp = null;
+    let stale = 0;
+    const signatures = [];
+    const shorts = [];
+    const limit = Math.min(lastRound, scenario.rounds.length - 1);
+
+    for (let i = 0; i <= limit; i += 1) {
+      const round = scenario.rounds[i];
+      tokens += round.tokens;
+      signatures.push(round.signature);
+      shorts.push(round.actionShort);
+      const fp = fingerprint(round.goals, round.stateKey);
+      if (lastFp !== null && fp === lastFp) {
+        stale += 1;
+      } else {
+        stale = 0;
+      }
+      lastFp = fp;
+
+      const windowShorts = shorts.slice(-3);
+      const duplicate = new Set(signatures.slice(-3)).size < windowShorts.length;
+      const remaining = scenario.allGoals.filter((goal) => !round.goals.includes(goal));
+      const hitMap = {
+        success: Boolean(round.complete),
+        budget: tokens >= tokenBudget,
+        turns: i + 1 >= maxTurns,
+        duplicate,
+        progress: stale >= 2
+      };
+      const decisive = CHECK_IDS.find((id) => hitMap[id]) || null;
+
+      trace.push({
+        index: i,
+        round,
+        tokens,
+        stale,
+        fp,
+        windowShorts,
+        duplicate,
+        remaining,
+        hitMap,
+        decisive
+      });
+
+      if (decisive) break;
+    }
+    return trace;
+  }
+
+  function totalRounds() {
+    return Math.min(state.maxTurns, SCENARIOS[state.scenario].rounds.length);
+  }
+
+  function currentTrace() {
+    const scenario = SCENARIOS[state.scenario];
+    const trace = evaluate(scenario, state.maxTurns, state.tokenBudget, state.round);
+    return trace[trace.length - 1];
+  }
+
+  function isTerminated() {
+    return state.phase === 2 && Boolean(currentTrace().decisive);
+  }
+
+  function buildStageNav() {
+    const list = byId("stage-list");
+    const total = totalRounds();
+    list.style.setProperty("--stages", String(total));
+    list.textContent = "";
+    for (let i = 0; i < total; i += 1) {
+      const li = document.createElement("li");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "stage-button";
+      button.dataset.round = String(i);
+      button.setAttribute("aria-controls", "explainer");
+      button.setAttribute("aria-label", `第 ${i + 1} 轮`);
+      button.innerHTML = `<span class="stage-number">${i + 1}</span><span>第${i + 1}轮</span>`;
+      if (i === state.round) {
+        button.setAttribute("aria-current", "step");
+      }
+      button.addEventListener("click", () => jumpToRound(i));
+      li.append(button);
+      list.append(li);
+    }
+  }
+
+  function updateStageNav() {
+    document.querySelectorAll("#stage-list .stage-button").forEach((button) => {
+      if (Number(button.dataset.round) === state.round) {
+        button.setAttribute("aria-current", "step");
+      } else {
+        button.removeAttribute("aria-current");
+      }
+    });
+  }
+
+  function jumpToRound(index) {
+    stopAuto();
+    const scenario = SCENARIOS[state.scenario];
+    const trace = evaluate(scenario, state.maxTurns, state.tokenBudget, totalRounds() - 1);
+    const reachable = trace[trace.length - 1].index;
+    state.round = Math.min(index, reachable);
+    state.phase = 2;
+    render();
+    byId("loop-announcement").textContent = `跳到第 ${state.round + 1} 轮，查看观察与终止判定。`;
+  }
+
+  function phaseTitle(phase) {
+    if (phase === 0) return "先推理：下一步做什么？";
+    if (phase === 1) return "再行动：执行选定的工具调用。";
+    return "后观察：结果是否让状态前进？";
+  }
+
+  function phaseName(phase) {
+    if (phase === 0) return "推理";
+    if (phase === 1) return "行动";
+    return "观察与判定";
+  }
+
+  function checkDetail(id, entry, maxTurns, tokenBudget) {
+    if (id === "success") {
+      if (entry.round.complete) {
+        return `目标全部达成（${entry.round.goals.length} / ${SCENARIOS[state.scenario].allGoals.length}）`;
+      }
+      return `还差 ${entry.remaining.length} 个目标：${entry.remaining.join("、")}`;
+    }
+    if (id === "budget") {
+      const pct = Math.round((entry.tokens / tokenBudget) * 100);
+      return `已用 ${formatNumber(entry.tokens)} / ${formatNumber(tokenBudget)} tokens（${pct}%）`;
+    }
+    if (id === "turns") {
+      return `已执行 ${entry.index + 1} / ${maxTurns} 轮`;
+    }
+    if (id === "duplicate") {
+      if (entry.duplicate) {
+        return `最近窗口 ${entry.windowShorts.join(" → ")}；出现重复`;
+      }
+      return `最近窗口 ${entry.windowShorts.join(" → ")}；互不相同`;
+    }
+    return `连续无进展 ${entry.stale} / 2 轮；状态指纹 #${entry.fp}`;
+  }
+
+  function renderChecks(entry, observed, maxTurns, tokenBudget) {
+    CHECK_IDS.forEach((id) => {
+      const item = byId(`check-${id}`);
+      const mark = item.querySelector(".check-mark");
+      const detail = item.querySelector(".check-detail");
+      item.classList.remove("is-pending", "is-pass", "is-hit", "is-decisive", "is-success");
+      mark.textContent = "?";
+      if (!observed) {
+        item.classList.add("is-pending");
+        detail.textContent = "等待观察结果";
+        return;
+      }
+      const hit = entry.hitMap[id];
+      const isDecisive = entry.decisive === id;
+      detail.textContent = checkDetail(id, entry, maxTurns, tokenBudget);
+      if (hit) {
+        item.classList.add("is-hit");
+        if (id === "success") item.classList.add("is-success");
+        mark.textContent = "!";
+        if (isDecisive) item.classList.add("is-decisive");
+      } else {
+        item.classList.add("is-pass");
+        mark.textContent = "✓";
+      }
+    });
+  }
+
+  function verdictContent(id, entry) {
+    const scenario = SCENARIOS[state.scenario];
+    const done = entry.round.goals.length;
+    const all = scenario.allGoals.length;
+    if (id === "success") {
+      return {
+        tone: "ok",
+        title: "目标达成：直接返回最终答案。",
+        summary: `系统在观察阶段检测到完成信号，不再回到推理。已完成 ${done} / ${all} 个目标，本轮累计 ${formatNumber(entry.tokens)} tokens。`,
+        points: [
+          "成功判定优先于预算和循环检测：先确认任务是否已经完成。",
+          "最终答案仍需经过外部验证（verification-gated）才算真正交付。",
+          "如果没有外部验证，Agent 自报完成只是待验证声明。"
+        ]
+      };
+    }
+    if (id === "budget") {
+      const pct = Math.round((entry.tokens / state.tokenBudget) * 100);
+      return {
+        tone: "stop",
+        title: "预算耗尽：硬停，转优雅降级。",
+        summary: `Token 预算已用 ${formatNumber(entry.tokens)} / ${formatNumber(state.tokenBudget)}（${pct}%）。harness 不再调用模型，直接总结已有进度。`,
+        points: [
+          `已完成 ${done} / ${all} 个目标：${entry.round.goals.join("、")}。`,
+          "硬停保证预算不超支；生产实现通常到 80% 先软停，本演示只检查 100% 硬停。",
+          "输出应列出未完成项，并保存检查点供后续恢复。"
+        ]
+      };
+    }
+    if (id === "turns") {
+      return {
+        tone: "stop",
+        title: "达到最大迭代次数：优雅降级。",
+        summary: `已执行 ${entry.index + 1} / ${state.maxTurns} 轮。上限是兜底，不是修复；反复触顶要回到目标、工具和 Prompt 找根因。`,
+        points: [
+          `已完成 ${done} / ${all} 个目标：${entry.round.goals.join("、")}。`,
+          `未完成：${entry.remaining.join("、") || "无"}。`,
+          "下一步：总结进度、保存检查点，必要时切换更便宜的模型或转人工。"
+        ]
+      };
+    }
+    if (id === "duplicate") {
+      return {
+        tone: "stop",
+        title: "重复输出检测：判定为循环。",
+        summary: `最近 3 个动作窗口里出现重复：${entry.windowShorts.join(" → ")}。窗口内动作签名去重后变短，说明 Agent 在重复相同操作。`,
+        points: [
+          `已完成 ${done} / ${all} 个目标：${entry.round.goals.join("、")}。`,
+          "继续重试只会消耗预算；应换策略、缩小任务或转人工。",
+          "反复出现时检查工具 Schema 和错误信息是否足够明确。"
+        ]
+      };
+    }
+    return {
+      tone: "stop",
+      title: "连续无进展：提前介入。",
+      summary: `状态指纹连续 ${entry.stale} 轮相同（阈值 2）。参数虽然变了，但已完成目标和可观测状态没有变化。`,
+      points: [
+        `已完成 ${done} / ${all} 个目标：${entry.round.goals.join("、")}。`,
+        "继续执行只会产生等价结果；应总结、换策略或转人工。",
+        "用状态指纹而不是参数比较，才能抓住“换参数不换结果”的空转。"
+      ]
+    };
+  }
+
+  function renderVerdict(entry, observed) {
+    const box = byId("verdict");
+    if (!observed || !entry.decisive) {
+      box.hidden = true;
+      return;
+    }
+    const content = verdictContent(entry.decisive, entry);
+    box.hidden = false;
+    box.dataset.tone = content.tone;
+    byId("verdict-kicker").textContent = `终止判定 · ${SCENARIOS[state.scenario].name}`;
+    byId("verdict-title").textContent = content.title;
+    byId("verdict-summary").textContent = content.summary;
+    const list = byId("verdict-points");
+    list.textContent = "";
+    content.points.forEach((point) => {
+      const li = document.createElement("li");
+      li.textContent = point;
+      list.append(li);
+    });
+  }
+
+  function render() {
+    const scenario = SCENARIOS[state.scenario];
+    const total = totalRounds();
+    if (state.round >= total) state.round = total - 1;
+
+    const round = scenario.rounds[state.round];
+    const observed = state.phase === 2;
+    const entry = currentTrace();
+    const terminated = observed && Boolean(entry.decisive);
+
+    byId("round-index").textContent = `演示 · 第 ${state.round + 1} / ${total} 轮 · ${phaseName(state.phase)}`;
+    byId("demo-title").textContent = phaseTitle(state.phase);
+    byId("scene-subtitle").textContent = `固定教学轨迹：${scenario.task}。${scenario.name}场景，按阶段点击“下一步”推进。`;
+    byId("scenario-task").textContent = `任务：${scenario.task}`;
+    const visibleGoals = observed ? round.goals : (state.round > 0 ? scenario.rounds[state.round - 1].goals : []);
+    byId("round-title").textContent = `第 ${state.round + 1} 轮 · ${scenario.name}轨迹`;
+    byId("round-task").textContent = `固定轨迹，不调用模型 · 已完成 ${visibleGoals.length} / ${scenario.allGoals.length} 个目标`;
+    byId("run-status").textContent = terminated ? "已终止" : (observed ? "继续循环" : "运行中");
+
+    byId("thought-text").textContent = round.thought;
+    byId("action-text").textContent = state.phase >= 1 ? round.action : "等待推理阶段。";
+    byId("observation-text").textContent = observed ? round.observation : (state.phase === 1 ? "等待行动结果。" : "等待行动结果。");
+
+    const thoughtCard = byId("phase-thought");
+    const actionCard = byId("phase-action");
+    const observationCard = byId("phase-observation");
+    [thoughtCard, actionCard, observationCard].forEach((card) => {
+      card.classList.remove("is-current", "is-locked", "is-done");
+    });
+    thoughtCard.classList.add(state.phase === 0 ? "is-current" : "is-done");
+    actionCard.classList.add(state.phase === 0 ? "is-locked" : (state.phase === 1 ? "is-current" : "is-done"));
+    observationCard.classList.add(observed ? "is-current" : "is-locked");
+
+    const before = scenario.rounds.slice(0, state.round).reduce((sum, item) => sum + item.tokens, 0);
+    const used = observed ? entry.tokens : before;
+    const pct = Math.round((used / state.tokenBudget) * 100);
+    byId("token-used").textContent = formatNumber(used);
+    byId("token-cap").textContent = formatNumber(state.tokenBudget);
+    byId("token-pct").textContent = `${pct}%`;
+    const meter = byId("token-meter");
+    meter.style.width = `${Math.min(100, pct)}%`;
+    meter.classList.toggle("warn", pct >= 80);
+    byId("turn-used").textContent = String(observed ? state.round + 1 : state.round);
+    byId("turn-cap").textContent = String(total);
+    byId("phase-state").textContent = observed ? (terminated ? "已触发终止" : "本轮检查通过") : `${phaseName(state.phase)}阶段`;
+
+    byId("return-note").textContent = terminated
+      ? "已触发终止条件，不再回到推理；下一步按判定进入最终答案或优雅降级。"
+      : (observed ? "未触发终止 → 下一轮回到推理。" : "观察结果后执行终止检查；未触发就回到推理。");
+
+    renderChecks(entry, observed, state.maxTurns, state.tokenBudget);
+    renderVerdict(entry, observed);
+
+    byId("back-button").disabled = state.round === 0 && state.phase === 0;
+    byId("next-button").disabled = terminated || (state.round === total - 1 && observed);
+    byId("state-summary").textContent = `第 ${state.round + 1} / ${total} 轮 · ${phaseName(state.phase)} · ${formatNumber(used)} / ${formatNumber(state.tokenBudget)} tokens`;
+    updateStageNav();
+  }
+
+  function announce(text) {
+    byId("loop-announcement").textContent = text;
+  }
+
+  function advance() {
+    const scenario = SCENARIOS[state.scenario];
+    const total = totalRounds();
+    if (state.phase < 2) {
+      state.phase += 1;
+      render();
+      const entry = currentTrace();
+      if (state.phase === 2 && entry.decisive) {
+        const content = verdictContent(entry.decisive, entry);
+        announce(`第 ${state.round + 1} 轮观察完成。终止条件命中：${content.title}${content.summary}`);
+      } else {
+        announce(`第 ${state.round + 1} 轮，${phaseName(state.phase)}阶段。`);
+      }
+      return;
+    }
+
+    const entry = currentTrace();
+    if (entry.decisive) {
+      stopAuto();
+      return;
+    }
+    if (state.round < total - 1) {
+      state.round += 1;
+      state.phase = 0;
+      render();
+      announce(`进入第 ${state.round + 1} 轮推理阶段。`);
+    } else {
+      stopAuto();
+    }
+  }
+
+  function next() {
+    stopAuto();
+    advance();
+  }
+
+  function back() {
+    stopAuto();
+    if (state.phase > 0) {
+      state.phase -= 1;
+    } else if (state.round > 0) {
+      state.round -= 1;
+      state.phase = 2;
+    }
+    render();
+    announce(`返回第 ${state.round + 1} 轮，${phaseName(state.phase)}阶段。`);
+  }
+
+  function reset() {
+    stopAuto();
+    state.round = 0;
+    state.phase = 0;
+    render();
+    announce("演示已重置，回到第 1 轮推理阶段。");
+  }
+
+  function stopAuto() {
+    if (state.autoTimer) {
+      clearInterval(state.autoTimer);
+      state.autoTimer = null;
+    }
+    const button = byId("auto-button");
+    button.setAttribute("aria-pressed", "false");
+    button.textContent = "连续执行";
+  }
+
+  function toggleAuto() {
+    if (state.autoTimer) {
+      stopAuto();
+      announce("已暂停连续执行。");
+      return;
+    }
+    const scenario = SCENARIOS[state.scenario];
+    const total = totalRounds();
+    if (state.round === total - 1 && state.phase === 2) {
+      state.round = 0;
+      state.phase = 0;
+      render();
+    }
+    const button = byId("auto-button");
+    button.setAttribute("aria-pressed", "true");
+    button.textContent = "暂停";
+    announce("开始连续执行。");
+    state.autoTimer = setInterval(() => {
+      const snapshot = `${state.round}:${state.phase}`;
+      advance();
+      if (state.autoTimer && `${state.round}:${state.phase}` === snapshot) {
+        stopAuto();
+      }
+    }, 1100);
+  }
+
+  function applyScenario(id) {
+    stopAuto();
+    state.scenario = id;
+    state.round = 0;
+    state.phase = 0;
+    document.querySelectorAll("[data-scenario]").forEach((button) => {
+      button.setAttribute("aria-pressed", button.dataset.scenario === id ? "true" : "false");
+    });
+    buildStageNav();
+    render();
+    announce(`已切换到${SCENARIOS[id].name}固定轨迹，任务：${SCENARIOS[id].task}。`);
+  }
+
+  document.querySelectorAll("[data-scenario]").forEach((button) => {
+    button.addEventListener("click", () => applyScenario(button.dataset.scenario));
+  });
+
+  byId("max-turns").addEventListener("input", (event) => {
+    stopAuto();
+    state.maxTurns = Number(event.target.value);
+    byId("max-turns-out").textContent = String(state.maxTurns);
+    state.round = 0;
+    state.phase = 0;
+    buildStageNav();
+    render();
+    announce(`最大迭代次数改为 ${state.maxTurns}，演示已重置。`);
+  });
+
+  byId("token-budget").addEventListener("input", (event) => {
+    stopAuto();
+    state.tokenBudget = Number(event.target.value);
+    byId("token-budget-out").textContent = formatNumber(state.tokenBudget);
+    state.round = 0;
+    state.phase = 0;
+    buildStageNav();
+    render();
+    announce(`Token 预算改为 ${formatNumber(state.tokenBudget)}，演示已重置。`);
+  });
+
+  byId("next-button").addEventListener("click", next);
+  byId("back-button").addEventListener("click", back);
+  byId("reset-button").addEventListener("click", reset);
+  byId("auto-button").addEventListener("click", toggleAuto);
+
+  buildStageNav();
+  render();
+</script>
+</body>
+</html>

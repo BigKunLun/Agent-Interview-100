@@ -1,0 +1,661 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>配图标准(diagram-standards) · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .dg-toc { margin-top: var(--s-5); padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .dg-toc p { font: 11px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .06em; }
+  .dg-toc ol { list-style: none; display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; padding: 0; }
+  .dg-toc a { display: inline-flex; align-items: center; min-height: 40px; padding: 6px 11px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--accent); font-size: 12px; text-decoration: none; }
+  .dg-toc a:hover { background: var(--surface-soft); }
+  .dg-note { margin-top: var(--s-3); padding: 10px 12px; border: 1px dashed var(--border-bright); border-radius: var(--r-1); color: var(--text-dim); font-size: 12px; line-height: 1.7; }
+  .dg-badge { display: inline-flex; align-items: center; padding: 2px 8px; border: 1px solid transparent; border-radius: 999px; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .dg-badge-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .dg-badge-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .dg-badge-bad { background: #fbecec; color: #6d1717; border-color: #d9a3a3; }
+  .dg-badge-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .dg-gates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; margin-top: var(--s-4); }
+  .dg-gate { padding: 14px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .dg-gate .dg-num { font: 11px/1.6 var(--mono); color: var(--accent); letter-spacing: .06em; }
+  .dg-gate h3 { font: 600 18px/1.4 var(--serif); margin-top: 3px; }
+  .dg-gate p { margin-top: 6px; font-size: 12px; line-height: 1.75; color: var(--text-dim); }
+  .dg-gate .dg-rule { display: block; margin-top: 9px; padding-top: 9px; border-top: 1px solid var(--border); color: var(--ink); font-size: 11px; line-height: 1.6; }
+  .dg-neg { list-style: none; margin: var(--s-4) 0 0; padding: 0; border-top: 1px solid var(--border); }
+  .dg-neg li { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 10px; padding: 11px 0; border-bottom: 1px solid var(--border); font-size: 13px; line-height: 1.7; }
+  .dg-neg .dg-x { color: #6d1717; font: 600 15px/1.5 var(--mono); }
+  .dg-neg b { font-weight: 600; }
+  .dg-neg span:last-child { color: var(--text-dim); }
+  .dg-palette { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: var(--s-4); }
+  .dg-swatch { padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .dg-swatch i { display: block; height: 26px; border: 1px solid #0002; border-radius: 4px; }
+  .dg-swatch b { display: block; margin-top: 5px; font: 600 12px/1.5 var(--sans); }
+  .dg-swatch span { display: block; font-size: 11px; line-height: 1.6; color: var(--text-dim); }
+  .dg-swatch code { font-size: 10px; overflow-wrap: anywhere; }
+  .dg-template { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border); }
+  .dg-template h3 { margin-top: 0; }
+  .dg-figure { margin-top: 10px; padding: 14px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .dg-figure figcaption { margin-top: 10px; font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .dg-flag { display: inline-flex; align-items: center; padding: 2px 8px; border: 1px solid #9eb4c9; border-radius: 999px; background: #eaf1f8; color: #194f87; font: 10px/1.6 var(--mono); }
+  .dg-flow { display: grid; justify-items: center; gap: 3px; }
+  .dg-box { width: min(100%, 380px); padding: 10px 12px; border: 1px solid #1565c0; border-radius: 6px; background: #e3f2fd; color: #0d47a1; text-align: center; font-size: 13px; font-weight: 600; line-height: 1.55; }
+  .dg-box small { display: block; font-weight: 400; font-size: 10px; }
+  .dg-box.decision { border-color: #f9a825; background: #fffde7; color: #5b4030; }
+  .dg-box.store { border-color: #2e7d32; background: #e8f5e9; color: #1b5e20; }
+  .dg-box.agent { border-color: #6a1b9a; background: #f3e5f5; color: #4a148c; }
+  .dg-box.err { border-color: #c62828; background: #ffebee; color: #b71c1c; }
+  .dg-box.neutral { border-color: #546e7a; background: #eceff1; color: #37474f; }
+  .dg-arrow { color: var(--text-dim); font: 13px/1.4 var(--mono); }
+  .dg-loop { position: relative; display: grid; justify-items: center; gap: 3px; padding: 12px 10px 10px; border: 1px dashed #b98a2f; border-radius: 8px; }
+  .dg-loop-label { position: absolute; top: -9px; left: 12px; padding: 0 6px; background: var(--surface); color: #6b4300; font: 10px/1.6 var(--mono); }
+  .dg-branches { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; width: 100%; margin-top: 4px; }
+  .dg-branch { display: grid; justify-items: center; gap: 3px; min-width: 0; }
+  .dg-edge { color: #6b4300; font: 10px/1.5 var(--mono); }
+  .dg-back { color: #194f87; font: 10px/1.5 var(--mono); }
+  .dg-layers { display: grid; gap: 0; width: min(100%, 480px); margin-inline: auto; }
+  .dg-layer { padding: 12px 14px; border: 1px solid #1565c0; border-radius: 6px; background: #e3f2fd; color: #0d47a1; text-align: center; }
+  .dg-layer span { display: block; font: 10px/1.5 var(--mono); letter-spacing: .05em; }
+  .dg-layer b { display: block; margin-top: 2px; font-size: 13px; }
+  .dg-layer.mid { border-color: #ef6c00; background: #fff8e1; color: #b34700; }
+  .dg-layer-link { padding: 5px 0; text-align: center; color: var(--text-dim); font: 11px/1.5 var(--mono); }
+  .dg-seq { display: grid; gap: 5px; width: min(100%, 560px); margin-inline: auto; }
+  .dg-seq-head { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; padding-bottom: 5px; border-bottom: 1px solid var(--border); font: 600 11px/1.5 var(--mono); text-align: center; }
+  .dg-seq-row { display: grid; grid-template-columns: 86px minmax(0, 1fr) 110px; gap: 6px; align-items: center; padding: 5px 0; font-size: 11px; }
+  .dg-seq-row .who { color: var(--text-dim); font-family: var(--mono); overflow-wrap: anywhere; }
+  .dg-seq-row .msg { padding: 6px 8px; border: 1px solid #1565c0; border-radius: 4px; background: #e3f2fd; color: #0d47a1; text-align: center; line-height: 1.5; }
+  .dg-seq-row .msg.reply { border-color: #546e7a; background: #eceff1; color: #37474f; border-style: dashed; }
+  .dg-seq-row .to { color: var(--ink); font-family: var(--mono); overflow-wrap: anywhere; }
+  .dg-state-pair { display: grid; grid-template-columns: 1fr 70px 1fr; gap: 8px; align-items: center; width: min(100%, 560px); margin-inline: auto; }
+  .dg-state { padding: 14px 10px; border: 1px solid #1565c0; border-radius: 8px; background: #e3f2fd; color: #0d47a1; text-align: center; font-size: 13px; font-weight: 600; }
+  .dg-state.bad { border-color: #c62828; background: #ffebee; color: #b71c1c; }
+  .dg-state-arrows { text-align: center; color: var(--text-dim); font: 10px/1.6 var(--mono); }
+  .dg-state-arrows span { display: block; }
+  .dg-transitions { width: min(100%, 560px); margin: 10px auto 0; border-top: 1px solid var(--border); }
+  .dg-transitions div { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 11px; line-height: 1.6; }
+  .dg-transitions dt { color: var(--text-dim); font-family: var(--mono); }
+  .dg-transitions dd { margin: 0; }
+  .dg-checklist { display: grid; gap: 4px; margin-top: var(--s-3); }
+  .dg-checklist label { display: flex; align-items: flex-start; gap: 10px; min-height: 44px; padding: 9px 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 13px; line-height: 1.65; cursor: pointer; }
+  .dg-checklist label:hover { background: var(--surface-soft); }
+  .dg-checklist input { width: 18px; height: 18px; margin: 1px 0 0; flex: 0 0 auto; accent-color: var(--accent); }
+  .dg-code-link { margin-top: 8px; }
+  .dg-code-link summary { min-height: 40px; }
+  .dg-src { margin-top: 4px; font-size: 11px; line-height: 1.75; }
+  @media (max-width: 1000px) {
+    .dg-gates { grid-template-columns: 1fr; }
+    .dg-palette { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px) {
+    .dg-toc { padding: 10px; }
+    .dg-toc a { min-height: 40px; padding: 5px 9px; font-size: 11px; }
+    .dg-palette { grid-template-columns: 1fr; }
+    .dg-seq-row { grid-template-columns: 64px minmax(0, 1fr) 78px; }
+    .dg-state-pair { grid-template-columns: minmax(0, 1fr) 58px minmax(0, 1fr); }
+    .dg-state-arrows { font-size: 9px; line-height: 1.5; }
+    .dg-transitions div { grid-template-columns: 104px minmax(0, 1fr); }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">DOC / 配图标准</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 8 / 9 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="../11-frameworks/110-coding-agent-harness-comparison.html">← 上一页 · 主流 Coding Agent Ha…</a><a href="index.html">下一页 → · 全库速览</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">文档 · 配图规范 · 离线阅读</p>
+      <h1>图不是装饰，<br>是复现锚点。</h1>
+    </div>
+    <div>
+      <p class="lead">本库插图遵循的唯一标准：图即代码（Mermaid）、一图一论点、面试可复现。配图的目标不是“每篇都有图”，而是“每个值得图的结构都有唯一一张好图”。</p>
+      <p class="definition"><strong>制定日期：</strong>2026-08-15。<strong>背景：</strong>全库 104 篇中 82 篇含 ASCII 图，但 ASCII 画在代码块里，GitHub 永远不会渲染成图。本标准以 Mermaid 取代 ASCII，保留“图随文活、进 diff、可追溯”的优点，消灭“不渲染”的缺点。本页是规范文档，不设算法或分步演示；阅读导航与折叠即全部交互。所有 Mermaid 以离线可读的 HTML/CSS 图加源码折叠呈现，不加载 Mermaid 库、不联网渲染。</p>
+      <div class="hero-meta"><span class="pill">文档</span><span class="pill">配图规范</span><span class="pill">Mermaid</span><span class="pill">离线可读</span></div>
+    </div>
+  </header>
+
+  <nav class="dg-toc" aria-label="本页目录">
+    <p>阅读导航 · 7 节</p>
+    <ol>
+      <li><a href="#dg-gates">一、配图三关</a></li>
+      <li><a href="#dg-map">二、形态到图类型</a></li>
+      <li><a href="#dg-negative">三、负面清单</a></li>
+      <li><a href="#dg-engineering">四、工程规范</a></li>
+      <li><a href="#dg-templates">五、模板与配色</a></li>
+      <li><a href="#dg-checklist">六、新增图 checklist</a></li>
+      <li><a href="#dg-examples">附、范例索引</a></li>
+    </ol>
+  </nav>
+
+  <section class="reading" id="dg-gates" aria-labelledby="dg-gates-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">一 · 配图三关</p><h2 id="dg-gates-title">三关全过，<br>才值得画。</h2></div>
+      <p class="reading-intro">一张图值不值得画，过三道门。全过才画；任何一关过不了，表格或文字就是最优解。</p>
+    </div>
+    <div class="prose">
+      <div class="dg-gates">
+        <div class="dg-gate">
+          <p class="dg-num">01 · 结构关</p>
+          <h3>内容的核心主张，<br>是不是空间结构？</h3>
+          <p>只有当文章的论点本身就是顺序、循环、分支、层次、时序、拓扑、状态转移时，图才优于文字。</p>
+          <span class="dg-rule">判断方法：读者需要在脑内“组装零件”才能看懂，值得外化成图；文字本身线性可读，画图就是装饰。</span>
+        </div>
+        <div class="dg-gate">
+          <p class="dg-num">02 · 复现关</p>
+          <h3>读者看完，<br>能在白板上重画吗？</h3>
+          <p>这是面试库独有的判据，也是最硬的一条：好图是面试复现锚点，被问到这道题，应能在 30 秒内画出骨架。</p>
+          <span class="dg-rule">推论：节点 ≤ 10~12 个。超过的图是“文档”，不是“学习资产”，应拆图或退回文字。</span>
+        </div>
+        <div class="dg-gate">
+          <p class="dg-num">03 · 论点关</p>
+          <h3>能用一句话，<br>写出图注吗？</h3>
+          <p>一图一论点。每张图下方必须有一句话图注，例如“同模型换 harness，Terminal Bench 排名 #33 → #5”。</p>
+          <span class="dg-rule">写不出一句话论点的图，没有独立存在的理由。</span>
+        </div>
+      </div>
+      <div class="callout">
+        <p class="callout-label">执行口径</p>
+        <p>三关是“与”的关系，不是“或”。结构关决定“要不要图”，复现关决定“图能不能学”，论点关决定“图有没有独立价值”。三关都过才进入第五节选模板；任何一关不过，回到表格或文字。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" id="dg-map" aria-labelledby="dg-map-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">二 · 形态映射</p><h2 id="dg-map-title">先认形态，<br>再选图类型。</h2></div>
+      <p class="reading-intro">不同内容形态对应不同 Mermaid 图类型。对比、选型和概念辨析不画图，直接用表格或文字。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">内容形态到 Mermaid 图类型的映射</caption>
+          <thead><tr><th scope="col">内容形态</th><th scope="col">图类型</th><th scope="col">本库典型适用</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">循环 / 流水线</th><td><code>flowchart TD</code> + 判断菱形</td><td>114 Deep Research 循环、011 RAG 流水线</td></tr>
+            <tr><th scope="row">分层 / 堆叠架构</th><td><code>flowchart</code> + <code>subgraph</code></td><td>109 三层抽象、005 分层架构</td></tr>
+            <tr><th scope="row">交互 / 调用顺序</th><td><code>sequenceDiagram</code></td><td>021 Function Calling、027 MCP、101 A2A、037 Handoff</td></tr>
+            <tr><th scope="row">状态机 / 生命周期</th><td><code>stateDiagram-v2</code></td><td>006 Agent Loop、任务/会话生命周期</td></tr>
+            <tr><th scope="row">决策 / 选路</th><td><code>flowchart</code> + 菱形分支</td><td>109 决策树、007 Workflow vs Agent</td></tr>
+            <tr><th scope="row">对比 / 选型</th><td><span class="dg-badge dg-badge-bad">不画</span> 用表格</td><td>014 向量库选型、060 Few-shot vs Zero-shot</td></tr>
+            <tr><th scope="row">概念辨析 / 误区</th><td><span class="dg-badge dg-badge-bad">不画</span> 用文字</td><td>各篇“常见误区”段</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="dg-note">这张表只解决“选哪种图”，不替代第一节的三关判断。对比和选型即使结构复杂，也优先用表格：读者要对照多个维度，图的连线反而增加理解成本。</p>
+    </div>
+  </section>
+
+  <section class="reading" id="dg-negative" aria-labelledby="dg-negative-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三 · 负面清单</p><h2 id="dg-negative-title">五种图，<br>不要画。</h2></div>
+      <p class="reading-intro">负面清单和正面标准同样重要。下面五种做法在本库一律不接受，理由都指向同一个问题：图没有承担文字承担不了的认知工作。</p>
+    </div>
+    <div class="prose">
+      <ul class="dg-neg">
+        <li><span class="dg-x" aria-hidden="true">×</span><span><b>不画并列要点的“图化”。</b>五个盒子排一排，那叫列表，不是图。</span></li>
+        <li><span class="dg-x" aria-hidden="true">×</span><span><b>不画 30 节点全景图。</b>那是地图不是知识，拆成多张或退回文字。</span></li>
+        <li><span class="dg-x" aria-hidden="true">×</span><span><b>不在节点里塞长句。</b>标签超过一行半，就是段落伪装成图；用 <code>&lt;br/&gt;</code> 折行或精简。</span></li>
+        <li><span class="dg-x" aria-hidden="true">×</span><span><b>不放 PNG / SVG / drawio 资产文件。</b>一律 Mermaid 内嵌。图片资产无法 diff，双周扫描改文字时不会同步改图，几个迭代内必然图文漂移。</span></li>
+        <li><span class="dg-x" aria-hidden="true">×</span><span><b>“简短回答”段不配图。</b>它本身就是文字版摘要，图只属于“详细解析”里的核心模型。</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="reading" id="dg-engineering" aria-labelledby="dg-engineering-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四 · 工程规范</p><h2 id="dg-engineering-title">图要进 diff，<br>也要有人维护。</h2></div>
+      <p class="reading-intro">配图不是一次性的插图工作，而是文档工程的一部分。下面五条规定图放在哪里、怎么保持风格、谁来同步维护。</p>
+    </div>
+    <div class="prose">
+      <ol>
+        <li><strong>每篇 ≤ 2 张。</strong>放在“详细解析”里核心模型首次出现处，必带一句话图注。</li>
+        <li><strong>风格统一。</strong>中文标签、<code>&lt;br/&gt;</code> 折行、按第五节模板选图选色。</li>
+        <li><strong>语法保守。</strong>只用 <code>flowchart</code> / <code>sequenceDiagram</code> / <code>stateDiagram-v2</code> 的基础特性（以 GitHub 渲染环境为准），实验性特性不进库。</li>
+        <li><strong>维护责任进双周扫描。</strong>改动相关文字时必须同步图。Mermaid 与文字同屏出现在 diff 里，改文不改图在 review 时一眼可见。</li>
+        <li><strong>优先级公式：被引次数 × ASCII 吃力程度。</strong>先覆盖 top 20 枢纽文章，配合双周扫描每次 3~5 篇，不搞全量运动。</li>
+      </ol>
+      <div class="callout">
+        <p class="callout-label">为什么不让图变成资产文件</p>
+        <p>资产文件无法进入文字 diff，改文章时没人会记得同步改图；Mermaid 源码和正文在同一个 diff 里，图文漂移会被 review 直接看见。这是“图即代码”的工程价值，不只是渲染方便。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" id="dg-templates" aria-labelledby="dg-templates-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">五 · 模板与配色</p><h2 id="dg-templates-title">六种语义色，<br>四套骨架。</h2></div>
+      <p class="reading-intro">所有图共用一套语义化六色；一张图内的用色应少于等于三种。唯一例外是分层堆叠图：按层配色，每层一色、层数即色数（≤5 层），因为“颜色 = 层”本身就是该类图要传达的信息。</p>
+    </div>
+    <div class="prose">
+      <h3>通用配色（classDef）</h3>
+      <div class="dg-palette">
+        <div class="dg-swatch"><i style="background:#e3f2fd;border-color:#1565c0"></i><b>proc · 蓝</b><span>常规处理</span><code>fill:#e3f2fd, stroke:#1565c0, color:#0d47a1</code></div>
+        <div class="dg-swatch"><i style="background:#fffde7;border-color:#f9a825"></i><b>decision · 黄</b><span>判断分支</span><code>fill:#fffde7, stroke:#f9a825, color:#795548</code></div>
+        <div class="dg-swatch"><i style="background:#e8f5e9;border-color:#2e7d32"></i><b>store · 绿</b><span>存储 / 数据</span><code>fill:#e8f5e9, stroke:#2e7d32, color:#1b5e20</code></div>
+        <div class="dg-swatch"><i style="background:#f3e5f5;border-color:#6a1b9a"></i><b>agent · 紫</b><span>LLM / Agent 角色</span><code>fill:#f3e5f5, stroke:#6a1b9a, color:#4a148c</code></div>
+        <div class="dg-swatch"><i style="background:#ffebee;border-color:#c62828"></i><b>err · 红</b><span>错误 / 失败路径</span><code>fill:#ffebee, stroke:#c62828, color:#b71c1c</code></div>
+        <div class="dg-swatch"><i style="background:#eceff1;border-color:#546e7a"></i><b>neutral · 灰</b><span>外部系统 / 边界</span><code>fill:#eceff1, stroke:#546e7a, color:#37474f</code></div>
+      </div>
+      <p class="dg-note">配色代码是原文的 Mermaid <code>classDef</code> 配置。本页只把颜色画成色块，展示语义与 hex 值，不加载 Mermaid 渲染。</p>
+      <details class="dg-code-link">
+        <summary>查看六色 classDef 源码</summary>
+        <pre class="dg-src"><code>classDef proc     fill:#e3f2fd,stroke:#1565c0,color:#0d47a1   「蓝·常规处理」
+classDef decision fill:#fffde7,stroke:#f9a825,color:#795548   「黄·判断分支」
+classDef store    fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20   「绿·存储/数据」
+classDef agent    fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c   「紫·LLM/Agent 角色」
+classDef err      fill:#ffebee,stroke:#c62828,color:#b71c1c   「红·错误/失败路径」
+classDef neutral  fill:#eceff1,stroke:#546e7a,color:#37474f   「灰·外部系统/边界」</code></pre>
+      </details>
+
+      <div class="dg-template">
+        <h3>模板 A：循环 / 流水线</h3>
+        <figure class="dg-figure">
+          <span class="dg-flag">离线静态呈现 · 非 Mermaid 渲染</span>
+          <div class="dg-flow" role="img" aria-label="循环流程图：用户问题进入处理步骤，条件判断不满足时进入补充动作并回到处理步骤，满足时输出最终产出">
+            <div class="dg-box">用户问题</div>
+            <div class="dg-arrow">↓</div>
+            <div class="dg-loop">
+              <span class="dg-loop-label">循环</span>
+              <div class="dg-box">处理步骤</div>
+              <div class="dg-arrow">↓</div>
+              <div class="dg-box decision">条件判断？<small>Sufficiency Check</small></div>
+            </div>
+            <div class="dg-branches">
+              <div class="dg-branch"><span class="dg-edge">否 ↓</span><div class="dg-box">补充动作 / 改写</div><span class="dg-back">↺ 回到处理步骤</span></div>
+              <div class="dg-branch"><span class="dg-edge">是 ↓</span><div class="dg-box">最终产出</div></div>
+            </div>
+          </div>
+          <figcaption>图注：循环必须画出回路；“否”分支回到处理步骤，“是”分支才允许退出。范例：114 Deep Research 循环。</figcaption>
+          <details class="dg-code-link">
+            <summary>查看模板 A 的 Mermaid 源码</summary>
+            <pre class="dg-src"><code>flowchart TD
+    A["用户问题"] --&gt; B["处理步骤"]
+    B --&gt; C{"条件判断?&lt;br/&gt;Sufficiency Check"}
+    C -- "否" --&gt; D["补充动作 / 改写"]
+    D --&gt; B
+    C -- "是" --&gt; E["最终产出"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    class B,D,E proc
+    class C decision</code></pre>
+          </details>
+        </figure>
+      </div>
+
+      <div class="dg-template">
+        <h3>模板 B：分层 / 堆叠架构</h3>
+        <figure class="dg-figure">
+          <span class="dg-flag">离线静态呈现 · 非 Mermaid 渲染</span>
+          <div class="dg-layers" role="img" aria-label="分层架构图：L1 顶层代表产品与核心能力，L2 中层代表产品与核心能力，两层相连">
+            <div class="dg-layer"><span>L1 · 顶层 —— 一句话职责</span><b>代表产品 / 核心能力 / 「比喻」</b></div>
+            <div class="dg-layer-link">L1 --- L2</div>
+            <div class="dg-layer mid"><span>L2 · 中层 —— 一句话职责</span><b>代表产品 / 核心能力</b></div>
+          </div>
+          <figcaption>图注：分层图用 subgraph 包住每一层，层与层之间用连线表达依赖；颜色可以按层区分，这是六色规则的唯一例外。范例：109 三层抽象。</figcaption>
+          <details class="dg-code-link">
+            <summary>查看模板 B 的 Mermaid 源码</summary>
+            <pre class="dg-src"><code>flowchart TD
+    subgraph L1["顶层 —— 一句话职责"]
+        A["代表产品&lt;br/&gt;核心能力&lt;br/&gt;「比喻」"]
+    end
+    subgraph L2["中层 —— 一句话职责"]
+        B["代表产品&lt;br/&gt;核心能力"]
+    end
+    L1 --- L2
+    classDef top fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef mid fill:#fff8e1,stroke:#ef6c00,color:#e65100
+    class A top
+    class B mid</code></pre>
+          </details>
+        </figure>
+      </div>
+
+      <div class="dg-template">
+        <h3>模板 C：交互 / 调用顺序</h3>
+        <figure class="dg-figure">
+          <span class="dg-flag">离线静态呈现 · 非 Mermaid 渲染</span>
+          <div class="dg-seq" role="img" aria-label="时序图：用户请求 Agent，Agent 调用工具，工具返回执行结果，Agent 返回最终回答">
+            <div class="dg-seq-head"><span>用户</span><span>Agent(LLM)</span><span>工具 / 外部系统</span></div>
+            <div class="dg-seq-row"><span class="who">用户</span><span class="msg">请求 →</span><span class="to">Agent</span></div>
+            <div class="dg-seq-row"><span class="who">Agent</span><span class="msg">工具调用（参数）→</span><span class="to">工具 / 外部系统</span></div>
+            <div class="dg-seq-row"><span class="who">工具 / 外部系统</span><span class="msg reply">← 执行结果（Observation）</span><span class="to">Agent</span></div>
+            <div class="dg-seq-row"><span class="who">Agent</span><span class="msg reply">← 最终回答</span><span class="to">用户</span></div>
+          </div>
+          <figcaption>图注：时序图只画调用顺序和返回方向，不画内部实现。适用：021 Function Calling、027 MCP、101 A2A、037 Handoff。</figcaption>
+          <details class="dg-code-link">
+            <summary>查看模板 C 的 Mermaid 源码</summary>
+            <pre class="dg-src"><code>sequenceDiagram
+    participant U as 用户
+    participant A as Agent(LLM)
+    participant T as 工具/外部系统
+    U-&gt;&gt;A: 请求
+    A-&gt;&gt;T: 工具调用(参数)
+    T--&gt;&gt;A: 执行结果(Observation)
+    A--&gt;&gt;U: 最终回答</code></pre>
+          </details>
+        </figure>
+      </div>
+
+      <div class="dg-template">
+        <h3>模板 D：状态机 / 生命周期</h3>
+        <figure class="dg-figure">
+          <span class="dg-flag">离线静态呈现 · 非 Mermaid 渲染</span>
+          <div class="dg-state-pair" role="img" aria-label="状态机图：正常态和异常态可以互相切换，正常态可以终止，异常态不可恢复时终止">
+            <div class="dg-state">正常态</div>
+            <div class="dg-state-arrows"><span>双向切换</span></div>
+            <div class="dg-state bad">异常态</div>
+          </div>
+          <dl class="dg-transitions">
+            <div><dt>[*] → 正常态</dt><dd>初始进入</dd></div>
+            <div><dt>正常态 → 异常态</dt><dd>触发条件</dd></div>
+            <div><dt>异常态 → 正常态</dt><dd>恢复动作（重试 / 降级）</dd></div>
+            <div><dt>正常态 → [*]</dt><dd>终止条件</dd></div>
+            <div><dt>异常态 → [*]</dt><dd>不可恢复，报错</dd></div>
+          </dl>
+          <figcaption>图注：状态机要画清楚“从哪来、到哪去、什么条件触发”；异常态必须有恢复路径和不可恢复的出口。适用：006 Agent Loop、任务/会话生命周期。</figcaption>
+          <details class="dg-code-link">
+            <summary>查看模板 D 的 Mermaid 源码</summary>
+            <pre class="dg-src"><code>stateDiagram-v2
+    [*] --&gt; 正常态
+    正常态 --&gt; 异常态: 触发条件
+    异常态 --&gt; 正常态: 恢复动作(重试/降级)
+    正常态 --&gt; [*]: 终止条件
+    异常态 --&gt; [*]: 不可恢复,报错</code></pre>
+          </details>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" id="dg-checklist" aria-labelledby="dg-checklist-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">六 · Checklist</p><h2 id="dg-checklist-title">新增一张图，<br>逐条打勾。</h2></div>
+      <p class="reading-intro">下面六条来自原文。勾选只记录在本页，不保存、不上传、不写入任何文件。</p>
+    </div>
+    <div class="prose">
+      <div class="dg-checklist">
+        <label><input type="checkbox"><span>三关全过（结构 / 复现 / 论点）。</span></label>
+        <label><input type="checkbox"><span>按第二节映射选对图类型，对比选型内容放弃画图改用表格。</span></label>
+        <label><input type="checkbox"><span>节点 ≤ 12，标签中文、<code>&lt;br/&gt;</code> 折行、无长句。</span></label>
+        <label><input type="checkbox"><span>套用第五节模板与配色，一张图用色 ≤ 3 种。</span></label>
+        <label><input type="checkbox"><span>图下有一句话图注。</span></label>
+        <label><input type="checkbox"><span>在 GitHub 上渲染验证通过后再合入。</span></label>
+      </div>
+      <p class="dg-note">本页的 Mermaid 源码是静态文本，没有在 GitHub 上渲染验证；checklist 最后一条需要在实际提交前完成。</p>
+    </div>
+  </section>
+
+  <section class="reading" id="dg-examples" aria-labelledby="dg-examples-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">附 · 范例索引</p><h2 id="dg-examples-title">两张图，<br>两种骨架。</h2></div>
+      <p class="reading-intro">原文只给了两个范例。它们分别对应模板 A 和模板 B，可以在站内页面里对照阅读。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">原文的 Mermaid 范例索引</caption>
+          <thead><tr><th scope="col">文章</th><th scope="col">图</th><th scope="col">说明</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><a href="../01-agent-architecture/114-deep-research-agent.html">114 Deep Research</a></th><td>核心循环 flowchart</td><td>全库第一张 Mermaid，模板 A 雏形</td></tr>
+            <tr><th scope="row"><a href="../01-agent-architecture/109-what-is-agent-harness.html">109 Agent Harness</a></th><td>三层抽象堆叠</td><td>模板 B 范例，由 ASCII 字符墙改造而来</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="dg-note">以上两个站内链接目标均已构建。原文没有给出其他图范例，本页不擅自补充。</p>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="dg-sources-title">
+    <p class="eyebrow">原文引用</p>
+    <h2 class="source-heading" id="dg-sources-title">原文与站内范例</h2>
+    <p class="source-summary">原文是一份规范文档，没有外部参考资料；正文只引用了 109 和 114 两个站内范例。只有主动点击站内链接才会离开本页，本页不加载任何外部资源。</p>
+    <details>
+      <summary>展开原文引用的 2 个站内范例</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="../01-agent-architecture/109-what-is-agent-harness.html">109 — 什么是 Agent Harness</a>：模板 B 三层抽象堆叠的范例，由 ASCII 字符墙改造而来。</li>
+          <li><a href="../01-agent-architecture/114-deep-research-agent.html">114 — Deep Research Agent</a>：模板 A 核心循环 flowchart 的范例，全库第一张 Mermaid。</li>
+        </ul>
+        <p class="source-footnote">原文背景中的“104 篇 / 82 篇 ASCII 图”是 2026-08-15 制定时的快照，本页未联网核实当前数量。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>docs/diagram-standards.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 7 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  // 本页是规范文档，不设算法或分步演示；阅读导航、折叠与 checklist 即全部交互。
+</script>
+</body>
+</html>

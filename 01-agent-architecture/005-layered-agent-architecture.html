@@ -1,0 +1,876 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>如何设计一个分层 Agent 架构（Orchestrator / Worker 模式）？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .a5-board { padding: var(--s-3) var(--s-6) 0; }
+  .a5-org { border: 1px solid var(--accent); border-radius: var(--r-1); background: var(--accent-dim); padding: 11px 13px; }
+  .a5-org-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; }
+  .a5-org-name { font-weight: 600; font-size: var(--t-small); }
+  .a5-org-model { font: 9px/1.6 var(--mono); color: var(--text-dim); }
+  .a5-org-action { margin-top: 4px; font-size: 12px; line-height: 1.6; }
+  .a5-org-io { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 4px; font: 10px/1.6 var(--mono); color: var(--text-dim); }
+  .a5-org-io b { color: var(--ink); }
+  .a5-link-row { display: flex; justify-content: center; gap: var(--s-6); padding: 4px 0; font: 9px/1.6 var(--mono); color: var(--text-dim); }
+  .a5-batches { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .a5-batch { min-width: 0; padding: 8px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .a5-batch-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 4px; margin-bottom: 6px; }
+  .a5-batch-name { font: 600 10px/1.5 var(--mono); color: var(--text-dim); }
+  .a5-parallel { padding: 1px 7px; border: 1px solid #9eb4c9; border-radius: 999px; background: var(--accent-dim); font: 9px/1.6 var(--mono); color: var(--accent); white-space: nowrap; }
+  .a5-parallel.is-hot { background: var(--accent); color: white; border-color: var(--accent); }
+  .a5-worker { margin-top: 5px; padding: 8px 9px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: 11px; line-height: 1.55; }
+  .a5-worker-name { display: flex; justify-content: space-between; gap: 5px; font-weight: 600; font-size: 12px; }
+  .a5-worker-model { font: 9px/1.6 var(--mono); color: var(--text-dim); font-weight: 400; }
+  .a5-worker-task { margin-top: 2px; color: var(--text-dim); overflow-wrap: anywhere; }
+  .a5-worker-state { margin-top: 4px; font: 9px/1.6 var(--mono); color: var(--text-dim); }
+  .a5-worker[data-state="active"] { border-color: var(--accent); background: var(--accent-dim); }
+  .a5-worker[data-state="active"] .a5-worker-state { color: var(--accent); }
+  .a5-worker[data-state="done"] { border-color: #9eb4c9; background: #f5f8f2; }
+  .a5-worker[data-state="done"] .a5-worker-state { color: #2e7d32; }
+  .a5-worker[data-state="retry"] { border-color: #c2410c; border-style: dashed; background: #fdf1ea; }
+  .a5-worker[data-state="retry"] .a5-worker-state { color: #8a2c0a; }
+  .a5-worker[data-state="pending"] { opacity: .5; }
+  .a5-wait { margin-top: 6px; padding: 4px 7px; border-top: 1px dashed var(--border); font: 9px/1.6 var(--mono); color: var(--text-dim); }
+  .a5-plan { margin-top: var(--s-4); }
+  .a5-plan-title { font: 9px/1.6 var(--mono); letter-spacing: .05em; color: var(--text-dim); margin-bottom: 4px; }
+  .a5-plan-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 110px 72px; gap: 7px; align-items: center; padding: 5px 8px; border-bottom: 1px dashed var(--border); font-size: 11px; line-height: 1.55; }
+  .a5-plan-row:last-child { border-bottom: 0; }
+  .a5-plan-id { font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .a5-plan-dep { font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .a5-plan-status { font: 9px/1.5 var(--mono); text-align: right; color: var(--text-dim); }
+  .a5-plan-status.is-run { color: var(--accent); }
+  .a5-plan-status.is-done { color: #2e7d32; }
+  .a5-plan-status.is-retry { color: #8a2c0a; }
+  .a5-io { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); padding: var(--s-4) var(--s-6) var(--s-5); }
+  .a5-io-box { min-width: 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .a5-io-label { font: 9px/1.6 var(--mono); letter-spacing: .06em; color: var(--text-dim); }
+  .a5-io-value { margin-top: 2px; font-size: 12px; line-height: 1.65; overflow-wrap: anywhere; }
+  .a5-tree { display: grid; gap: 5px; margin-top: var(--s-4); }
+  .a5-tree-level { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 8px; align-items: center; }
+  .a5-tree-tag { font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .a5-tree-nodes { display: flex; flex-wrap: wrap; gap: 6px; }
+  .a5-tree-node { flex: 1 1 110px; padding: 8px 9px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 11px; line-height: 1.5; }
+  .a5-tree-node b { display: block; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  @media (max-width: 1000px) {
+    .a5-board, .a5-io { padding-inline: var(--s-5); }
+  }
+  @media (max-width: 720px) {
+    .a5-board { padding: var(--s-3) var(--s-4) 0; }
+    .a5-batches { grid-template-columns: 1fr; }
+    .a5-plan-row { grid-template-columns: 28px minmax(0, 1fr) 78px 62px; gap: 5px; }
+    .a5-io { grid-template-columns: 1fr; padding: var(--s-3) var(--s-4) var(--s-4); }
+    .a5-tree-level { grid-template-columns: 48px minmax(0, 1fr); }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">005 / 分层 Agent 架构</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 4 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="003-agent-architecture-patterns.html">← 上一页 · Agent 架构模式详解</a><a href="009-self-reflection-correction.html">下一页 → · 如何实现 Agent 的自我反思（S…</a></div>
+    </nav>
+    <main id="main-content">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">中级 · Agent 架构 · 可交互讲解</p>
+          <h1>一个指挥，<br>一组并行干活的 Worker。</h1>
+        </div>
+        <div>
+          <p class="lead">分层 Agent 架构（Orchestrator-Worker 模式）把复杂任务分成“指挥”和“执行”两层。Orchestrator 理解目标、分解任务、分配工作、综合结果；Worker 是专业化的子 Agent，各自擅长特定领域。</p>
+          <p class="definition"><strong>子任务的数量和类型取决于输入，而不是预定义流程。</strong>这是它和固定 Prompt Chaining 或工具路由的根本区别。代价是 Orchestrator 可能成为瓶颈和单点故障。</p>
+          <div class="hero-meta"><span class="pill">中级</span><span class="pill">Agent 架构</span><span class="pill">Orchestrator</span><span class="pill">Worker 并行</span></div>
+        </div>
+      </header>
+
+      <section class="walkthrough" id="explainer" aria-labelledby="a5-demo-title">
+        <div class="player-top">
+          <div class="player-label">分派演练台 <small>固定任务：自动化市场研究报告</small></div>
+          <div class="controls" role="group" aria-label="分派演示控制">
+            <button type="button" class="button button-quiet" id="a5-reset">重置</button>
+            <button type="button" class="button" id="a5-back" disabled>上一步</button>
+            <button type="button" class="button button-primary" id="a5-next">下一拍 →</button>
+            <button type="button" class="button" id="a5-auto" aria-pressed="false">自动播放</button>
+          </div>
+        </div>
+
+        <nav class="stage-nav" aria-label="分派拍次">
+          <ol id="a5-stage-list" style="--stages: 7"></ol>
+        </nav>
+
+        <div class="scene-caption">
+          <p class="figure-index"><span id="a5-step-index">分派演示 · 第 1 / 7 拍</span> <span class="a5-parallel" id="a5-parallel-badge">并行 ×1</span></p>
+          <h2 id="a5-demo-title">Orchestrator：先把目标拆成五个子任务。</h2>
+          <p id="a5-subtitle">固定教学任务：分析 2026 年 AI Agent 市场并写报告。每一拍显示分派对象、Worker 状态和回传结果。</p>
+        </div>
+
+        <div class="scene-host">
+          <div class="a5-board">
+            <div class="a5-org" data-node="orchestrator">
+              <div class="a5-org-head"><span class="a5-org-name">Orchestrator · 强模型 / 规划</span><span class="a5-org-model">负责分解、分配、追踪、综合</span></div>
+              <p class="a5-org-action" id="a5-org-action">解析目标：分析 2026 年 AI Agent 市场，写一份报告。</p>
+              <p class="a5-org-io"><span><b>收到：</b><span id="a5-org-in">用户高层目标</span></span><span><b>发出：</b><span id="a5-org-out">等待分解</span></span></p>
+            </div>
+            <div class="a5-link-row"><span>↓ 分配子任务</span><span>↑ 结果回传</span></div>
+            <div class="a5-batches" aria-label="三批 Worker：搜索组并行两个、分析组并行两个、写作组一个">
+              <div class="a5-batch">
+                <div class="a5-batch-head"><span class="a5-batch-name">批次 1 · 搜索组</span><span class="a5-parallel" data-batch="1">⇉ 并行 ×2</span></div>
+                <div class="a5-worker" data-worker="searchA" data-state="pending">
+                  <p class="a5-worker-name">SearchWorker A <span class="a5-worker-model">小模型</span></p>
+                  <p class="a5-worker-task">S1 · 搜索市场规模数据</p>
+                  <p class="a5-worker-state">待命</p>
+                </div>
+                <div class="a5-worker" data-worker="searchB" data-state="pending">
+                  <p class="a5-worker-name">SearchWorker B <span class="a5-worker-model">小模型</span></p>
+                  <p class="a5-worker-task">S2 · 搜索主要玩家与竞争格局</p>
+                  <p class="a5-worker-state">待命</p>
+                </div>
+              </div>
+              <div class="a5-batch">
+                <div class="a5-batch-head"><span class="a5-batch-name">批次 2 · 分析组</span><span class="a5-parallel" data-batch="2">⇉ 并行 ×2</span></div>
+                <div class="a5-worker" data-worker="analyzeA" data-state="pending">
+                  <p class="a5-worker-name">AnalyzeWorker A <span class="a5-worker-model">小模型</span></p>
+                  <p class="a5-worker-task">S3 · 分析市场增长趋势</p>
+                  <p class="a5-worker-state">待命</p>
+                </div>
+                <div class="a5-worker" data-worker="analyzeB" data-state="pending">
+                  <p class="a5-worker-name">AnalyzeWorker B <span class="a5-worker-model">小模型</span></p>
+                  <p class="a5-worker-task">S4 · SWOT 分析</p>
+                  <p class="a5-worker-state">待命</p>
+                </div>
+                <p class="a5-wait">↑ 等待批次 1 的 S1 / S2 结果</p>
+              </div>
+              <div class="a5-batch">
+                <div class="a5-batch-head"><span class="a5-batch-name">批次 3 · 写作组</span><span class="a5-parallel" data-batch="3">单路</span></div>
+                <div class="a5-worker" data-worker="writer" data-state="pending">
+                  <p class="a5-worker-name">WriterWorker <span class="a5-worker-model">小模型</span></p>
+                  <p class="a5-worker-task">S5 · 综合数据生成报告</p>
+                  <p class="a5-worker-state">待命</p>
+                </div>
+                <p class="a5-wait">↑ 等待 S1–S4 全部完成</p>
+              </div>
+            </div>
+
+            <div class="a5-plan" aria-label="五个子任务及依赖状态">
+              <p class="a5-plan-title">子任务队列 · 固定教学数据</p>
+              <div class="a5-plan-row" data-task="s1"><span class="a5-plan-id">S1</span><span>搜索市场规模数据</span><span class="a5-plan-dep">依赖：无</span><span class="a5-plan-status">等待</span></div>
+              <div class="a5-plan-row" data-task="s2"><span class="a5-plan-id">S2</span><span>搜索主要玩家与竞争格局</span><span class="a5-plan-dep">依赖：无</span><span class="a5-plan-status">等待</span></div>
+              <div class="a5-plan-row" data-task="s3"><span class="a5-plan-id">S3</span><span>分析市场增长趋势</span><span class="a5-plan-dep">依赖：S1、S2</span><span class="a5-plan-status">等待</span></div>
+              <div class="a5-plan-row" data-task="s4"><span class="a5-plan-id">S4</span><span>SWOT 分析</span><span class="a5-plan-dep">依赖：S1、S2</span><span class="a5-plan-status">等待</span></div>
+              <div class="a5-plan-row" data-task="s5"><span class="a5-plan-id">S5</span><span>综合所有数据生成报告</span><span class="a5-plan-dep">依赖：S1–S4</span><span class="a5-plan-status">等待</span></div>
+            </div>
+          </div>
+
+          <div class="a5-io">
+            <div class="a5-io-box"><p class="a5-io-label">本拍输入</p><p class="a5-io-value" id="a5-io-in">用户目标：分析 2026 年 AI Agent 市场，写一份报告。</p></div>
+            <div class="a5-io-box"><p class="a5-io-label">本拍输出</p><p class="a5-io-value" id="a5-io-out">5 个子任务：S1、S2 搜索；S3、S4 分析；S5 写作。</p></div>
+          </div>
+          <p class="demo-note" style="margin: 0 var(--s-6) var(--s-5);">固定教学数据：子任务、依赖关系、Worker 状态和失败/重试次数都写在页面脚本里。本页不调用模型，也不启动真实 Worker。</p>
+        </div>
+        <div class="walkthrough-foot"><span>固定教学数据 · 不调用模型</span><span id="a5-state">分解 · 第 1 / 7 拍 · 并行 ×1</span></div>
+      </section>
+      <p id="a5-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+      <section class="reading" aria-labelledby="a5-what-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">一、模式定义</p><h2 id="a5-what-title">集中式任务管理：<br>一个 Orchestrator，多个 Worker。</h2></div>
+          <p class="reading-intro">Orchestrator 保持全局视野，把复杂问题分解为子任务，交给专业化 Worker 执行，再把局部结果综合成完整方案。</p>
+        </div>
+        <div class="prose">
+          <p>与固定的 Prompt Chaining 或工具路由不同，Orchestrator-Worker 的假设是：<strong>子任务的数量和类型取决于输入的特性，而非预定义的流程。</strong></p>
+          <p>“分层”指职责分层，不一定是模型分层：Orchestrator 通常用强模型做规划和综合，Worker 可以用更小、更便宜的模型，因为每个 Worker 只需在特定领域表现好。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a5-arch-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">二、核心架构</p><h2 id="a5-arch-title">分配下去，<br>再并行回传。</h2></div>
+          <p class="reading-intro">Orchestrator 向三个 Worker 分配子任务；Worker 独立执行，结果回传；Orchestrator 负责进度和综合。</p>
+        </div>
+        <div class="prose">
+          <figure>
+            <div class="a5-tree" role="img" aria-label="Orchestrator-Worker 两层架构：Orchestrator 向 Worker A 搜索、Worker B 分析、Worker C 写作分配子任务，三个 Worker 回传结果">
+              <div class="a5-tree-level"><span class="a5-tree-tag">编排层</span><div class="a5-tree-nodes"><div class="a5-tree-node"><b>Orchestrator · 强模型</b>任务分解 → 分配 → 进度追踪 → 结果综合</div></div></div>
+              <div class="a5-tree-level"><span class="a5-tree-tag">执行层</span><div class="a5-tree-nodes"><div class="a5-tree-node"><b>Worker A</b>搜索 · 可并行</div><div class="a5-tree-node"><b>Worker B</b>分析 · 可并行</div><div class="a5-tree-node"><b>Worker C</b>写作 · 可并行</div></div></div>
+            </div>
+            <figcaption class="read-figure-note">图 1 · 两层的分配/回传关系。Worker 之间不直接通信，所有协调都经过 Orchestrator；三个 Worker 可以同时执行。</figcaption>
+          </figure>
+          <details>
+            <summary>查看原文 Mermaid 架构图源码</summary>
+            <pre><code>flowchart TD
+    subgraph ORCH["Orchestrator —— 强模型 / 规划"]
+        O["任务分解 → 分配 → 进度追踪 → 结果综合"]
+    end
+    subgraph WORK["Workers —— 专业化子 Agent（可用更小更便宜的模型）"]
+        W1["Worker A&lt;br/&gt;搜索"]
+        W2["Worker B&lt;br/&gt;分析"]
+        W3["Worker C&lt;br/&gt;写作"]
+    end
+    O --&gt;|"分配子任务"| W1
+    O --&gt;|"分配子任务"| W2
+    O --&gt;|"分配子任务"| W3
+    W1 --&gt;|"结果回传"| O
+    W2 --&gt;|"结果回传"| O
+    W3 --&gt;|"结果回传"| O
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class O agent
+    class W1,W2,W3 proc</code></pre>
+            <p class="source-footnote">源码按原文保留，仅做 HTML 转义；上方静态图按同一分配/回传关系呈现。</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a5-orch-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">三、Orchestrator 职责</p><h2 id="a5-orch-title">理解、分解、分配、<br>追踪、综合、调整。</h2></div>
+          <p class="reading-intro">六项职责里，动态调整最关键：根据中间结果决定继续分解、重新分配还是结束。</p>
+        </div>
+        <div class="prose">
+          <ol>
+            <li><strong>任务理解：</strong>解析用户的高层目标。</li>
+            <li><strong>任务分解：</strong>将目标拆解为具体的子任务。</li>
+            <li><strong>任务分配：</strong>根据 Worker 的能力选择最合适的 Worker。</li>
+            <li><strong>进度追踪：</strong>监控各 Worker 的执行状态。</li>
+            <li><strong>结果综合：</strong>将各 Worker 的结果整合为最终输出。</li>
+            <li><strong>动态调整：</strong>根据中间结果决定下一步——继续分解、重新分配，还是结束。</li>
+          </ol>
+          <p class="code-label">Orchestrator · 原文代码</p>
+          <pre><code>class Orchestrator:
+    def __init__(self, workers: dict[str, Worker], llm):
+        self.workers = workers  # {"search": SearchWorker, "analyze": AnalyzeWorker, ...}
+        self.llm = llm
+
+    def run(self, task: str) -&gt; str:
+        # 1. 分解任务
+        subtasks = self._decompose(task)
+        results = {}
+
+        while subtasks:
+            # 2. 分配可并行执行的任务
+            batch = self._get_parallel_batch(subtasks)
+
+            # 3. 并行执行
+            for subtask in batch:
+                worker = self._select_worker(subtask)
+                results[subtask.id] = worker.execute(subtask)
+
+            # 4. 根据结果动态决定下一步
+            subtasks = self._replan_if_needed(task, results)
+
+        # 5. 综合结果
+        return self._synthesize(task, results)
+
+    def _select_worker(self, subtask: SubTask) -&gt; Worker:
+        """根据子任务类型选择合适的 Worker"""
+        return self.workers[subtask.required_skill]</code></pre>
+          <p>注意：原文的 <code>for</code> 循环是顺序调用。要真正让同一批 Worker 并行，需要把执行改成并发（如 <code>asyncio.gather</code>），否则拓扑上是分支，执行上仍是串行。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a5-worker-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">四、Worker 设计原则</p><h2 id="a5-worker-title">每个 Worker 只擅长<br>一个领域。</h2></div>
+          <p class="reading-intro">Worker 是专业化的 Agent，具备特定领域的工具和系统提示。Worker 内部可以再用 ReAct 自主完成子任务。</p>
+        </div>
+        <div class="prose">
+          <p class="code-label">SearchWorker 与 AnalyzeWorker · 原文代码</p>
+          <pre><code>class SearchWorker(Worker):
+    """专门负责信息检索的 Worker"""
+    def __init__(self):
+        self.tools = [web_search, database_query, document_retrieval]
+        self.system_prompt = "你是信息检索专家，负责查找和整理相关信息。"
+
+    def execute(self, subtask: SubTask) -&gt; WorkerResult:
+        # Worker 内部可以使用 ReAct 模式自主完成子任务
+        agent = ReactAgent(
+            llm=self.llm,  # 可以用更小、更便宜的模型
+            tools=self.tools,
+            system_prompt=self.system_prompt
+        )
+        return agent.run(subtask.description)
+
+class AnalyzeWorker(Worker):
+    """专门负责数据分析的 Worker"""
+    def __init__(self):
+        self.tools = [calculator, chart_generator, statistics_engine]
+        self.system_prompt = "你是数据分析专家，负责处理和分析数据。"</code></pre>
+          <p><strong>设计要点：</strong>单一职责（只做一类子任务）、工具集收敛（只暴露完成该领域需要的工具）、接口一致（输入子任务，输出结构化结果）、模型可替换（小模型能胜任就不上强模型）。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a5-hier-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">五、层次化架构</p><h2 id="a5-hier-title">超复杂任务，<br>把模式递归一层。</h2></div>
+          <p class="reading-intro">每个中层节点既是上层的 Worker，又是下层的 Orchestrator。适合企业级多团队协作。</p>
+        </div>
+        <div class="prose">
+          <figure>
+            <div class="a5-tree" role="img" aria-label="三层结构：顶层 Orchestrator 下有三个中层 Orchestrator，每个中层下再有 Worker">
+              <div class="a5-tree-level"><span class="a5-tree-tag">第 1 层</span><div class="a5-tree-nodes"><div class="a5-tree-node"><b>顶层 Orchestrator</b>全局目标与最终综合</div></div></div>
+              <div class="a5-tree-level"><span class="a5-tree-tag">第 2 层</span><div class="a5-tree-nodes"><div class="a5-tree-node"><b>中层 Orchestrator A</b>既是 Worker 又是 Orchestrator</div><div class="a5-tree-node"><b>中层 Orchestrator B</b>同上</div><div class="a5-tree-node"><b>中层 Orchestrator C</b>同上</div></div></div>
+              <div class="a5-tree-level"><span class="a5-tree-tag">第 3 层</span><div class="a5-tree-nodes"><div class="a5-tree-node"><b>Worker</b>执行具体子任务</div><div class="a5-tree-node"><b>Worker</b>执行具体子任务</div><div class="a5-tree-node"><b>Worker</b>执行具体子任务</div></div></div>
+            </div>
+            <figcaption class="read-figure-note">图 2 · 递归的 Orchestrator-Worker：每层只面对自己的子节点；层数越深，协调开销和延迟越高。</figcaption>
+          </figure>
+          <pre><code>class HierarchicalOrchestrator(Orchestrator):
+    """递归的层次化编排器"""
+    def _select_worker(self, subtask: SubTask) -&gt; Worker:
+        if subtask.complexity &gt; THRESHOLD:
+            # 复杂子任务交给子 Orchestrator 进一步分解
+            return SubOrchestrator(workers=self._get_sub_workers(subtask))
+        else:
+            # 简单子任务直接交给 Worker 执行
+            return self.workers[subtask.required_skill]</code></pre>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a5-compare-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">六、与其他多 Agent 模式对比</p><h2 id="a5-compare-title">集中、链式、平等、<br>共享黑板。</h2></div>
+          <p class="reading-intro">四种模式的协调方式不同。Orchestrator-Worker 适合问题结构在运行时才涌现的任务。</p>
+        </div>
+        <div class="prose">
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">四种多 Agent 模式的特点与适用场景</caption>
+              <thead><tr><th scope="col">模式</th><th scope="col">特点</th><th scope="col">适用场景</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Orchestrator-Worker</th><td>集中控制，动态分解</td><td>问题结构在运行时涌现</td></tr>
+                <tr><th scope="row">Pipeline</th><td>固定顺序，前一步输出是后一步输入</td><td>结构确定的顺序处理</td></tr>
+                <tr><th scope="row">Peer-to-Peer</th><td>Agent 间平等通信，无中心</td><td>协商、辩论、头脑风暴</td></tr>
+                <tr><th scope="row">Blackboard</th><td>共享状态空间，Agent 自主读写</td><td>知识密集型协作</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a5-keys-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">七、关键考量</p><h2 id="a5-keys-title">模型、路由、容错、状态，<br>四件事先想清楚。</h2></div>
+          <p class="reading-intro">Orchestrator 用强模型，Worker 可用小模型；路由可以静态或动态；失败要能重分配；状态要分层管理。</p>
+        </div>
+        <div class="prose">
+          <p><strong>1. 模型选择：</strong>Orchestrator 需要强大的规划和推理能力，通常使用前沿模型（如 Claude Opus、GPT-4o）；Worker 可以使用更小、更便宜的模型（如 Claude Haiku、GPT-4o-mini）。</p>
+          <p><strong>2. 任务分配策略：</strong>静态路由基于规则（<code>subtask.type == "search"</code>）；动态路由让 LLM 根据子任务和 Worker 描述选择。</p>
+          <pre><code># 静态路由：基于规则
+if subtask.type == "search":
+    return search_worker
+elif subtask.type == "code":
+    return code_worker
+
+# 动态路由：让 LLM 选择
+worker_selection = llm.generate(
+    f"Given subtask '{subtask}' and available workers {worker_descriptions}, "
+    f"which worker is most suitable?"
+)</code></pre>
+          <p><strong>3. 错误处理与容错：</strong>Worker 失败时，Orchestrator 应能检测并重新分配任务；设置 Worker 的超时和最大重试次数；某个 Worker 持续失败时，考虑降级或换用替代方案。</p>
+          <p><strong>4. 状态管理：</strong>Orchestrator 维护全局状态（所有子任务的进度和结果）；Worker 维护局部状态（自己的执行上下文）；考虑事件驱动架构使系统异步化，提高容错性。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a5-case-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">八、实际案例</p><h2 id="a5-case-title">市场研究报告：<br>两波并行，一次综合。</h2></div>
+          <p class="reading-intro">S1、S2 互不依赖，第一波并行；S3、S4 依赖前两者，第二波并行；S5 依赖全部，最后执行。</p>
+        </div>
+        <div class="prose">
+          <p><strong>Orchestrator 分解：</strong>S1 → SearchWorker 搜索市场规模；S2 → SearchWorker 搜索主要玩家和竞争格局；S3 → AnalyzeWorker 分析增长趋势；S4 → AnalyzeWorker 做 SWOT；S5 → WriterWorker 综合生成报告。</p>
+          <p><strong>执行流程：</strong>① S1 和 S2 并行；② S3 和 S4 在 S1/S2 完成后并行；③ S5 依赖所有前置任务，最后执行。</p>
+          <p>这个案例也说明了分层的价值：批次之间是依赖关系，批次内部可以并行。Orchestrator 只需要管批次和依赖，不需要亲自做搜索或分析。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a5-mis-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="a5-mis-title">两条误区，<br>两条追问。</h2></div>
+          <p class="reading-intro">前两条纠正“层数”和“Orchestrator 必须是 LLM”的误解，后两条讨论微服务类比和单点故障。</p>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">误区 1</p>
+          <div><h3>“越多层越好。”</h3><p>每增加一层都引入协调开销、延迟和成本。应使用满足需求的最简架构。如果单个 ReAct Agent 能完成任务，不要引入 Orchestrator-Worker。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">误区 2</p>
+          <div><h3>“Orchestrator 必须是 LLM。”</h3><p>对于结构确定的任务，Orchestrator 可以是确定性代码（if-else 路由、DAG 引擎），不必每次都调用 LLM。只有当任务分解需要理解自然语言语义时，才需要 LLM 做 Orchestrator。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">追问 1</p>
+          <div><h3>Orchestrator-Worker 和微服务架构有什么关系？</h3><p>概念类似：Orchestrator 像 API Gateway + 业务编排层，Worker 像独立微服务。可以借鉴微服务的设计原则：单一职责、松耦合、独立部署、容错机制。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">追问 2</p>
+          <div><h3>如何避免 Orchestrator 成为单点故障？</h3><p>(1) Orchestrator 本身做无状态设计，状态存外部存储；(2) 设置 Orchestrator 超时，支持任务恢复；(3) 对关键任务可以引入多个 Orchestrator 做冗余。</p></div>
+        </div>
+      </section>
+
+      <section class="source-section" aria-labelledby="a5-source-title">
+        <p class="eyebrow">技术细节，按需展开</p>
+        <h2 class="source-heading" id="a5-source-title">原文参考资料</h2>
+        <p class="source-summary">讲解依据《如何设计一个分层 Agent 架构（Orchestrator / Worker 模式）？》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+        <details>
+          <summary>展开原文列出的五条参考链接</summary>
+          <div class="source-content">
+            <ul>
+              <li><a href="https://learn.microsoft.com/en-us/azure/architecture/ai-ml/guide/ai-agent-design-patterns" target="_blank" rel="noopener noreferrer">AI Agent Orchestration Patterns (Microsoft Azure)</a></li>
+              <li><a href="https://docs.cloud.google.com/architecture/choose-design-pattern-agentic-ai-system" target="_blank" rel="noopener noreferrer">Choose a Design Pattern for Your Agentic AI System (Google Cloud)</a></li>
+              <li><a href="https://agentic-design.ai/patterns/multi-agent/supervisor-worker-pattern" target="_blank" rel="noopener noreferrer">Supervisor-Worker Pattern (Agentic Design)</a></li>
+              <li><a href="https://www.confluent.io/blog/event-driven-multi-agent-systems/" target="_blank" rel="noopener noreferrer">Four Design Patterns for Event-Driven Multi-Agent Systems (Confluent)</a></li>
+              <li><a href="https://arize.com/blog/orchestrator-worker-agents-a-practical-comparison-of-common-agent-frameworks/" target="_blank" rel="noopener noreferrer">Orchestrator-Worker Agents: A Practical Comparison (Arize AI)</a></li>
+            </ul>
+            <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+          </div>
+        </details>
+      </section>
+    </main>
+    <footer><span>Agent-Interview-100 · <code>01-agent-architecture/005-layered-agent-architecture.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 3 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const A5_STEPS = [
+    {
+      nav: "分解", parallel: 1,
+      title: "Orchestrator：先把目标拆成五个子任务。",
+      detail: "任务理解与分解：搜索两组、分析两组、写作一组。",
+      ioIn: "用户目标：分析 2026 年 AI Agent 市场，写一份报告。",
+      ioOut: "5 个子任务：S1、S2 搜索；S3、S4 分析；S5 写作。",
+      org: "解析目标，拆出 5 个子任务，并标注依赖。",
+      orgIn: "用户高层目标", orgOut: "5 个子任务 + 依赖关系",
+      workers: { searchA: "pending", searchB: "pending", analyzeA: "pending", analyzeB: "pending", writer: "pending" },
+      workerText: {},
+      tasks: { s1: ["等待", ""], s2: ["等待", ""], s3: ["等待", ""], s4: ["等待", ""], s5: ["等待", ""] },
+      hotBatches: []
+    },
+    {
+      nav: "搜索×2", parallel: 2,
+      title: "批次 1：两个 SearchWorker 并行开跑。",
+      detail: "S1 与 S2 互不依赖，同一拍分派给两个 Worker，彼此不等待。",
+      ioIn: "S1：搜索市场规模数据；S2：搜索主要玩家与竞争格局。",
+      ioOut: "两路搜索同时进行，结果尚未回传。",
+      org: "同一拍把 S1 分给 SearchWorker A，把 S2 分给 SearchWorker B。",
+      orgIn: "S1、S2 两个独立子任务", orgOut: "两路并行分派",
+      workers: { searchA: "active", searchB: "active", analyzeA: "pending", analyzeB: "pending", writer: "pending" },
+      workerText: { searchA: "运行中：搜索市场规模", searchB: "运行中：搜索竞争格局" },
+      tasks: { s1: ["运行中", "is-run"], s2: ["运行中", "is-run"], s3: ["等待", ""], s4: ["等待", ""], s5: ["等待", ""] },
+      hotBatches: [1]
+    },
+    {
+      nav: "超时重试", parallel: 1,
+      title: "S2 超时：检索失败，Orchestrator 决定重试。",
+      detail: "S1 已完成；S2 首次尝试超过 30 秒超时，按容错策略重试 1 / 2 次。",
+      ioIn: "S1 成功返回；S2 超时错误（第 1 次尝试失败）。",
+      ioOut: "S1 结果保留；S2 重新分派给 SearchWorker B，重试 1 / 2。",
+      org: "检测到 S2 超时，保留 S1 结果，重新分配 S2；最大重试 2 次。",
+      orgIn: "S1 成功 + S2 超时", orgOut: "重试 S2（1 / 2）",
+      workers: { searchA: "done", searchB: "retry", analyzeA: "pending", analyzeB: "pending", writer: "pending" },
+      workerText: { searchA: "完成：市场规模数据", searchB: "重试 1 / 2：再搜竞争格局" },
+      tasks: { s1: ["完成", "is-done"], s2: ["重试 1/2", "is-retry"], s3: ["等待", ""], s4: ["等待", ""], s5: ["等待", ""] },
+      hotBatches: []
+    },
+    {
+      nav: "分析×2", parallel: 2,
+      title: "批次 2：S2 重试成功，两个 AnalyzeWorker 并行开跑。",
+      detail: "S1、S2 都完成，依赖满足；S3 与 S4 同一拍分派，彼此不等待。",
+      ioIn: "S1 市场规模数据 + S2 竞争格局数据；S3、S4 依赖已满足。",
+      ioOut: "S3、S4 两路分析同时进行。",
+      org: "确认 S1、S2 完成，把 S3 分给 AnalyzeWorker A，S4 分给 B。",
+      orgIn: "S1、S2 结果", orgOut: "S3、S4 并行分派",
+      workers: { searchA: "done", searchB: "done", analyzeA: "active", analyzeB: "active", writer: "pending" },
+      workerText: { searchA: "完成：市场规模数据", searchB: "完成：竞争格局（重试后）", analyzeA: "运行中：增长趋势", analyzeB: "运行中：SWOT" },
+      tasks: { s1: ["完成", "is-done"], s2: ["完成", "is-done"], s3: ["运行中", "is-run"], s4: ["运行中", "is-run"], s5: ["等待", ""] },
+      hotBatches: [2]
+    },
+    {
+      nav: "分析回传", parallel: 1,
+      title: "批次 2 回传：两份分析结果就绪。",
+      detail: "Orchestrator 收到增长趋势和 SWOT 结果，检查是否可以进入写作。",
+      ioIn: "S3 增长趋势结论 + S4 SWOT 结论。",
+      ioOut: "两份分析结果进入全局状态；S5 依赖满足。",
+      org: "汇总 S3、S4，确认 S5 的前置依赖全部完成。",
+      orgIn: "S3、S4 结果", orgOut: "进入写作批次",
+      workers: { searchA: "done", searchB: "done", analyzeA: "done", analyzeB: "done", writer: "pending" },
+      workerText: { analyzeA: "完成：增长趋势", analyzeB: "完成：SWOT" },
+      tasks: { s1: ["完成", "is-done"], s2: ["完成", "is-done"], s3: ["完成", "is-done"], s4: ["完成", "is-done"], s5: ["等待", ""] },
+      hotBatches: []
+    },
+    {
+      nav: "写作", parallel: 1,
+      title: "批次 3：WriterWorker 综合生成报告。",
+      detail: "S5 依赖 S1–S4 全部完成，因此只能最后单路执行。",
+      ioIn: "S1 市场规模 + S2 竞争格局 + S3 趋势 + S4 SWOT。",
+      ioOut: "报告初稿生成中。",
+      org: "把四份结果打包给 WriterWorker，要求按固定结构成文。",
+      orgIn: "四份前置结果", orgOut: "S5 写作任务",
+      workers: { searchA: "done", searchB: "done", analyzeA: "done", analyzeB: "done", writer: "active" },
+      workerText: { writer: "运行中：综合成稿" },
+      tasks: { s1: ["完成", "is-done"], s2: ["完成", "is-done"], s3: ["完成", "is-done"], s4: ["完成", "is-done"], s5: ["运行中", "is-run"] },
+      hotBatches: []
+    },
+    {
+      nav: "完成", parallel: 1,
+      title: "Orchestrator 综合：报告完成。",
+      detail: "所有子任务完成；Orchestrator 做最终检查和交付，没有继续分解。",
+      ioIn: "S5 报告初稿 + 四份子任务结果。",
+      ioOut: "最终报告：2026 年 AI Agent 市场分析（固定教学数据）。",
+      org: "做一致性检查并交付最终报告；本轮不再 replan。",
+      orgIn: "S5 初稿 + 全局状态", orgOut: "最终报告",
+      workers: { searchA: "done", searchB: "done", analyzeA: "done", analyzeB: "done", writer: "done" },
+      workerText: { writer: "完成：最终报告" },
+      tasks: { s1: ["完成", "is-done"], s2: ["完成", "is-done"], s3: ["完成", "is-done"], s4: ["完成", "is-done"], s5: ["完成", "is-done"] },
+      hotBatches: []
+    }
+  ];
+
+  const state = { step: 0, timer: null };
+  const byId = (id) => document.getElementById(id);
+
+  function buildStageNav() {
+    const list = byId("a5-stage-list");
+    list.style.setProperty("--stages", String(A5_STEPS.length));
+    list.textContent = "";
+    A5_STEPS.forEach((step, index) => {
+      const li = document.createElement("li");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "stage-button";
+      button.dataset.step = String(index);
+      button.setAttribute("aria-controls", "explainer");
+      button.setAttribute("aria-label", `第 ${index + 1} 拍：${step.nav}`);
+      button.innerHTML = `<span class="stage-number">${index + 1}</span><span>${step.nav}</span>`;
+      button.addEventListener("click", () => goTo(index));
+      li.append(button);
+      list.append(li);
+    });
+  }
+
+  function updateNav() {
+    document.querySelectorAll("#a5-stage-list .stage-button").forEach((button) => {
+      if (Number(button.dataset.step) === state.step) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+  }
+
+  function render() {
+    const step = A5_STEPS[state.step];
+
+    document.querySelectorAll(".a5-worker").forEach((worker) => {
+      const name = worker.dataset.worker;
+      worker.dataset.state = step.workers[name] || "pending";
+      const stateLabel = worker.querySelector(".a5-worker-state");
+      if (stateLabel) stateLabel.textContent = step.workerText[name] || (step.workers[name] === "done" ? "完成" : step.workers[name] === "pending" ? "待命" : "运行中");
+    });
+
+    document.querySelectorAll(".a5-plan-row").forEach((row) => {
+      const info = step.tasks[row.dataset.task];
+      const status = row.querySelector(".a5-plan-status");
+      status.textContent = info[0];
+      status.className = `a5-plan-status ${info[1]}`.trim();
+    });
+
+    document.querySelectorAll(".a5-parallel[data-batch]").forEach((badge) => {
+      const batch = Number(badge.dataset.batch);
+      badge.classList.toggle("is-hot", step.hotBatches.includes(batch));
+    });
+
+    byId("a5-parallel-badge").textContent = `并行 ×${step.parallel}`;
+    byId("a5-parallel-badge").classList.toggle("is-hot", step.parallel > 1);
+    byId("a5-org-action").textContent = step.org;
+    byId("a5-org-in").textContent = step.orgIn;
+    byId("a5-org-out").textContent = step.orgOut;
+    byId("a5-step-index").textContent = `分派演示 · 第 ${state.step + 1} / ${A5_STEPS.length} 拍`;
+    byId("a5-demo-title").textContent = step.title;
+    byId("a5-subtitle").textContent = `${step.detail} 固定教学任务：分析 2026 年 AI Agent 市场并写报告。`;
+    byId("a5-io-in").textContent = step.ioIn;
+    byId("a5-io-out").textContent = step.ioOut;
+    byId("a5-state").textContent = `${step.nav} · 第 ${state.step + 1} / ${A5_STEPS.length} 拍 · 并行 ×${step.parallel}`;
+
+    byId("a5-back").disabled = state.step === 0;
+    byId("a5-next").disabled = state.step === A5_STEPS.length - 1;
+    updateNav();
+  }
+
+  function announce(text) { byId("a5-announce").textContent = text; }
+
+  function goTo(index) {
+    stopAuto();
+    state.step = Math.max(0, Math.min(index, A5_STEPS.length - 1));
+    render();
+    announce(`第 ${state.step + 1} 拍：${A5_STEPS[state.step].title}`);
+  }
+
+  function stopAuto() {
+    if (state.timer) {
+      clearInterval(state.timer);
+      state.timer = null;
+    }
+    const button = byId("a5-auto");
+    button.setAttribute("aria-pressed", "false");
+    button.textContent = "自动播放";
+  }
+
+  function toggleAuto() {
+    if (state.timer) {
+      stopAuto();
+      announce("已暂停自动播放。");
+      return;
+    }
+    if (state.step === A5_STEPS.length - 1) {
+      state.step = 0;
+      render();
+    }
+    const button = byId("a5-auto");
+    button.setAttribute("aria-pressed", "true");
+    button.textContent = "暂停";
+    announce("开始自动播放分派过程。");
+    state.timer = setInterval(() => {
+      if (state.step < A5_STEPS.length - 1) {
+        state.step += 1;
+        render();
+      } else {
+        stopAuto();
+        announce("分派演示已到最后一拍。");
+      }
+    }, 1600);
+  }
+
+  byId("a5-next").addEventListener("click", () => goTo(state.step + 1));
+  byId("a5-back").addEventListener("click", () => goTo(state.step - 1));
+  byId("a5-reset").addEventListener("click", () => { goTo(0); announce("已重置分派演示。"); });
+  byId("a5-auto").addEventListener("click", toggleAuto);
+
+  buildStageNav();
+  render();
+</script>
+</body>
+</html>

@@ -1,0 +1,1265 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>生产级 Agent 系统设计（含智能客服实战案例） · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .a10-tabs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 0 var(--s-6); margin-top: var(--s-4); }
+  .a10-tab { min-height: 44px; padding: 8px 14px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: var(--t-small); }
+  .a10-tab:hover { background: var(--surface-soft); }
+  .a10-tab[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .a10-task { flex: 1 1 240px; min-width: 0; font-size: var(--t-label); color: var(--text-dim); }
+  .a10-board { padding: var(--s-4) var(--s-6) 0; }
+  .a10-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+  .a10-stat { min-width: 0; padding: 9px 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .a10-stat-label { font: 9px/1.5 var(--mono); color: var(--text-dim); letter-spacing: .03em; }
+  .a10-stat-value { margin-top: 2px; font: 600 17px/1.35 var(--serif); overflow-wrap: anywhere; }
+  .a10-stat-sub { margin-top: 1px; font: 9px/1.45 var(--mono); color: var(--text-dim); }
+  .a10-formulas { margin-top: var(--s-3); padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .a10-formula { display: grid; grid-template-columns: 136px minmax(0, 1fr); gap: 8px; padding: 3px 0; font-size: 11px; line-height: 1.6; }
+  .a10-formula dt { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+  .a10-formula dd { margin: 0; font-family: var(--mono); font-size: 10px; overflow-wrap: anywhere; }
+  .a10-warn { margin-top: var(--s-3); padding: 9px 11px; border: 1px dashed #c2410c; border-radius: var(--r-1); background: #fdf1ea; font-size: 11px; line-height: 1.7; color: #8a2c0a; }
+  .a10-warn b { color: #6b2109; }
+  .a10-io { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); padding: var(--s-4) var(--s-6) var(--s-5); }
+  .a10-io-box { min-width: 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .a10-io-label { font: 9px/1.6 var(--mono); letter-spacing: .06em; color: var(--text-dim); }
+  .a10-io-value { margin-top: 2px; font-size: 12px; line-height: 1.65; overflow-wrap: anywhere; }
+  .a10-layers { display: grid; gap: 6px; margin-top: var(--s-4); }
+  .a10-layer { display: grid; grid-template-columns: 94px minmax(0, 1fr); gap: 9px; align-items: stretch; }
+  .a10-layer-tag { display: grid; place-items: center; padding: 6px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface-soft); font: 9px/1.5 var(--mono); color: var(--text-dim); text-align: center; }
+  .a10-layer-body { display: flex; flex-wrap: wrap; gap: 5px; }
+  .a10-layer-body span { flex: 1 1 110px; padding: 7px 9px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 11px; line-height: 1.5; }
+  .a10-flow { display: grid; gap: 5px; margin-top: var(--s-4); }
+  .a10-flow-row { display: grid; grid-template-columns: 30px minmax(0, 1fr); gap: 7px; align-items: start; }
+  .a10-flow-num { display: grid; place-items: center; width: 26px; height: 26px; border: 1px solid var(--border-bright); border-radius: 50%; font: 10px/1 var(--mono); color: var(--text-dim); }
+  .a10-flow-node { padding: 7px 9px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 11px; line-height: 1.55; }
+  .a10-flow-node b { color: var(--ink); }
+  .a10-branch { margin-left: 37px; padding: 5px 8px; border-left: 2px dashed #c2410c; font: 10px/1.6 var(--mono); color: #8a2c0a; }
+  .a10-split { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: var(--s-4); }
+  .a10-split div { padding: 8px 9px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 11px; line-height: 1.6; }
+  .a10-split b { display: block; font: 9px/1.6 var(--mono); color: var(--text-dim); }
+  @media (max-width: 1000px) {
+    .a10-tabs, .a10-board, .a10-io { padding-inline: var(--s-5); }
+    .a10-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px) {
+    .a10-tabs { padding-inline: var(--s-4); }
+    .a10-board { padding: var(--s-4) var(--s-4) 0; }
+    .a10-stats { grid-template-columns: 1fr 1fr; }
+    .a10-formula { grid-template-columns: 1fr; gap: 1px; }
+    .a10-layer { grid-template-columns: 70px minmax(0, 1fr); }
+    .a10-split { grid-template-columns: 1fr; }
+    .a10-io { grid-template-columns: 1fr; padding: var(--s-3) var(--s-4) var(--s-4); }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">010 / 生产级 Agent 设计</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 6 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="009-self-reflection-correction.html">← 上一页 · 如何实现 Agent 的自我反思（S…</a><a href="108-interview-deep-dive-chain.html">下一页 → · 面试追问链</a></div>
+    </nav>
+    <main id="main-content">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">高级 · Agent 架构 · 可交互讲解</p>
+          <h1>从 Demo 到生产，<br>差的是整套工程。</h1>
+        </div>
+        <div>
+          <p class="lead">生产级 Agent 要在架构层面解决五件事：可靠的 Agent Loop、上下文工程、成本与延迟控制、全链路可观测性、安全护栏。核心原则是 right-size your architecture：用满足需求的最简架构。</p>
+          <p class="definition"><strong>本文含一个完整案例：日均 10 万对话的智能客服。</strong>四层架构、意图路由、RAG、Human Handoff、扩展性、降级与成本估算，都要能独立复算。</p>
+          <div class="hero-meta"><span class="pill">高级</span><span class="pill">系统设计</span><span class="pill">智能客服</span><span class="pill">容量与成本</span></div>
+        </div>
+      </header>
+
+      <section class="walkthrough" id="explainer" aria-labelledby="a10-demo-title">
+        <div class="player-top">
+          <div class="player-label">容量账本演练台 <small>固定参数，按公式复算</small></div>
+          <div class="controls" role="group" aria-label="容量演示控制">
+            <button type="button" class="button button-quiet" id="a10-reset">重置</button>
+          </div>
+        </div>
+
+        <div class="a10-tabs" role="group" aria-label="选择日对话量场景">
+          <button type="button" class="a10-tab" data-scenario="50000" aria-pressed="false">日均 5 万</button>
+          <button type="button" class="a10-tab" data-scenario="100000" aria-pressed="true">日均 10 万</button>
+          <button type="button" class="a10-tab" data-scenario="300000" aria-pressed="false">日均 30 万</button>
+          <span class="a10-task" id="a10-task">基准场景：日均 100,000 对话，峰值 5 倍，平均 8 轮/对话</span>
+        </div>
+
+        <div class="scene-caption">
+          <p class="figure-index"><span id="a10-scenario-label">场景 · 日均 10 万对话</span></p>
+          <h2 id="a10-demo-title">先把对话量换算成 QPS。</h2>
+          <p id="a10-subtitle">固定教学参数：峰值 5 倍、平均 8 轮/对话、每轮 800 input / 200 output tokens；单价 $2.5 / $10 每百万 tokens。</p>
+        </div>
+
+        <div class="scene-host">
+          <div class="a10-board">
+            <div class="a10-stats">
+              <div class="a10-stat"><p class="a10-stat-label">平均对话 QPS</p><p class="a10-stat-value" id="a10-avg-qps">1.16</p><p class="a10-stat-sub">日对话量 ÷ 86,400</p></div>
+              <div class="a10-stat"><p class="a10-stat-label">峰值对话 QPS（5×）</p><p class="a10-stat-value" id="a10-peak-qps">5.79</p><p class="a10-stat-sub">日对话量 × 5 ÷ 86,400</p></div>
+              <div class="a10-stat"><p class="a10-stat-label">峰值消息 QPS（×8 轮）</p><p class="a10-stat-value" id="a10-msg-qps">46.30</p><p class="a10-stat-sub">峰值对话 QPS × 8</p></div>
+              <div class="a10-stat"><p class="a10-stat-label">单次对话成本（优化后）</p><p class="a10-stat-value" id="a10-per-conv">$0.0104</p><p class="a10-stat-sub">优化后日成本 ÷ 日对话量</p></div>
+            </div>
+
+            <dl class="a10-formulas" aria-label="容量与成本计算过程">
+              <div class="a10-formula"><dt>日轮次</dt><dd id="a10-turns">100,000 × 8 = 800,000 轮</dd></div>
+              <div class="a10-formula"><dt>日 Input Token</dt><dd id="a10-input">800,000 × 800 = 640,000,000（6.4 亿）</dd></div>
+              <div class="a10-formula"><dt>日 Output Token</dt><dd id="a10-output">800,000 × 200 = 160,000,000（1.6 亿）</dd></div>
+              <div class="a10-formula"><dt>原始日成本</dt><dd id="a10-raw">6.4 亿 ÷ 1M × $2.5 + 1.6 亿 ÷ 1M × $10 = $3,200</dd></div>
+              <div class="a10-formula"><dt>语义缓存 -30%</dt><dd id="a10-cache">$3,200 × 30% = -$960</dd></div>
+              <div class="a10-formula"><dt>轻量分流 -37.5%</dt><dd id="a10-light">$3,200 × 37.5% = -$1,200（按原文 $1,200 反推的近似比例）</dd></div>
+              <div class="a10-formula"><dt>优化后日成本</dt><dd id="a10-opt">$3,200 − $960 − $1,200 = $1,040</dd></div>
+              <div class="a10-formula"><dt>月成本（×30）</dt><dd id="a10-month">$1,040 × 30 = $31,200（不含基础设施）</dd></div>
+            </dl>
+
+            <p class="a10-warn"><b>原文数字核对：</b>Step 1 写“峰值 QPS ~58（5x × 100K / 86400）”，但按该式复算 5 × 100,000 ÷ 86,400 ≈ 5.79，不是 58。本页按公式展示 5.79；若把每对话 8 轮算成消息，峰值消息 QPS ≈ 46.3，仍不是 58。原文这个数字与公式对不上，页面不替它圆数。</p>
+
+            <p class="demo-note">固定教学数据：日对话量、峰值倍数、轮数和 token 参数都来自原文；三个场景只是把日对话量按 0.5× / 1× / 3× 缩放，公式和单价不变。基础设施成本原文只给基线 $40K–50K/月，不能随对话量线性外推，因此本页不计入。</p>
+          </div>
+
+          <div class="a10-io">
+            <div class="a10-io-box"><p class="a10-io-label">本场景输入</p><p class="a10-io-value" id="a10-io-in">100,000 对话/日；峰值 5×；8 轮/对话；800 input + 200 output tokens/轮。</p></div>
+            <div class="a10-io-box"><p class="a10-io-label">本场景输出</p><p class="a10-io-value" id="a10-io-out">峰值对话 QPS 5.79；原始日成本 $3,200；优化后日成本 $1,040；月成本 $31,200。</p></div>
+          </div>
+        </div>
+        <div class="walkthrough-foot"><span>固定教学数据 · 可独立复算</span><span id="a10-state">日均 10 万 · 峰值 5.79 QPS · 优化后 $1,040/日</span></div>
+      </section>
+      <p id="a10-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+      <section class="reading" aria-labelledby="a10-gap-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">第一部分 · 通用原则</p><h2 id="a10-gap-title">原型能用，<br>不等于生产可靠。</h2></div>
+          <p class="reading-intro">原型关注“能不能跑通”，生产关注可靠性、成本上限、P95 延迟、安全、可观测性和高并发。</p>
+        </div>
+        <div class="prose">
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">原型与生产系统的六个维度差异</caption>
+              <thead><tr><th scope="col">维度</th><th scope="col">原型</th><th scope="col">生产系统</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">可靠性</th><td>“大多数时候能用”</td><td>99.9% 可用性</td></tr>
+                <tr><th scope="row">成本</th><td>无预算约束</td><td>每次调用有成本上限</td></tr>
+                <tr><th scope="row">延迟</th><td>等几秒没关系</td><td>P95 &lt; 目标延迟</td></tr>
+                <tr><th scope="row">安全</th><td>信任 LLM 输出</td><td>假设 LLM 会犯错</td></tr>
+                <tr><th scope="row">可观测性</th><td>print 调试</td><td>全链路 Trace</td></tr>
+                <tr><th scope="row">扩展性</th><td>单用户</td><td>高并发多用户</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="quote">构建一个 LLM 原型极其简单，但构建一个在生产中可靠运行的 LLM 系统是完全不同的挑战——它需要严格的工程、谨慎的系统设计和运维成熟度。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a10-panorama-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">架构全景</p><h2 id="a10-panorama-title">网关、编排、<br>四个服务、可观测层。</h2></div>
+          <p class="reading-intro">API Gateway 做认证、限流、负载均衡；Agent Orchestrator 管状态机、路由、循环和重规划；工具、RAG、记忆、安全各自独立。</p>
+        </div>
+        <div class="prose">
+          <figure>
+            <div class="a10-layers" role="img" aria-label="生产级架构全景：API Gateway 下接 Agent Orchestrator，再下接 Tool Gateway、RAG Service、Memory Service、Safety/Policy Engine，最底层是可观测性">
+              <div class="a10-layer"><span class="a10-layer-tag">接入</span><div class="a10-layer-body"><span>API Gateway · 认证 / 限流 / 负载均衡</span></div></div>
+              <div class="a10-layer"><span class="a10-layer-tag">编排</span><div class="a10-layer-body"><span>Agent Orchestrator · 状态机 + 路由 + 循环控制 + 重规划</span></div></div>
+              <div class="a10-layer"><span class="a10-layer-tag">服务</span><div class="a10-layer-body"><span>Tool Gateway · 工具权限 + 执行</span><span>RAG Service · 检索 + 重排序</span><span>Memory Service · 短期 + 长期</span><span>Safety/Policy · Guardrails + HITL</span></div></div>
+              <div class="a10-layer"><span class="a10-layer-tag">观测</span><div class="a10-layer-body"><span>Observability · Tracing + Logging + Metrics + Alerts</span></div></div>
+            </div>
+            <figcaption class="read-figure-note">图 1 · 生产级架构全景。编排层不直接执行工具或检索，而是通过独立服务隔离权限、数据和策略。</figcaption>
+          </figure>
+          <details>
+            <summary>查看原文 ASCII 架构图</summary>
+            <pre><code>┌───────────────────────────────────────────────────────┐
+│                     API Gateway                       │
+│              (认证、限流、负载均衡)                      │
+├───────────────────────────────────────────────────────┤
+│                   Agent Orchestrator                  │
+│         (状态机 + 路由 + 循环控制 + 重规划)              │
+├──────────┬──────────┬──────────┬──────────────────────┤
+│ Tool     │ RAG      │ Memory   │ Safety/Policy        │
+│ Gateway  │ Service  │ Service  │ Engine               │
+│ (工具权限 │ (检索+   │ (短期+   │ (Guardrails +        │
+│  + 执行)  │  重排序)  │  长期)   │  Human-in-the-Loop)  │
+├──────────┴──────────┴──────────┴──────────────────────┤
+│                  Observability Layer                   │
+│          (Tracing + Logging + Metrics + Alerts)        │
+└───────────────────────────────────────────────────────┘</code></pre>
+            <p class="source-footnote">原文架构图按原样保留。</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a10-context-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">挑战 1 · 上下文工程</p><h2 id="a10-context-title">存储与展示分离，<br>只给最小必要上下文。</h2></div>
+          <p class="reading-intro">对话历史、工具输出、检索文档、中间推理会爆炸式增长。全部塞进窗口不可持续，需要显式管线而不是 ad-hoc 字符串拼接。</p>
+        </div>
+        <div class="prose">
+          <p><strong>Google ADK 的三个原则：</strong>① 存储与展示分离（持久化状态 vs 每次调用的工作视图）；② 显式转换（Processor 管线，不用临时拼接）；③ 最小上下文（每次模型调用和子 Agent 只看到必要内容）。</p>
+          <p><strong>四个策略：</strong>写出窗口外（Scratchpad、长期记忆）；选择相关上下文（RAG、记忆检索）；压缩上下文（摘要、修剪）；隔离上下文（多 Agent、沙箱）。</p>
+          <details>
+            <summary>展开原文 ContextManager 与 ContextPipeline 代码</summary>
+            <pre><code># 原则 1：存储与展示分离
+class ContextManager:
+    def __init__(self):
+        self.session_store = SessionStore()    # 持久化状态
+        self.working_context = WorkingContext() # 每次调用的视图
+
+    def build_context(self, session_id: str, current_task: str) -&gt; str:
+        """从持久化状态构建当前调用的上下文"""
+        session = self.session_store.get(session_id)
+
+        return self.working_context.compile(
+            system_prompt=session.system_prompt,
+            relevant_memory=session.memory.search(current_task, top_k=5),
+            recent_history=session.history[-10:],  # 最近 10 轮
+            current_task=current_task
+        )
+
+# 原则 2：显式转换（不是 ad-hoc 字符串拼接）
+class ContextPipeline:
+    processors = [
+        SystemPromptProcessor(),
+        MemoryRetrievalProcessor(),
+        HistorySummarizationProcessor(),  # 旧历史自动摘要
+        ToolResultProcessor(),
+        CurrentTaskProcessor(),
+    ]
+
+    def compile(self, raw_state: dict) -&gt; str:
+        context = ""
+        for processor in self.processors:
+            context = processor.process(context, raw_state)
+        return context
+
+# 原则 3：最小上下文原则
+# 每次模型调用和子 Agent 只看到必要的最小上下文</code></pre>
+            <p class="source-footnote">原文代码保留，仅做 HTML 转义。</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a10-cost-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">挑战 2 · 成本与延迟</p><h2 id="a10-cost-title">模型路由、语义缓存，<br>先挡住简单请求。</h2></div>
+          <p class="reading-intro">Agent 的多步性质导致级联 LLM 调用，成本和延迟可能失控。路由按复杂度选模型，缓存按语义相似度复用回答。</p>
+        </div>
+        <div class="prose">
+          <p><strong>模型路由：</strong>复杂度 &lt; 0.3 用 Haiku，&lt; 0.7 用 Sonnet，否则用 Opus。目的是让简单任务不占用强模型。</p>
+          <pre><code>class ModelRouter:
+    def route(self, task: str, complexity: float) -&gt; str:
+        """根据任务复杂度选择最经济的模型"""
+        if complexity &lt; 0.3:
+            return "claude-haiku-4-5-20251001"   # 简单任务用小模型
+        elif complexity &lt; 0.7:
+            return "claude-sonnet-4-5-20250929"  # 中等任务用中等模型
+        else:
+            return "claude-opus-4-7-20251015"    # 复杂任务用强模型</code></pre>
+          <p><strong>语义缓存：</strong>原文引用 GPTCache 等项目的实测，部分场景可减少 60–70% 的 LLM API 调用；代码注释给出“缓存命中 15x 更快、70% 成本节省”的示例。阈值示例为 0.95。</p>
+          <details>
+            <summary>展开原文 SemanticCache 代码</summary>
+            <pre><code>class SemanticCache:
+    def __init__(self, similarity_threshold=0.95):
+        self.cache = VectorStore()
+        self.threshold = similarity_threshold
+
+    def get_or_compute(self, query: str, compute_fn):
+        # 检查是否有语义相似的缓存结果
+        cached = self.cache.search(query, top_k=1)
+        if cached and cached[0].similarity &gt; self.threshold:
+            return cached[0].result  # 缓存命中：15x 更快，70% 成本节省
+        # 缓存未命中：计算并缓存
+        result = compute_fn(query)
+        self.cache.store(query, result)
+        return result</code></pre>
+            <p class="source-footnote">原文代码保留；缓存收益是原文示例，不是本页实测。</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a10-obs-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">挑战 3 · 可观测性</p><h2 id="a10-obs-title">每一步都要有<br>Trace、Token 和延迟。</h2></div>
+          <p class="reading-intro">生产中的一次请求是一条 Trace，下面挂规划、工具、推理、安全检查等 Span。监控成功率、成本、延迟和质量。</p>
+        </div>
+        <div class="prose">
+          <pre><code># 使用 OpenTelemetry 风格的 Trace/Span
+class AgentTracer:
+    def trace_step(self, step_name: str):
+        span = self.tracer.start_span(step_name)
+        span.set_attributes({
+            "agent.step": step_name,
+            "agent.model": self.current_model,
+            "agent.tokens_used": 0,
+            "agent.tool_calls": [],
+        })
+        return span
+
+# 生产中的典型 Trace 结构：
+# Trace: "用户请求 → Agent 执行"
+#   ├── Span: "规划" (model=opus, tokens=2000, latency=3s)
+#   ├── Span: "工具调用: search" (latency=1.2s)
+#   ├── Span: "工具调用: database" (latency=0.3s)
+#   ├── Span: "推理 + 生成" (model=sonnet, tokens=1500, latency=2s)
+#   └── Span: "安全检查" (latency=0.1s)</code></pre>
+          <p><strong>关键指标：</strong>成功率（任务完成率、工具调用成功率）；成本（每任务 token、API 费用）；延迟（端到端、各步骤分布）；质量（幻觉率、点赞/点踩）。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a10-safety-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">挑战 4 · 安全与护栏</p><h2 id="a10-safety-title">输入过滤、输出过滤、<br>行动审批。</h2></div>
+          <p class="reading-intro">假设 LLM 会犯错：输入和输出都要过滤，高风险行动必须人工审批，中风险自动审查，低风险放行。</p>
+        </div>
+        <div class="prose">
+          <pre><code>class SafetyLayer:
+    def __init__(self):
+        self.input_guardrail = InputGuardrail()   # 输入过滤
+        self.output_guardrail = OutputGuardrail()  # 输出过滤
+        self.action_guardrail = ActionGuardrail()  # 行动审批
+
+    def check_action(self, action: ToolCall) -&gt; bool:
+        """高风险操作需要人工审批"""
+        if action.risk_level == "high":
+            return self.human_approval(action)  # Human-in-the-Loop
+        if action.risk_level == "medium":
+            return self.automated_review(action) # 自动审查
+        return True  # 低风险直接放行</code></pre>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a10-level-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">挑战 5 · 架构级别</p><h2 id="a10-level-title">right-size：<br>用满足需求的最简架构。</h2></div>
+          <p class="reading-intro">简单单步任务不需要 Agent；结构明确的多步任务用 Plan-and-Execute；动态探索用 ReAct；复杂多领域才上多 Agent。</p>
+        </div>
+        <div class="prose">
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">任务类型与推荐架构级别</caption>
+              <thead><tr><th scope="col">任务类型</th><th scope="col">推荐架构</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">简单单步任务</th><td>不需要 Agent，用 LLM + Prompt</td></tr>
+                <tr><th scope="row">结构明确的多步任务</th><td>Plan-and-Execute</td></tr>
+                <tr><th scope="row">动态探索性任务</th><td>ReAct</td></tr>
+                <tr><th scope="row">复杂多领域问题</th><td>多 Agent 系统（协调开销必须物有所值）</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <h3>生产检查清单</h3>
+          <ul>
+            <li>Agent Loop 有最大步数限制和超时。</li>
+            <li>错误处理：重试 + 降级 + 错误分类 + 检查点。</li>
+            <li>上下文管理：摘要 + 检索 + 最小上下文原则。</li>
+            <li>成本控制：模型路由 + 语义缓存 + 预算上限。</li>
+            <li>可观测性：Trace + 日志 + 指标 + 告警。</li>
+            <li>安全：输入/输出过滤 + 行动审批 + 权限最小化。</li>
+            <li>评估：上线前基准测试 + 上线后持续评估。</li>
+            <li>降级方案：Agent 失败时的回退策略。</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a10-case-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">第二部分 · 实战案例</p><h2 id="a10-case-title">日均 10 万对话的<br>智能客服系统。</h2></div>
+          <p class="reading-intro">支持多渠道接入、FAQ 自动回答、工单处理和人工转接，峰值流量为日均的 5 倍。核心是四层架构：接入、编排、推理、数据。</p>
+        </div>
+        <div class="prose">
+          <p><strong>系统概述：</strong>Agent 编排层是大脑，通过意图路由器（轻量分类模型 + LLM fallback）分发请求，结合对话状态机管理多轮交互。知识问答走 RAG 管道（Embedding → 向量检索 → Re-ranking），工单和投诉走结构化流程。内置 Human Handoff，在置信度低、情绪激动或多轮失败时自动转人工。</p>
+          <p><strong>扩展性：</strong>无状态服务 + 消息队列水平扩展，语义缓存降低 LLM 调用成本，降级方案应对模型不可用。原文提出峰值 5 倍需要支撑“约 58 QPS”——这个数字与它给出的公式不一致，本页已在容量演练台按公式复算并标注。</p>
+          <h3>Step 1 · 需求澄清</h3>
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">功能需求</caption>
+              <thead><tr><th scope="col">需求项</th><th scope="col">说明</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">多渠道接入</th><td>Web、App、微信公众号 / 小程序，统一消息协议</td></tr>
+                <tr><th scope="row">意图识别</th><td>FAQ 咨询、工单提交、投诉、闲聊等</td></tr>
+                <tr><th scope="row">FAQ 回答</th><td>基于知识库的检索增强生成（RAG）</td></tr>
+                <tr><th scope="row">工单处理</th><td>结构化信息收集 → 自动创建工单 → 状态追踪</td></tr>
+                <tr><th scope="row">人工转接</th><td>低置信度 / 敏感话题 / 用户主动要求时平滑切换</td></tr>
+                <tr><th scope="row">多轮对话</th><td>支持上下文连续对话，最长 50 轮</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">非功能需求与推导</caption>
+              <thead><tr><th scope="col">指标</th><th scope="col">目标值</th><th scope="col">推导</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">日均对话量</th><td>100,000</td><td>业务给定</td></tr>
+                <tr><th scope="row">峰值倍数</th><td>5x</td><td>促销 / 故障期间的流量峰值</td></tr>
+                <tr><th scope="row">平均 QPS</th><td>~1.16</td><td>100K / 86400</td></tr>
+                <tr><th scope="row">峰值 QPS</th><td>按公式 ~5.79（原文写 ~58）</td><td>5x × 100K / 86400；原文数字与公式不一致</td></tr>
+                <tr><th scope="row">端到端延迟</th><td>&lt; 3 秒（P95）</td><td>用户体验要求</td></tr>
+                <tr><th scope="row">可用性</th><td>99.9%（年停机 &lt; 8.76h）</td><td>SLA 承诺</td></tr>
+                <tr><th scope="row">每次对话轮数</th><td>平均 8 轮</td><td>行业经验值</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a10-arch-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">Step 2 · 高层架构</p><h2 id="a10-arch-title">四层：接入、编排、<br>推理、数据。</h2></div>
+          <p class="reading-intro">接入层统一协议；编排层路由与状态；推理层模型路由与缓存；数据层多存储分工。</p>
+        </div>
+        <div class="prose">
+          <figure>
+            <div class="a10-layers" role="img" aria-label="智能客服四层架构：接入层统一协议，编排层意图路由/状态机/工具调度/Handoff，推理层模型路由/语义缓存/限流，数据层向量库/工单/画像/日志/数仓">
+              <div class="a10-layer"><span class="a10-layer-tag">接入层</span><div class="a10-layer-body"><span>Web / App / 微信 / API 开放接口</span><span>统一消息协议 Protobuf</span></div></div>
+              <div class="a10-layer"><span class="a10-layer-tag">编排层</span><div class="a10-layer-body"><span>意图路由器</span><span>对话状态机</span><span>工具调度器</span><span>Handoff 判断器 · Guard Rails</span></div></div>
+              <div class="a10-layer"><span class="a10-layer-tag">推理层</span><div class="a10-layer-body"><span>模型路由器 · GPT-4 级 / 轻量模型</span><span>语义缓存</span><span>限流器 Rate Limiter</span></div></div>
+              <div class="a10-layer"><span class="a10-layer-tag">数据层</span><div class="a10-layer-body"><span>向量知识库 Milvus/PG · 工单 MySQL/PG</span><span>用户画像 Redis/ES · 对话日志 MongoDB</span><span>分析数据仓库 ClickHouse</span></div></div>
+            </div>
+            <figcaption class="read-figure-note">图 2 · 智能客服四层架构。层与层之间是逻辑边界，部署上可以独立扩缩容。</figcaption>
+          </figure>
+          <details>
+            <summary>查看原文 Mermaid 四层架构源码</summary>
+            <pre><code>flowchart TD
+    subgraph G["用户接入层 Gateway"]
+        G1["Web / App / 微信 / API 开放接口"]
+        G2["统一消息协议 Protobuf"]
+    end
+    subgraph O["Agent 编排层 Orchestrator"]
+        O1["意图路由器"]
+        O2["对话状态机"]
+        O3["工具调度器"]
+        O4["Handoff 判断器 · Guard Rails"]
+    end
+    subgraph I["LLM 推理层 Inference"]
+        I1["模型路由器&lt;br/&gt;GPT-4 级 / 轻量模型"]
+        I2["语义缓存"]
+        I3["限流器 Rate Limiter"]
+    end
+    subgraph D["数据层 Data Store"]
+        D1["向量知识库 Milvus/PG&lt;br/&gt;工单系统 MySQL/PG"]
+        D2["用户画像 Redis/ES&lt;br/&gt;对话日志 MongoDB"]
+        D3["分析数据仓库 ClickHouse"]
+    end
+    G --- O --- I --- D
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    class G1,G2,O1,O2,O3,O4 proc
+    class I1,I2,I3 agent
+    class D1,D2,D3 store</code></pre>
+            <p class="source-footnote">源码按原文保留，仅做 HTML 转义；上方文字图按同一分层关系呈现。</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a10-intent-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">Step 3.1 · 意图路由</p><h2 id="a10-intent-title">BERT 挡 80%，<br>LLM 接长尾。</h2></div>
+          <p class="reading-intro">两级架构：轻量分类模型延迟 &lt; 20ms，覆盖 80% 常见意图；置信度 &lt; 0.85 时 fallback 到 LLM，延迟约 500ms。</p>
+        </div>
+        <div class="prose">
+          <div class="a10-split">
+            <div><b>第一级</b>BERT fine-tuned<br>&lt; 20ms · 覆盖 80%</div>
+            <div><b>分支</b>confidence ≥ 0.85 → 直接路由</div>
+            <div><b>第二级</b>LLM 分类<br>~500ms · 处理长尾</div>
+          </div>
+          <p><strong>为什么两级：</strong>大部分请求是常见意图，用轻量模型挡住可以省延迟和成本；长尾意图才值得调用 LLM。注意：LLM fallback 的返回置信度在原文代码里固定写为 0.90，这是实现假设，不是模型真实置信度。</p>
+          <details>
+            <summary>展开原文 IntentRouter 代码</summary>
+            <pre><code>class Intent(Enum):
+    """客服系统支持的意图类型"""
+    FAQ = "faq"                    # 常见问题咨询
+    ORDER_QUERY = "order_query"    # 订单查询
+    TICKET_CREATE = "ticket_create"  # 工单创建
+    COMPLAINT = "complaint"        # 投诉
+    CHITCHAT = "chitchat"          # 闲聊
+    UNKNOWN = "unknown"            # 未知意图
+
+
+class IntentRouter:
+    """两级意图路由器：轻量分类模型 + LLM fallback"""
+
+    CONFIDENCE_THRESHOLD = 0.85  # 分类模型置信度阈值
+
+    def __init__(self, classifier_model, llm_client):
+        self.classifier = classifier_model   # 轻量 BERT 分类模型
+        self.llm_client = llm_client         # LLM 客户端
+        self._intent_cache = {}              # 意图缓存
+
+    async def route(self, user_input: str, session_context: dict) -&gt; IntentResult:
+        """
+        两级意图识别：
+        1. 先用轻量分类模型（&lt; 20ms）
+        2. 置信度不足时 fallback 到 LLM（~500ms）
+        """
+        # 第一级：轻量分类模型
+        intent, confidence = await self.classifier.predict(user_input)
+
+        if confidence &gt;= self.CONFIDENCE_THRESHOLD:
+            return IntentResult(
+                intent=intent,
+                confidence=confidence,
+                source="classifier"
+            )
+
+        # 第二级：LLM fallback — 带上下文的精细分类
+        llm_intent = await self._llm_classify(user_input, session_context)
+        return IntentResult(
+            intent=llm_intent,
+            confidence=0.90,  # LLM 分类默认置信度
+            source="llm_fallback"
+        )</code></pre>
+            <p class="source-footnote">原文代码保留，仅做 HTML 转义；省略了 <code>_llm_classify</code> 的 prompt 细节。</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a10-rag-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">Step 3.2 · RAG 管道</p><h2 id="a10-rag-title">改写、召回 20、<br>精排 5、带引用生成。</h2></div>
+          <p class="reading-intro">Query 改写解决指代；Embedding + 向量检索召回 Top-20；Cross-Encoder 精排到 Top-5；Prompt 组装后流式生成，并标注引用。</p>
+        </div>
+        <div class="prose">
+          <div class="a10-flow">
+            <div class="a10-flow-row"><span class="a10-flow-num">1</span><div class="a10-flow-node"><b>Query 改写 + 扩展</b>利用最近 4 轮对话补全指代</div></div>
+            <div class="a10-flow-row"><span class="a10-flow-num">2</span><div class="a10-flow-node"><b>Embedding + 向量检索</b>text-embedding-3，Top-K = 20，只检索 published</div></div>
+            <div class="a10-flow-row"><span class="a10-flow-num">3</span><div class="a10-flow-node"><b>Re-rank</b>Cross-Encoder 精排到 Top-5</div></div>
+            <div class="a10-flow-row"><span class="a10-flow-num">4</span><div class="a10-flow-node"><b>Prompt 组装 + LLM 生成</b>带文档编号，要求无信息时诚实说明</div></div>
+            <div class="a10-flow-row"><span class="a10-flow-num">5</span><div class="a10-flow-node"><b>流式响应</b>返回用户，附引用来源</div></div>
+          </div>
+          <details>
+            <summary>展开原文 RAGPipeline 代码</summary>
+            <pre><code>class RAGPipeline:
+    """知识库 RAG 管道：Embedding → 向量检索 → Re-ranking → 生成"""
+
+    def __init__(self, embedder, vector_store, reranker, llm_client):
+        self.embedder = embedder        # Embedding 模型
+        self.vector_store = vector_store  # 向量数据库 (Milvus / pgvector)
+        self.reranker = reranker         # Re-ranking 模型 (cross-encoder)
+        self.llm_client = llm_client     # LLM 生成模型
+
+    async def answer(self, query: str, session_context: dict) -&gt; str:
+        """端到端 RAG 回答流程"""
+        # 1. Query 改写：利用对话上下文补全指代
+        rewritten_query = await self._rewrite_query(query, session_context)
+
+        # 2. Embedding + 向量检索：召回 Top-20
+        query_embedding = await self.embedder.encode(rewritten_query)
+        candidates = await self.vector_store.search(
+            vector=query_embedding,
+            top_k=20,
+            filter={"status": "published"}  # 只检索已发布文档
+        )
+
+        # 3. Re-ranking：精排到 Top-5
+        reranked = await self.reranker.rerank(
+            query=rewritten_query,
+            documents=[c.content for c in candidates],
+            top_k=5
+        )
+
+        # 4. 生成回答（带引用来源）
+        context_text = "\n\n".join(
+            f"[文档{i+1}] {doc.content}" for i, doc in enumerate(reranked)
+        )
+        prompt = f"""基于以下知识库文档回答用户问题。如果文档中没有相关信息，请诚实说明。
+回答末尾请标注引用来源编号。
+
+知识库文档：
+{context_text}
+
+用户问题：{rewritten_query}
+
+回答："""
+        return await self.llm_client.complete(prompt, max_tokens=500)</code></pre>
+            <p class="source-footnote">原文代码保留，仅做 HTML 转义；省略了 <code>_rewrite_query</code> 的 prompt 细节。</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a10-handoff-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">Step 3.3 · Human Handoff</p><h2 id="a10-handoff-title">四个触发条件，<br>加一个用户主动要求。</h2></div>
+          <p class="reading-intro">置信度、敏感话题、用户情绪、多轮失败四个维度任一命中就转人工；用户主动说“转人工”也触发。</p>
+        </div>
+        <div class="prose">
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">Human Handoff 触发条件与阈值</caption>
+              <thead><tr><th scope="col">触发条件</th><th scope="col">阈值</th><th scope="col">说明</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">置信度低</th><td>&lt; 0.6</td><td>意图识别或回答生成置信度过低</td></tr>
+                <tr><th scope="row">敏感话题</th><td>关键词命中</td><td>法律纠纷、人身安全、资金损失等</td></tr>
+                <tr><th scope="row">用户情绪</th><td>负面 ≥ 0.8</td><td>用户明显愤怒或不满</td></tr>
+                <tr><th scope="row">多轮失败</th><td>≥ 3 次</td><td>连续多轮未能解决用户问题</td></tr>
+                <tr><th scope="row">用户主动要求</th><td>关键词命中</td><td>“转人工”“人工客服”“真人”“找人”“不想跟机器人”</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p><strong>优先级：</strong>命中敏感话题则 high，否则 medium；技能组按意图映射到投诉处理组、订单服务组、技术支持组或综合服务组。</p>
+          <details>
+            <summary>展开原文 HumanHandoffJudge 代码</summary>
+            <pre><code>class HumanHandoffJudge:
+    """Human Handoff 判断器：多维度评估是否需要转人工"""
+
+    # 敏感话题关键词（实际生产中应使用分类模型）
+    SENSITIVE_TOPICS = {"法律", "律师", "报警", "投诉到工信部", "人身安全", "资金被盗"}
+
+    async def evaluate(self, user_input, intent_result, session_context) -&gt; HandoffDecision:
+        reasons = []
+
+        # 维度 1：置信度检查
+        if intent_result.confidence &lt; 0.6:
+            reasons.append(f"意图置信度过低: {intent_result.confidence:.2f}")
+
+        # 维度 2：敏感话题检测
+        if any(kw in user_input for kw in self.SENSITIVE_TOPICS):
+            reasons.append("触发敏感话题关键词")
+
+        # 维度 3：用户情绪分析
+        sentiment_score = await self.sentiment_model.analyze(user_input)
+        if sentiment_score.negative &gt;= 0.8:
+            reasons.append(f"用户情绪负面: {sentiment_score.negative:.2f}")
+
+        # 维度 4：多轮失败计数
+        fail_count = session_context.get("consecutive_failures", 0)
+        if fail_count &gt;= 3:
+            reasons.append(f"连续 {fail_count} 轮未解决")
+
+        # 用户主动要求转人工
+        if self._user_requests_human(user_input):
+            reasons.append("用户主动要求转人工")</code></pre>
+            <p class="source-footnote">原文代码保留，仅做 HTML 转义；省略了优先级与技能组选择部分。</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a10-session-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">Step 3.4 · 多轮状态</p><h2 id="a10-session-title">Redis 存 Session，<br>超阈值就摘要压缩。</h2></div>
+          <p class="reading-intro">Session TTL 1 小时，最多保留 20 轮；历史超过 10 轮触发摘要，保留最近 6 轮（12 条消息），其余压缩成摘要。</p>
+        </div>
+        <div class="prose">
+          <div class="a10-split">
+            <div><b>SESSION_TTL</b>3600 秒</div>
+            <div><b>MAX_HISTORY_TURNS</b>20 轮</div>
+            <div><b>SUMMARIZE_THRESHOLD</b>10 轮</div>
+          </div>
+          <p>Session 里保存 history、summary、state、created_at、consecutive_failures 和 metadata。压缩时把 <code>history[:-12]</code> 交给 LLM 生成 3–5 句摘要，保留最后 12 条消息。</p>
+          <details>
+            <summary>展开原文 SessionManager 代码</summary>
+            <pre><code>class SessionManager:
+    """多轮对话 Session 管理器：Redis 存储 + 对话摘要"""
+
+    SESSION_TTL = 3600  # Session 过期时间：1 小时
+    MAX_HISTORY_TURNS = 20  # 保留的最大对话轮数
+    SUMMARIZE_THRESHOLD = 10  # 触发摘要的轮数阈值
+
+    async def get_session(self, session_id: str) -&gt; dict:
+        """获取 Session，不存在则创建"""
+        data = await self.redis.get(f"session:{session_id}")
+        if data:
+            return json.loads(data)
+        return {
+            "session_id": session_id,
+            "history": [],
+            "summary": "",
+            "state": "active",
+            "created_at": time.time(),
+            "consecutive_failures": 0,
+            "metadata": {}
+        }
+
+    async def update_session(self, session_id: str, user_msg: str, bot_msg: str):
+        """更新 Session：追加对话 + 按需摘要"""
+        session = await self.get_session(session_id)
+        session["history"].append({"role": "user", "content": user_msg})
+        session["history"].append({"role": "assistant", "content": bot_msg})
+
+        # 对话轮数超过阈值时触发摘要压缩
+        if len(session["history"]) &gt; self.SUMMARIZE_THRESHOLD * 2:
+            session = await self._compress_history(session)
+
+        await self.redis.set(
+            f"session:{session_id}",
+            json.dumps(session, ensure_ascii=False),
+            ex=self.SESSION_TTL
+        )</code></pre>
+            <p class="source-footnote">原文代码保留，仅做 HTML 转义；省略了 <code>_compress_history</code> 的摘要 prompt。</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a10-dataflow-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">Step 4 · 数据流</p><h2 id="a10-dataflow-title">一次请求，<br>八步加两个分支。</h2></div>
+          <p class="reading-intro">Gateway 接收 → 加载 Session → 意图路由 → 是否转人工 → 缓存是否命中 → RAG/LLM 生成 → Guard Rails → 更新 Session 并返回。</p>
+        </div>
+        <div class="prose">
+          <div class="a10-flow">
+            <div class="a10-flow-row"><span class="a10-flow-num">1</span><div class="a10-flow-node"><b>Gateway 接收</b>协议转换 · 鉴权 · 限流</div></div>
+            <div class="a10-flow-row"><span class="a10-flow-num">2</span><div class="a10-flow-node"><b>加载 Session</b>Redis</div></div>
+            <div class="a10-flow-row"><span class="a10-flow-num">3</span><div class="a10-flow-node"><b>意图路由</b>BERT 约 15ms / LLM 约 500ms</div></div>
+            <div class="a10-flow-row"><span class="a10-flow-num">4</span><div class="a10-flow-node"><b>需要转人工？</b>是 → Human Handoff；否 → 下一步</div></div>
+            <p class="a10-branch">分支 1：转人工 → 人工客服接手，直接结束自动流程。</p>
+            <div class="a10-flow-row"><span class="a10-flow-num">5</span><div class="a10-flow-node"><b>语义缓存命中？</b>命中 → 直接返回；未命中 → RAG / LLM 生成</div></div>
+            <p class="a10-branch">分支 2：缓存命中 → 返回响应，总延迟 P95 低于 2.5s。</p>
+            <div class="a10-flow-row"><span class="a10-flow-num">6</span><div class="a10-flow-node"><b>RAG / LLM 生成</b>800–2000ms</div></div>
+            <div class="a10-flow-row"><span class="a10-flow-num">7</span><div class="a10-flow-node"><b>Guard Rails</b>安全过滤 + 质量校验</div></div>
+            <div class="a10-flow-row"><span class="a10-flow-num">8</span><div class="a10-flow-node"><b>更新 Session + 异步写日志</b>然后返回响应</div></div>
+          </div>
+          <details>
+            <summary>查看原文 Mermaid 数据流源码</summary>
+            <pre><code>flowchart TD
+    GW["1 Gateway 接收&lt;br/&gt;协议转换 · 鉴权 · 限流"] --&gt; SS["2 加载 Session&lt;br/&gt;Redis"]
+    SS --&gt; IR["3 意图路由&lt;br/&gt;BERT 约 15ms / LLM 约 500ms"]
+    IR --&gt; HD{"4 需要转人工?"}
+    HD -- "是" --&gt; HO["Human Handoff&lt;br/&gt;转人工客服"]
+    HD -- "否" --&gt; SC{"5 语义缓存命中?"}
+    SC -- "命中" --&gt; RET["返回响应&lt;br/&gt;总延迟 P95 低于 2.5s"]
+    SC -- "未命中" --&gt; GEN["6 RAG / LLM 生成&lt;br/&gt;800-2000ms"]
+    GEN --&gt; GR["7 Guard Rails 检查&lt;br/&gt;安全过滤 + 质量校验"]
+    GR --&gt; UPD["8 更新 Session&lt;br/&gt;+ 异步写日志"]
+    UPD --&gt; RET
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class GW,SS,IR,GEN,GR,UPD,RET proc
+    class HD,SC decision
+    class HO neutral</code></pre>
+            <p class="source-footnote">源码按原文保留，仅做 HTML 转义。</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a10-scale-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">Step 5 · 扩展性</p><h2 id="a10-scale-title">无状态编排、<br>Kafka 削峰、独立扩容。</h2></div>
+          <p class="reading-intro">Session 存 Redis，Orchestrator 无状态；Kafka 缓冲请求，LLM Worker 按能力消费；接入、编排、推理各自扩缩容。</p>
+        </div>
+        <div class="prose">
+          <div class="a10-flow">
+            <div class="a10-flow-row"><span class="a10-flow-num">1</span><div class="a10-flow-node"><b>负载均衡器 Nginx</b>分发到多个 Orchestrator Pod</div></div>
+            <div class="a10-flow-row"><span class="a10-flow-num">2</span><div class="a10-flow-node"><b>Orchestrator Pod #1…#N（无状态）</b>Session 在 Redis</div></div>
+            <div class="a10-flow-row"><span class="a10-flow-num">3</span><div class="a10-flow-node"><b>消息队列 Kafka</b>削峰填谷</div></div>
+            <div class="a10-flow-row"><span class="a10-flow-num">4</span><div class="a10-flow-node"><b>LLM Worker Pool</b>GPU / API 调用，独立扩缩容</div></div>
+          </div>
+          <p><strong>语义缓存生产参数：</strong>相似度阈值 0.92，缓存默认保留 24 小时（86400 秒），用独立向量库 + Redis 存答案。</p>
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">三级降级方案</caption>
+              <thead><tr><th scope="col">降级级别</th><th scope="col">触发条件</th><th scope="col">策略</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Level 1</th><td>LLM 延迟 &gt; 5s</td><td>切换到轻量模型（如 GPT-3.5 级别）</td></tr>
+                <tr><th scope="row">Level 2</th><td>LLM 完全不可用</td><td>切换到 FAQ 关键词匹配模式</td></tr>
+                <tr><th scope="row">Level 3</th><td>FAQ 也不可用</td><td>自动转人工 + 排队提示</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <details>
+            <summary>展开原文 CustomerServiceSemanticCache 代码</summary>
+            <pre><code>class CustomerServiceSemanticCache:
+    """语义缓存：相似问题复用已有回答，降低 LLM 调用成本"""
+
+    SIMILARITY_THRESHOLD = 0.92  # 语义相似度阈值
+
+    async def get(self, query: str) -&gt; Optional[str]:
+        """查询语义缓存，命中则返回缓存回答"""
+        query_vec = await self.embedder.encode(query)
+        results = await self.vector_store.search(vector=query_vec, top_k=1)
+
+        if results and results[0].score &gt;= self.SIMILARITY_THRESHOLD:
+            cached = await self.redis.get(f"cache:{results[0].doc_id}")
+            if cached:
+                return json.loads(cached)["answer"]
+        return None
+
+    async def put(self, query: str, answer: str, ttl: int = 86400):
+        """写入语义缓存，默认保留 24 小时"""
+        query_vec = await self.embedder.encode(query)
+        doc_id = f"q_{hash(query) % (10**12)}"
+        await self.vector_store.upsert(doc_id=doc_id, vector=query_vec, content=query)
+        await self.redis.set(
+            f"cache:{doc_id}",
+            json.dumps({"query": query, "answer": answer}, ensure_ascii=False),
+            ex=ttl
+        )</code></pre>
+            <p class="source-footnote">原文代码保留，仅做 HTML 转义。</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a10-money-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">Step 6 · 成本估算</p><h2 id="a10-money-title">$3,200/日，<br>优化到约 $1,040/日。</h2></div>
+          <p class="reading-intro">以 GPT-4o 级别模型为例：100K 对话 × 8 轮 × 800 input / 200 output tokens；缓存省 30%，轻量模型分流 40% FAQ。</p>
+        </div>
+        <div class="prose">
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">日均 10 万对话的成本估算</caption>
+              <thead><tr><th scope="col">项目</th><th scope="col">计算</th><th scope="col" class="num">每日成本</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">日均对话数</th><td>100,000</td><td class="num">—</td></tr>
+                <tr><th scope="row">每次对话平均轮数</th><td>8 轮</td><td class="num">—</td></tr>
+                <tr><th scope="row">每轮平均 Input Token</th><td>~800 tokens（含上下文）</td><td class="num">—</td></tr>
+                <tr><th scope="row">每轮平均 Output Token</th><td>~200 tokens</td><td class="num">—</td></tr>
+                <tr><th scope="row">总 Input Token / 日</th><td>100K × 8 × 800 = 6.4 亿</td><td class="num">—</td></tr>
+                <tr><th scope="row">总 Output Token / 日</th><td>100K × 8 × 200 = 1.6 亿</td><td class="num">—</td></tr>
+                <tr><th scope="row">Input 成本（$2.5/1M）</th><td>640M × $2.5 / 1M</td><td class="num">$1,600</td></tr>
+                <tr><th scope="row">Output 成本（$10/1M）</th><td>160M × $10 / 1M</td><td class="num">$1,600</td></tr>
+                <tr><th scope="row">LLM 日成本合计</th><td>—</td><td class="num">$3,200</td></tr>
+                <tr><th scope="row">语义缓存命中率 30%</th><td>节省 30%</td><td class="num">-$960</td></tr>
+                <tr><th scope="row">轻量模型分流 40% FAQ</th><td>FAQ 用 $0.15/1M 模型</td><td class="num">-$1,200（约）</td></tr>
+                <tr><th scope="row">优化后日成本</th><td>—</td><td class="num">~$1,040</td></tr>
+                <tr><th scope="row">月成本</th><td>× 30</td><td class="num">~$31,200</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>加上基础设施（Redis、向量数据库、Kafka、K8s 集群等），月总成本约 <strong>$40,000–$50,000</strong>。原文的“轻量分流 -$1,200”是约数，本页在容量演练台按 $1,200 / $3,200 = 37.5% 的比例反推展示，并明确标注为近似值。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a10-orch-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">核心编排器</p><h2 id="a10-orch-title">把六个组件<br>串成一条请求。</h2></div>
+          <p class="reading-intro">加载 Session → 意图识别 → Handoff 判断 → 查询缓存 → 按意图分发 → 写缓存并更新 Session。</p>
+        </div>
+        <div class="prose">
+          <div class="a10-flow">
+            <div class="a10-flow-row"><span class="a10-flow-num">1</span><div class="a10-flow-node"><b>加载 Session</b>Redis 取历史、摘要、失败计数</div></div>
+            <div class="a10-flow-row"><span class="a10-flow-num">2</span><div class="a10-flow-node"><b>意图识别</b>两级路由，返回意图 + 置信度</div></div>
+            <div class="a10-flow-row"><span class="a10-flow-num">3</span><div class="a10-flow-node"><b>Handoff 判断</b>命中则直接返回转人工信息</div></div>
+            <div class="a10-flow-row"><span class="a10-flow-num">4</span><div class="a10-flow-node"><b>语义缓存</b>命中则更新 Session 并返回</div></div>
+            <div class="a10-flow-row"><span class="a10-flow-num">5</span><div class="a10-flow-node"><b>按意图分发</b>FAQ → RAG；订单 → 订单 API；工单 → 工单 API</div></div>
+            <div class="a10-flow-row"><span class="a10-flow-num">6</span><div class="a10-flow-node"><b>写缓存 + 更新 Session</b>返回 generated 响应</div></div>
+          </div>
+          <details>
+            <summary>展开原文 CustomerServiceOrchestrator 代码</summary>
+            <pre><code>class CustomerServiceOrchestrator:
+    """智能客服 Agent 编排器：串联所有核心组件"""
+
+    async def handle_message(self, session_id: str, user_input: str) -&gt; dict:
+        """
+        处理一条用户消息的完整流程：
+        Session 加载 → 意图识别 → Handoff 判断 → 缓存查询 → 生成回答 → Session 更新
+        """
+        # 1. 加载 Session
+        session = await self.session_manager.get_session(session_id)
+
+        # 2. 意图识别
+        intent_result = await self.intent_router.route(user_input, session)
+
+        # 3. Human Handoff 判断
+        handoff = await self.handoff_judge.evaluate(user_input, intent_result, session)
+        if handoff.should_handoff:
+            return {
+                "type": "handoff",
+                "message": "正在为您转接人工客服，请稍候...",
+                "reason": handoff.reason,
+                "priority": handoff.priority,
+                "skill_group": handoff.suggested_skill_group,
+            }
+
+        # 4. 查询语义缓存
+        cached_answer = await self.semantic_cache.get(user_input)
+        if cached_answer:
+            await self.session_manager.update_session(
+                session_id, user_input, cached_answer
+            )
+            return {"type": "answer", "message": cached_answer, "source": "cache"}
+
+        # 5. 根据意图分发处理
+        if intent_result.intent == Intent.FAQ:
+            answer = await self.rag_pipeline.answer(user_input, session)
+        elif intent_result.intent == Intent.ORDER_QUERY:
+            answer = await self._handle_order_query(user_input, session)
+        elif intent_result.intent == Intent.TICKET_CREATE:
+            answer = await self._handle_ticket_create(user_input, session)
+        else:
+            answer = await self.rag_pipeline.answer(user_input, session)
+
+        # 6. 写入缓存 + 更新 Session
+        await self.semantic_cache.put(user_input, answer)
+        await self.session_manager.update_session(session_id, user_input, answer)
+
+        return {"type": "answer", "message": answer, "source": "generated"}</code></pre>
+            <p class="source-footnote">原文代码保留，仅做 HTML 转义；省略了两个私有处理方法。</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a10-mis-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="a10-mis-title">四条误区，<br>四条追问。</h2></div>
+          <p class="reading-intro">前四条纠正“先 Demo 再说”“Benchmark 高分等于生产好用”“一个大模型全包”“不需要人工兜底”；后四条讨论市场、上下文工程、峰值和指标。</p>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">误区 1</p>
+          <div><h3>“先做 Demo 再考虑生产化。”</h3><p>生产化不是在 Demo 上打补丁。延迟、成本、可观测性应该在设计初期就考虑（“design for latency upfront”）。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">误区 2</p>
+          <div><h3>“静态 Benchmark 高分 = 生产好用。”</h3><p>95% 的静态 Benchmark 准确率在生产中可能“完全崩溃”。原因是静态 Benchmark 基于预录制的轨迹评估，但生产环境是动态的。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">误区 3</p>
+          <div><h3>“直接用一个大模型处理所有请求就行了。”</h3><p>日均 10 万对话如果全部走 GPT-4 级别模型，月成本将超过 $10 万，且延迟无法保证。正确做法是分层处理：80% 的简单 FAQ 走轻量模型或语义缓存，只有复杂场景才调用强模型。单一模型也无法处理工单创建等需要调用外部 API 的结构化任务，必须结合 Tool Use 和状态机设计。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">误区 4</p>
+          <div><h3>“智能客服不需要 Human Handoff，AI 可以处理一切。”</h3><p>Human Handoff 是不可或缺的安全兜底。涉及法律责任的投诉、情绪极度激动的用户、需要越权操作的请求，模型都无法可靠处理。业界经验是 AI 自主处理率达到 70–85% 即为优秀，剩余的必须有人工兜底。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">追问 1</p>
+          <div><h3>市场数据如何？</h3><p>AI Agent 市场从 2024 年的 $54 亿增长到 2025 年的 $76 亿，预计 2030 年达 $503 亿（CAGR 45.8%）。McKinsey 数据显示 23% 的组织已在规模化部署 Agent 系统。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">追问 2</p>
+          <div><h3>Context Engineering 是什么新概念？</h3><p>它是 2025–2026 年出现的新学科，将上下文视为一等公民——有自己的架构、生命周期和约束，而非简单的字符串拼接。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">追问 3</p>
+          <div><h3>如何处理高峰期 5 倍流量？</h3><p>三层防护：第一层是 Gateway 限流 + 排队，保护下游；第二层是 Kafka 削峰填谷，LLM Worker 按自身能力消费；第三层是 K8s HPA 根据 QPS 和队列积压自动扩容编排器 Pod。高峰期还应自动提升语义缓存复用阈值（如从 0.92 降到 0.88），并把更多请求分流到轻量模型。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">追问 4</p>
+          <div><h3>如何衡量这套系统的效果？</h3><p>业务指标：自主解决率 &gt; 75%、CSAT &gt; 4.2/5、平均对话轮数越少越好、人工转接率 &lt; 25%。技术指标：P95 延迟 &lt; 3s、可用性 &gt; 99.9%、RAG 检索准确率 &gt; 85%、意图识别 F1 &gt; 0.90。成本指标：单次对话成本 &lt; $0.05、缓存命中率 &gt; 30%。建议搭 A/B 实验平台持续迭代。</p></div>
+        </div>
+      </section>
+
+      <section class="source-section" aria-labelledby="a10-source-title">
+        <p class="eyebrow">技术细节，按需展开</p>
+        <h2 class="source-heading" id="a10-source-title">原文参考资料</h2>
+        <p class="source-summary">讲解依据《生产级 Agent 系统设计（含智能客服实战案例）》。原文用于解释本题，不代表其经验建议已通过独立准确性审计；市场数字和成本示例按原文保留，未联网核验。</p>
+        <details>
+          <summary>展开原文列出的十条参考链接</summary>
+          <div class="source-content">
+            <ul>
+              <li><a href="https://www.zenml.io/blog/llm-agents-in-production-architectures-challenges-and-best-practices" target="_blank" rel="noopener noreferrer">LLM Agents in Production: Architectures, Challenges, and Best Practices (ZenML)</a></li>
+              <li><a href="https://developers.googleblog.com/architecting-efficient-context-aware-multi-agent-framework-for-production/" target="_blank" rel="noopener noreferrer">Architecting Efficient Context-Aware Multi-Agent Framework for Production (Google Developers Blog)</a></li>
+              <li><a href="https://redis.io/blog/ai-agent-architecture/" target="_blank" rel="noopener noreferrer">AI Agent Architecture: Build Systems That Work in 2026 (Redis)</a></li>
+              <li><a href="https://www.diagrid.io/blog/building-production-ready-ai-agents-what-your-framework-needs" target="_blank" rel="noopener noreferrer">Building Production-Ready AI Agents (Diagrid)</a></li>
+              <li><a href="https://medium.com/@eng.fadishaar/building-large-language-model-llm-systems-that-work-in-production-7292d675b80b" target="_blank" rel="noopener noreferrer">Engineering Production-Ready LLM Systems (Medium)</a></li>
+              <li><a href="https://blog.langchain.dev/building-llm-powered-customer-service-agents/" target="_blank" rel="noopener noreferrer">Building LLM-Powered Customer Service Agents (LangChain Blog)</a></li>
+              <li><a href="https://arxiv.org/abs/2005.11401" target="_blank" rel="noopener noreferrer">Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks (Lewis et al., 2020)</a></li>
+              <li><a href="https://aws.amazon.com/blogs/architecture/designing-ai-first-customer-service-architectures/" target="_blank" rel="noopener noreferrer">Designing AI-First Customer Service Architectures (AWS Architecture Blog)</a></li>
+              <li><a href="https://arxiv.org/abs/2311.03758" target="_blank" rel="noopener noreferrer">Large Language Model based Long-tail Query Rewriting in Taobao Search (Alibaba, 2023)</a></li>
+              <li><a href="https://gptcache.readthedocs.io/en/latest/" target="_blank" rel="noopener noreferrer">Semantic Caching for LLM Applications (GPTCache Documentation)</a></li>
+            </ul>
+            <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+          </div>
+        </details>
+      </section>
+    </main>
+    <footer><span>Agent-Interview-100 · <code>01-agent-architecture/010-production-agent-system-design.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 3 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const A10_SCENARIOS = {
+    50000: { daily: 50000, label: "日均 5 万对话" },
+    100000: { daily: 100000, label: "日均 10 万对话" },
+    300000: { daily: 300000, label: "日均 30 万对话" }
+  };
+  const state = { scenario: "100000" };
+  const byId = (id) => document.getElementById(id);
+  const fmt = (n) => n.toLocaleString("en-US");
+  const money = (n) => `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+  function compute(daily) {
+    const avgQps = daily / 86400;
+    const peakQps = (daily * 5) / 86400;
+    const msgQps = peakQps * 8;
+    const turns = daily * 8;
+    const inputTokens = turns * 800;
+    const outputTokens = turns * 200;
+    const inputCost = (inputTokens / 1e6) * 2.5;
+    const outputCost = (outputTokens / 1e6) * 10;
+    const rawCost = inputCost + outputCost;
+    const cacheSave = rawCost * 0.3;
+    const lightSave = rawCost * 0.375;
+    const optimized = rawCost - cacheSave - lightSave;
+    const monthly = optimized * 30;
+    const perConv = optimized / daily;
+    return { avgQps, peakQps, msgQps, turns, inputTokens, outputTokens, inputCost, outputCost, rawCost, cacheSave, lightSave, optimized, monthly, perConv };
+  }
+
+  function render() {
+    const scenario = A10_SCENARIOS[state.scenario];
+    const r = compute(scenario.daily);
+
+    document.querySelectorAll(".a10-tab").forEach((button) => {
+      button.setAttribute("aria-pressed", button.dataset.scenario === state.scenario ? "true" : "false");
+    });
+
+    byId("a10-task").textContent = `场景：日均 ${fmt(scenario.daily)} 对话，峰值 5 倍，平均 8 轮/对话`;
+    byId("a10-scenario-label").textContent = `场景 · ${scenario.label}`;
+    byId("a10-demo-title").textContent = `先把 ${fmt(scenario.daily)} 对话换算成 QPS。`;
+    byId("a10-subtitle").textContent = "固定教学参数：峰值 5 倍、平均 8 轮/对话、每轮 800 input / 200 output tokens；单价 $2.5 / $10 每百万 tokens。";
+
+    byId("a10-avg-qps").textContent = r.avgQps.toFixed(2);
+    byId("a10-peak-qps").textContent = r.peakQps.toFixed(2);
+    byId("a10-msg-qps").textContent = r.msgQps.toFixed(2);
+    byId("a10-per-conv").textContent = `$${r.perConv.toFixed(4)}`;
+
+    byId("a10-turns").textContent = `${fmt(scenario.daily)} × 8 = ${fmt(r.turns)} 轮`;
+    byId("a10-input").textContent = `${fmt(r.turns)} × 800 = ${fmt(r.inputTokens)}（${(r.inputTokens / 1e8).toFixed(2)} 亿）`;
+    byId("a10-output").textContent = `${fmt(r.turns)} × 200 = ${fmt(r.outputTokens)}（${(r.outputTokens / 1e8).toFixed(2)} 亿）`;
+    byId("a10-raw").textContent = `${(r.inputTokens / 1e8).toFixed(2)} 亿 ÷ 1M × $2.5 + ${(r.outputTokens / 1e8).toFixed(2)} 亿 ÷ 1M × $10 = ${money(r.rawCost)}`;
+    byId("a10-cache").textContent = `${money(r.rawCost)} × 30% = -${money(r.cacheSave)}`;
+    byId("a10-light").textContent = `${money(r.rawCost)} × 37.5% = -${money(r.lightSave)}（按原文 $1,200 反推的近似比例）`;
+    byId("a10-opt").textContent = `${money(r.rawCost)} − ${money(r.cacheSave)} − ${money(r.lightSave)} = ${money(r.optimized)}`;
+    byId("a10-month").textContent = `${money(r.optimized)} × 30 = ${money(r.monthly)}（不含基础设施）`;
+
+    byId("a10-io-in").textContent = `${fmt(scenario.daily)} 对话/日；峰值 5×；8 轮/对话；800 input + 200 output tokens/轮。`;
+    byId("a10-io-out").textContent = `峰值对话 QPS ${r.peakQps.toFixed(2)}；原始日成本 ${money(r.rawCost)}；优化后日成本 ${money(r.optimized)}；月成本 ${money(r.monthly)}。`;
+    byId("a10-state").textContent = `${scenario.label} · 峰值 ${r.peakQps.toFixed(2)} QPS · 优化后 ${money(r.optimized)}/日`;
+
+    byId("a10-announce").textContent = `已切换到${scenario.label}。峰值对话 QPS ${r.peakQps.toFixed(2)}，优化后日成本 ${money(r.optimized)}，月成本 ${money(r.monthly)}。`;
+  }
+
+  document.querySelectorAll(".a10-tab").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.scenario = button.dataset.scenario;
+      render();
+    });
+  });
+  byId("a10-reset").addEventListener("click", () => {
+    state.scenario = "100000";
+    render();
+    byId("a10-announce").textContent = "已重置为日均 10 万对话的基准场景。";
+  });
+
+  render();
+</script>
+</body>
+</html>

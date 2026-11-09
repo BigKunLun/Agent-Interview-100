@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Agent Benchmark：如何设计端到端的 Agent 测试？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .bm-banner { display: flex; align-items: flex-start; gap: 9px; margin: var(--s-4) var(--s-6) 0; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .bm-banner::before { content: "教学"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .bm-banner strong { color: #4d3000; }
+  .bm-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .bm-neutral { background: #eef1ee; color: #3f463f; border-color: #c9cec9; }
+  .bm-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .bm-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .bm-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .bm-bad { background: #fbecec; color: #8a1f1f; border-color: #d9a3a3; }
+  .bm-step-label { font: 10px/1.5 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: 6px; }
+  .bm-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); }
+  .bm-choice { text-align: left; min-height: 74px; padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .bm-choice:hover { border-color: var(--border-bright); }
+  .bm-choice[aria-pressed="true"] { border-color: #194f87; background: #eaf1f8; box-shadow: inset 0 0 0 1px #194f87; }
+  .bm-choice b { display: block; font: 600 13px/1.5 var(--sans); }
+  .bm-choice span { display: block; margin-top: 3px; font-size: 11px; line-height: 1.6; color: var(--text-dim); }
+  .bm-choice[aria-pressed="true"] span { color: #3f463f; }
+  .bm-picked { margin-top: var(--s-3); padding: 8px 11px; border-left: 3px solid #194f87; background: #eaf1f8; font-size: 12px; line-height: 1.7; }
+  .bm-result { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); overflow: hidden; }
+  .bm-result-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--surface-soft); }
+  .bm-result-head b { font-size: 14px; }
+  .bm-result-body { padding: var(--s-4); }
+  .bm-primary { font: 600 22px/1.4 var(--serif); }
+  .bm-secondary { margin-top: 4px; font-size: 12px; color: var(--text-dim); }
+  .bm-why { margin-top: var(--s-3); font-size: 12px; line-height: 1.75; }
+  .bm-facts { margin-top: var(--s-3); display: grid; gap: 5px; }
+  .bm-fact { display: grid; grid-template-columns: 116px minmax(0, 1fr); gap: 8px; padding: 6px 9px; border: 1px solid var(--border); border-radius: 4px; background: #f7f6f1; font-size: 11px; line-height: 1.65; }
+  .bm-fact b { font: 600 10px/1.7 var(--mono); color: var(--text-dim); }
+  .bm-caveat { margin-top: var(--s-3); padding: 8px 10px; border: 1px solid #d9b47a; border-radius: 4px; background: #fdf3e3; color: #6b4300; font-size: 11px; line-height: 1.7; }
+  .bm-empty { padding: var(--s-4); border: 1px dashed var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .bm-wide { min-width: 760px; }
+  .bm-fixed-note { display: inline-block; margin-top: var(--s-3); padding: 3px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  .bm-flow { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); margin-top: var(--s-4); }
+  .bm-flow > div { min-width: 0; padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 11px; line-height: 1.7; }
+  .bm-flow b { display: block; margin-bottom: 3px; font: 600 12px/1.5 var(--sans); }
+  .bm-flow span { color: var(--text-dim); }
+  .bm-table td:first-child { min-width: 7em; }
+  .bm-code-note { margin-top: var(--s-3); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  @media (max-width: 900px) { .bm-choices { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (max-width: 720px) {
+    .bm-banner { margin-inline: var(--s-4); }
+    .bm-choices, .bm-flow { grid-template-columns: 1fr; }
+    .bm-fact { grid-template-columns: 1fr; gap: 2px; }
+    .bm-width-scroll { overflow-x: auto; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">072 / Agent Benchmark</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 17 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="071-llm-as-judge.html">← 上一页 · LLM-as-Judge</a><a href="073-regression-testing.html">下一页 → · 回归测试</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Evaluation · 可交互讲解</p>
+      <h1>一个分数，<br>测不出全部能力。</h1>
+    </div>
+    <div>
+      <p class="lead">Agent Benchmark 是端到端评估 Agent 完成任务能力的标准化测试。和考知识的 MMLU 不同，它看的是完整执行过程：规划、工具使用、多步推理、错误恢复。代码、网页、通用助手、计算机使用、工具调用、长期记忆，各有各的基准。</p>
+      <p class="definition"><strong>关键边界：</strong>基准是受控环境，不是生产。榜单分数只能说明“在这个测试里表现如何”，不能直接推出“在你的业务里好用”。本页分数只按原文版本呈现，未联网核实。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Evaluation</span><span class="pill">决策路径</span><span class="pill">原文版本 · 未联网核实</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="bm-title">
+    <div class="player-top">
+      <div class="player-label">基准选择路径 <small>任务类型 × 评估方式 → 推荐基准</small></div>
+      <div class="controls" role="group" aria-label="基准选择演示控制">
+        <button type="button" class="button button-quiet" id="bm-reset">重置</button>
+        <button type="button" class="button" id="bm-back" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="bm-next">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="基准选择阶段">
+      <ol style="--stages: 3">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>任务类型</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>评估方式</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>推荐基准</button></li>
+      </ol>
+    </nav>
+    <p class="bm-banner"><span><strong>本页是固定教学路径，不连接任何评估平台。</strong>选项与推荐关系根据原文的基准分类整理；分数、规模和结论只按原文版本呈现，未联网核实，也不代表当前榜单排名。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="bm-index">阶段 1 / 3 · 固定教学路径</p>
+      <h2 id="bm-title">先问：你要测哪种能力？</h2>
+      <p id="bm-subtitle">代码、网页、通用助手、计算机使用、工具调用、长期记忆，对应不同的基准家族。选一个最接近你业务的能力。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="bm-scene"></div>
+      <p class="demo-note" id="bm-note">固定教学路径：选项和推荐均为本页预设，不调用模型，不访问网络。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学路径 · 0 次平台调用</span><span id="bm-summary">阶段 1 / 3 · 等待选择能力</span></div>
+  </section>
+  <p id="bm-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="landscape-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">基准全景</p><h2 id="landscape-title">六大类，<br>各测各的能力。</h2></div>
+      <p class="reading-intro">原文把 Agent 基准分成代码、Web、通用、计算机使用、工具使用、长期记忆六类；另有两个 2026-09 的新维度。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data bm-wide bm-table">
+          <caption class="sr-only">原文列出的 Agent 基准分类</caption>
+          <thead><tr><th scope="col">类别</th><th scope="col">代表基准</th><th scope="col">测什么</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">代码 Agent</th><td>SWE-bench、SWE-bench Verified、Multi-SWE-bench、HumanEval / MBPP</td><td>修真实 GitHub Issue；函数级代码生成</td></tr>
+            <tr><th scope="row">Web Agent</th><td>WebArena、VisualWebArena、Mind2Web</td><td>真实网站交互；视觉理解；跨网站操作</td></tr>
+            <tr><th scope="row">通用 Agent</th><td>GAIA、ALFWorld、WebShop</td><td>多步推理 + 多工具组合；文本家庭环境；模拟电商</td></tr>
+            <tr><th scope="row">计算机使用</th><td>OSWorld、Computer Use benchmarks</td><td>操作系统级任务</td></tr>
+            <tr><th scope="row">工具使用</th><td>ToolBench、API-Bank、TaskBench</td><td>API 选择与使用；调用正确性；多工具组合</td></tr>
+            <tr><th scope="row">长期记忆</th><td>LoCoMo、LongMemEval、MemoryBank / DialSim / PerLTQA、BEAM</td><td>跨会话记忆、知识更新、超长上下文检索</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="bm-fixed-note">分类与规模来自原文，未联网核实</p>
+      <h3>两个 2026-09 的新维度</h3>
+      <ul>
+        <li><strong><a href="https://github.com/shyringo/myriad-bench" rel="noreferrer noopener">MyriadBench</a>：</strong>专门测单 Agent 会话内任务交错、中断、相互依赖时的能力保持，对照隔离执行同任务的基线，用单一指数 MI 排名。它补的是“多任务在同一会话里互相踩踏”这个此前没有专属基准的维度。</li>
+        <li><strong><a href="https://arxiv.org/abs/2609.33295" rel="noreferrer noopener">TraceDance（ByteDance &amp; UIC，arXiv:2609.33295）</a>：</strong>从真实部署轨迹自动构建 Agent 行为基准，在决策点给模型下一轮打分，不需要环境重放。原文把它概括为“轨迹即基准”，让评测数据直接来自生产。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="swe-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">SWE-bench</p><h2 id="swe-title">代码 Agent 的标杆，<br>但 Verified 已污染。</h2></div>
+      <p class="reading-intro">SWE-bench 用真实 GitHub Issue 和项目测试套件判定成败。原文特别强调：2026 年 2 月 OpenAI 已公开判定 SWE-bench Verified 严重污染。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data bm-wide">
+          <caption class="sr-only">SWE-bench 主集与家族变体</caption>
+          <thead><tr><th scope="col">版本</th><th scope="col" class="num">规模</th><th scope="col">说明</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">SWE-bench 主集</th><td class="num">2,294</td><td>12 个流行 Python 开源项目；Django 占比约 37%，存在领域倾斜</td></tr>
+            <tr><th scope="row">SWE-bench Verified</th><td class="num">500</td><td>OpenAI 联合 Anthropic 等人工验证的子集；2026-02 被判定严重污染</td></tr>
+            <tr><th scope="row">SWE-bench Lite</th><td class="num">300</td><td>研究入门用</td></tr>
+            <tr><th scope="row">SWE-bench Multimodal</th><td class="num">517</td><td>含 UI 截图，防纯文本作弊</td></tr>
+            <tr><th scope="row">SWE-bench Pro</th><td class="num">—</td><td>2026 抗污染版本，人工严格审查，去除可游戏化任务</td></tr>
+            <tr><th scope="row">SWE-bench Live</th><td class="num">—</td><td>持续收集最新 Issue，不在训练集</td></tr>
+            <tr><th scope="row">Multi-SWE-bench</th><td class="num">—</td><td>扩展到 Go / Rust / TypeScript / Java 等 7 种语言</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="bm-fixed-note">规模与项目占比来自原文，未联网核实</p>
+      <div class="callout">
+        <p class="callout-label">原文的 2026 污染结论</p>
+        <p>OpenAI 2026-02 公开声明（详见 SWE-bench Pro 发布说明）：SWE-bench Verified “increasingly contaminated”；最难的 59.4% 子集存在测试缺陷，包括 fail-to-pass 不严格、隐式依赖；OpenAI 已停止单独报告 Verified 成绩。原文建议主用 SWE-bench Pro，配合 Live、Multimodal、Multi-SWE-bench。</p>
+      </div>
+      <p>原文给出的 2026-05 SOTA 参考是：Claude Mythos Preview 93.9%，Claude Opus 4.7 87.6%，Claude Sonnet 4.5 80.9%。这些是原文口径的榜单数字，不是本页实测。</p>
+      <p>面试提示也来自原文：如果候选人还在引用“SOTA 72%”或更低数字，说明知识停留在 2024；能说出“Verified 已污染、应看 Pro / Live”才算跟上 2026 的评测话题。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="gaia-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">GAIA</p><h2 id="gaia-title">对人类简单，<br>对 Agent 极难。</h2></div>
+      <p class="reading-intro">GAIA 的答案是确定性的，用精确匹配评测，不需要 LLM Judge。它测多步推理和工具组合，三个难度等级分别约 5 步、5–10 步、最多约 50 步。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">GAIA 的规模与难度等级</caption>
+          <thead><tr><th scope="col">项目</th><th scope="col">内容</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">出处</th><td>Meta-FAIR + HuggingFace + AutoGPT，NeurIPS 2024</td></tr>
+            <tr><th scope="row">规模</th><td>466 题：公开 165 题 dev + 301 题 private test</td></tr>
+            <tr><th scope="row">Level 1</th><td>约 5 步推理 + 1 个工具调用，146 题</td></tr>
+            <tr><th scope="row">Level 2</th><td>5–10 步推理 + 多工具组合，245 题</td></tr>
+            <tr><th scope="row">Level 3</th><td>最多约 50 步 + 复杂工具链 + 长上下文，75 题</td></tr>
+            <tr><th scope="row">人机差距（原论文 2024）</th><td>人类志愿者 92%，GPT-4 + plugins 15%，差距约 6 倍</td></tr>
+            <tr><th scope="row">2026 进展（原文）</th><td>Open Deep Research 类 Agent 在 Level 1 已超 70%，Level 3 仍普遍低于 40%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="bm-fixed-note">规模、人机差距和 2026 进展均按原文版本，未联网核实</p>
+      <p>原文的示例题是：“找到 2024 年诺贝尔物理学奖获得者的本科毕业院校，这所院校的现任校长是谁？”需要搜索、提取、再搜索、再提取。它测的不是知识存量，而是把多个工具串起来的能力。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="memory-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">记忆专项</p><h2 id="memory-title">通用榜单，<br>几乎不测跨会话记忆。</h2></div>
+      <p class="reading-intro">SWE-bench 和 GAIA 都测不到“上次说过什么”。做带记忆的 Agent，要用 LoCoMo 和 LongMemEval 这类专项基准。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data bm-wide">
+          <caption class="sr-only">LoCoMo 与 LongMemEval 的原文对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">LoCoMo</th><th scope="col">LongMemEval</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">出处</th><td>Maharana et al., 2024，CMU + Snap Research</td><td>Wu et al., 2024，ICLR 2025</td></tr>
+            <tr><th scope="row">规模</th><td>50 段对话，每段 19–35 sessions / 约 300 turns / 9K–26K tokens；约 1,500–2,000 个 QA 对</td><td>500 题人工构造（LongMemEval_S 标准集）；context 4K–115K tokens；M 版可达 1.5M tokens / 500 sessions</td></tr>
+            <tr><th scope="row">任务类型</th><td>single-hop 841、multi-hop 282、open-domain 96、temporal 321、adversarial</td><td>单 session 用户事实、单 session 助手输出、跨 session 推理（30）、时间推理（133）、知识更新（78）、abstention</td></tr>
+            <tr><th scope="row">特色</th><td>persona-grounded + 多模态对话</td><td>human-assistant 对话，更贴近真实使用；含知识更新与 abstention</td></tr>
+            <tr><th scope="row">局限</th><td>话题偏个人闲聊，缺乏 task-oriented 场景</td><td>原文未单列局限；强调比 LoCoMo 更难</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="bm-fixed-note">规模、题数与任务分布按原文，未联网核实</p>
+
+      <h3>原文给出的记忆评估流水线</h3>
+      <div class="bm-flow" role="img" aria-label="记忆评估两阶段：摄入历史会话写入记忆库，再用评测问题检索 Top-k 记忆并生成答案，最后由 LLM-as-Judge 评分">
+        <div><b>Stage 1 · Memory Ingestion</b><span>历史 sessions → 提取事实 / 关系 → 写入记忆库（向量库 / 图库）。</span></div>
+        <div><b>Stage 2 · Retrieval &amp; QA</b><span>评测问题 → 检索 Top-k 记忆 → LLM 生成答案 → LLM-as-Judge 评分。</span></div>
+      </div>
+      <p class="bm-code-note">原文称该流水线被 ReMe、Mem0、MemMachine 等系统遵循；图中 Judge 为 gpt-4o，原文称与人类专家一致性 &gt;97%。该一致性数字按原文呈现，本页未复测。</p>
+      <details>
+        <summary>查看原文 Mermaid 源码（记忆基准流水线）</summary>
+        <pre><code>flowchart LR
+    subgraph S1["Stage 1：Memory Ingestion（摄入）"]
+        A["历史 Sessions"] --&gt; B["提取事实 / 关系"]
+        B --&gt; C["记忆库&lt;br/&gt;向量库 / 图库"]
+    end
+    subgraph S2["Stage 2：Memory Retrieval &amp; QA（检索问答）"]
+        D["评测问题"] --&gt; E["检索 Top-k 记忆"]
+        E --&gt; F["LLM 生成答案"]
+        F --&gt; G["LLM-as-Judge 评分&lt;br/&gt;（gpt-4o · 与人类专家一致性 ＞97%）"]
+    end
+    C --- D
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class B,E proc
+    class A,C,D store
+    class F,G agent</code></pre>
+      </details>
+
+      <h3>2025 SOTA 参考</h3>
+      <div class="table-wrap">
+        <table class="data bm-wide">
+          <caption class="sr-only">原文给出的 2025 SOTA 参考</caption>
+          <thead><tr><th scope="col">系统</th><th scope="col" class="num">LoCoMo</th><th scope="col" class="num">LongMemEval_S</th><th scope="col">备注</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Full-context LLM 直接喂</th><td class="num">基线</td><td class="num">基线</td><td>准确率掉 30–55%</td></tr>
+            <tr><th scope="row">LoCoMo-RAG / 向量基线</th><td class="num">中</td><td class="num">中</td><td>多会话场景明显劣化</td></tr>
+            <tr><th scope="row">Mem0（2025 新算法）</th><td class="num">91.6</td><td class="num">93.4</td><td>平均 &lt;7K token / 检索</td></tr>
+            <tr><th scope="row">ENGRAM-R</th><td class="num">—</td><td class="num">+21.8pp</td><td>token 减 95.5%</td></tr>
+            <tr><th scope="row">MemMachine v0.2</th><td class="num">SOTA</td><td class="num">93.0</td><td>6 维优化消融</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="bm-fixed-note">原文版本 2025 SOTA 参考，未联网核实，不更新排名</p>
+
+      <h3>原文里的“残酷事实”</h3>
+      <ul>
+        <li>long-context LLM 直接喂全文，准确率掉 30%–60%。</li>
+        <li>商用系统在简化场景下也只有 30%–70% 准确率。</li>
+        <li>原因有三：lost in the middle；无关历史稀释信号；知识更新失效——模型很难识别“后面的信息覆盖前面的”。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="design-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">设计原则</p><h2 id="design-title">真实、可验证、<br>防泄露、多维度。</h2></div>
+      <p class="reading-intro">原文给了五条原则：真实性、可验证性、防泄露、多维度、抗游戏性。每条都配了做法和反例。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data bm-wide">
+          <caption class="sr-only">原文的 Agent Benchmark 设计原则</caption>
+          <thead><tr><th scope="col">原则</th><th scope="col">做法</th><th scope="col">要点</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">真实性</th><td>从生产日志、GitHub Issue、真实网站采集</td><td>人造“玩具问题”不能反映真实复杂度</td></tr>
+            <tr><th scope="row">可验证性</th><td>测试通过、精确匹配等明确成功标准</td><td>开放任务需要 LLM Judge</td></tr>
+            <tr><th scope="row">防泄露</th><td>动态基准、私有测试集、按时间切分</td><td>只用模型训练之后的数据</td></tr>
+            <tr><th scope="row">多维度</th><td>推理质量、工具使用、效率、安全性</td><td>不只看最终结果</td></tr>
+            <tr><th scope="row">抗游戏性</th><td>大规模多样化测试集 + 动态更新</td><td>防止针对基准优化而非真实能力提升</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="bm-fixed-note">原则与做法来自原文</p>
+      <h3>小团队怎么自己搭</h3>
+      <p>原文的建议是从生产日志采样 50–100 个典型任务，定义明确的成功标准（可自动验证的优先），标注难度和类别；每次 Agent 更新后跑这套用例当回归测试。不需要从头造大规模基准。</p>
+      <details>
+        <summary>查看自定义评估套件的原文代码</summary>
+        <pre><code>class CustomAgentBenchmark:
+    """为自己的 Agent 设计评估套件"""
+
+    def __init__(self):
+        self.test_cases = []
+
+    def add_test(self, task, expected_result, difficulty, category,
+                 required_tools=None, max_steps=None):
+        self.test_cases.append({
+            "task": task,
+            "expected": expected_result,
+            "difficulty": difficulty,      # easy/medium/hard
+            "category": category,          # coding/search/analysis
+            "required_tools": required_tools,
+            "max_steps": max_steps,
+        })
+
+    async def run(self, agent):
+        results = []
+        for case in self.test_cases:
+            trajectory = await agent.execute_with_trace(case["task"])
+
+            result = {
+                "task_success": self.check_result(
+                    trajectory.final_output, case["expected"]
+                ),
+                "steps_used": len(trajectory.steps),
+                "tools_used": [s.tool for s in trajectory.steps if s.tool],
+                "cost": trajectory.total_cost,
+                "latency": trajectory.total_time,
+                "correct_tools": self.check_tools(
+                    trajectory, case["required_tools"]
+                ),
+            }
+            results.append(result)
+
+        return self.aggregate_results(results)
+
+    def generate_report(self, results):
+        """按维度和难度分组的评估报告"""
+        return {
+            "overall_success_rate": np.mean([r["task_success"] for r in results]),
+            "by_difficulty": self.group_by("difficulty", results),
+            "by_category": self.group_by("category", results),
+            "avg_cost": np.mean([r["cost"] for r in results]),
+            "avg_steps": np.mean([r["steps_used"] for r in results]),
+        }</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="challenge-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">当前挑战</p><h2 id="challenge-title">饱和、泄露、<br>过拟合、方差。</h2></div>
+      <p class="reading-intro">原文列了五个挑战：数据泄露、基准饱和、过拟合基准、评估成本、非确定性。动态基准是应对之一，但质量控制仍是难题。</p>
+    </div>
+    <div class="prose">
+      <ul>
+        <li><strong>数据泄露：</strong>基准题目可能出现在 LLM 的训练数据里。</li>
+        <li><strong>基准饱和：</strong>模型快速刷满分，基准失去区分能力。</li>
+        <li><strong>过拟合基准：</strong>针对基准优化不等于真实能力提升。</li>
+        <li><strong>评估成本：</strong>端到端 Agent 测试需要真实环境，成本高。</li>
+        <li><strong>非确定性：</strong>Agent 每次运行路径不同，评估结果有方差。</li>
+      </ul>
+      <p>原文用 SWE-MERA 举例：持续从最新 GitHub Issue 自动收集测试用例，永远不被训练数据污染；挑战是自动收集的题目质量可能参差不齐。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">两个误区，<br>四个追问。</h2></div>
+      <p class="reading-intro">榜单高不等于业务好用；一个基准也不够。回答时先说适用条件，再给基准名和证据强度。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <div class="misconception-label">误区 01</div>
+        <div><h3>“在基准上得分高就说明 Agent 好用”</h3><p>基准是受控环境，生产更复杂：网络问题、意外输入、安全攻击都可能出现。原文的说法是，SWE-bench 上 70% 的模型在实际开发中可能远达不到这个表现。基准是必要但不充分的。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 02</div>
+        <div><h3>“一个基准就够了”</h3><p>不同基准测不同能力。代码强（SWE-bench 高分）不代表网页操作好（WebArena）。要按 Agent 的实际使用场景选择或组合多个基准。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 03</div>
+        <div><h3>如何防止 Agent 针对基准过拟合？</h3><p>四条：用动态更新的基准（如 SWE-MERA）；保留私有测试集不公开；评估时加入从未见过的新类型任务；关注轨迹质量而非只看结果。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 04</div>
+        <div><h3>小团队如何设计自己的 Agent 评估？</h3><p>从生产日志采样 50–100 个典型任务，定义明确的成功标准（可自动验证的优先），标注难度和类别；每次 Agent 更新后跑这套用例当回归测试。不需要从头造大规模基准。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 05</div>
+        <div><h3>如何设计 Memory Benchmark？</h3><p>直接复用 LongMemEval（500 题）加 LoCoMo（多会话长对话）就能覆盖大部分场景。自建要重点覆盖四维：跨会话推理、时间推理、知识更新（LoCoMo 缺这块）、abstention（记忆里没有的事不要瞎编）。评估分两阶段：摄入 + 检索问答。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 06</div>
+        <div><h3>为什么 long-context LLM 直接喂全部历史不行？</h3><p>LongMemEval 实测，把全部对话直接塞进 long-context 模型，准确率比带 memory 系统掉 30%–60%。原因：lost in the middle；无关历史稀释相关信号；知识更新失效。所以要专门做提取、检索、rerank，而不是无脑加大 context。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="sources-title">
+    <p class="eyebrow">参考资料</p>
+    <h2 class="source-heading" id="sources-title">原文引用与延伸阅读</h2>
+    <p class="source-summary">以下链接来自原文。只有主动点击外链才会离开本页；本页不加载任何外部资源。</p>
+    <details>
+      <summary>展开 10 条参考资料</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://mbrenndoerfer.com/writing/agent-evaluation-metrics-benchmarks-safety" rel="noreferrer noopener">Agent Evaluation: Metrics, Benchmarks and Safety Standards</a></li>
+          <li><a href="https://github.com/philschmid/ai-agent-benchmark-compendium" rel="noreferrer noopener">AI Agent Benchmark Compendium (Phil Schmid, GitHub)</a></li>
+          <li><a href="https://www.swebench.com/" rel="noreferrer noopener">SWE-bench Leaderboards</a></li>
+          <li><a href="https://medium.com/@danieldkang/ai-agent-benchmarks-are-broken-c1fedc9ea071" rel="noreferrer noopener">AI Agent Benchmarks are Broken (Daniel Kang)</a></li>
+          <li><a href="https://arxiv.org/html/2507.11059v1" rel="noreferrer noopener">SWE-MERA: A Dynamic Benchmark for Evaluating LLMs (arXiv)</a></li>
+          <li><a href="https://snap-research.github.io/locomo/" rel="noreferrer noopener">LoCoMo: Evaluating Very Long-Term Conversational Memory (Snap Research)</a></li>
+          <li><a href="https://arxiv.org/pdf/2410.10813" rel="noreferrer noopener">LongMemEval: Benchmarking Chat Assistants on Long-Term Memory (arXiv 2410.10813)</a></li>
+          <li><a href="https://arxiv.org/abs/2504.19413" rel="noreferrer noopener">Mem0: Production-Ready Long-Term Memory (arXiv 2504.19413)</a></li>
+          <li><a href="https://mem0.ai/research" rel="noreferrer noopener">Benchmarking Mem0 token-efficient memory algorithm</a></li>
+          <li><a href="https://memmachine.ai/blog/2025/12/memmachine-v0.2-delivers-top-scores-and-efficiency-on-locomo-benchmark/" rel="noreferrer noopener">MemMachine v0.2 on LoCoMo</a></li>
+        </ul>
+        <p class="source-footnote">所有榜单分数、规模、SOTA 结论均按原文版本呈现，本页未联网核实，也不更新排名。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>08-evaluation/072-agent-benchmarks.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 5 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const CAPABILITIES = Object.freeze([
+    { key: "code", name: "代码 Agent", desc: "修真实 Issue、跑测试" },
+    { key: "web", name: "Web Agent", desc: "网页操作、跨站任务" },
+    { key: "general", name: "通用助手", desc: "多步推理 + 工具组合" },
+    { key: "computer", name: "计算机使用", desc: "操作系统级操作" },
+    { key: "tool", name: "工具使用", desc: "API 选择与调用" },
+    { key: "memory", name: "长期记忆", desc: "跨会话记忆与更新" }
+  ]);
+
+  const MODES = Object.freeze([
+    { key: "real", name: "真实环境 + 自动判定", desc: "端到端跑任务，用测试或成功条件判定；成本高，最接近生产。" },
+    { key: "offline", name: "离线题库 + 精确匹配", desc: "成本低、可复现；但离真实环境更远，容易过拟合。" },
+    { key: "memory", name: "长对话 + LLM Judge", desc: "跨会话检索问答，答案开放；需要 Judge 或人工评分。" }
+  ]);
+
+  const RECOMMENDATIONS = Object.freeze({
+    "code|real": {
+      primary: "SWE-bench Pro / SWE-bench Live",
+      secondary: "Multi-SWE-bench（多语言）；SWE-bench Multimodal（含 UI 截图）",
+      why: "真实 GitHub Issue + 项目测试套件，最接近代码 Agent 的端到端任务。Verified 已被原文判定污染，不再作为主榜。",
+      facts: [
+        ["主集规模", "2,294 个 Issue，来自 12 个 Python 项目；Django 约 37%"],
+        ["SOTA（2026-05）", "Claude Mythos Preview 93.9%；Opus 4.7 87.6%；Sonnet 4.5 80.9%（原文版本）"],
+        ["污染提醒", "Verified 最难 59.4% 子集存在测试缺陷；OpenAI 2026-02 停止单独报告"]
+      ],
+      caveat: "分数为原文 2026-05 口径，未联网核实；实际选型要看 Pro / Live 的最新结果。"
+    },
+    "code|offline": {
+      primary: "HumanEval / MBPP",
+      secondary: "SWE-bench Lite（300 题，研究入门）",
+      why: "函数级代码生成可以在离线题库上精确匹配，成本最低；但它测不到大型代码库定位和真实测试套件。",
+      facts: [
+        ["任务形态", "函数级代码生成；不是端到端修 Issue"],
+        ["原文分数", "未给出 HumanEval / MBPP 的具体分数"],
+        ["适用", "快速回归、模型初筛；不能替代 SWE-bench"]
+      ],
+      caveat: "原文只把 HumanEval / MBPP 列在代码 Agent 分类下，未给分数；不要拿函数级分数推断修 Issue 能力。"
+    },
+    "code|memory": {
+      primary: "先看评估约束：LoCoMo + LongMemEval",
+      secondary: "代码能力仍用 SWE-bench Pro / Live",
+      why: "你选的是“长对话 + LLM Judge”，这更像记忆评估而不是代码评估。两个维度要分开测：代码能力看 SWE-bench，记忆能力看记忆专项基准。",
+      facts: [
+        ["记忆基准", "LoCoMo（多会话）+ LongMemEval（知识更新 / abstention）"],
+        ["代码基准", "SWE-bench Pro / Live；Verified 已污染"],
+        ["建议", "不要把记忆分数当成代码能力分数"]
+      ],
+      caveat: "这是本页根据原文分类做的组合建议，原文没有直接给“代码 + 记忆”的组合结论。"
+    },
+    "web|real": {
+      primary: "WebArena",
+      secondary: "VisualWebArena（需要视觉理解）；Mind2Web（跨网站通用操作）",
+      why: "WebArena 在真实网站上完成复杂操作，最接近 Web Agent 的生产任务；需要视觉时加 VisualWebArena。",
+      facts: [
+        ["WebArena", "真实网站交互任务"],
+        ["VisualWebArena", "需要视觉理解的网页任务"],
+        ["Mind2Web", "跨网站通用操作"]
+      ],
+      caveat: "原文未给出这三个基准的分数；本页只按任务形态推荐。"
+    },
+    "web|offline": {
+      primary: "Mind2Web",
+      secondary: "原文没有列出纯离线的 Web 端到端基准",
+      why: "真实网站任务很难完全离线复现。Mind2Web 是跨网站通用操作的数据集形态，适合先做低成本观察，但它不等同于真实网站端到端。",
+      facts: [
+        ["Mind2Web", "跨网站通用操作"],
+        ["WebArena", "需要真实网站环境，不适合纯离线"],
+        ["原文分数", "未给出"]
+      ],
+      caveat: "把 Mind2Web 当离线替代是本页的推断；原文没有这样定位它。"
+    },
+    "general|real": {
+      primary: "GAIA",
+      secondary: "ALFWorld（文本家庭环境）；WebShop（模拟电商）",
+      why: "GAIA 用多步推理 + 多工具组合的复杂问题测通用助手，答案是确定性的，精确匹配即可判定。",
+      facts: [
+        ["规模", "466 题：165 题 dev + 301 题 private test"],
+        ["难度", "Level 1 约 5 步 / 146 题；Level 2 5–10 步 / 245 题；Level 3 最多约 50 步 / 75 题"],
+        ["人机差距", "原论文 2024：人类 92%，GPT-4 + plugins 15%"],
+        ["2026 进展", "Level 1 已超 70%，Level 3 仍普遍低于 40%（原文）"]
+      ],
+      caveat: "人机差距是 2024 原论文数据；2026 进展为原文口径，均未联网核实。"
+    },
+    "general|offline": {
+      primary: "GAIA",
+      secondary: "原文没有为通用助手列出更便宜的离线替代",
+      why: "GAIA 的答案确定性、可精确匹配，本身就适合离线题库式评测；只是它仍需要工具链和较长推理。",
+      facts: [
+        ["判定", "精确匹配，不需 LLM Judge"],
+        ["成本", "端到端多步任务，推理和工具调用成本不低"],
+        ["规模", "466 题"]
+      ],
+      caveat: "“离线题库”是本页对 GAIA 判定方式的归类，原文只强调答案确定性和精确匹配。"
+    },
+    "computer|real": {
+      primary: "OSWorld",
+      secondary: "Computer Use benchmarks",
+      why: "操作系统级任务必须在真实或虚拟 OS 环境里执行，无法靠静态问答替代。",
+      facts: [
+        ["OSWorld", "操作系统级任务"],
+        ["环境", "需要可操作的 OS 环境"],
+        ["原文分数", "未给出"]
+      ],
+      caveat: "原文只列基准名和任务形态，未给分数或环境配置细节。"
+    },
+    "computer|offline": {
+      primary: "没有合适的纯离线替代",
+      secondary: "仍应使用 OSWorld 或 Computer Use benchmarks 的虚拟环境",
+      why: "计算机使用能力的核心是操作真实界面；离线题库测不到点击、输入、窗口切换这些动作。",
+      facts: [
+        ["OSWorld", "操作系统级任务"],
+        ["离线限制", "静态题目无法验证真实操作"],
+        ["建议", "用虚拟 OS 环境，仍按真实环境成本估算"]
+      ],
+      caveat: "这是本页基于任务形态的判断，原文没有讨论“离线计算机使用基准”。"
+    },
+    "tool|real": {
+      primary: "ToolBench",
+      secondary: "API-Bank（调用正确性）；TaskBench（多工具组合）",
+      why: "三个基准分别覆盖工具选择与使用、API 调用正确性、多工具组合；按你的 Agent 最常出的错来选。",
+      facts: [
+        ["ToolBench", "API 工具选择和使用"],
+        ["API-Bank", "API 调用正确性"],
+        ["TaskBench", "多工具组合"]
+      ],
+      caveat: "原文未给出这三个基准的分数；不要用榜单排名替代任务匹配。"
+    },
+    "tool|offline": {
+      primary: "API-Bank",
+      secondary: "TaskBench",
+      why: "API 调用正确性可以用固定用例和精确判定来测，适合离线回归；多工具组合可用 TaskBench 补充。",
+      facts: [
+        ["API-Bank", "API 调用正确性"],
+        ["TaskBench", "多工具组合"],
+        ["原文分数", "未给出"]
+      ],
+      caveat: "“适合离线回归”是本页推断，原文只描述任务形态。"
+    },
+    "memory|real": {
+      primary: "LoCoMo + LongMemEval",
+      secondary: "BEAM（1M / 10M 超长上下文 + 大规模事实检索）",
+      why: "LoCoMo 测多会话长对话，LongMemEval 补知识更新和 abstention；两者组合覆盖大部分记忆场景。",
+      facts: [
+        ["LoCoMo", "50 段对话；约 1,500–2,000 个 QA；偏个人闲聊"],
+        ["LongMemEval", "500 题；4K–115K tokens；含知识更新与 abstention"],
+        ["2025 SOTA", "Mem0：LoCoMo 91.6 / LongMemEval_S 93.4（原文版本）"],
+        ["直接喂全文", "准确率掉 30%–60%"]
+      ],
+      caveat: "SOTA 分数为原文 2025 参考，未联网核实；不更新排名。"
+    },
+    "memory|offline": {
+      primary: "LongMemEval_S + LoCoMo",
+      secondary: "BEAM（超长上下文）",
+      why: "两者都是固定 QA 集，可在离线环境复现；LongMemEval 更适合知识更新和 abstention，LoCoMo 更适合多会话串联。",
+      facts: [
+        ["LongMemEval_S", "500 题；4K–115K tokens"],
+        ["LoCoMo", "约 1,500–2,000 个 QA"],
+        ["判定", "原文流水线用 LLM-as-Judge 评分"]
+      ],
+      caveat: "LLM-as-Judge 本身有偏差；离线复现时要用固定 Judge 版本并保留人工抽检。"
+    },
+    "memory|memory": {
+      primary: "LoCoMo + LongMemEval",
+      secondary: "BEAM（1M / 10M）",
+      why: "评估方式与能力匹配：两阶段流水线先摄入历史会话，再检索问答并评分。",
+      facts: [
+        ["Stage 1", "历史 sessions → 提取事实 / 关系 → 记忆库"],
+        ["Stage 2", "评测问题 → 检索 Top-k → LLM 生成 → Judge 评分"],
+        ["原文一致性", "gpt-4o Judge 与人类专家一致性 >97%（原文）"]
+      ],
+      caveat: "97% 一致性为原文数字，本页未复测；Judge 选择会影响结果。"
+    }
+  });
+
+  const STAGES = Object.freeze([
+    {
+      nav: "任务类型",
+      title: "先问：你要测哪种能力？",
+      subtitle: "代码、网页、通用助手、计算机使用、工具调用、长期记忆，对应不同的基准家族。选一个最接近你业务的能力。",
+      note: "固定教学路径：六个能力选项来自原文的基准分类，不调用模型，不访问网络。",
+      summary: "阶段 1 / 3 · 等待选择能力"
+    },
+    {
+      nav: "评估方式",
+      title: "再问：你能跑什么环境，花多少成本？",
+      subtitle: "真实环境最接近生产但最贵；离线题库便宜但离生产远；长对话记忆需要 Judge 或人工评分。",
+      note: "固定教学路径：三种评估方式为本页归纳；成本描述来自原文对端到端评估成本高的判断。",
+      summary: "阶段 2 / 3 · 等待选择评估方式"
+    },
+    {
+      nav: "推荐基准",
+      title: "最后：基准只是路标，不是终点",
+      subtitle: "推荐结果按原文的基准分类整理。分数、规模只按原文版本呈现，未联网核实。",
+      note: "固定教学路径：推荐关系为本页预设，不是任何评估平台的实时结论；分数不更新排名。",
+      summary: "阶段 3 / 3 · 查看推荐"
+    }
+  ]);
+
+  const state = { stage: 0, capability: null, mode: null };
+  const byId = (id) => document.getElementById(id);
+
+  function choiceButtons(list, selected, attr) {
+    return list.map((item) => `<button type="button" class="bm-choice" data-${attr}="${item.key}" aria-pressed="${selected === item.key}">
+      <b>${item.name}</b><span>${item.desc}</span>
+    </button>`).join("");
+  }
+
+  function pickLine() {
+    const cap = CAPABILITIES.find((item) => item.key === state.capability);
+    const mode = MODES.find((item) => item.key === state.mode);
+    if (!cap && !mode) return "还没有选择能力和评估方式。";
+    if (!cap) return `评估方式：${mode.name}。还需要选择任务类型。`;
+    if (!mode) return `任务类型：${cap.name}。还需要选择评估方式。`;
+    return `已选：${cap.name} × ${mode.name}。点“下一步”查看推荐。`;
+  }
+
+  function capabilityScene() {
+    return `
+      <p class="bm-step-label">步骤 1 · 任务类型</p>
+      <div class="bm-choices" role="group" aria-label="选择任务类型">${choiceButtons(CAPABILITIES, state.capability, "capability")}</div>
+      <p class="bm-picked">${pickLine()}</p>
+      <p class="bm-fixed-note">固定教学路径：六个能力选项来自原文的基准分类</p>`;
+  }
+
+  function modeScene() {
+    const cap = CAPABILITIES.find((item) => item.key === state.capability);
+    if (!cap) {
+      return `<div class="bm-empty"><b>还没有选择任务类型。</b><br>请先回到第 1 步选一个能力，再来选评估方式。</div>`;
+    }
+    return `
+      <p class="bm-step-label">步骤 2 · 评估方式（已选能力：${cap.name}）</p>
+      <div class="bm-choices" role="group" aria-label="选择评估方式">${choiceButtons(MODES, state.mode, "mode")}</div>
+      <p class="bm-picked">${pickLine()}</p>
+      <p class="bm-fixed-note">成本与环境的描述为本页归纳；原文只强调端到端 Agent 测试需要真实环境、成本高</p>`;
+  }
+
+  function resultScene() {
+    if (!state.capability || !state.mode) {
+      return `<div class="bm-empty"><b>还不能给推荐。</b><br>请先完成第 1 步的能力选择和第 2 步的评估方式选择。</div>`;
+    }
+    const rec = RECOMMENDATIONS[`${state.capability}|${state.mode}`];
+    const cap = CAPABILITIES.find((item) => item.key === state.capability);
+    const mode = MODES.find((item) => item.key === state.mode);
+    if (!rec) {
+      return `<div class="bm-empty"><b>原文没有覆盖这个组合。</b><br>${cap.name} × ${mode.name} 不在本页的固定映射里。</div>`;
+    }
+    const facts = rec.facts.map(([label, value]) => `<div class="bm-fact"><b>${label}</b><span>${value}</span></div>`).join("");
+    return `
+      <div class="bm-result">
+        <div class="bm-result-head"><b>${cap.name} × ${mode.name}</b><span class="bm-badge bm-info">固定教学推荐</span></div>
+        <div class="bm-result-body">
+          <p class="bm-primary">${rec.primary}</p>
+          <p class="bm-secondary">补充：${rec.secondary}</p>
+          <p class="bm-why">${rec.why}</p>
+          <div class="bm-facts">${facts}</div>
+          <p class="bm-caveat">${rec.caveat} 原文版本、未联网核实。</p>
+        </div>
+      </div>
+      <p class="bm-fixed-note">推荐来自原文分类，不是评估平台的实时选型结论；不更新榜单排名</p>`;
+  }
+
+  const SCENES = [capabilityScene, modeScene, resultScene];
+
+  function bindSceneControls() {
+    document.querySelectorAll("[data-capability]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.capability = button.dataset.capability;
+        renderStage(0);
+        byId("bm-announcement").textContent = `已选择任务类型：${CAPABILITIES.find((item) => item.key === state.capability).name}`;
+      });
+    });
+    document.querySelectorAll("[data-mode]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.mode = button.dataset.mode;
+        renderStage(1);
+        byId("bm-announcement").textContent = `已选择评估方式：${MODES.find((item) => item.key === state.mode).name}`;
+      });
+    });
+  }
+
+  function renderStage(stage) {
+    state.stage = stage;
+    const meta = STAGES[stage];
+    byId("bm-scene").innerHTML = SCENES[stage]();
+    byId("bm-index").textContent = `阶段 ${stage + 1} / 3 · 固定教学路径`;
+    byId("bm-title").textContent = meta.title;
+    byId("bm-subtitle").textContent = meta.subtitle;
+    byId("bm-note").textContent = meta.note;
+    byId("bm-summary").textContent = meta.summary;
+    byId("bm-back").disabled = stage === 0;
+    byId("bm-next").disabled = stage === STAGES.length - 1
+      || (stage === 0 && !state.capability)
+      || (stage === 1 && !state.mode);
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      const active = Number(button.dataset.stage) === stage;
+      if (active) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    bindSceneControls();
+    byId("bm-announcement").textContent = `${meta.title}。${meta.subtitle}`;
+  }
+
+  byId("bm-reset").addEventListener("click", () => {
+    state.capability = null;
+    state.mode = null;
+    renderStage(0);
+  });
+  byId("bm-back").addEventListener("click", () => renderStage(Math.max(0, state.stage - 1)));
+  byId("bm-next").addEventListener("click", () => {
+    if (state.stage === 0 && !state.capability) return;
+    if (state.stage === 1 && !state.mode) return;
+    renderStage(Math.min(STAGES.length - 1, state.stage + 1));
+  });
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+
+  renderStage(0);
+</script>
+</body>
+</html>

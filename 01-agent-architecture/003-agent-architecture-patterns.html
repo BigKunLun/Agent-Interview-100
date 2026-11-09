@@ -1,0 +1,1073 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Agent 架构模式详解：ReAct、Plan-and-Execute、LATS、Proactive · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .a3-tabs { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 0 var(--s-6); margin-top: var(--s-4); }
+  .a3-tab { min-height: 44px; padding: 8px 13px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: var(--t-small); }
+  .a3-tab:hover { background: var(--surface-soft); }
+  .a3-tab[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .a3-task { flex: 1 1 260px; min-width: 0; font-size: var(--t-label); color: var(--text-dim); }
+  .a3-view { display: none; }
+  .a3-view.is-active { display: block; animation: arrive var(--med) var(--ease); }
+  .a3-canvas { padding: var(--s-3) var(--s-6) 0; }
+  .a3-node { min-width: 0; padding: 9px 10px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: var(--t-label); line-height: 1.5; transition: background var(--fast) var(--ease), border-color var(--fast) var(--ease); }
+  .a3-node b { display: block; font: 600 9px/1.6 var(--mono); letter-spacing: .04em; color: var(--text-dim); }
+  .a3-node span { display: block; margin-top: 2px; overflow-wrap: anywhere; }
+  .a3-node[data-state="active"] { border-color: var(--accent); background: var(--accent-dim); box-shadow: inset 3px 0 0 var(--accent); }
+  .a3-node[data-state="active"] b { color: var(--accent); }
+  .a3-node[data-state="done"] { border-color: #9eb4c9; background: #f5f8f2; }
+  .a3-node[data-state="done"] b { color: #2e7d32; }
+  .a3-node[data-state="pending"] { opacity: .5; }
+  .a3-node[data-state="dead"] { border-style: dashed; border-color: #c62828; background: #fdeeee; color: #8f1d1d; }
+  .a3-node[data-state="dead"] b { color: #c62828; }
+  .a3-node[data-state="alive"] { border-color: #2e7d32; background: #f0f7ef; }
+  .a3-node[data-state="alive"] b { color: #2e7d32; }
+  .a3-node[data-state="chosen"] { border-color: var(--ink); background: var(--ink); color: var(--surface); }
+  .a3-node[data-state="chosen"] b { color: #cfd6ce; }
+  .a3-react-cycle { display: grid; grid-template-columns: 1fr 26px 1fr 26px 1fr; gap: 5px; align-items: stretch; }
+  .a3-react-cycle .a3-node { display: flex; flex-direction: column; justify-content: center; }
+  .a3-arrow { display: grid; place-items: center; color: var(--text-dim); font-size: 15px; }
+  .a3-loopbar { margin-top: 8px; padding: 8px 11px; border: 1px dashed #c2410c; border-radius: var(--r-1); background: #fdf1ea; font-size: 11px; line-height: 1.7; color: #8a2c0a; }
+  .a3-final { margin-top: 8px; }
+  .a3-plan { display: grid; gap: 6px; }
+  .a3-plan-row { display: grid; grid-template-columns: 74px minmax(0, 1fr) 92px; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .a3-plan-row[data-state="active"] { border-color: var(--accent); background: var(--accent-dim); }
+  .a3-plan-row[data-state="done"] { background: #f5f8f2; border-color: #9eb4c9; }
+  .a3-plan-row[data-state="pending"] { opacity: .55; }
+  .a3-plan-tag { font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .a3-plan-status { font: 10px/1.5 var(--mono); text-align: right; color: var(--text-dim); }
+  .a3-plan-row[data-state="active"] .a3-plan-status { color: var(--accent); }
+  .a3-plan-row[data-state="done"] .a3-plan-status { color: #2e7d32; }
+  .a3-tree { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .a3-root { grid-column: 1 / -1; justify-self: center; width: min(100%, 280px); text-align: center; }
+  .a3-branch { display: grid; gap: 6px; align-content: start; padding-top: 8px; border-top: 2px solid var(--border); }
+  .a3-branch[data-branch="a"] { border-top-color: #2e7d32; }
+  .a3-branch[data-branch="b"] { border-top-color: var(--accent); }
+  .a3-branch[data-branch="c"] { border-top-color: #6b21a8; }
+  .a3-branch-label { font: 9px/1.5 var(--mono); color: var(--text-dim); text-align: center; }
+  .a3-back { padding: 5px 8px; border: 1px dashed #c62828; border-radius: var(--r-1); background: #fdeeee; font: 9px/1.5 var(--mono); color: #8f1d1d; text-align: center; }
+  .a3-out { margin-top: 8px; }
+  .a3-pro { display: grid; grid-template-columns: minmax(150px, .52fr) minmax(0, 1.48fr); grid-template-areas: "trigger trigger" "predict needs" "filter needs" "execute execute" "respond respond"; gap: 10px; align-items: stretch; }
+  .a3-pro [data-node="trigger"] { grid-area: trigger; }
+  .a3-pro [data-node="predict"] { grid-area: predict; }
+  .a3-pro [data-node="filter"] { grid-area: filter; }
+  .a3-pro [data-node="execute"] { grid-area: execute; }
+  .a3-pro [data-node="respond"] { grid-area: respond; }
+  .a3-needs { grid-area: needs; }
+  .a3-pro-step { display: flex; flex-direction: column; justify-content: center; padding: 10px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: 12px; line-height: 1.6; }
+  .a3-pro-step b { display: block; font: 600 9px/1.6 var(--mono); color: var(--text-dim); }
+  .a3-pro-step[data-state="active"] { border-color: var(--accent); background: var(--accent-dim); }
+  .a3-pro-step[data-state="done"] { border-color: #9eb4c9; background: #f5f8f2; }
+  .a3-pro-step[data-state="pending"] { opacity: .55; }
+  .a3-signals { display: flex; flex-wrap: wrap; gap: 5px; }
+  .a3-signal { padding: 4px 8px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-soft); font: 10px/1.6 var(--mono); color: var(--text-dim); }
+  .a3-needs { display: grid; gap: 5px; align-content: start; }
+  .a3-needs-label { font: 9px/1.6 var(--mono); letter-spacing: .05em; color: var(--text-dim); margin-bottom: 1px; }
+  .a3-need { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 7px; align-items: center; padding: 7px 9px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 11px; line-height: 1.5; }
+  .a3-need[data-pass="yes"] { border-color: #9eb4c9; }
+  .a3-need[data-pass="no"] { opacity: .55; border-style: dashed; }
+  .a3-need-mark { font: 12px/1 var(--mono); color: var(--text-dim); text-align: center; }
+  .a3-need[data-pass="yes"] .a3-need-mark { color: #2e7d32; }
+  .a3-need[data-pass="no"] .a3-need-mark { color: #c62828; }
+  .a3-need-why { font: 9px/1.5 var(--mono); color: var(--text-dim); white-space: nowrap; }
+  .a3-io { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); padding: var(--s-4) var(--s-6) var(--s-5); }
+  .a3-io-box { min-width: 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .a3-io-label { font: 9px/1.6 var(--mono); letter-spacing: .06em; color: var(--text-dim); }
+  .a3-io-value { margin-top: 2px; font-size: 12px; line-height: 1.65; overflow-wrap: anywhere; }
+  .a3-read { display: flex; align-items: stretch; gap: 5px; margin-top: var(--s-4); flex-wrap: wrap; }
+  .a3-read div { flex: 1 1 110px; padding: 8px 9px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 11px; line-height: 1.6; }
+  .a3-read div b { display: block; color: var(--text-dim); font: 9px/1.5 var(--mono); }
+  @media (max-width: 1000px) {
+    .a3-tabs, .a3-canvas, .a3-io { padding-inline: var(--s-5); }
+  }
+  @media (max-width: 720px) {
+    .a3-tabs { padding-inline: var(--s-4); }
+    .a3-canvas { padding: var(--s-3) var(--s-4) 0; }
+    .a3-react-cycle { grid-template-columns: 1fr; }
+    .a3-arrow { transform: rotate(90deg); }
+    .a3-tree { grid-template-columns: 1fr; }
+    .a3-root { width: 100%; }
+    .a3-branch { border-top-width: 1px; }
+    .a3-pro { grid-template-columns: 1fr; grid-template-areas: none; }
+    .a3-pro [data-node="trigger"], .a3-pro [data-node="predict"], .a3-pro [data-node="filter"], .a3-pro [data-node="execute"], .a3-pro [data-node="respond"], .a3-needs { grid-area: auto; }
+    .a3-plan-row { grid-template-columns: 58px minmax(0, 1fr) 70px; }
+    .a3-io { grid-template-columns: 1fr; padding: var(--s-3) var(--s-4) var(--s-4); }
+    .a3-read { flex-direction: column; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">003 / Agent 架构模式</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 3 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="002-agent-core-components.html">← 上一页 · 解释 Agent 的核心组件</a><a href="005-layered-agent-architecture.html">下一页 → · 如何设计一个分层 Agent 架构（…</a></div>
+    </nav>
+    <main id="main-content">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">中级 · Agent 架构 · 可交互讲解</p>
+          <h1>四种模式，<br>四种控制方式。</h1>
+        </div>
+        <div>
+          <p class="lead">ReAct 交替推理与行动；Plan-and-Execute 先规划后执行；LATS 用树搜索探索多条路径；Proactive Agent 主动预测需求。实际生产里，大多数系统采用混合模式。</p>
+          <p class="definition"><strong>没有通用最优架构。</strong>选择看任务结构、步骤依赖、可靠性要求和预算。ReAct 灵活但贵，Plan-and-Execute 便宜但适应性低，LATS 质量最高但成本是 ReAct 的 3–5 倍。</p>
+          <div class="hero-meta"><span class="pill">中级</span><span class="pill">Agent 架构</span><span class="pill">模式选择</span><span class="pill">循环与分支</span></div>
+        </div>
+      </header>
+
+      <section class="walkthrough" id="explainer" aria-labelledby="a3-demo-title">
+        <div class="player-top">
+          <div class="player-label">模式演练台 <small>四种模式，各跑一条固定任务轨迹</small></div>
+          <div class="controls" role="group" aria-label="架构模式演示控制">
+            <button type="button" class="button button-quiet" id="a3-reset">重置</button>
+            <button type="button" class="button" id="a3-back" disabled>上一步</button>
+            <button type="button" class="button button-primary" id="a3-next">下一拍 →</button>
+            <button type="button" class="button" id="a3-auto" aria-pressed="false">自动播放</button>
+          </div>
+        </div>
+
+        <nav class="stage-nav" aria-label="模式拍次">
+          <ol id="a3-stage-list" style="--stages: 6"></ol>
+        </nav>
+
+        <div class="a3-tabs" role="group" aria-label="选择 Agent 架构模式">
+          <button type="button" class="a3-tab" data-pattern="react" aria-pressed="true">ReAct</button>
+          <button type="button" class="a3-tab" data-pattern="plan" aria-pressed="false">Plan-and-Execute</button>
+          <button type="button" class="a3-tab" data-pattern="lats" aria-pressed="false">LATS</button>
+          <button type="button" class="a3-tab" data-pattern="proactive" aria-pressed="false">Proactive</button>
+          <span class="a3-task" id="a3-task">任务：查 Company X 2025 Q4 财报，算同比增长率</span>
+        </div>
+
+        <div class="scene-caption">
+          <p class="figure-index"><span id="a3-step-index">模式演练 · 第 1 / 6 拍</span></p>
+          <h2 id="a3-demo-title">Thought：先找最新财报。</h2>
+          <p id="a3-subtitle">固定教学任务：查 Company X 2025 Q4 财报并计算同比增长率。每一拍显示这一步的输入和输出。</p>
+        </div>
+
+        <div class="scene-host">
+          <div class="a3-canvas">
+            <div class="a3-view is-active" data-pattern="react" id="a3-view-react">
+              <div class="a3-react-cycle" aria-label="ReAct 循环：Thought 到 Action 到 Observation，再回到 Thought">
+                <div class="a3-node" data-node="thought"><b>Thought</b><span data-label="thought">分析当前状态</span></div>
+                <span class="a3-arrow" aria-hidden="true">→</span>
+                <div class="a3-node" data-node="action"><b>Action</b><span data-label="action">调用一个工具</span></div>
+                <span class="a3-arrow" aria-hidden="true">→</span>
+                <div class="a3-node" data-node="observation"><b>Observation</b><span data-label="observation">接收工具结果</span></div>
+              </div>
+              <p class="a3-loopbar">↺ Observation 回到 Thought，进入下一轮。循环由 Final Answer 或最大步数终止。</p>
+              <div class="a3-node a3-final" data-node="final"><b>Final Answer</b><span data-label="final">尚未生成</span></div>
+            </div>
+
+            <div class="a3-view" data-pattern="plan" id="a3-view-plan" hidden>
+              <div class="a3-plan" aria-label="Plan-and-Execute：规划器一次生成四步计划，执行器逐步执行">
+                <div class="a3-node" data-node="planner"><b>Planner</b><span data-label="planner">生成完整计划</span></div>
+                <div class="a3-plan-row" data-node="p1" data-state="pending"><span class="a3-plan-tag">Step 1</span><span>搜索 Company X 最新财报</span><span class="a3-plan-status">等待</span></div>
+                <div class="a3-plan-row" data-node="p2" data-state="pending"><span class="a3-plan-tag">Step 2</span><span>提取营收与去年同期</span><span class="a3-plan-status">等待</span></div>
+                <div class="a3-plan-row" data-node="p3" data-state="pending"><span class="a3-plan-tag">Step 3</span><span>计算同比增长率</span><span class="a3-plan-status">等待</span></div>
+                <div class="a3-plan-row" data-node="p4" data-state="pending"><span class="a3-plan-tag">Step 4</span><span>生成分析报告</span><span class="a3-plan-status">等待</span></div>
+                <div class="a3-node" data-node="pout"><b>最终输出</b><span data-label="pout">尚未生成</span></div>
+              </div>
+            </div>
+
+            <div class="a3-view" data-pattern="lats" id="a3-view-lats" hidden>
+              <div class="a3-tree" aria-label="LATS 树：根节点展开 A、B、C 三条行动；A1 和 C1 是死路并回溯，A2、B1、C2 有效，最终选择 B1">
+                <div class="a3-node a3-root" data-node="root"><b>根节点</b><span>初始状态：为 200 万行数据选排序方案</span></div>
+                <div class="a3-branch" data-branch="a">
+                  <div class="a3-branch-label">分支 A</div>
+                  <div class="a3-node" data-node="a"><b>行动 A</b><span>全部载入内存排序</span></div>
+                  <div class="a3-node" data-node="a1"><b>A1</b><span>内存超限，任务失败</span></div>
+                  <div class="a3-node" data-node="a2"><b>A2</b><span>改成分块内存排序</span></div>
+                  <p class="a3-back" data-back="a1" hidden>↩ 死路回溯到 A</p>
+                </div>
+                <div class="a3-branch" data-branch="b">
+                  <div class="a3-branch-label">分支 B</div>
+                  <div class="a3-node" data-node="b"><b>行动 B</b><span>外部归并排序</span></div>
+                  <div class="a3-node" data-node="b1"><b>B1</b><span>磁盘分块 + 多路归并</span></div>
+                </div>
+                <div class="a3-branch" data-branch="c">
+                  <div class="a3-branch-label">分支 C</div>
+                  <div class="a3-node" data-node="c"><b>行动 C</b><span>调用第三方排序服务</span></div>
+                  <div class="a3-node" data-node="c1"><b>C1</b><span>超出数据出境限制</span></div>
+                  <div class="a3-node" data-node="c2"><b>C2</b><span>改用本地部署服务</span></div>
+                  <p class="a3-back" data-back="c1" hidden>↩ 死路回溯到 C</p>
+                </div>
+              </div>
+              <div class="a3-node a3-out" data-node="out"><b>搜索结果</b><span data-label="out">尚未比较有效分支</span></div>
+            </div>
+
+            <div class="a3-view" data-pattern="proactive" id="a3-view-proactive" hidden>
+              <div class="a3-pro" aria-label="Proactive Agent：上下文触发，预测需求，按四项条件过滤，并行预加载，再组合响应">
+                <div class="a3-pro-step" data-node="trigger"><b>触发</b><span>指令 + 上下文信号</span><div class="a3-signals" id="a3-signals"><span class="a3-signal">明天</span><span class="a3-signal">上海</span><span class="a3-signal">出差</span></div></div>
+                <div class="a3-pro-step" data-node="predict"><b>需求预测</b><span>从上下文推断潜在需求</span></div>
+                <div class="a3-needs" id="a3-needs">
+                  <p class="a3-needs-label">候选需求 · 固定教学数据</p>
+                  <div class="a3-need" data-need="weather"><span class="a3-need-mark">·</span><span>上海明天天气</span><span class="a3-need-why">待评估</span></div>
+                  <div class="a3-need" data-need="flight"><span class="a3-need-mark">·</span><span>航班动态</span><span class="a3-need-why">待评估</span></div>
+                  <div class="a3-need" data-need="hotel"><span class="a3-need-mark">·</span><span>酒店推荐</span><span class="a3-need-why">待评估</span></div>
+                  <div class="a3-need" data-need="calendar"><span class="a3-need-mark">·</span><span>同步个人日历</span><span class="a3-need-why">待评估</span></div>
+                </div>
+                <div class="a3-pro-step" data-node="filter"><b>适度性判断</b><span>相关性 / 成本 / 隐私 / 用户偏好</span></div>
+                <div class="a3-pro-step" data-node="execute"><b>主动执行</b><span>只执行通过过滤的需求</span></div>
+                <div class="a3-pro-step" data-node="respond"><b>组合响应</b><span>显式需求 + 主动结果</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="a3-io">
+            <div class="a3-io-box"><p class="a3-io-label">本拍输入</p><p class="a3-io-value" id="a3-io-in">用户任务：查 Company X 2025 Q4 财报，算同比增长率。当前没有财报数据。</p></div>
+            <div class="a3-io-box"><p class="a3-io-label">本拍输出</p><p class="a3-io-value" id="a3-io-out">Thought 1：需要先搜索最新财报，不能凭训练记忆回答。</p></div>
+          </div>
+          <p class="demo-note" style="margin: 0 var(--s-6) var(--s-5);">固定教学数据：任务轨迹、工具结果、树节点状态和过滤阈值都写在页面脚本里。本页不调用模型、不联网、不执行任何工具。</p>
+        </div>
+        <div class="walkthrough-foot"><span>固定教学数据 · 不调用模型</span><span id="a3-state">ReAct · 第 1 / 6 拍</span></div>
+      </section>
+      <p id="a3-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+      <section class="reading" aria-labelledby="a3-react-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">模式 1 · ReAct</p><h2 id="a3-react-title">边想边做，<br>Observation 回到下一轮思考。</h2></div>
+          <p class="reading-intro">ReAct（Reasoning + Acting）由 Yao et al. (2022) 提出。LLM 交替进行推理（Thought）和行动（Action），再根据环境反馈（Observation）调整下一步。</p>
+        </div>
+        <div class="prose">
+          <p><strong>核心循环：</strong>Thought 分析当前状态，Action 选择并执行一个工具，Observation 接收结果作为新上下文，重复直到模型认为信息足够并给出 Final Answer。</p>
+          <figure>
+            <div class="a3-read" role="img" aria-label="ReAct 循环：Thought 到 Action 到 Observation，再回到 Thought，最后由 Final Answer 终止">
+              <div><b>1 · Thought</b>分析状态，决定下一步</div>
+              <div><b>2 · Action</b>调用一个工具</div>
+              <div><b>3 · Observation</b>工具结果进入上下文</div>
+              <div><b>↺ 回到 1</b>直到 Final Answer 或达到步数上限</div>
+            </div>
+            <figcaption class="read-figure-note">图 1 · ReAct 是循环，不是一次“想完再做”。Observation 是下一轮 Thought 的输入。</figcaption>
+          </figure>
+          <p><strong>为什么不用纯推理（CoT）：</strong>CoT 完全依赖模型内部知识，可能幻觉、知识过时，并且一步推理出错后错误会继续传播。ReAct 通过工具调用获取真实、最新的信息，形成“事实锚点”。</p>
+          <p><strong>为什么不用纯行动：</strong>直接调工具缺少规划、不可解释，也没有反思纠错机制。Thought 步骤提供了显式推理 trace，让决策过程透明、可调试、可审计。</p>
+          <p class="code-label">ReAct Prompt 结构 · 原文模板</p>
+          <pre><code>Answer the following questions as best you can. You have access to the following tools:
+
+{tool_descriptions}
+
+Use the following format:
+
+Question: the input question you must answer
+Thought: you should always think about what to do
+Action: the action to take, should be one of [{tool_names}]
+Action Input: the input to the action
+Observation: the result of the action
+... (this Thought/Action/Observation cycle can repeat N times)
+Thought: I now know the final answer
+Final Answer: the final answer to the original input question</code></pre>
+          <details>
+            <summary>展开 ReAct 简化版 Python 实现（原文代码）</summary>
+            <pre><code>import re
+import anthropic
+
+client = anthropic.Anthropic()
+
+TOOLS = {
+    "search": lambda q: web_search(q),
+    "calculate": lambda expr: str(eval(expr)),  # 注意：安全警告：生产环境不应使用 eval()，应使用安全的数学解析库（如 numexpr 或 asteval）
+}
+
+SYSTEM_PROMPT = """You are a helpful assistant. You can use these tools:
+- search: Search the web. Input: search query string.
+- calculate: Do math. Input: math expression.
+
+Use this format:
+Thought: &lt;your reasoning&gt;
+Action: &lt;tool_name&gt;
+Action Input: &lt;input&gt;
+
+When you have the final answer:
+Thought: I now know the final answer
+Final Answer: &lt;answer&gt;
+"""
+
+def react_agent(question: str, max_steps: int = 10) -&gt; str:
+    """简化版 ReAct Agent"""
+    prompt = f"Question: {question}\n"
+
+    for step in range(max_steps):
+        response = client.messages.create(
+            model="claude-sonnet-4-5-20250929",
+            max_tokens=1024,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": prompt}]
+        )
+        text = response.content[0].text
+        prompt += text + "\n"
+
+        # 检查是否有最终答案
+        if "Final Answer:" in text:
+            return text.split("Final Answer:")[-1].strip()
+
+        # 解析并执行 Action
+        action_match = re.search(r"Action: (\w+)\nAction Input: (.+)", text)
+        if action_match:
+            tool, tool_input = action_match.groups()
+            observation = TOOLS[tool](tool_input.strip())
+            prompt += f"Observation: {observation}\n"
+
+    return "达到最大步数限制，未能得出结论。"</code></pre>
+            <p class="source-footnote">原文代码保留，仅做 HTML 转义；安全警告符号改为文字。原文已标注 <code>eval()</code> 的生产安全风险。</p>
+          </details>
+          <p><strong>实际效果：</strong>原始论文在 HotpotQA 多跳问答上，ReAct 通过与 Wikipedia API 交互显著超越纯 CoT；在 Fever 事实验证上优于基线；执行轨迹更接近人类的问题解决方式。</p>
+          <p><strong>框架支持：</strong>LangChain/LangGraph 的 <code>create_react_agent()</code>、CrewAI 的默认范式、Anthropic Claude 的 Tool Use API 都直接支持 ReAct 式交替。</p>
+          <p><strong>优势：</strong>高度灵活，能根据中间结果调整；每步有显式推理 trace，可解释性强；适合探索性、不确定性高的任务。<strong>劣势：</strong>每步携带全部上下文，token 消耗高（原文示例：8 步任务可能消耗 50K–100K tokens）；无法并行，步骤严格顺序；可能陷入推理循环。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a3-plan-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">模式 2 · Plan-and-Execute</p><h2 id="a3-plan-title">先想清楚全部步骤，<br>再逐步执行。</h2></div>
+          <p class="reading-intro">Planner 生成完整行动计划，Executor 逐步执行。成本低、结构清晰，但初始计划的质量是瓶颈。</p>
+        </div>
+        <div class="prose">
+          <p><strong>核心机制：</strong>规划阶段一次生成完整计划；执行阶段按 Step 1–4 逐步执行，每一步只处理当前子任务。</p>
+          <p><strong>优势：</strong>LLM 调用次数少（规划一次 + 每步执行一次，执行可用更小的模型）；成本显著低于 ReAct；强制预先想清楚步骤，减少遗漏；无依赖的步骤可以并行。</p>
+          <p><strong>劣势：</strong>初始计划错了，后续全错；面对意外难以偏离原计划；需要额外的 Replanning 机制；不适合高度动态、不确定的任务。</p>
+          <p><strong>适用场景：</strong>结构明确的多步任务，如数据处理流水线、报告生成、自动化测试。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a3-proactive-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">模式 3 · Proactive</p><h2 id="a3-proactive-title">不等指令，<br>先预测下一步需求。</h2></div>
+          <p class="reading-intro">Proactive Agent 从上下文推断潜在需求，在用户明确要求之前做好准备。核心难点不是“能不能做”，而是“该不该做”。</p>
+        </div>
+        <div class="prose">
+          <p><strong>Reactive 与 Proactive 的区别：</strong>用户说“帮我查明天的天气”，Reactive Agent 查询后回答；用户说“我明天要去上海出差”，Proactive Agent 会自动准备天气、航班、酒店、会议安排等信息。</p>
+          <p><strong>三个核心特性：</strong>需求预测（从上下文、历史行为、时间地点角色推断）；主动行动（无需明确指令，提前获取资源或预加载数据）；适度性判断（判断何时主动、何时确认，避免过度打扰）。</p>
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">Reactive Agent 与 Proactive Agent 的五维对比</caption>
+              <thead><tr><th scope="col">维度</th><th scope="col">Reactive Agent</th><th scope="col">Proactive Agent</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">触发方式</th><td>用户指令</td><td>指令 + 上下文预测</td></tr>
+                <tr><th scope="row">用户体验</th><td>明确但需要多步</td><td>高效但可能意外</td></tr>
+                <tr><th scope="row">资源消耗</th><td>按需消耗</td><td>可能有冗余消耗</td></tr>
+                <tr><th scope="row">实现复杂度</th><td>中等</td><td>高（需预测和适度性判断）</td></tr>
+                <tr><th scope="row">适用场景</th><td>任务执行工具</td><td>陪伴式服务</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p><strong>关键设计原则：</strong>透明化（让用户知道主动做了什么、为什么）、可撤销（结果可轻松取消或忽略）、渐进式（初期保守，随信任增加主动性）、学习性（根据接受/拒绝反馈调整策略）。</p>
+          <p><strong>实现模式：</strong>置信度阈值分级（&gt;0.9 直接执行，&gt;0.7 询问用户，否则忽略）；异步预加载（后台执行，用户明确请求时直接返回缓存）。</p>
+          <details>
+            <summary>展开 Proactive Agent 原文代码</summary>
+            <pre><code>class ProactiveAgent:
+    def __init__(self, llm, tools, user_profile):
+        self.llm = llm
+        self.tools = tools
+        self.user_profile = user_profile  # 用户偏好、历史行为等
+
+    def process(self, user_input: str, context: dict) -&gt; str:
+        # 1. 理解用户显式需求
+        explicit_needs = self._parse_needs(user_input)
+
+        # 2. 预测潜在需求
+        implicit_needs = self._predict_needs(user_input, context)
+
+        # 3. 判断哪些潜在需求值得主动处理
+        proactive_actions = []
+        for need in implicit_needs:
+            if self._should_be_proactive(need):
+                proactive_actions.append(need)
+
+        # 4. 执行主动操作（可并行）
+        proactive_results = self._execute_proactively(proactive_actions)
+
+        # 5. 组合响应
+        response = self._generate_response(
+            explicit_needs,
+            proactive_results,
+            show_what=self._decide_visibility(proactive_actions)
+        )
+        return response
+
+    def _should_be_proactive(self, need: Need) -&gt; bool:
+        """判断是否值得主动处理"""
+        criteria = {
+            'relevance': need.confidence &gt; 0.8,  # 高相关性
+            'cost': need.execution_cost &lt; 0.5,  # 低执行成本
+            'privacy': not need.sensitive,       # 不涉及隐私
+            'frequency': self.user_profile.likes_proactive,  # 用户喜欢主动服务
+        }
+        return all(criteria.values())</code></pre>
+            <p class="source-footnote">原文代码保留，仅做 HTML 转义；省略了 <code>_predict_needs</code> 等辅助方法。</p>
+          </details>
+          <p><strong>应用场景：</strong>个人助理（出差前准备信息）、客服系统（主动展示文档）、代码助手（加载错误文档）、数据分析师（自动展示相关趋势）。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a3-lats-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">模式 4 · LATS</p><h2 id="a3-lats-title">把行动空间变成树，<br>死路就回溯。</h2></div>
+          <p class="reading-intro">LATS（Language Agent Tree Search）借鉴蒙特卡洛树搜索（MCTS），同时探索多条路径，评估质量，在死胡同时回溯到其他分支。</p>
+        </div>
+        <div class="prose">
+          <p><strong>核心机制：</strong>把 Agent 的行动空间建模为一棵树；并行探索多个分支；评估每条路径；死路回溯；有效分支继续展开，最终收敛到最优路径。</p>
+          <figure>
+            <div class="a3-tree" role="img" aria-label="LATS 树：根节点展开行动 A、B、C；A1 与 C1 是死路并回溯；A2、B1、C2 有效；最终选择 B1">
+              <div class="a3-node a3-root"><b>根节点</b><span>初始状态</span></div>
+              <div class="a3-branch"><div class="a3-branch-label">分支 A</div><div class="a3-node" data-state="done"><b>行动 A</b><span>展开</span></div><div class="a3-node" data-state="dead"><b>A1 ✗</b><span>死路，回溯</span></div><div class="a3-node" data-state="alive"><b>A2 ✓</b><span>有效</span></div></div>
+              <div class="a3-branch"><div class="a3-branch-label">分支 B</div><div class="a3-node" data-state="done"><b>行动 B</b><span>展开</span></div><div class="a3-node" data-state="chosen"><b>B1 ✓</b><span>最优路径</span></div></div>
+              <div class="a3-branch"><div class="a3-branch-label">分支 C</div><div class="a3-node" data-state="done"><b>行动 C</b><span>展开</span></div><div class="a3-node" data-state="dead"><b>C1 ✗</b><span>死路，回溯</span></div><div class="a3-node" data-state="alive"><b>C2 ✓</b><span>有效</span></div></div>
+            </div>
+            <figcaption class="read-figure-note">图 2 · LATS 的分支与回溯：A、B、C 三路同时探索；死路回到父节点；有效路径比较后选最优。</figcaption>
+          </figure>
+          <details>
+            <summary>查看原文 Mermaid LATS 树源码</summary>
+            <pre><code>flowchart TD
+    R["根节点&lt;br/&gt;初始状态"] --&gt; A["行动 A"]
+    R --&gt; B["行动 B"]
+    R --&gt; C["行动 C"]
+    A --&gt; A1["A1 ✗ 死路"]
+    A --&gt; A2["A2 ✓ 有效"]
+    B --&gt; B1["B1 ✓ 有效"]
+    C --&gt; C1["C1 ✗ 死路"]
+    C --&gt; C2["C2 ✓ 有效"]
+    A1 -.->|"回溯"| A
+    C1 -.->|"回溯"| C
+    A2 --&gt;|"继续展开"| O["最优路径"]
+    B1 --&gt;|"继续展开"| O
+    C2 --&gt;|"继续展开"| O
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class R agent
+    class A,B,C,A2,B1,C2,O proc
+    class A1,C1 err</code></pre>
+            <p class="source-footnote">源码按原文保留，仅做 HTML 转义；上方静态树按同一分支/回溯关系呈现。</p>
+          </details>
+          <p><strong>优势：</strong>并行探索多条路径，找到更高质量的解；能回溯，不会被单一错误路径困死；Zhou et al. (2023) 表明 LATS 在多步推理任务上超越 ReAct；适合有多种可行方案需要比较的场景。</p>
+          <p><strong>劣势：</strong>成本极高，通常是 ReAct 的 3–5 倍；延迟更大；实现复杂度高；对简单任务过度设计。<strong>适用场景：</strong>复杂推理、代码生成、数学证明、高可靠性关键决策。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a3-compare-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">综合对比</p><h2 id="a3-compare-title">九个维度，<br>没有全能选手。</h2></div>
+          <p class="reading-intro">灵活性、成本、延迟、质量、可解释性、并行、错误恢复和实现难度互相牵制。选型就是按任务取舍。</p>
+        </div>
+        <div class="prose">
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">ReAct、Plan-and-Execute、Proactive、LATS 九维对比</caption>
+              <thead><tr><th scope="col">维度</th><th scope="col">ReAct</th><th scope="col">Plan-and-Execute</th><th scope="col">Proactive</th><th scope="col">LATS</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">核心思路</th><td>边想边做</td><td>想好再做</td><td>主动预测需求</td><td>多条路同时探索</td></tr>
+                <tr><th scope="row">灵活性</th><td>高</td><td>低（无 replanning 时）</td><td>高（主动适应）</td><td>极高</td></tr>
+                <tr><th scope="row">成本</th><td>中高</td><td>低</td><td>中（含冗余预测）</td><td>极高（3–5× ReAct）</td></tr>
+                <tr><th scope="row">延迟</th><td>中</td><td>低</td><td>低（预加载）</td><td>高</td></tr>
+                <tr><th scope="row">结果质量</th><td>良好</td><td>结构化任务优秀</td><td>优秀（用户体验佳）</td><td>最高</td></tr>
+                <tr><th scope="row">可解释性</th><td>强（每步有 Thought）</td><td>中（有计划但执行不透明）</td><td>中（需说明主动行为原因）</td><td>中（有树结构但复杂）</td></tr>
+                <tr><th scope="row">并行能力</th><td>无</td><td>部分（独立步骤）</td><td>强（预加载并行）</td><td>强（多分支并行）</td></tr>
+                <tr><th scope="row">错误恢复</th><td>动态调整</td><td>需要显式 replanning</td><td>需用户反馈调整</td><td>自动回溯</td></tr>
+                <tr><th scope="row">实现难度</th><td>低</td><td>中</td><td>中高（需适度性判断）</td><td>高</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a3-hybrid-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">混合模式</p><h2 id="a3-hybrid-title">生产系统，<br>很少只押一种模式。</h2></div>
+          <p class="reading-intro">常见组合是 Plan-and-Execute + ReAct：先出粗略计划，再逐步用 ReAct 执行；偏离过大时触发 replanning。</p>
+        </div>
+        <div class="prose">
+          <p class="code-label">混合模式 · 原文代码</p>
+          <pre><code># 混合模式：Plan-and-Execute + ReAct
+class HybridAgent:
+    def run(self, task: str):
+        # 阶段 1：用强模型生成粗略计划
+        plan = self.planner.generate_plan(task)
+
+        # 阶段 2：用 ReAct 方式逐步执行
+        # 每步都可以根据实际情况偏离计划
+        results = []
+        for step in plan.steps:
+            result = self.react_executor.execute_with_reasoning(
+                step=step,
+                context=results,
+                allow_deviation=True  # 允许偏离计划
+            )
+            results.append(result)
+
+            # 如果偏离过大，触发 replanning
+            if result.deviated_significantly:
+                plan = self.planner.replan(task, results)
+
+        return self.synthesizer.combine(results)</code></pre>
+          <p><strong>四种常见混合策略：</strong>ReAct + Reflexion（失败后反思）；Plan-and-Execute + ReAct（先计划再逐步执行）；LATS + Plan-and-Execute（用 LATS 选计划再执行）；分层混合（高层 Plan-and-Execute，低层 ReAct）。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a3-tree-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">选择决策树</p><h2 id="a3-tree-title">四个问题，<br>落到候选模式。</h2></div>
+          <p class="reading-intro">先问任务结构是否明确，再问步骤依赖、可靠性要求和预算。决策树给起点，不给绝对答案。</p>
+        </div>
+        <div class="prose">
+          <figure>
+            <div class="a3-read" role="img" aria-label="选择决策树：任务结构明确时，步骤大量依赖选 Plan-and-Execute，否则选并行 Plan-and-Execute；结构不明确时，可靠性要求不高选 ReAct，要求高且预算足够选 LATS，预算不足选 ReAct 加 Reflexion">
+              <div><b>Q1 结构明确?</b>是 → 看依赖；否 → 看可靠性</div>
+              <div><b>依赖多</b>Plan-and-Execute</div>
+              <div><b>依赖少</b>Plan-and-Execute 并行执行</div>
+              <div><b>要高可靠 + 高预算</b>LATS</div>
+              <div><b>要高可靠 + 低预算</b>ReAct + Reflexion</div>
+              <div><b>不要高可靠</b>ReAct</div>
+            </div>
+            <figcaption class="read-figure-note">图 3 · 决策树按结构、依赖、可靠性、预算四问展开；“否”分支不是失败，只是换一种控制方式。</figcaption>
+          </figure>
+          <details>
+            <summary>查看原文 Mermaid 决策树源码</summary>
+            <pre><code>flowchart TD
+    Q1{"任务结构明确?"} -- "是" --&gt; Q2{"步骤间&lt;br/&gt;大量依赖?"}
+    Q1 -- "否" --&gt; Q3{"需要&lt;br/&gt;高可靠性?"}
+    Q2 -- "是" --&gt; P1["Plan-and-Execute"]
+    Q2 -- "否" --&gt; P2["Plan-and-Execute&lt;br/&gt;并行执行"]
+    Q3 -- "否" --&gt; P3["ReAct"]
+    Q3 -- "是" --&gt; Q4{"预算允许&lt;br/&gt;高成本?"}
+    Q4 -- "是" --&gt; P4["LATS"]
+    Q4 -- "否" --&gt; P5["ReAct + Reflexion"]
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class Q1,Q2,Q3,Q4 decision
+    class P1,P2,P3,P4,P5 proc</code></pre>
+            <p class="source-footnote">源码按原文保留，仅做 HTML 转义。</p>
+          </details>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a3-mis-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="a3-mis-title">三条误区，<br>五条追问。</h2></div>
+          <p class="reading-intro">前三条纠正概念，后五条讨论缺陷、改进、成本取舍和主动式 Agent。答案都来自原文。</p>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">误区 1</p>
+          <div><h3>“ReAct 就是 Function Calling。”</h3><p>Function Calling 是底层能力（让 LLM 生成结构化的工具调用请求），ReAct 是上层模式（在推理和行动之间交替的决策框架）。ReAct 可以基于 Function Calling 实现，但两者不是一回事。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">误区 2</p>
+          <div><h3>“ReAct 是最先进的，应该总是使用。”</h3><p>ReAct 适合探索性任务，但对结构明确的任务来说，Plan-and-Execute 更高效、更便宜。没有通用最优架构。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">误区 3</p>
+          <div><h3>“Plan-and-Execute 无法处理变化。”</h3><p>加入 Replanning 机制后，Plan-and-Execute 也能应对执行中的意外。关键是设计好触发 replan 的条件。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">追问 1</p>
+          <div><h3>ReAct 的主要缺陷是什么？</h3><p>(1) 高 token 消耗和延迟；(2) 可能陷入推理循环（反复调用同一工具）；(3) 无法并行执行多个独立操作，因为每步都是顺序的。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">追问 2</p>
+          <div><h3>如何改进 ReAct？</h3><p>(1) 加入 Reflexion 机制让 Agent 从失败中学习；(2) 混合 Plan-and-Execute，先生成粗略计划再 ReAct 执行；(3) 设置最大步数和重复检测来防止死循环。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">追问 3</p>
+          <div><h3>如何在成本和质量间取舍？</h3><p>从 ReAct 开始建立 baseline，如果质量不够再考虑 LATS。用 Model Routing 对简单任务用 ReAct + 小模型，复杂任务用 LATS + 强模型。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">追问 4</p>
+          <div><h3>Proactive Agent 的核心挑战是什么？</h3><p>适度性判断：太主动会打扰用户，太保守又失去意义。需要建立反馈循环，学习用户的接受度阈值。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">追问 5</p>
+          <div><h3>Gartner 预测 40% 的企业应用将包含 Agent，主流模式是什么？</h3><p>混合模式（Planning Preamble + ReAct Execution），因为它在灵活性和成本间取得了最佳平衡。</p></div>
+        </div>
+      </section>
+
+      <section class="source-section" aria-labelledby="a3-source-title">
+        <p class="eyebrow">技术细节，按需展开</p>
+        <h2 class="source-heading" id="a3-source-title">原文参考资料</h2>
+        <p class="source-summary">讲解依据《Agent 架构模式详解：ReAct、Plan-and-Execute、LATS、Proactive》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+        <details>
+          <summary>展开原文列出的十条参考链接</summary>
+          <div class="source-content">
+            <ul>
+              <li><a href="https://arxiv.org/abs/2210.03629" target="_blank" rel="noopener noreferrer">ReAct: Synergizing Reasoning and Acting in Language Models (arXiv:2210.03629)</a></li>
+              <li><a href="https://www.promptingguide.ai/techniques/react" target="_blank" rel="noopener noreferrer">ReAct Prompting (Prompt Engineering Guide)</a></li>
+              <li><a href="https://www.ibm.com/think/topics/react-agent" target="_blank" rel="noopener noreferrer">What is a ReAct Agent? (IBM)</a></li>
+              <li><a href="https://til.simonwillison.net/llms/python-react-pattern" target="_blank" rel="noopener noreferrer">A Simple Python Implementation of the ReAct Pattern (Simon Willison)</a></li>
+              <li><a href="https://mbrenndoerfer.com/writing/react-pattern-llm-reasoning-action-agents" target="_blank" rel="noopener noreferrer">ReAct Pattern: Interleaving Reasoning and Action (Michael Brenndoerfer)</a></li>
+              <li><a href="https://dev.to/jamesli/react-vs-plan-and-execute-a-practical-comparison-of-llm-agent-patterns-4gh9" target="_blank" rel="noopener noreferrer">ReAct vs Plan-and-Execute: A Practical Comparison (DEV Community)</a></li>
+              <li><a href="https://www.wollenlabs.com/blog-posts/navigating-modern-llm-agent-architectures-multi-agents-plan-and-execute-rewoo-tree-of-thoughts-and-react" target="_blank" rel="noopener noreferrer">Navigating Modern LLM Agent Architectures (Wollen Labs)</a></li>
+              <li><a href="https://apxml.com/courses/langchain-production-llm/chapter-2-sophisticated-agents-tools/agent-architectures" target="_blank" rel="noopener noreferrer">Agent Architectures: ReAct, Self-Ask, Plan-and-Execute (APXML)</a></li>
+              <li><a href="https://www.ema.ai/additional-blogs/addition-blogs/build-plan-execute-agents" target="_blank" rel="noopener noreferrer">How to Build a Plan-and-Execute AI Agent (EMA)</a></li>
+              <li><a href="https://arxiv.org/abs/2310.04406" target="_blank" rel="noopener noreferrer">LATS: Language Agent Tree Search (Zhou et al., 2023)</a></li>
+            </ul>
+            <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+          </div>
+        </details>
+      </section>
+    </main>
+    <footer><span>Agent-Interview-100 · <code>01-agent-architecture/003-agent-architecture-patterns.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 3 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const A3_PATTERNS = {
+    react: {
+      name: "ReAct",
+      task: "查 Company X 2025 Q4 财报，算同比增长率",
+      steps: [
+        { nav: "思考", title: "Thought：先找最新财报。", detail: "模型不知道 Company X 的 Q4 2025 数据，必须调工具，不能凭训练记忆回答。", ioIn: "用户任务：查 Company X 2025 Q4 财报，算同比增长率。当前没有财报数据。", ioOut: "Thought 1：需要先搜索最新财报。", states: { thought: "active", action: "pending", observation: "pending", final: "pending" }, labels: { thought: "Thought 1：需要最新财报数据" } },
+        { nav: "行动", title: "Action：调用 search_web。", detail: "Thought 选定工具和参数，本轮只执行一个行动。", ioIn: "Thought 1：需要最新财报数据。", ioOut: "Action 1：search_web(\"Company X Q4 2025 earnings report\")。", states: { thought: "done", action: "active", observation: "pending", final: "pending" }, labels: { action: "search_web(财报查询)" } },
+        { nav: "观察", title: "Observation：拿到 $5.2B 营收。", detail: "工具结果进入上下文，成为下一轮 Thought 的事实锚点。", ioIn: "search_web 返回网页摘要。", ioOut: "Observation 1：Q4 2025 营收 $5.2B；去年同期 $4.8B。", states: { thought: "done", action: "done", observation: "active", final: "pending" }, labels: { observation: "营收 $5.2B / 去年 $4.8B" } },
+        { nav: "再思考", title: "Thought：需要算同比增长。", detail: "Observation 回到 Thought，循环进入第二轮。", ioIn: "Observation 1：营收 $5.2B，去年同期 $4.8B。", ioOut: "Thought 2：数据齐了，下一步用计算器算增长率。", states: { thought: "active", action: "pending", observation: "done", final: "pending" }, labels: { thought: "Thought 2：计算同比增长率" } },
+        { nav: "再行动", title: "Action：调用 calculator。", detail: "第二轮行动只算一个表达式，结果作为新的 Observation。", ioIn: "Thought 2：需要计算 (5.2 - 4.8) / 4.8 × 100。", ioOut: "Action 2：calculator(\"(5.2 - 4.8) / 4.8 * 100\")。", states: { thought: "done", action: "active", observation: "pending", final: "pending" }, labels: { action: "calculator(增长率)" } },
+        { nav: "完成", title: "Final Answer：8.33%。", detail: "模型判断信息足够，退出循环并给出最终答案。", ioIn: "Observation 2：8.33。", ioOut: "Final Answer：营收 $5.2B，同比增长 8.33%（固定教学数据）。", states: { thought: "done", action: "done", observation: "done", final: "active" }, labels: { observation: "8.33", final: "营收 $5.2B，同比增长 8.33%" } }
+      ]
+    },
+    plan: {
+      name: "Plan-and-Execute",
+      task: "同一份财报任务：规划一次，逐步执行",
+      steps: [
+        { nav: "规划", title: "Planner：一次生成四步计划。", detail: "规划阶段先想清楚全部步骤，执行阶段不再重新规划。", ioIn: "任务：查财报并计算同比增长率。", ioOut: "Plan：① 搜索财报 ② 提取指标 ③ 计算增长率 ④ 生成报告。", states: { planner: "active", p1: "pending", p2: "pending", p3: "pending", p4: "pending", pout: "pending" }, status: { p1: "等待", p2: "等待", p3: "等待", p4: "等待" }, label: { planner: "已生成 4 步计划", pout: "尚未生成" } },
+        { nav: "执行 1", title: "Execute Step 1：搜索财报。", detail: "执行器只做第一步，不改变后续计划。", ioIn: "Plan Step 1：搜索 Company X 最新财报。", ioOut: "Result 1：找到 Q4 2025 财报摘要，营收 $5.2B。", states: { planner: "done", p1: "active", p2: "pending", p3: "pending", p4: "pending", pout: "pending" }, status: { p1: "执行中", p2: "等待", p3: "等待", p4: "等待" }, label: { p1: "搜索完成，拿到摘要" } },
+        { nav: "执行 2", title: "Execute Step 2：提取指标。", detail: "从搜索结果里抽出本期和去年同期营收。", ioIn: "Result 1：财报摘要。", ioOut: "Result 2：本期 $5.2B，去年同期 $4.8B。", states: { planner: "done", p1: "done", p2: "active", p3: "pending", p4: "pending", pout: "pending" }, status: { p1: "完成", p2: "执行中", p3: "等待", p4: "等待" }, label: { p2: "提取 $5.2B / $4.8B" } },
+        { nav: "执行 3", title: "Execute Step 3：计算增长率。", detail: "这一步可以用更小的模型或确定性代码完成。", ioIn: "Result 2：$5.2B 与 $4.8B。", ioOut: "Result 3：同比增长率 8.33%。", states: { planner: "done", p1: "done", p2: "done", p3: "active", p4: "pending", pout: "pending" }, status: { p1: "完成", p2: "完成", p3: "执行中", p4: "等待" }, label: { p3: "计算得 8.33%" } },
+        { nav: "交付", title: "Execute Step 4：生成报告。", detail: "计划执行完毕，输出最终结果；没有发生 replanning。", ioIn: "Result 3：增长率 8.33%。", ioOut: "最终输出：Company X Q4 2025 营收 $5.2B，同比增长 8.33%（固定教学数据）。", states: { planner: "done", p1: "done", p2: "done", p3: "done", p4: "active", pout: "active" }, status: { p1: "完成", p2: "完成", p3: "完成", p4: "执行中" }, label: { p4: "报告已生成", pout: "最终报告" } }
+      ]
+    },
+    lats: {
+      name: "LATS",
+      task: "为 200 万行数据选排序方案，要求可靠",
+      steps: [
+        { nav: "展开", title: "根节点展开三条行动。", detail: "LATS 同时探索 A、B、C 三条路径，而不是先选一条走到黑。", ioIn: "状态：200 万行数据待排序，内存 4 GB。", ioOut: "三个候选：A 内存排序、B 外部归并、C 第三方服务。", states: { root: "active", a: "active", b: "active", c: "active", a1: "pending", a2: "pending", b1: "pending", c1: "pending", c2: "pending", out: "pending" }, labels: {}, backs: [] },
+        { nav: "A1 死路", title: "A1 内存超限，回溯到 A。", detail: "死路不继续展开，把失败反馈给父节点，改走 A2。", ioIn: "行动 A：全部载入内存排序。", ioOut: "A1：内存超限，任务失败。", states: { root: "done", a: "active", b: "active", c: "active", a1: "dead", a2: "pending", b1: "pending", c1: "pending", c2: "pending", out: "pending" }, labels: {}, backs: ["a1"] },
+        { nav: "A2 有效", title: "A2：改成分块内存排序。", detail: "同一分支换一种做法，路径重新变为有效。", ioIn: "回溯到 A，A1 的失败原因：内存超限。", ioOut: "A2：分块读入，内存峰值 1.8 GB，有效。", states: { root: "done", a: "done", b: "active", c: "active", a1: "dead", a2: "alive", b1: "pending", c1: "pending", c2: "pending", out: "pending" }, labels: {}, backs: ["a1"] },
+        { nav: "B1 有效", title: "B1：外部归并排序可行。", detail: "B 分支一次成功，磁盘分块后多路归并。", ioIn: "行动 B：外部归并排序。", ioOut: "B1：磁盘分块 + 多路归并，耗时 42 秒，有效。", states: { root: "done", a: "done", b: "active", c: "active", a1: "dead", a2: "alive", b1: "alive", c1: "pending", c2: "pending", out: "pending" }, labels: {}, backs: ["a1"] },
+        { nav: "C 分支", title: "C1 死路，回溯后 C2 有效。", detail: "第三方服务触碰数据出境限制；换成本地部署后可行，但成本更高。", ioIn: "行动 C：调用第三方排序服务。", ioOut: "C1 失败；C2 本地部署有效，但成本高。", states: { root: "done", a: "done", b: "done", c: "active", a1: "dead", a2: "alive", b1: "alive", c1: "dead", c2: "alive", out: "pending" }, labels: {}, backs: ["a1", "c1"] },
+        { nav: "选优", title: "比较三条有效路径，选 B1。", detail: "A2 省磁盘但内存仍高；C2 合规但贵；B1 在时间、内存和成本间最稳。", ioIn: "三条有效路径：A2、B1、C2。", ioOut: "最优路径：B1 外部归并排序（固定教学数据）。", states: { root: "done", a: "done", b: "done", c: "done", a1: "dead", a2: "alive", b1: "chosen", c1: "dead", c2: "alive", out: "chosen" }, labels: { out: "选择 B1：外部归并排序" }, backs: ["a1", "c1"] }
+      ]
+    },
+    proactive: {
+      name: "Proactive",
+      task: "用户说：我明天要去上海出差",
+      steps: [
+        { nav: "触发", title: "触发：指令 + 三个上下文信号。", detail: "不是用户明确要查天气，而是“明天 / 上海 / 出差”三个信号同时出现。", ioIn: "用户：我明天要去上海出差。上下文：时间=明天，位置=上海，意图=出差。", ioOut: "触发主动服务评估；尚未执行任何操作。", states: { trigger: "active", predict: "pending", filter: "pending", execute: "pending", respond: "pending" }, needs: {}, labels: {} },
+        { nav: "预测", title: "需求预测：列出四个候选。", detail: "从上下文和用户画像推断潜在需求，但先不执行。", ioIn: "上下文信号：明天、上海、出差。", ioOut: "候选需求：天气、航班、酒店、同步日历。", states: { trigger: "done", predict: "active", filter: "pending", execute: "pending", respond: "pending" }, needs: {}, labels: {} },
+        { nav: "过滤", title: "适度性判断：四项条件过滤。", detail: "固定阈值：置信度 > 0.8、成本 < 0.5、不敏感、用户喜欢主动服务；四项全过才执行。", ioIn: "四个候选需求 + 用户画像。", ioOut: "天气、航班通过；酒店置信度 0.78 未过；日历涉及隐私未过。", states: { trigger: "done", predict: "done", filter: "active", execute: "pending", respond: "pending" }, needs: { weather: { pass: "yes", why: "0.92 / 0.1" }, flight: { pass: "yes", why: "0.85 / 0.2" }, hotel: { pass: "no", why: "0.78 < 0.8" }, calendar: { pass: "no", why: "敏感" } }, labels: {} },
+        { nav: "执行", title: "主动执行：两路并行预加载。", detail: "只执行通过过滤的两项，两路互不等待；这是并行，不是串行。", ioIn: "通过项：天气、航班。", ioOut: "天气：明天上海小雨 18–22℃；航班：MU5102 准点。", states: { trigger: "done", predict: "done", filter: "done", execute: "active", respond: "pending" }, needs: { weather: { pass: "yes", why: "执行" }, flight: { pass: "yes", why: "执行" }, hotel: { pass: "no", why: "跳过" }, calendar: { pass: "no", why: "跳过" } }, labels: {} },
+        { nav: "响应", title: "组合响应：显式需求 + 主动结果。", detail: "先回答出差这件事，再说明主动准备了什么，用户可以撤销或忽略。", ioIn: "显式需求：出差安排；主动结果：天气、航班。", ioOut: "响应：已整理明天上海天气与航班；酒店和日历未主动处理（固定教学数据）。", states: { trigger: "done", predict: "done", filter: "done", execute: "done", respond: "active" }, needs: { weather: { pass: "yes", why: "已准备" }, flight: { pass: "yes", why: "已准备" }, hotel: { pass: "no", why: "未处理" }, calendar: { pass: "no", why: "未处理" } }, labels: {} }
+      ]
+    }
+  };
+
+  const state = { pattern: "react", step: 0, timer: null };
+  const byId = (id) => document.getElementById(id);
+
+  function pattern() { return A3_PATTERNS[state.pattern]; }
+  function steps() { return pattern().steps; }
+
+  function buildStageNav() {
+    const list = byId("a3-stage-list");
+    const current = steps();
+    list.style.setProperty("--stages", String(current.length));
+    list.textContent = "";
+    current.forEach((step, index) => {
+      const li = document.createElement("li");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "stage-button";
+      button.dataset.step = String(index);
+      button.setAttribute("aria-controls", "explainer");
+      button.setAttribute("aria-label", `第 ${index + 1} 拍：${step.nav}`);
+      button.innerHTML = `<span class="stage-number">${index + 1}</span><span>${step.nav}</span>`;
+      button.addEventListener("click", () => goTo(index));
+      li.append(button);
+      list.append(li);
+    });
+  }
+
+  function updateNav() {
+    document.querySelectorAll("#a3-stage-list .stage-button").forEach((button) => {
+      if (Number(button.dataset.step) === state.step) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+  }
+
+  function renderReact(step) {
+    document.querySelectorAll("#a3-view-react [data-node]").forEach((node) => {
+      node.dataset.state = step.states[node.dataset.node] || "pending";
+    });
+    document.querySelectorAll("#a3-view-react [data-label]").forEach((el) => {
+      const key = el.dataset.label;
+      if (step.labels[key]) el.textContent = step.labels[key];
+    });
+  }
+
+  function renderPlan(step) {
+    document.querySelectorAll("#a3-view-plan [data-node]").forEach((node) => {
+      node.dataset.state = step.states[node.dataset.node] || "pending";
+    });
+    Object.entries(step.status || {}).forEach(([key, value]) => {
+      const node = document.querySelector(`#a3-view-plan [data-node="${key}"]`);
+      const status = node && node.querySelector(".a3-plan-status");
+      if (status) status.textContent = value;
+    });
+    document.querySelectorAll("#a3-view-plan [data-label]").forEach((el) => {
+      const key = el.dataset.label;
+      if (step.label[key]) el.textContent = step.label[key];
+    });
+  }
+
+  function renderLats(step) {
+    document.querySelectorAll("#a3-view-lats [data-node]").forEach((node) => {
+      node.dataset.state = step.states[node.dataset.node] || "pending";
+    });
+    document.querySelectorAll("#a3-view-lats [data-label]").forEach((el) => {
+      const key = el.dataset.label;
+      if (step.labels[key]) el.textContent = step.labels[key];
+    });
+    document.querySelectorAll("#a3-view-lats [data-back]").forEach((el) => {
+      el.hidden = !step.backs.includes(el.dataset.back);
+    });
+  }
+
+  function renderProactive(step) {
+    document.querySelectorAll("#a3-view-proactive [data-node]").forEach((node) => {
+      node.dataset.state = step.states[node.dataset.node] || "pending";
+    });
+    document.querySelectorAll("#a3-view-proactive [data-need]").forEach((el) => {
+      const info = step.needs[el.dataset.need];
+      el.dataset.pass = info ? info.pass : "";
+      el.querySelector(".a3-need-mark").textContent = info ? (info.pass === "yes" ? "✓" : "✕") : "·";
+      el.querySelector(".a3-need-why").textContent = info ? info.why : "待评估";
+    });
+  }
+
+  function render() {
+    const p = pattern();
+    const current = steps();
+    const step = current[state.step];
+
+    document.querySelectorAll(".a3-tab").forEach((button) => {
+      button.setAttribute("aria-pressed", button.dataset.pattern === state.pattern ? "true" : "false");
+    });
+    document.querySelectorAll(".a3-view").forEach((view) => {
+      const active = view.dataset.pattern === state.pattern;
+      view.classList.toggle("is-active", active);
+      view.hidden = !active;
+    });
+
+    byId("a3-task").textContent = `任务：${p.task}`;
+    byId("a3-step-index").textContent = `模式演练 · 第 ${state.step + 1} / ${current.length} 拍`;
+    byId("a3-demo-title").textContent = step.title;
+    byId("a3-subtitle").textContent = `${step.detail} 固定教学任务：${p.task}。`;
+    byId("a3-io-in").textContent = step.ioIn;
+    byId("a3-io-out").textContent = step.ioOut;
+    byId("a3-state").textContent = `${p.name} · 第 ${state.step + 1} / ${current.length} 拍`;
+
+    if (state.pattern === "react") renderReact(step);
+    if (state.pattern === "plan") renderPlan(step);
+    if (state.pattern === "lats") renderLats(step);
+    if (state.pattern === "proactive") renderProactive(step);
+
+    byId("a3-back").disabled = state.step === 0;
+    byId("a3-next").disabled = state.step === current.length - 1;
+    updateNav();
+  }
+
+  function announce(text) {
+    byId("a3-announce").textContent = text;
+  }
+
+  function goTo(index) {
+    stopAuto();
+    state.step = Math.max(0, Math.min(index, steps().length - 1));
+    render();
+    announce(`第 ${state.step + 1} 拍：${steps()[state.step].title}`);
+  }
+
+  function stopAuto() {
+    if (state.timer) {
+      clearInterval(state.timer);
+      state.timer = null;
+    }
+    const button = byId("a3-auto");
+    button.setAttribute("aria-pressed", "false");
+    button.textContent = "自动播放";
+  }
+
+  function toggleAuto() {
+    if (state.timer) {
+      stopAuto();
+      announce("已暂停自动播放。");
+      return;
+    }
+    if (state.step === steps().length - 1) {
+      state.step = 0;
+      render();
+    }
+    const button = byId("a3-auto");
+    button.setAttribute("aria-pressed", "true");
+    button.textContent = "暂停";
+    announce("开始自动播放。");
+    state.timer = setInterval(() => {
+      if (state.step < steps().length - 1) {
+        state.step += 1;
+        render();
+      } else {
+        stopAuto();
+        announce("演示已到最后拍。");
+      }
+    }, 1500);
+  }
+
+  function setPattern(id) {
+    stopAuto();
+    state.pattern = id;
+    state.step = 0;
+    buildStageNav();
+    render();
+    announce(`已切换到 ${A3_PATTERNS[id].name} 模式，任务：${A3_PATTERNS[id].task}。`);
+  }
+
+  document.querySelectorAll(".a3-tab").forEach((button) => {
+    button.addEventListener("click", () => setPattern(button.dataset.pattern));
+  });
+  byId("a3-next").addEventListener("click", () => goTo(state.step + 1));
+  byId("a3-back").addEventListener("click", () => goTo(state.step - 1));
+  byId("a3-reset").addEventListener("click", () => { goTo(0); announce("已重置当前模式演示。"); });
+  byId("a3-auto").addEventListener("click", toggleAuto);
+
+  buildStageNav();
+  render();
+</script>
+</body>
+</html>

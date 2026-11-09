@@ -1,0 +1,997 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>如何为 LLM 定义和描述工具（Tool Schema）？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  /* 022 Tool Schema 质量检查 */
+  .ts-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .ts-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: var(--s-4); align-items: start; }
+  .ts-grid > * { min-width: 0; }
+  .ts-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .ts-card h2 { font-size: 16px; line-height: 1.5; font-weight: 600; }
+  .ts-card .figure-index { margin-bottom: 3px; }
+  .ts-sample-head { display: flex; justify-content: space-between; gap: var(--s-3); align-items: center; flex-wrap: wrap; }
+  .ts-badge { display: inline-flex; align-items: center; min-height: 25px; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--border-bright); font: 600 10px/1.5 var(--mono); white-space: nowrap; }
+  .ts-badge.good { color: #1b5e20; border-color: #9bc59b; background: #f1f8f1; }
+  .ts-badge.mid { color: #7a4a00; border-color: #d8b36a; background: #fffaf0; }
+  .ts-badge.bad { color: #8b1a1a; border-color: #d99b9b; background: #fff6f6; }
+  .ts-desc { margin-top: var(--s-2); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .ts-json { max-height: 370px; overflow: auto; }
+  .ts-json pre { margin-top: var(--s-3); }
+  .ts-score { display: flex; align-items: baseline; gap: 8px; margin-top: var(--s-3); padding-bottom: var(--s-3); border-bottom: 1px solid var(--border); }
+  .ts-score strong { font: 600 32px/1.2 var(--mono); letter-spacing: -.04em; }
+  .ts-score span { font-size: 12px; color: var(--text-dim); }
+  .ts-score .ts-grade { margin-left: auto; }
+  .ts-checks { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 5px; }
+  .ts-check { display: grid; grid-template-columns: 46px minmax(0, 1fr); gap: 8px; align-items: start; border: 1px solid var(--border); border-radius: 5px; background: var(--surface-soft); padding: 7px 9px; }
+  .ts-check.ok { border-color: #cfe3cf; background: #f6faf6; }
+  .ts-check.bad { border-color: #e3b5b5; background: #fff6f6; }
+  .ts-check.na { border-style: dashed; }
+  .ts-check-mark { display: inline-grid; place-items: center; min-height: 20px; padding: 1px 5px; border-radius: 4px; font: 700 9px/1.5 var(--mono); color: white; background: #2e7d32; margin-top: 1px; }
+  .ts-check.bad .ts-check-mark { background: #b71c1c; }
+  .ts-check.na .ts-check-mark { background: #8b908b; }
+  .ts-check-title { display: block; font-size: 12px; line-height: 1.5; font-weight: 600; color: var(--ink); }
+  .ts-check-note { display: block; font-size: 11px; line-height: 1.55; color: var(--text-dim); margin-top: 1px; }
+  .ts-filter { display: inline-flex; align-items: center; gap: 7px; min-height: 36px; font-size: 11px; color: var(--text-dim); }
+  .ts-filter input { width: 16px; height: 16px; accent-color: var(--accent); margin: 0; }
+  .ts-fix { margin-top: var(--s-4); border: 1px solid #d8b36a; border-radius: var(--r-1); background: #fffaf0; padding: var(--s-3) var(--s-4); }
+  .ts-fix h3 { font-size: 13px; line-height: 1.5; font-weight: 600; color: #7a4a00; }
+  .ts-fix ul { margin: 5px 0 0; padding-left: 1.2em; font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .ts-fix li { margin-block: 3px; }
+  .ts-caption { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border); }
+  .ts-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; }
+  .ts-caption p:not(.figure-index):not(.ts-action) { margin-top: var(--s-2); font-size: var(--t-small); color: var(--text-dim); max-width: 66em; }
+  .ts-action { display: inline-block; margin-top: var(--s-3); padding: 4px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font: 11px/1.6 var(--mono); color: var(--accent); background: var(--accent-dim); }
+  .ts-stack { display: grid; gap: 7px; margin-top: var(--s-4); }
+  .ts-layer { border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3) var(--s-4); font-size: 13px; line-height: 1.6; }
+  .ts-layer small { display: block; font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .ts-layer.skills { border-color: #c9a5d9; background: #faf3fd; }
+  .ts-layer.fc { border-color: #9eb4c9; background: var(--accent-dim); }
+  .ts-layer.tools { background: var(--surface-soft); }
+  .ts-stack-arrow { text-align: center; color: var(--text-dim); font: 10px/1.2 var(--mono); }
+  .ts-stack-arrow b { display: block; font-size: 15px; }
+  @media (max-width: 900px) {
+    .ts-grid { grid-template-columns: 1fr; }
+    .ts-json { max-height: none; }
+  }
+  @media (max-width: 720px) {
+    .ts-stage { padding: var(--s-4); }
+    .ts-card { padding: var(--s-3); }
+    .ts-caption h2 { font-size: 22px; }
+    .ts-score strong { font-size: 27px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">022 / Tool Schema 设计</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 18 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="../02-rag/019-advanced-rag-variants.html">← 上一页 · 高级 RAG 变体</a><a href="023-common-tool-patterns.html">下一页 → · Tool Use 的常见模式</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">基础 · Tool Use · 可交互讲解</p>
+      <h1>把工具说明白，<br>模型才选得对。</h1>
+    </div>
+    <div>
+      <p class="lead">工具 Schema 用 JSON Schema 定义三要素：名称是唯一标识符，描述告诉 LLM 何时以及如何使用，参数定义输入的类型、约束和必填项。描述是最关键的字段，它直接影响工具选择准确率。</p>
+      <p class="definition">关键边界：<strong>名称只是标识符，描述才是选择依据</strong>。描述要同时写清“做什么、何时用、何时不用、和相似工具的区别”；参数则负责执行前的结构校验。</p>
+      <div class="hero-meta"><span class="pill">基础</span><span class="pill">Tool Use</span><span class="pill">JSON Schema / Pydantic</span><span class="pill">固定教学数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-label="Tool Schema 质量检查演示">
+    <div class="player-top">
+      <div class="player-label">Schema 质量检查器 <small>四个固定工具定义，按九条规则逐项检查</small></div>
+      <div class="controls" role="group" aria-label="Schema 质量检查控制">
+        <button type="button" class="button button-quiet" id="ts-reset">重置</button>
+        <button type="button" class="button" id="ts-prev" disabled>上一个</button>
+        <button type="button" class="button button-primary" id="ts-next">下一个 →</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="四个固定工具定义">
+      <ol style="--stages: 4">
+        <li><button type="button" class="stage-button" data-sample="0" aria-current="step" aria-controls="ts-scene" aria-label="样例 1：高质量只读工具"><span class="stage-number">1</span><span>高质量</span></button></li>
+        <li><button type="button" class="stage-button" data-sample="1" aria-controls="ts-scene" aria-label="样例 2：描述过差"><span class="stage-number">2</span><span>描述差</span></button></li>
+        <li><button type="button" class="stage-button" data-sample="2" aria-controls="ts-scene" aria-label="样例 3：一个工具做太多"><span class="stage-number">3</span><span>过宽</span></button></li>
+        <li><button type="button" class="stage-button" data-sample="3" aria-controls="ts-scene" aria-label="样例 4：危险操作缺确认"><span class="stage-number">4</span><span>危险操作</span></button></li>
+      </ol>
+    </nav>
+    <div class="ts-stage scene" id="ts-scene" data-scene="tool-schema">
+      <div class="ts-grid">
+        <section class="ts-card" aria-labelledby="ts-schema-title">
+          <div class="ts-sample-head">
+            <div><p class="figure-index" id="ts-position">样例 1 / 4</p><h2 id="ts-schema-title">高质量只读工具</h2></div>
+            <span class="ts-badge good" id="ts-badge">优秀</span>
+          </div>
+          <p class="ts-desc" id="ts-sample-desc"></p>
+          <div class="ts-json"><pre><code id="ts-json"></code></pre></div>
+          <p class="ts-desc">固定教学 Schema：JSON 只用于展示字段结构，本页不把这段文本交给模型，也不执行任何工具。</p>
+        </section>
+
+        <section class="ts-card" aria-labelledby="ts-check-title">
+          <div class="ts-sample-head">
+            <div><p class="figure-index">九条检查规则</p><h2 id="ts-check-title">描述、参数、安全边界。</h2></div>
+            <label class="ts-filter"><input type="checkbox" id="ts-only-fail"> 只看未通过</label>
+          </div>
+          <div class="ts-score"><strong id="ts-score">9 / 9</strong><span id="ts-score-label">适用规则通过</span><span class="ts-grade" id="ts-grade">优秀</span></div>
+          <ul class="ts-checks" id="ts-checks" aria-label="Schema 质量检查结果"></ul>
+          <div class="ts-fix" id="ts-fix"><h3>改进建议</h3><ul id="ts-fix-list"></ul></div>
+        </section>
+      </div>
+      <div class="ts-caption">
+        <p class="figure-index" id="ts-caption-index">图 1 · 第 1 / 4 个样例</p>
+        <h2 id="ts-caption-title"></h2>
+        <p id="ts-caption-desc"></p>
+        <p class="ts-action" id="ts-action"></p>
+      </div>
+      <p class="demo-note">固定教学数据：四个工具定义、九条检查结果、评分和改进建议都是写死的；本页只做规则展示，不调用模型、不执行工具、不连接任何外部系统。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 检查由页面脚本按固定布尔值渲染</span><span id="ts-state-summary">样例 1 / 4 · 没有连接模型</span></div>
+  </section>
+  <p id="ts-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="three-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三要素</p><h2 id="three-title">名称、描述、<br>参数。</h2></div>
+      <p class="reading-intro">名称负责唯一标识，描述负责让模型选对，参数负责让执行层能校验。三者缺一，工具定义就不完整。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文 JSON · 一个完整的工具定义</p>
+      <pre><code>{
+  "name": "search_knowledge_base",
+  "description": "在内部知识库中搜索技术文档。当用户询问产品功能、API 文档或技术规范时使用此工具。不要用于搜索客户订单或财务数据。",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "query": {
+        "type": "string",
+        "description": "搜索关键词或自然语言问题"
+      },
+      "category": {
+        "type": "string",
+        "enum": ["api_docs", "user_guide", "release_notes"],
+        "description": "文档类别，缩小搜索范围"
+      },
+      "max_results": {
+        "type": "integer",
+        "description": "返回的最大结果数量",
+        "default": 5
+      }
+    },
+    "required": ["query"]
+  }
+}</code></pre>
+      <p>这段定义里，<code>description</code> 同时写了“做什么”和“何时使用”，还写了“不要用于订单或财务数据”的排除条件；<code>input_schema</code> 则给出字符串、枚举、整数默认值和必填项。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="description-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">高质量描述</p><h2 id="description-title">差一个词，<br>就可能选错工具。</h2></div>
+      <p class="reading-intro">描述是 LLM 选择工具的核心依据。差的描述导致错误的工具选择，最后得到错误的结果。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文代码 · 差描述与好描述的对比</p>
+      <pre><code># 差的描述
+{"name": "search", "description": "搜索东西"}
+# 问题：搜什么？什么时候用？什么时候不用？
+
+# 好的描述
+{
+    "name": "search_product_catalog",
+    "description": (
+        "在产品目录中搜索产品信息，包括名称、价格、库存和规格。"
+        "当用户询问产品详情、价格比较或库存查询时使用此工具。"
+        "不适用于搜索订单状态或用户账户信息——请使用 query_orders 或 get_user_profile。"
+    )
+}</code></pre>
+      <h3>高质量描述的检查清单</h3>
+      <ol>
+        <li>说明工具做什么，也就是功能。</li>
+        <li>说明什么时候应该使用，也就是触发条件。</li>
+        <li>说明什么时候不该使用，也就是排除条件。</li>
+        <li>如果有相似工具，说明区别。</li>
+      </ol>
+      <div class="callout"><p class="callout-label">原文判断</p><p>名称只是标识符，描述才是 LLM 决定是否使用工具的核心依据。名称起得再漂亮，描述含糊仍然会选错。</p></div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="rich-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">JSON Schema 丰富特性</p><h2 id="rich-title">用约束<br>减少歧义。</h2></div>
+      <p class="reading-intro">类型之外，Schema 还能表达枚举、默认值、范围、格式、嵌套对象、数组和必填项。约束越明确，模型越不容易填出执行层无法处理的参数。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文 JSON · 嵌套、枚举、范围与数组</p>
+      <pre><code>{
+  "type": "object",
+  "properties": {
+    "date_range": {
+      "type": "object",
+      "properties": {
+        "start": {"type": "string", "format": "date", "description": "起始日期 YYYY-MM-DD"},
+        "end": {"type": "string", "format": "date", "description": "结束日期 YYYY-MM-DD"}
+      },
+      "required": ["start", "end"]
+    },
+    "status": {
+      "type": "string",
+      "enum": ["pending", "completed", "cancelled"],
+      "description": "按订单状态过滤"
+    },
+    "amount": {
+      "type": "number",
+      "minimum": 0,
+      "description": "最低金额过滤（美元）"
+    },
+    "tags": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "标签列表，取交集过滤"
+    }
+  }
+}</code></pre>
+      <p>可用特性包括 <code>type</code>、<code>enum</code>、<code>description</code>、<code>default</code>、<code>minimum</code> / <code>maximum</code>、<code>format</code>、嵌套对象、数组和 <code>required</code>。但原文也提醒：Schema 不是越详细越好，过度复杂会消耗上下文窗口，并增加模型出错概率。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="pydantic-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">Pydantic 自动生成</p><h2 id="pydantic-title">别手写，<br>让类型生成 Schema。</h2></div>
+      <p class="reading-intro">工具多了以后，手写 JSON Schema 容易出错。用 Pydantic 定义参数模型，再自动生成 Schema，描述、默认值和约束会跟着代码走。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文代码 · SearchParams</p>
+      <pre><code>from pydantic import BaseModel, Field
+from typing import Optional, Literal
+import json
+
+class SearchParams(BaseModel):
+    """在知识库中搜索文档"""
+    query: str = Field(description="搜索关键词或自然语言问题")
+    # Pydantic v2 推荐：用 Literal 表达枚举，自动转为 JSON Schema 的 enum
+    category: Optional[Literal["api_docs", "user_guide", "release_notes"]] = Field(
+        default=None,
+        description="文档类别",
+    )
+    max_results: int = Field(default=5, description="最大返回数量", ge=1, le=50)
+
+# 自动生成 JSON Schema
+schema = SearchParams.model_json_schema()
+print(json.dumps(schema, indent=2))
+
+# 自动验证 LLM 的输出
+def execute_tool(llm_output: dict):
+    params = SearchParams(**llm_output)  # 自动类型验证
+    return knowledge_base.search(**params.model_dump())</code></pre>
+      <p>Pydantic 的优势有四点：自动类型验证和默认值处理；<code>description</code> 从 <code>Field</code> 自动提取；数据解析和序列化一体；Schema 更新时自动同步。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="namespace-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">工具命名空间</p><h2 id="namespace-title">给工具<br>分个域。</h2></div>
+      <p class="reading-intro">工具数量增多时，用命名空间组织。它帮助 LLM 理解工具的归属领域，减少跨域误选。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文代码 · 按域分组</p>
+      <pre><code>tools = [
+    # CRM 域
+    {"name": "crm.search_contacts", "description": "搜索 CRM 中的联系人"},
+    {"name": "crm.create_lead", "description": "创建新的销售线索"},
+
+    # 计费域
+    {"name": "billing.get_invoice", "description": "获取发票详情"},
+    {"name": "billing.process_refund", "description": "处理退款"},
+
+    # 物流域
+    {"name": "shipping.track_package", "description": "追踪包裹状态"},
+]</code></pre>
+      <p>命名空间本身不会让描述变好，但它提供了领域线索。工具很多时，还要配合动态加载或分类路由，避免一次性把所有工具塞进上下文。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="validate-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">输出验证</p><h2 id="validate-title">模型给的参数，<br>执行前必须验。</h2></div>
+      <p class="reading-intro">LLM 生成的参数可能不完全符合 Schema。始终在执行前做结构验证和安全检查。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文代码 · 验证后执行</p>
+      <pre><code>import jsonschema
+
+def validate_and_execute(tool_name: str, llm_args: dict):
+    schema = tool_schemas[tool_name]["input_schema"]
+
+    # 1. Schema 验证
+    try:
+        jsonschema.validate(llm_args, schema)
+    except jsonschema.ValidationError as e:
+        return {"error": f"参数验证失败: {e.message}"}
+
+    # 2. 安全检查（防注入）
+    if contains_injection(llm_args):
+        return {"error": "检测到潜在注入攻击"}
+
+    # 3. 执行
+    return tools[tool_name](**llm_args)</code></pre>
+      <p>注意 <code>jsonschema.validate</code> 只检查结构，不检查业务权限，也不判断这次调用该不该执行。权限和审批属于 Tool Gateway 的职责，见 024 页。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="patterns-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见设计模式</p><h2 id="patterns-title">危险操作先确认，<br>列表操作要分页。</h2></div>
+      <p class="reading-intro">两个高频模式：删除等不可逆操作要求显式确认；列表类工具提供分页参数，避免一次返回过多数据。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文代码 · 确认型与分页型</p>
+      <pre><code># 模式 1：确认型工具（危险操作前确认）
+{
+    "name": "delete_record",
+    "description": "删除数据库记录。这是不可逆操作，调用前请确认用户意图。",
+    "input_schema": {
+        "properties": {
+            "record_id": {"type": "string"},
+            "confirmation": {
+                "type": "string",
+                "enum": ["confirmed"],
+                "description": "必须传入 'confirmed' 才会执行删除"
+            }
+        },
+        "required": ["record_id", "confirmation"]
+    }
+}
+
+# 模式 2：分页型工具
+{
+    "name": "list_items",
+    "input_schema": {
+        "properties": {
+            "page": {"type": "integer", "default": 1, "minimum": 1},
+            "page_size": {"type": "integer", "default": 20, "maximum": 100}
+        }
+    }
+}</code></pre>
+      <p>确认参数只能证明模型按要求填了字段，不能替代真正的人工审批。生产环境还要在 Gateway 层做权限校验和审批流；Schema 只是第一道结构约束。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="skills-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">Skills 封装</p><h2 id="skills-title">Function Calling 是 syscall，<br>Skill 是 SDK。</h2></div>
+      <p class="reading-intro">Function Calling 是 LLM 调用工具的底层机制，裸用会面临工具定义散落、无法复用、缺乏统一生命周期管理的问题。Skills 层在它之上做工程封装。</p>
+    </div>
+    <div class="prose">
+      <div class="ts-stack" aria-label="Skills、Function Calling 与底层工具的三层关系">
+        <div class="ts-layer skills">Skills 封装层<small>工具发现 · 参数校验 · 状态管理 · 错误处理 · 权限控制 · 日志审计</small></div>
+        <div class="ts-stack-arrow" aria-hidden="true"><b>↓</b>使用</div>
+        <div class="ts-layer fc">Function Calling 机制<small>模型级能力：LLM 生成结构化的工具调用请求</small></div>
+        <div class="ts-stack-arrow" aria-hidden="true"><b>↓</b>调用</div>
+        <div class="ts-layer tools">底层工具<small>API / DB / Code，实际执行</small></div>
+      </div>
+      <p class="ts-desc">离线可读示意：上层是工程封装，中层是模型能力，下层是实际执行。原图是 Mermaid，源码见下方折叠块。</p>
+      <details>
+        <summary>查看原文 Mermaid 源码（需在支持 Mermaid 的编辑器中渲染）</summary>
+        <pre><code>flowchart TD
+    subgraph SK["Skills 封装层 —— 让工具调用可控、可复用、可维护"]
+        A["工具发现 · 参数校验 · 状态管理&lt;br/&gt;错误处理 · 权限控制 · 日志审计"]
+    end
+    subgraph FC["Function Calling 机制 —— 模型级能力"]
+        B["LLM 生成结构化&lt;br/&gt;工具调用请求"]
+    end
+    subgraph TL["底层工具 —— 实际执行"]
+        C["API / DB / Code"]
+    end
+    SK --- FC
+    FC --- TL
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class A agent
+    class B proc
+    class C neutral</code></pre>
+      </details>
+
+      <h3>封装判断标准</h3>
+      <p>不是所有能力都需要封装成 Skill。原文给出的核心公式是：<strong>复用频次 × 调用复杂度 &gt; 手动调用成本</strong>。</p>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">判断是否需要封装为 Skill 的三个维度</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">高分：需要封装</th><th scope="col">低分：直接调用</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">复用频次</th><td>多个场景 / Agent 都会用</td><td>仅单次使用</td></tr>
+            <tr><th scope="row">调用复杂度</th><td>多步骤编排、需状态管理</td><td>单次 API 调用即可</td></tr>
+            <tr><th scope="row">出错成本</th><td>失败影响大，需要降级</td><td>失败可忽略或重试</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>粒度平衡</h3>
+      <p class="code-label">原文示意 · 太细、太粗与合适粒度</p>
+      <pre><code>太细（过度拆分）：               太粗（一个 skill 做太多事）：
+- search_user_skill              - do_everything_skill
+- filter_user_skill                （难以测试、难以复用）
+- sort_user_skill
+- paginate_user_skill
+  （编排开销大，LLM 容易选错）
+
+合适的粒度：
+- user_search_skill（包含搜索、过滤、分页的完整查询）</code></pre>
+      <p>太细会让 LLM 在多个相似工具间选错，太粗会让单个工具难以测试和复用。合适的粒度是按一次完整的用户意图切，而不是按每个内部函数切。</p>
+
+      <h3>工具数量管理</h3>
+      <p>工具过多会降低 LLM 的选择准确率。原文给出的固定观察如下：</p>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">工具数量与 LLM 选对概率、平均选择延迟的关系</caption>
+          <thead><tr><th scope="col">工具数量</th><th scope="col">LLM 选对概率</th><th scope="col">平均选择延迟</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">1–5</th><td>&gt; 95%</td><td class="num">+0.2s</td></tr>
+            <tr><th scope="row">6–10</th><td>85–95%</td><td class="num">+0.5s</td></tr>
+            <tr><th scope="row">11–20</th><td>70–85%</td><td class="num">+1.0s</td></tr>
+            <tr><th scope="row">20+</th><td>&lt; 70%</td><td class="num">+1.5s+</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文的解决方案是分类路由：先让 LLM 选类别，再暴露该类别的工具。</p>
+      <p class="code-label">原文代码 · 分类路由</p>
+      <pre><code>tool_categories = {
+    "数据查询": [search_users, search_orders, search_products],
+    "数据分析": [run_sql, generate_chart, export_csv],
+    "消息通知": [send_email, send_slack, create_ticket],
+}
+
+# 路由工具：让 LLM 先选类别
+{
+    "name": "route_to_category",
+    "description": "根据用户需求选择工具类别: 数据查询、数据分析、消息通知",
+    "input_schema": {
+        "properties": {
+            "category": {"type": "string", "enum": ["数据查询", "数据分析", "消息通知"]}
+        }
+    }
+}</code></pre>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">六个容易<br>被追问的点。</h2></div>
+      <p class="reading-intro">前两条是误区，后四条是面试追问；答案都来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“名称比描述重要。”</h3><p>恰恰相反。描述是 LLM 决定是否使用工具的核心依据，名称只是标识符。好的描述应明确说明用途、触发条件和排除条件。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“Schema 越详细越好。”</h3><p>过度复杂的 Schema 会消耗上下文窗口，且增加 LLM 出错概率。保持简洁，只定义必要的参数。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>工具太多（50+）怎么办？</h3><p>四条路：用命名空间分组；根据用户意图动态加载相关工具；用 Embedding 做工具检索（RAG for tools）；分层，先让 LLM 选类别，再加载该类别的工具。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>如何测试工具 Schema 的质量？</h3><p>构建测试用例集：一组用户查询加期望被选中的工具。运行后检查 LLM 的工具选择准确率；低于 90% 就需要优化描述。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 3</p>
+      <div><h3>Skill 和 Function Calling 的本质区别是什么？</h3><p>Function Calling 是模型级能力，LLM 生成结构化的工具调用请求；Skill 是工程级封装，在 Function Calling 之上加了生命周期管理、错误处理、降级策略和审计日志。类比：Function Calling 是 syscall，Skill 是 SDK。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 4</p>
+      <div><h3>如何判断一个能力是否需要封装成 Skill？</h3><p>三个维度打分：复用频次、调用复杂度、出错成本。多步骤编排、跨 Agent 复用、涉及外部系统交互的能力都应该封装；单次简单 API 调用不需要。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《如何为 LLM 定义和描述工具（Tool Schema）？》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://blog.promptlayer.com/how-json-schema-works-for-structured-outputs-and-tool-integration/" target="_blank" rel="noopener noreferrer">How JSON Schema Works for LLM Tools &amp; Structured Outputs · PromptLayer</a></li>
+          <li><a href="https://platform.openai.com/docs/guides/function-calling" target="_blank" rel="noopener noreferrer">Function Calling · OpenAI API Docs</a></li>
+          <li><a href="https://medium.com/@wangxj03/schema-generation-for-llm-function-calling-5ab29cecbd49" target="_blank" rel="noopener noreferrer">Schema Generation for LLM Function Calling · Medium</a></li>
+          <li><a href="https://github.com/imaurer/awesome-llm-json" target="_blank" rel="noopener noreferrer">awesome-llm-json · GitHub</a></li>
+          <li><a href="https://docs.anyscale.com/llm/serving/tool-function-calling" target="_blank" rel="noopener noreferrer">Configure Tool and Function Calling for LLMs · Anyscale</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>03-tool-use/022-tool-schema-design.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 3 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const TS_CHECKS = Object.freeze([
+    { key: "name", title: "名称语义化且带命名空间", note: "如 catalog.search_products，而不是 search。" },
+    { key: "what", title: "描述说明做什么", note: "写清功能范围，不能只写“搜索东西”。" },
+    { key: "when", title: "描述说明何时使用", note: "写出触发条件或典型用户意图。" },
+    { key: "notWhen", title: "描述说明何时不使用", note: "排除条件能挡住最容易误选的情况。" },
+    { key: "distinguish", title: "描述区分相似工具", note: "有相似工具时，说明该用哪一个。" },
+    { key: "types", title: "参数类型明确", note: "每个参数都有 type，嵌套对象也逐层声明。" },
+    { key: "constraints", title: "参数有约束或默认值", note: "enum、minimum/maximum、format、default 至少用上合适的。" },
+    { key: "required", title: "必填项明确", note: "required 列表和参数定义一致。" },
+    { key: "safety", title: "危险操作有确认或授权边界", note: "删除、退款等写操作要有 confirmation 或上游审批；只读工具不适用。" }
+  ]);
+
+  const TS_SAMPLES = Object.freeze([
+    {
+      label: "高质量只读工具",
+      grade: "优秀",
+      badge: "good",
+      description: "描述覆盖功能、触发条件、排除条件和相似工具；参数有枚举、默认值和范围；只读工具不涉及确认参数。",
+      json: `{
+  "name": "catalog.search_products",
+  "description": "在产品目录中搜索产品信息，包括名称、价格、库存和规格。当用户询问产品详情、价格比较或库存查询时使用。不适用于订单状态或用户账户信息，请改用 orders.query 或 users.get_profile。",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "query": {
+        "type": "string",
+        "description": "搜索关键词或自然语言问题"
+      },
+      "category": {
+        "type": "string",
+        "enum": ["all", "hardware", "software"],
+        "description": "产品类别，默认 all"
+      },
+      "max_results": {
+        "type": "integer",
+        "default": 5,
+        "minimum": 1,
+        "maximum": 20,
+        "description": "返回的最大结果数量"
+      }
+    },
+    "required": ["query"]
+  }
+}`,
+      checks: { name: true, what: true, when: true, notWhen: true, distinguish: true, types: true, constraints: true, required: true, safety: "na" },
+      caption: "高质量定义：描述能直接指导选择，参数能直接指导校验。",
+      desc: "名称带命名空间，描述写清用途、触发和排除，参数有枚举、默认值、上下限和必填项。这是本页检查器的满分样例。",
+      action: "8 / 8 适用规则通过 · 固定教学样例",
+      fix: ["这是一个正例，不需要修复。实际项目仍要用查询测试集验证工具选择准确率。"]
+    },
+    {
+      label: "描述过差",
+      grade: "不合格",
+      badge: "bad",
+      description: "名称没有命名空间，描述只有“搜索东西”四个字；参数没有必填项和约束。它会被模型误选，也无法在执行前拦住坏参数。",
+      json: `{
+  "name": "search",
+  "description": "搜索东西",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "query": {
+        "type": "string"
+      }
+    }
+  }
+}`,
+      checks: { name: false, what: false, when: false, notWhen: false, distinguish: false, types: true, constraints: false, required: false, safety: "na" },
+      caption: "差描述：模型不知道搜什么、何时用、何时不用。",
+      desc: "这个工具只有一个字符串参数，连哪些字段必填都没写。名称、描述、约束三项都不合格，只剩“参数类型明确”一项通过。",
+      action: "1 / 8 适用规则通过 · 不建议上线",
+      fix: [
+        "名称改为带领域的 catalog.search_products。",
+        "描述补上功能、触发条件、排除条件和相似工具：说明搜索产品目录，不用于订单或用户信息。",
+        "给 query 增加必填，给 category 增加 enum，给 max_results 增加类型、默认值和范围。"
+      ]
+    },
+    {
+      label: "一个工具做太多",
+      grade: "偏宽",
+      badge: "mid",
+      description: "一个工具包揽 CRM 的所有操作，参数多且 action 没有枚举。描述越宽，模型越难判断何时该用；执行层也很难做权限和测试。",
+      json: `{
+  "name": "crm.do_everything",
+  "description": "处理 CRM 的所有操作，包括搜索联系人、创建线索、更新商机、发送邮件、生成报表、导入导出数据。任何 CRM 相关问题都可以调用。",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "action": { "type": "string" },
+      "payload": { "type": "object" },
+      "filters": { "type": "array", "items": { "type": "string" } },
+      "options": { "type": "object" },
+      "notify": { "type": "boolean" },
+      "dry_run": { "type": "boolean" },
+      "format": { "type": "string" },
+      "target": { "type": "string" },
+      "scope": { "type": "string" },
+      "template": { "type": "string" }
+    }
+  }
+}`,
+      checks: { name: true, what: true, when: false, notWhen: false, distinguish: false, types: true, constraints: false, required: false, safety: false },
+      caption: "过宽工具：动作、对象、权限都混在一个入口里。",
+      desc: "名称有命名空间，功能也算写清了，但“任何 CRM 相关问题都可以调用”等于没有排除条件。action 没有枚举，10 个参数没有 required，写操作也没有确认或授权边界。",
+      action: "3 / 9 适用规则通过 · 需要拆分",
+      fix: [
+        "按用户意图拆成 crm.search_contacts、crm.create_lead、crm.update_opportunity 等工具。",
+        "每个工具只保留完成该意图所需的参数，action 改成 enum 或直接去掉。",
+        "写操作增加 confirmation 或交给上游审批，并在描述里写清何时不该调用。"
+      ]
+    },
+    {
+      label: "危险操作缺确认",
+      grade: "有风险",
+      badge: "mid",
+      description: "描述写了“不可逆”，但 Schema 只有 record_id，没有 confirmation 或授权字段。模型可以直接请求删除，执行层没有结构上的第二道门。",
+      json: `{
+  "name": "billing.delete_invoice",
+  "description": "删除发票记录。这是不可逆操作。",
+  "input_schema": {
+    "type": "object",
+    "properties": {
+      "invoice_id": {
+        "type": "string",
+        "description": "要删除的发票 ID"
+      }
+    },
+    "required": ["invoice_id"]
+  }
+}`,
+      checks: { name: true, what: true, when: false, notWhen: false, distinguish: false, types: true, constraints: false, required: true, safety: false },
+      caption: "危险操作：描述提醒了不可逆，却没有结构上的确认。",
+      desc: "名称、功能、类型和必填项都合格；但描述没有写何时不该删除、和作废操作的区别，ID 没有格式约束，也没有 confirmation 或授权字段。",
+      action: "4 / 9 适用规则通过 · 必须补安全边界",
+      fix: [
+        "增加必填的 confirmation 字段，枚举值只允许 confirmed；或在 Gateway 层强制人工审批。",
+        "描述补上排除条件：不要用于作废、冲红等可逆操作，并说明与 billing.void_invoice 的区别。",
+        "给 invoice_id 增加格式约束，例如前缀或长度。"
+      ]
+    }
+  ]);
+
+  const tsState = { index: 0, onlyFail: false };
+  const tsById = (id) => document.getElementById(id);
+
+  function tsRenderChecks(sample) {
+    const list = tsById("ts-checks");
+    list.textContent = "";
+    let passed = 0;
+    let applicable = 0;
+    TS_CHECKS.forEach((check) => {
+      const result = sample.checks[check.key];
+      if (result !== "na") {
+        applicable += 1;
+        if (result) passed += 1;
+      }
+      if (tsState.onlyFail && result !== false) return;
+
+      const li = document.createElement("li");
+      li.className = "ts-check " + (result === "na" ? "na" : result ? "ok" : "bad");
+      const mark = document.createElement("span");
+      mark.className = "ts-check-mark";
+      mark.textContent = result === "na" ? "N/A" : result ? "通过" : "未过";
+      const body = document.createElement("div");
+      const title = document.createElement("span");
+      title.className = "ts-check-title";
+      title.textContent = check.title;
+      const note = document.createElement("span");
+      note.className = "ts-check-note";
+      note.textContent = result === "na" ? "不适用：" + check.note : check.note;
+      body.append(title, note);
+      li.append(mark, body);
+      list.append(li);
+    });
+
+    if (tsState.onlyFail && list.children.length === 0) {
+      const li = document.createElement("li");
+      li.className = "ts-check ok";
+      li.textContent = "这个样例没有未通过项。";
+      list.append(li);
+    }
+
+    tsById("ts-score").textContent = `${passed} / ${applicable}`;
+    tsById("ts-score-label").textContent = "适用规则通过";
+    const grade = tsById("ts-grade");
+    grade.textContent = sample.grade;
+    grade.className = "ts-badge " + sample.badge;
+    tsById("ts-fix").hidden = false;
+    const fixList = tsById("ts-fix-list");
+    fixList.textContent = "";
+    sample.fix.forEach((item) => {
+      const li = document.createElement("li");
+      li.textContent = item;
+      fixList.append(li);
+    });
+  }
+
+  function tsRender(announce = true) {
+    const sample = TS_SAMPLES[tsState.index];
+    tsById("ts-position").textContent = `样例 ${tsState.index + 1} / ${TS_SAMPLES.length}`;
+    tsById("ts-schema-title").textContent = sample.label;
+    tsById("ts-sample-desc").textContent = sample.description;
+    tsById("ts-json").textContent = sample.json;
+    const badge = tsById("ts-badge");
+    badge.textContent = sample.grade;
+    badge.className = "ts-badge " + sample.badge;
+    tsRenderChecks(sample);
+    tsById("ts-caption-index").textContent = `图 1 · 第 ${tsState.index + 1} / ${TS_SAMPLES.length} 个样例`;
+    tsById("ts-caption-title").textContent = sample.caption;
+    tsById("ts-caption-desc").textContent = sample.desc;
+    tsById("ts-action").textContent = sample.action;
+    tsById("ts-state-summary").textContent = `样例 ${tsState.index + 1} / ${TS_SAMPLES.length} · 没有连接模型`;
+
+    document.querySelectorAll("#explainer [data-sample]").forEach((button) => {
+      if (Number(button.dataset.sample) === tsState.index) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    tsById("ts-prev").disabled = tsState.index === 0;
+    tsById("ts-next").disabled = tsState.index === TS_SAMPLES.length - 1;
+    tsById("ts-next").textContent = tsState.index === TS_SAMPLES.length - 1 ? "已到最后" : "下一个 →";
+
+    if (announce) {
+      const passed = Object.values(sample.checks).filter((value) => value === true).length;
+      const applicable = Object.values(sample.checks).filter((value) => value !== "na").length;
+      tsById("ts-announcement").textContent = `样例 ${tsState.index + 1}，${sample.label}。${passed} / ${applicable} 条适用规则通过。${sample.action}`;
+    }
+  }
+
+  function tsGoto(index) {
+    tsState.index = Math.max(0, Math.min(TS_SAMPLES.length - 1, index));
+    tsRender(true);
+  }
+
+  tsById("ts-prev").addEventListener("click", () => tsGoto(tsState.index - 1));
+  tsById("ts-next").addEventListener("click", () => tsGoto(tsState.index + 1));
+  tsById("ts-reset").addEventListener("click", () => {
+    tsState.index = 0;
+    tsState.onlyFail = false;
+    tsById("ts-only-fail").checked = false;
+    tsRender(true);
+  });
+  document.querySelectorAll("#explainer [data-sample]").forEach((button) => {
+    button.addEventListener("click", () => tsGoto(Number(button.dataset.sample)));
+  });
+  tsById("ts-only-fail").addEventListener("change", (event) => {
+    tsState.onlyFail = event.target.checked;
+    tsRenderChecks(TS_SAMPLES[tsState.index]);
+    tsById("ts-announcement").textContent = tsState.onlyFail ? "已切换为只看未通过项。" : "已显示全部检查项。";
+  });
+
+  tsRender(false);
+</script>
+</body>
+</html>

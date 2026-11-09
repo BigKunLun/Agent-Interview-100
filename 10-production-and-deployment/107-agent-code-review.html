@@ -1,0 +1,912 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>代码 Review 题：找出这段 Agent 代码中的设计问题并修复 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .cr-banner { display: flex; align-items: flex-start; gap: 9px; margin: var(--s-4) var(--s-6) 0; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .cr-banner::before { content: "教学"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .cr-banner strong { color: #4d3000; }
+  .cr-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid transparent; border-radius: 999px; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .cr-neutral { background: #eef1ee; color: #3f463f; border-color: #c9cec9; }
+  .cr-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .cr-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .cr-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .cr-bad { background: #fbecec; color: #8a1f1f; border-color: #d9a3a3; }
+  .cr-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: var(--s-4); align-items: start; }
+  .cr-panel { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3); }
+  .cr-panel-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 5px; margin-bottom: var(--s-2); }
+  .cr-panel-head b { font: 600 12px/1.5 var(--sans); }
+  .cr-panel-head span { font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .cr-code { max-height: 420px; overflow: auto; margin-top: 0; background: #ebede7; border-radius: 6px; padding: 10px 0; font-size: 11px; line-height: 1.75; }
+  .cr-code code { display: block; font-size: inherit; }
+  .cr-line { display: flex; width: max-content; min-width: 100%; }
+  .cr-line.cr-hl { background: #fdf3e3; box-shadow: inset 3px 0 0 #b98a2f; }
+  .cr-num { flex: 0 0 38px; padding-right: 10px; text-align: right; color: #6b706b; user-select: none; }
+  .cr-text { white-space: pre; padding-right: 14px; }
+  .cr-progress { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: var(--s-2); }
+  .cr-progress b { font: 600 12px/1.5 var(--sans); }
+  .cr-progress span { font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .cr-bar { height: 5px; border-radius: 999px; background: var(--surface-soft); overflow: hidden; margin-bottom: var(--s-3); }
+  .cr-bar span { display: block; height: 100%; background: #194f87; transition: width var(--fast) var(--ease); }
+  .cr-checks { display: grid; gap: 5px; }
+  .cr-check { width: 100%; display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; gap: 7px; align-items: center; padding: 7px 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); text-align: left; }
+  .cr-check:hover { background: var(--surface-soft); }
+  .cr-check[aria-pressed="true"] { border-color: #194f87; background: #eaf1f8; }
+  .cr-check-box { display: inline-grid; place-items: center; width: 18px; height: 18px; border: 1px solid var(--border-bright); border-radius: 4px; background: var(--surface); color: transparent; font: 12px/1 var(--mono); }
+  .cr-check.is-checked .cr-check-box { background: #14532d; border-color: #14532d; color: #fff; }
+  .cr-check b { display: block; font: 600 11px/1.5 var(--sans); }
+  .cr-check small { display: block; margin-top: 1px; font: 9px/1.5 var(--mono); color: var(--text-dim); overflow-wrap: anywhere; }
+  .cr-finding { margin-top: var(--s-3); border-top: 1px solid var(--border); padding-top: var(--s-3); }
+  .cr-finding h3 { font: 600 16px/1.4 var(--serif); }
+  .cr-finding p { margin-top: var(--s-2); font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .cr-finding .cr-risk { margin-top: var(--s-2); padding: 7px 9px; border-left: 3px solid #8a1f1f; background: #fbecec; color: #6d1717; font-size: 11px; line-height: 1.7; }
+  .cr-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: var(--s-3); }
+  .cr-chip { min-height: 35px; padding: 5px 10px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: 10px; color: var(--text-dim); }
+  .cr-chip:hover { border-color: #194f87; }
+  .cr-chip[aria-pressed="true"] { background: #194f87; border-color: #194f87; color: #fff; font-weight: 600; }
+  .cr-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
+  .cr-pair section { min-width: 0; }
+  .cr-pair .code-label { margin-top: 0; }
+  .cr-pair pre { max-height: 230px; overflow: auto; font-size: 11px; line-height: 1.7; }
+  .cr-explain { margin-top: var(--s-3); padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .cr-explain b { font: 600 12px/1.5 var(--sans); }
+  .cr-explain p { margin-top: 3px; font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .cr-explain p.cr-risk { color: #6d1717; }
+  .cr-fixed-wrap { max-height: 460px; }
+  .cr-table-wide { min-width: 760px; }
+  .cr-table td:first-child, .cr-table th:first-child { min-width: 3.2em; }
+  .cr-fixed-note { display: inline-block; margin-top: var(--s-3); padding: 3px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  .cr-diff-table td:first-child { min-width: 8em; }
+  .cr-code-note { margin-top: var(--s-3); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .cr-secure { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-3); }
+  .cr-secure div { padding: 8px 10px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); font-size: 10px; line-height: 1.6; }
+  .cr-secure b { display: block; font: 600 11px/1.5 var(--mono); color: #194f87; }
+  @media (max-width: 1000px) {
+    .cr-grid { grid-template-columns: 1fr; }
+    .cr-secure { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px) {
+    .cr-banner { margin-inline: var(--s-4); }
+    .cr-pair { grid-template-columns: 1fr; }
+    .cr-code { max-height: 340px; }
+    .cr-fixed-wrap { max-height: 380px; }
+    .cr-num { flex-basis: 30px; padding-right: 7px; }
+    .cr-secure { grid-template-columns: 1fr; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">107 / Agent 代码 Review</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 20 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="104-agent-production-troubleshooting.html">← 上一页 · 场景题</a><span class="disabled">下一页 →</span></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Production &amp; Deployment · 可交互讲解</p>
+      <h1>这段代码能跑，<br>但上不了生产。</h1>
+    </div>
+    <div>
+      <p class="lead">Agent 代码跑在一个自主循环里，每一轮都可能调用 LLM 和外部工具。Review 不能只看“逻辑对不对”，还要查六个维度：循环保护、工具超时、结构化错误、Prompt 版本、可观测性、敏感操作确认。</p>
+      <p class="definition"><strong>关键边界：</strong>本页是代码审查演示，问题代码和修复代码都只作为转义文本展示，不执行、不调用模型或工具，也不声称实际运行或测试通过。行号为本页显示编号，不对应源文件行号。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Code Review</span><span class="pill">六维检查</span><span class="pill">代码只展示</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="cr-title">
+    <div class="player-top">
+      <div class="player-label">代码审查台 <small>问题代码 · 六维检查 · 修复对比</small></div>
+      <div class="controls" role="group" aria-label="代码审查演示控制">
+        <button type="button" class="button button-quiet" id="cr-reset">重置</button>
+        <button type="button" class="button" id="cr-back" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="cr-next">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="代码审查演示阶段">
+      <ol style="--stages: 3">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>问题代码</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>修复对比</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>完整修复</button></li>
+      </ol>
+    </nav>
+    <p class="cr-banner"><span><strong>本页只做代码审查演示，不执行任何代码。</strong>问题代码与修复代码均为固定文本，不调用 LLM、不读写文件、不连接数据库；本页也没有运行测试，不能据此声称修复已通过验证。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="cr-index">阶段 1 / 3 · 代码只展示，不执行</p>
+      <h2 id="cr-title">先通读，再按六个维度逐项查。</h2>
+      <p id="cr-subtitle">这段 SimpleAgent 能跑通 demo，但藏着六个生产级问题。点右侧维度，代码会跳到对应行，并记录检查进度。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="cr-scene"></div>
+      <p class="demo-note" id="cr-note">固定演示代码：行号为本页显示编号；代码只作转义文本展示，不执行，也不代表真实运行结果。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学代码 · 6 个审查维度 · 3 个阶段</span><span id="cr-summary">阶段 1 / 3 · 已检查 0 / 6</span></div>
+  </section>
+  <p id="cr-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">为什么不一样</p><h2 id="why-title">普通代码跑一次，<br>Agent 代码跑一圈。</h2></div>
+      <p class="reading-intro">普通函数是确定性、单次执行；Agent 是非确定性、多步循环、带外部副作用。循环里的每一步都可能放大成本和风险。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data cr-diff-table">
+          <caption class="sr-only">原文的普通代码 Review 与 Agent 代码 Review 对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">普通代码 Review</th><th scope="col">Agent 代码 Review</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">执行模型</th><td>输入 → 函数逻辑 → 输出</td><td>输入 → LLM 推理 → 工具调用 → 结果，循环</td></tr>
+            <tr><th scope="row">关键特征</th><td>确定性、单次执行</td><td>不确定性、多步循环、外部副作用</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>第一组 · 六维检查表：</strong>来自简短回答，直接对应问题代码的六个问题：循环保护、工具超时、结构化错误、Prompt 版本、可观测性、敏感操作确认。本页的交互面板和“六维检查表”按这一组展开。</p>
+      <p><strong>第二组 · 六个额外 Review 维度：</strong>来自 Review 差异对比表之后，是 Agent 代码相对普通代码额外要看的六个面：循环边界、成本上限、权限与安全、可观测性、Prompt 版本管理、超时与重试。两组不是一一对应：例如“权限与安全”同时覆盖敏感操作确认和权限设计；“超时与重试”同时涉及工具超时和错误处理。本页分开介绍，不把它们强行合并。</p>
+      <div class="callout">
+        <p class="callout-label">审查时先问一句</p>
+        <p>这段代码如果被模型“误解”一次，最坏会发生什么？会不会无限烧钱、会不会阻塞所有人、会不会删掉不可逆的数据、能不能回溯？四个问题对应的就是第一组六维里的核心风险。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="six-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">六维检查表</p><h2 id="six-title">六个问题，<br>三种风险等级。</h2></div>
+      <p class="reading-intro">原文的对比表按问题、原始代码、修复方案和风险等级排列。循环保护、工具超时、敏感操作是“严重”；其余三项是“中等”。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data cr-table-wide cr-table">
+          <caption class="sr-only">原文六大问题与修复方案</caption>
+          <thead><tr><th scope="col">#</th><th scope="col">问题</th><th scope="col">原始代码</th><th scope="col">修复方案</th><th scope="col">风险</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">1</th><td>无循环保护</td><td><code>while True</code> 无退出条件</td><td><code>for step in range(max_steps)</code> + 异常</td><td><span class="cr-badge cr-bad">严重</span></td></tr>
+            <tr><th scope="row">2</th><td>工具无超时</td><td><code>requests.get()</code> 无 timeout</td><td><code>httpx.get(timeout=10.0)</code></td><td><span class="cr-badge cr-bad">严重</span></td></tr>
+            <tr><th scope="row">3</th><td>错误处理粗暴</td><td><code>except Exception</code> + <code>print</code></td><td>分层捕获 + <code>logging</code> + JSON 返回</td><td><span class="cr-badge cr-warn">中等</span></td></tr>
+            <tr><th scope="row">4</th><td>Prompt 硬编码</td><td>字符串写死在 <code>__init__</code></td><td><code>PromptRegistry</code> 外部加载 + 版本管理</td><td><span class="cr-badge cr-warn">中等</span></td></tr>
+            <tr><th scope="row">5</th><td>无可观测性</td><td>零日志、零追踪</td><td><code>trace_id</code> + <code>logging</code> + Token 埋点</td><td><span class="cr-badge cr-warn">中等</span></td></tr>
+            <tr><th scope="row">6</th><td>敏感操作无确认</td><td><code>delete_file</code> 直接执行</td><td><code>SENSITIVE_TOOLS</code> + Human-in-the-Loop</td><td><span class="cr-badge cr-bad">严重</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cr-fixed-note">六个问题、修复方向与风险等级来自原文</p>
+      <h3>三个“严重”为什么严重</h3>
+      <p>循环保护缺失，一次模型幻觉可能把 Token 账单放大几百倍；工具无超时，一个外部 API 卡住会阻塞整个进程，连带影响其他用户；敏感操作无确认，删文件和执行 SQL 都是不可逆的，模型一次误判就可能造成数据损失。</p>
+      <p>三个“中等”不是不重要，而是它们更容易在事故后被补救：错误处理影响的是模型能否正确决策，Prompt 硬编码影响的是可复现和可回滚，可观测性影响的是事后能不能查。它们共同决定下一次故障的排查速度。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="review-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">逐项要点</p><h2 id="review-title">每条修复，<br>都要回答一个风险。</h2></div>
+      <p class="reading-intro">下面六条按原文的顺序整理。修复代码是原文片段，本页只展示，不执行。</p>
+    </div>
+    <div class="prose">
+      <h3>1. 循环保护</h3>
+      <p><code>while True</code> 没有退出条件。模型若反复生成 tool_calls 而不返回最终回答，Agent 会无限循环消耗 Token。修复是用 <code>for step in range(max_steps)</code>，循环结束仍没完成就抛 <code>AgentLoopLimitError</code>。</p>
+      <h3>2. 工具超时</h3>
+      <p><code>requests.get</code> 默认没有超时。外部 API 无响应时会一直等，阻塞整个进程。修复是换 <code>httpx</code> 并显式设置 <code>timeout=10.0</code>。</p>
+      <h3>3. 结构化错误处理</h3>
+      <p><code>except Exception</code> 加 <code>print</code> 有三个缺陷：吞掉所有异常（包括 <code>MemoryError</code>）；<code>print</code> 无法被监控系统捕获；LLM 只收到模糊的 Error 字符串，无法判断该重试还是放弃。修复是分层捕获 <code>KeyError</code>、<code>TimeoutError</code> 和兜底异常，用 <code>logging</code> 记录，并返回结构化 JSON。</p>
+      <h3>4. Prompt 版本管理</h3>
+      <p>System prompt 直接写在 <code>__init__</code> 里，无法 A/B 测试、无法版本管理、无法热更新；其中“如果不确定，就多试几次”还会直接鼓励盲目重试。修复是 <code>PromptRegistry</code> 从外部 YAML 加载，并按版本取用。</p>
+      <h3>5. 可观测性</h3>
+      <p>原文代码零 logging、零 tracing、零 metrics。生产出问题时无法回溯 Agent 走了几步、调用了哪些工具、每步耗时和 Token 消耗。修复是生成 <code>trace_id</code>，每一步记录耗时、输入输出 token 和工具名。</p>
+      <h3>6. 敏感操作确认</h3>
+      <p><code>delete_file</code>、<code>execute_sql</code> 直接执行，模型幻觉或 prompt injection 都可能造成不可逆破坏。修复是把敏感工具放进 <code>SENSITIVE_TOOLS</code>，执行前请求人工确认；拒绝就返回结构化错误，而不是继续执行。</p>
+      <p class="cr-code-note">以上修复代码均来自原文，只作展示；本页未运行、未测试，不能据此判断代码可上线。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="secure-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">Checklist</p><h2 id="secure-title">SECURE 六条，<br>每次 PR 过一遍。</h2></div>
+      <p class="reading-intro">原文给了一个助记法，把六个审查维度压成六个字母。它不是标准，只是一个便于逐条核对的清单。</p>
+    </div>
+    <div class="prose">
+      <div class="cr-secure">
+        <div><b>S · Steps Limit</b>最大步数：循环有没有硬上限？</div>
+        <div><b>E · Error Handling</b>分层处理 + 结构化返回，不用 <code>print</code> 吞异常。</div>
+        <div><b>C · Cost Guard</b>Token 与费用上限，超限就终止或降级。</div>
+        <div><b>U · User Confirmation</b>敏感操作必须人工确认。</div>
+        <div><b>R · Replay &amp; Trace</b><code>trace_id</code> 可回溯每一步。</div>
+        <div><b>E · External Timeout</b>所有外部调用都要有超时。</div>
+      </div>
+      <p class="cr-fixed-note">SECURE 助记法来自原文；本页未把它扩展成新的标准</p>
+      <h3>单元测试分三层</h3>
+      <p>原文建议：第一层工具函数单测，Mock 外部依赖，验证正常、超时、异常；第二层 Agent 循环单测，Mock LLM 返回固定的 tool_calls 序列，验证 max_steps 触发和敏感工具拦截；第三层集成 Eval，真实 LLM 加沙箱环境验证端到端完成率。</p>
+      <p>关键原则是不要断言 LLM 的具体输出，而是断言 Agent 的行为属性：是否限步完成、是否拦截危险操作、是否生成完整 trace。具体输出会随模型变化，行为属性才是可回归的。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">两个误区，<br>两个追问。</h2></div>
+      <p class="reading-intro">Agent 代码不能套用普通 Review 标准；加了 try-catch 也不等于处理了错误。Checklist 和单元测试是常见追问。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <div class="misconception-label">误区 01</div>
+        <div><h3>“Agent 代码和普通代码的 Review 标准一样”</h3><p>Agent 代码的核心特征是非确定性循环加外部副作用。普通 Review 关注逻辑正确性和代码风格，Agent 代码还必须审查循环边界、成本控制、权限隔离、可观测性等维度。忽略这些维度的 Review 等于没有 Review，建议维护专门的 Agent Code Review Checklist。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 02</div>
+        <div><h3>“加了 try-catch 就算处理了错误”</h3><p><code>except Exception</code> 配 <code>print</code> 是最危险的“伪处理”。生产级错误处理需要分层捕获（区分可重试与致命错误）、结构化返回（让 LLM 根据错误类型决策）、持久化记录（logging 而非 print）。Agent 的错误信息会反馈给 LLM，格式化 JSON 远比 “Error: something went wrong” 有用。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 03</div>
+        <div><h3>如何设计 Agent 代码审查 Checklist？</h3><p>按 SECURE 助记法组织：Steps Limit、Error Handling、Cost Guard、User Confirmation、Replay &amp; Trace、External Timeout。每次 PR Review 逐条过一遍，系统性覆盖六个维度。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 04</div>
+        <div><h3>如何为 Agent 编写单元测试？</h3><p>分三层：工具函数单测（Mock 外部依赖，验证正常、超时、异常）；Agent 循环单测（Mock LLM 返回固定 tool_calls 序列，验证 max_steps 和敏感工具拦截）；集成 Eval（真实 LLM + 沙箱，验证端到端完成率）。不断言具体输出，只断言行为属性。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="sources-title">
+    <p class="eyebrow">参考资料</p>
+    <h2 class="source-heading" id="sources-title">原文引用与延伸阅读</h2>
+    <p class="source-summary">以下链接来自原文。只有主动点击外链才会离开本页；本页不加载任何外部资源。</p>
+    <details>
+      <summary>展开 5 条参考资料</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.anthropic.com/engineering/building-effective-agents" rel="noreferrer noopener">Building Effective Agents (Anthropic)</a></li>
+          <li><a href="https://lilianweng.github.io/posts/2023-06-23-agent/" rel="noreferrer noopener">LLM Powered Autonomous Agents (Lilian Weng)</a></li>
+          <li><a href="https://platform.openai.com/docs/guides/function-calling" rel="noreferrer noopener">OpenAI Function Calling Guide (OpenAI)</a></li>
+          <li><a href="https://langfuse.com/docs" rel="noreferrer noopener">Observability for LLM Applications (Langfuse Docs)</a></li>
+          <li><a href="https://blog.langchain.dev/human-in-the-loop/" rel="noreferrer noopener">Human-in-the-Loop Patterns for AI Agents (LangChain Blog)</a></li>
+        </ul>
+        <p class="source-footnote">问题与修复代码按原文呈现；原文注释中的对勾和警告符号改为文字标记，代码本身未执行、未测试。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>10-production-and-deployment/107-agent-code-review.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 6 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const PROBLEM_CODE = String.raw`import json
+import openai
+
+class SimpleAgent:
+    def __init__(self, model="gpt-4o"):
+        self.model = model
+        self.client = openai.OpenAI()
+        self.messages = [
+            {"role": "system", "content": "你是一个全能助手，可以调用工具完成任务。"
+             "当用户让你做某件事时，直接调用对应工具执行。"
+             "如果不确定，就多试几次。"}
+        ]
+        self.tools = {
+            "search_web": self.search_web,
+            "read_file": self.read_file,
+            "write_file": self.write_file,
+            "delete_file": self.delete_file,
+            "execute_sql": self.execute_sql,
+        }
+
+    def run(self, user_input: str) -> str:
+        self.messages.append({"role": "user", "content": user_input})
+        while True:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=self.messages,
+                tools=self._get_tool_schemas(),
+            )
+            msg = response.choices[0].message
+            self.messages.append(msg)
+            if msg.tool_calls:
+                for tool_call in msg.tool_calls:
+                    name = tool_call.function.name
+                    args = json.loads(tool_call.function.arguments)
+                    try:
+                        result = self.tools[name](**args)
+                    except Exception as e:
+                        result = f"Error: {e}"
+                        print(f"工具调用失败: {e}")
+                    self.messages.append({
+                        "role": "tool",
+                        "tool_call_id": tool_call.id,
+                        "content": str(result),
+                    })
+            else:
+                return msg.content
+
+    def search_web(self, query: str) -> str:
+        import requests
+        resp = requests.get("https://api.search.com/v1/search", params={"q": query})
+        return resp.json()["results"]
+
+    def read_file(self, path: str) -> str:
+        with open(path) as f:
+            return f.read()
+
+    def write_file(self, path: str, content: str) -> str:
+        with open(path, "w") as f:
+            f.write(content)
+        return f"已写入 {path}"
+
+    def delete_file(self, path: str) -> str:
+        import os
+        os.remove(path)
+        return f"已删除 {path}"
+
+    def execute_sql(self, sql: str) -> str:
+        import sqlite3
+        conn = sqlite3.connect("app.db")
+        cursor = conn.execute(sql)
+        results = cursor.fetchall()
+        conn.close()
+        return str(results)
+
+    def _get_tool_schemas(self) -> list:
+        return [...]  # 省略 schema 定义`;
+
+  const FIXED_CODE = String.raw`import json, time, uuid, yaml, httpx, logging
+from pathlib import Path
+import openai
+
+logger = logging.getLogger(__name__)
+
+class AgentLoopLimitError(Exception):
+    pass
+
+class PromptRegistry:
+    def __init__(self, prompt_dir="prompts/"):
+        self.prompt_dir = Path(prompt_dir)
+    def load(self, name: str, version: str = "latest") -> str:
+        with open(self.prompt_dir / f"{name}.{version}.yaml") as f:
+            return yaml.safe_load(f)["content"]
+
+SENSITIVE_TOOLS = {"delete_file", "execute_sql", "write_file"}
+
+class ProductionAgent:
+    """生产级 Agent，覆盖六大设计维度"""
+    def __init__(self, model="gpt-4o", prompt_version="latest"):
+        self.client = openai.OpenAI()
+        self.model = model
+        # [修复] Prompt 外部化
+        prompt = PromptRegistry().load("agent_system", prompt_version)
+        self.messages = [{"role": "system", "content": prompt}]
+        self.tools = {
+            "search_web": self.search_web,  "read_file": self.read_file,
+            "write_file": self.write_file,  "delete_file": self.delete_file,
+            "execute_sql": self.execute_sql,
+        }
+
+    def run(self, user_input: str, max_steps: int = 25) -> str:
+        trace_id = str(uuid.uuid4())[:8]
+        self.messages.append({"role": "user", "content": user_input})
+        logger.info("[%s] Agent 启动 | input=%s", trace_id, user_input[:100])
+        # [修复] 循环保护
+        for step in range(max_steps):
+            t0 = time.monotonic()
+            response = self.client.chat.completions.create(
+                model=self.model, messages=self.messages,
+                tools=self._get_tool_schemas(),
+            )
+            msg = response.choices[0].message
+            self.messages.append(msg)
+            # [修复] 可观测性
+            usage = response.usage
+            logger.info("[%s] Step %d/%d | %.2fs | tokens=%d+%d",
+                        trace_id, step+1, max_steps, time.monotonic()-t0,
+                        usage.prompt_tokens, usage.completion_tokens)
+            if not msg.tool_calls:
+                logger.info("[%s] 完成 | steps=%d", trace_id, step+1)
+                return msg.content
+            for tc in msg.tool_calls:
+                result = self._safe_call(tc.function.name,
+                    json.loads(tc.function.arguments), trace_id)
+                self.messages.append({"role": "tool",
+                    "tool_call_id": tc.id, "content": result})
+        raise AgentLoopLimitError(f"[{trace_id}] 超过 {max_steps} 步")
+
+    def _safe_call(self, name: str, args: dict, trace_id: str) -> str:
+        # [修复] 敏感操作拦截
+        if name in SENSITIVE_TOOLS:
+            if not self._human_approve(name, args):
+                return json.dumps({"error": "rejected"})
+        # [修复] 分层错误处理
+        try:
+            t0 = time.monotonic()
+            result = self.tools[name](**args)
+            logger.info("[%s] tool=%s | %.2fs", trace_id, name, time.monotonic()-t0)
+            return str(result)
+        except KeyError:
+            logger.error("[%s] 未知工具: %s", trace_id, name)
+            return json.dumps({"error": "tool_not_found", "name": name})
+        except (httpx.TimeoutException, TimeoutError) as e:
+            logger.warning("[%s] 超时: %s", trace_id, name)
+            return json.dumps({"error": "timeout", "tool": name})
+        except Exception as e:
+            logger.exception("[%s] 异常: %s", trace_id, name)
+            return json.dumps({"error": "internal", "detail": str(e)})
+
+    def _human_approve(self, tool: str, args: dict) -> bool:
+        print(f"\n[敏感操作] {tool}\n    参数: {json.dumps(args, ensure_ascii=False)}")
+        return input("允许? [y/N]: ").strip().lower() == "y"
+
+    # [修复] 工具实现（带超时）
+    def search_web(self, query: str) -> str:
+        return httpx.get("https://api.search.com/v1/search",
+                         params={"q": query}, timeout=10.0).json()["results"]
+    def read_file(self, path: str) -> str:
+        with open(path) as f: return f.read()
+    def write_file(self, path: str, content: str) -> str:
+        with open(path, "w") as f: f.write(content)
+        return f"已写入 {path}"
+    def delete_file(self, path: str) -> str:
+        import os; os.remove(path); return f"已删除 {path}"
+    def execute_sql(self, sql: str) -> str:
+        import sqlite3
+        conn = sqlite3.connect("app.db")
+        r = conn.execute(sql).fetchall(); conn.close(); return str(r)
+    def _get_tool_schemas(self) -> list:
+        return [...]`;
+
+  const DIMENSIONS = Object.freeze([
+    {
+      key: "loop",
+      name: "循环保护",
+      short: "while True 无退出条件",
+      severity: "严重",
+      range: [23, 46],
+      check: "循环有没有硬上限？达到上限后会不会抛错？",
+      problem: "while True 没有退出条件。模型若反复生成 tool_calls 而不返回最终回答，Agent 会无限循环消耗 Token，一次失控可能烧掉数百美元。",
+      risk: "成本失控：Token 账单随循环步数线性放大，且没有停止信号。",
+      before: "while True:\n    response = self.client.chat.completions.create(...)",
+      after: "for step in range(max_steps):\n    ...\nraise AgentLoopLimitError(f\"超过 {max_steps} 步\")",
+      fixLabel: "for step in range(max_steps) + 异常"
+    },
+    {
+      key: "timeout",
+      name: "工具超时",
+      short: "requests.get() 无 timeout",
+      severity: "严重",
+      range: [48, 51],
+      check: "每个外部调用都有显式超时吗？超时后返回什么？",
+      problem: "requests.get 默认无超时。外部 API 无响应时会一直等，阻塞整个进程，连带影响其他用户请求。",
+      risk: "可用性：一个慢依赖可以拖住整个 Agent 进程，故障从外部 API 扩散到本地。",
+      before: "resp = requests.get(url, params={\"q\": query})",
+      after: "resp = httpx.get(url, params={\"q\": query}, timeout=10.0)",
+      fixLabel: "httpx + timeout=10.0"
+    },
+    {
+      key: "error",
+      name: "结构化错误",
+      short: "except Exception + print",
+      severity: "中等",
+      range: [35, 39],
+      check: "错误有没有分类？LLM 收到的是可判断的结构，还是模糊字符串？",
+      problem: "except Exception 加 print 会吞掉所有异常（包括 MemoryError）；print 不会被监控系统捕获；LLM 只收到模糊的 Error 字符串，无法判断该重试还是放弃。",
+      risk: "可诊断性：异常被吞，线上看不到真实原因；模型也无法根据错误类型做决策。",
+      before: "except Exception as e:\n    result = f\"Error: {e}\"\n    print(f\"工具调用失败: {e}\")",
+      after: "except KeyError:\n    ... tool_not_found ...\nexcept (httpx.TimeoutException, TimeoutError):\n    ... timeout ...\nexcept Exception:\n    logger.exception(...)",
+      fixLabel: "分层捕获 + logging + 结构化 JSON"
+    },
+    {
+      key: "prompt",
+      name: "Prompt 版本",
+      short: "System prompt 写死在 __init__",
+      severity: "中等",
+      range: [8, 12],
+      check: "Prompt 能不能版本化、回滚、A/B？有没有鼓励盲目重试的句子？",
+      problem: "System prompt 直接写在 __init__，无法 A/B 测试、无法版本管理、无法热更新。其中“如果不确定，就多试几次”直接鼓励盲目重试，会加剧循环失控。",
+      risk: "可复现性：Prompt 变了无法回滚，也无法判断行为变化来自模型还是提示词。",
+      before: "self.messages = [\n    {\"role\": \"system\", \"content\": \"...如果不确定，就多试几次。\"}\n]",
+      after: "prompt = PromptRegistry().load(\"agent_system\", prompt_version)\nself.messages = [{\"role\": \"system\", \"content\": prompt}]",
+      fixLabel: "PromptRegistry 外部加载 + 版本管理"
+    },
+    {
+      key: "obs",
+      name: "可观测性",
+      short: "零日志、零追踪",
+      severity: "中等",
+      range: [21, 46],
+      check: "出了问题能不能回答：走了几步、调了哪些工具、每步多久、花了多少 Token？",
+      problem: "原文代码零 logging、零 tracing、零 metrics。生产出问题时无法回溯 Agent 走了几步、调用了哪些工具、每步耗时和 Token 消耗；LLM 的不确定性让问题难以复现。",
+      risk: "事后诊断：没有 trace_id 和步骤日志，只能靠猜，无法把症状连回具体步骤。",
+      before: "def run(self, user_input: str) -> str:\n    self.messages.append(...)\n    while True:\n        response = ...",
+      after: "trace_id = str(uuid.uuid4())[:8]\nlogger.info(\"[%s] Step %d/%d | %.2fs | tokens=%d+%d\", ...)",
+      fixLabel: "trace_id + 结构化日志 + Token 埋点"
+    },
+    {
+      key: "hitl",
+      name: "敏感操作确认",
+      short: "delete_file / execute_sql 直接执行",
+      severity: "严重",
+      range: [62, 73],
+      check: "不可逆操作有没有分级、预览和人工确认？拒绝后返回什么？",
+      problem: "delete_file、execute_sql 直接执行。模型幻觉或 prompt injection 都可能让 Agent 删文件、改库；没有确认、没有备份、没有 dry-run，破坏不可逆。",
+      risk: "不可逆损失：一次误判就可能删掉有效数据；恢复只能靠外部备份。",
+      before: "def delete_file(self, path: str) -> str:\n    import os\n    os.remove(path)",
+      after: "if name in SENSITIVE_TOOLS:\n    if not self._human_approve(name, args):\n        return json.dumps({\"error\": \"rejected\"})",
+      fixLabel: "SENSITIVE_TOOLS + Human-in-the-Loop"
+    }
+  ]);
+
+  const STAGES = Object.freeze([
+    { nav: "问题代码", title: "先通读，再按六个维度逐项查。", subtitle: "这段 SimpleAgent 能跑通 demo，但藏着六个生产级问题。点右侧维度，代码会跳到对应行，并记录检查进度。" },
+    { nav: "修复对比", title: "左边是问题，右边是修复。", subtitle: "选一个维度，对照原文的修复片段；每次查看会记为已检查。代码只展示，不执行。" },
+    { nav: "完整修复", title: "六项都改完，才是一条生产级循环。", subtitle: "下面是原文的修复后完整代码和六维总结；本页没有运行它，也没有执行任何测试。" }
+  ]);
+
+  const state = { stage: 0, dim: "loop", checked: new Set() };
+  const byId = (id) => document.getElementById(id);
+
+  function esc(value) {
+    return String(value).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  }
+
+  function dimension() {
+    return DIMENSIONS.find((item) => item.key === state.dim) || DIMENSIONS[0];
+  }
+
+  function progressLabel() {
+    return `已检查 ${state.checked.size} / ${DIMENSIONS.length}`;
+  }
+
+  function codeBlock(code, range) {
+    return code.split("\n").map((line, index) => {
+      const n = index + 1;
+      const hit = range && n >= range[0] && n <= range[1];
+      return `<span class="cr-line${hit ? " cr-hl" : ""}"><span class="cr-num" aria-hidden="true">${n}</span><span class="cr-text">${esc(line) || " "}</span></span>`;
+    }).join("");
+  }
+
+  function dimensionButtons() {
+    return DIMENSIONS.map((item) => {
+      const checked = state.checked.has(item.key);
+      return `<button type="button" class="cr-check${checked ? " is-checked" : ""}" data-dim="${item.key}" aria-pressed="${item.key === state.dim}">
+        <span class="cr-check-box" aria-hidden="true">✓</span>
+        <span><b>${item.name}</b><small>${item.short}</small></span>
+        <span class="cr-badge ${item.severity === "严重" ? "cr-bad" : "cr-warn"}">${item.severity}</span>
+      </button>`;
+    }).join("");
+  }
+
+  function codeScene() {
+    const dim = dimension();
+    return `
+      <div class="cr-grid">
+        <section class="cr-panel" aria-label="问题代码">
+          <div class="cr-panel-head"><b>SimpleAgent · 问题代码</b><span>${PROBLEM_CODE.split("\n").length} 行 · 行号为本页编号</span></div>
+          <pre class="cr-code" tabindex="0" aria-label="问题代码，可用方向键滚动">${codeBlock(PROBLEM_CODE, dim.range)}</pre>
+        </section>
+        <section class="cr-panel" aria-label="六维检查">
+          <div class="cr-progress"><b>六维检查</b><span>${progressLabel()}</span></div>
+          <div class="cr-bar" aria-hidden="true"><span style="width:${(state.checked.size / DIMENSIONS.length) * 100}%"></span></div>
+          <div class="cr-checks">${dimensionButtons()}</div>
+          <div class="cr-finding">
+            <div class="cr-badge ${dim.severity === "严重" ? "cr-bad" : "cr-warn"}">${dim.severity}</div>
+            <h3>${dim.name}</h3>
+            <p><strong>审查问题：</strong>${dim.check}</p>
+            <p>${dim.problem}</p>
+            <p class="cr-risk"><strong>风险：</strong>${dim.risk}</p>
+          </div>
+        </section>
+      </div>
+      <p class="cr-fixed-note">固定教学代码：只作转义文本展示；本页不执行、不读写文件、不连接数据库</p>`;
+  }
+
+  function pairScene() {
+    const dim = dimension();
+    const chips = DIMENSIONS.map((item) => `<button type="button" class="cr-chip" data-dim="${item.key}" aria-pressed="${item.key === state.dim}">${item.name}</button>`).join("");
+    return `
+      <div class="cr-chips" role="group" aria-label="选择审查维度">${chips}</div>
+      <div class="cr-progress"><b>${dim.name} · ${dim.severity}</b><span>${progressLabel()}</span></div>
+      <div class="cr-bar" aria-hidden="true"><span style="width:${(state.checked.size / DIMENSIONS.length) * 100}%"></span></div>
+      <div class="cr-pair">
+        <section><p class="code-label">问题代码</p><pre><code>${esc(dim.before)}</code></pre></section>
+        <section><p class="code-label">修复代码 · 原文片段</p><pre><code>${esc(dim.after)}</code></pre></section>
+      </div>
+      <div class="cr-explain">
+        <p><strong>为什么改：</strong>${dim.problem}</p>
+        <p class="cr-risk"><strong>不改的代价：</strong>${dim.risk}</p>
+        <p><strong>审查问题：</strong>${dim.check}</p>
+      </div>
+      <p class="cr-fixed-note">修复片段来自原文；代码只展示，不执行，也不代表已通过测试</p>`;
+  }
+
+  function fixedScene() {
+    const rows = DIMENSIONS.map((dim, index) => `<tr><th scope="row">${index + 1}</th><td>${dim.name}</td><td>${dim.short}</td><td>${dim.fixLabel}</td><td><span class="cr-badge ${dim.severity === "严重" ? "cr-bad" : "cr-warn"}">${dim.severity}</span></td></tr>`).join("");
+    return `
+      <div class="cr-progress"><b>修复后代码 · 原文</b><span>${progressLabel()} · 代码未执行</span></div>
+      <div class="cr-code cr-fixed-wrap" style="padding:10px 0" tabindex="0" aria-label="修复后代码，可用方向键滚动"><code>${codeBlock(FIXED_CODE, null)}</code></div>
+      <div class="table-wrap" style="margin-top:var(--s-3)">
+        <table class="data cr-table-wide">
+          <caption class="sr-only">六个问题与修复方案总结</caption>
+          <thead><tr><th scope="col">#</th><th scope="col">维度</th><th scope="col">原始问题</th><th scope="col">修复</th><th scope="col">风险</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <p class="cr-fixed-note">修复代码来自原文；对勾与警告符号改为文字标记。本页未运行、未测试，不能据此声称代码可上线</p>`;
+  }
+
+  const SCENES = [codeScene, pairScene, fixedScene];
+
+  function summaryFor(stage) {
+    if (stage === 0) return `阶段 1 / 3 · ${dimension().name} · ${progressLabel()}`;
+    if (stage === 1) return `阶段 2 / 3 · ${dimension().name} · ${progressLabel()}`;
+    return `阶段 3 / 3 · 完整修复 · ${progressLabel()}`;
+  }
+
+  function bindSceneControls() {
+    document.querySelectorAll("[data-dim]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.dim = button.dataset.dim;
+        state.checked.add(state.dim);
+        renderStage(state.stage);
+        byId("cr-announcement").textContent = `已检查：${dimension().name}；${progressLabel()}`;
+      });
+    });
+  }
+
+  function renderStage(stage) {
+    state.stage = stage;
+    const meta = STAGES[stage];
+    byId("cr-scene").innerHTML = SCENES[stage]();
+    byId("cr-index").textContent = `阶段 ${stage + 1} / 3 · 代码只展示，不执行`;
+    byId("cr-title").textContent = meta.title;
+    byId("cr-subtitle").textContent = meta.subtitle;
+    byId("cr-note").textContent = "固定演示代码：行号为本页显示编号；代码只作转义文本展示，不执行，也不代表真实运行结果。";
+    byId("cr-summary").textContent = summaryFor(stage);
+    byId("cr-back").disabled = stage === 0;
+    byId("cr-next").disabled = stage === SCENES.length - 1;
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      if (Number(button.dataset.stage) === stage) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    bindSceneControls();
+    byId("cr-announcement").textContent = `${meta.title}。${meta.subtitle}`;
+  }
+
+  byId("cr-reset").addEventListener("click", () => {
+    state.dim = "loop";
+    state.checked = new Set();
+    renderStage(0);
+  });
+  byId("cr-back").addEventListener("click", () => renderStage(Math.max(0, state.stage - 1)));
+  byId("cr-next").addEventListener("click", () => renderStage(Math.min(SCENES.length - 1, state.stage + 1)));
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+
+  renderStage(0);
+</script>
+</body>
+</html>

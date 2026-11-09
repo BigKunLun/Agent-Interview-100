@@ -1,0 +1,1192 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Human-in-the-Loop：何时以及如何引入人工审核？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .sim-banner { display: flex; align-items: flex-start; gap: 9px; margin: var(--s-4) var(--s-6) 0; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .sim-banner strong { color: #4d3000; }
+  .sim-banner::before { content: "模拟"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .risk-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: var(--s-4) var(--s-5); }
+  .risk-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; }
+  .risk-head h3 { font-size: var(--t-h3); line-height: 1.45; font-weight: 600; }
+  .risk-badge { flex: 0 0 auto; padding: 3px 9px; border: 1px solid #d9a3a3; border-radius: 999px; background: #fbecec; color: #8a1f1f; font: 11px/1.5 var(--mono); }
+  .risk-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .risk-cell { padding: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: var(--t-small); }
+  .risk-cell b { display: block; font: 11px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; margin-bottom: 2px; }
+  .plan-list { list-style: none; margin: var(--s-4) 0 0; padding: 0; border-top: 1px solid var(--border); }
+  .plan-item { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: var(--s-3); align-items: start; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: var(--t-small); }
+  .plan-item:last-child { border-bottom: 0; }
+  .plan-index { display: inline-grid; place-items: center; width: 22px; height: 22px; border: 1px solid var(--border-bright); border-radius: 50%; font: 11px/1 var(--mono); color: var(--text-dim); }
+  .plan-item.open .plan-index { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .plan-state { font: 11px/1.6 var(--mono); color: var(--text-dim); white-space: nowrap; }
+  .plan-state.done { color: #1b5e20; }
+  .plan-state.gated { color: #8a1f1f; }
+  .request-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .request-cell { padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: var(--t-small); }
+  .request-cell b { display: block; font: 11px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; margin-bottom: 2px; }
+  .timeline { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); overflow: hidden; }
+  .timeline-point { padding: var(--s-3) var(--s-4); font-size: 12px; background: var(--surface); }
+  .timeline-point + .timeline-point { border-left: 1px solid var(--border); }
+  .timeline-point b { display: block; font: 600 11px/1.6 var(--mono); color: var(--accent); }
+  .timeline-point span { display: block; margin-top: 2px; color: var(--text-dim); }
+  .decision-choices { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+  .decision-choices .button { min-width: 0; }
+  .decision-choices .button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .chosen-note { margin-top: var(--s-3); padding: 9px 11px; border-left: 3px solid var(--accent); background: var(--accent-dim); font-size: 12px; }
+  .lanes { display: grid; gap: 6px; margin-top: var(--s-4); }
+  .lane { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: var(--s-2); align-items: center; padding: 7px 9px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .lane.active { border-color: var(--accent); background: var(--accent-dim); }
+  .lane-name { font: 600 11px/1.5 var(--mono); color: var(--text-dim); }
+  .lane.active .lane-name { color: var(--accent); }
+  .lane-steps { display: flex; flex-wrap: wrap; gap: 4px; }
+  .lane-steps i { font-style: normal; padding: 2px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface-soft); font-size: 11px; color: var(--text-dim); }
+  .lane.active .lane-steps i { background: var(--surface); }
+  .lane-steps i.now, .lane.active .lane-steps i.now { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; }
+  .lane-steps i.done { background: #e6ece6; border-color: var(--border-bright); color: var(--ink); }
+  .lane-steps i.stop { border-style: dashed; }
+  .outcome { border: 1px solid var(--border); border-left: 4px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4) var(--s-5); }
+  .outcome.approve { border-left-color: #2e7d32; }
+  .outcome.deny { border-left-color: #b45309; }
+  .outcome.timeout { border-left-color: #8a1f1f; }
+  .outcome h3 { font-size: var(--t-h3); line-height: 1.45; font-weight: 600; }
+  .outcome p { margin-top: var(--s-3); font-size: var(--t-small); }
+  .outcome .warn-line { margin-top: var(--s-3); padding: 9px 11px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; }
+  .event-log { margin: var(--s-4) 0 0; padding: 0; list-style: none; border-top: 1px solid var(--border); }
+  .event-log li { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: var(--s-2); padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .event-log li:last-child { border-bottom: 0; }
+  .event-log .n { font: 11px/1.7 var(--mono); color: var(--text-dim); }
+  .audit-table { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: var(--s-3); }
+  .audit-table th, .audit-table td { text-align: left; vertical-align: top; padding: 8px 9px; border-bottom: 1px solid var(--border); }
+  .audit-table thead th { font-size: 11px; color: var(--text-dim); font-weight: 500; }
+  .audit-table tbody tr:last-child td, .audit-table tbody tr:last-child th { border-bottom: 0; }
+  .scope-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-5); margin-top: var(--s-4); }
+  .scope-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4) var(--s-5); }
+  .scope-card h3 { margin-top: 0; }
+  .scope-card ul { margin: var(--s-3) 0 0; padding-left: 1.25em; }
+  .scope-card li { font-size: var(--t-small); margin-block: 6px; }
+  .scope-card.must { border-top: 3px solid #b45309; }
+  .scope-card.auto { border-top: 3px solid #2e7d32; }
+  .mode-table td:first-child { min-width: 9em; }
+  .hitl-tree { margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: var(--s-4); }
+  .tree-start { font: 600 12px/1.6 var(--mono); color: var(--text-dim); }
+  .decision-steps { display: grid; gap: 8px; margin-top: var(--s-3); }
+  .decision-step { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3) var(--s-4); }
+  .decision-step h3 { margin: 0; font-size: var(--t-small); font-weight: 600; }
+  .decision-step h3 b { font: 600 11px/1.5 var(--mono); color: var(--accent); margin-right: 7px; }
+  .decision-step ul { list-style: none; margin: var(--s-2) 0 0; padding: 0; display: grid; gap: 5px; }
+  .decision-step li { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: var(--s-2); font-size: 12px; }
+  .decision-step li span:first-child { color: var(--text-dim); }
+  .decision-step li span:last-child { font-weight: 500; }
+  .tree-branch { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-3); margin-top: var(--s-3); }
+  .tree-node { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3); font-size: 12px; }
+  .tree-node b { display: block; font-weight: 600; }
+  .tree-node.q { border-color: #d9b47a; background: #fffdf4; }
+  .tree-node.must { border-color: #d9a3a3; background: #fbecec; color: #8a1f1f; }
+  .tree-node.auto { border-color: #9cc39e; background: #eef7ee; color: #1b5e20; }
+  .tree-node.opt { border-color: #9eb4c9; background: var(--accent-dim); }
+  .tree-arrow { color: var(--text-dim); font-size: 12px; margin-top: 5px; }
+  .phase-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-2); margin-top: var(--s-4); }
+  .phase { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3); font-size: 12px; }
+  .phase b { display: block; font: 600 11px/1.5 var(--mono); color: var(--accent); }
+  .phase span { display: block; margin-top: 4px; color: var(--text-dim); }
+  .metric-list { display: grid; gap: 6px; margin-top: var(--s-4); }
+  .metric-row { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: var(--s-3); padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .metric-row b { font-weight: 600; }
+  .metric-row span { color: var(--text-dim); }
+  .pending-note { border: 1px dashed var(--border-bright); border-radius: var(--r-1); padding: 3px 7px; color: var(--text-dim); font-size: 11px; white-space: nowrap; }
+  @media (max-width: 1000px) {
+    .risk-grid { grid-template-columns: 1fr; }
+    .phase-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px) {
+    .prose .table-wrap table.data.mid, .hitl-tree .table-wrap table.data.mid { min-width: 520px; }
+    .prose .table-wrap table.data.wide { min-width: 760px; }
+    .sim-banner { margin-inline: var(--s-4); }
+    .risk-card, .outcome { padding: var(--s-3); }
+    .request-grid, .scope-grid, .tree-branch { grid-template-columns: 1fr; }
+    .timeline { grid-template-columns: 1fr; }
+    .timeline-point + .timeline-point { border-left: 0; border-top: 1px solid var(--border); }
+    .lane { grid-template-columns: 1fr; gap: 4px; }
+    .metric-row { grid-template-columns: 1fr; gap: 2px; }
+    .phase-grid { grid-template-columns: 1fr; }
+    .decision-choices .button { flex: 1 1 100%; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">080 / Human-in-the-Loop</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 8 / 10 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="../08-evaluation/069-evaluation-methodology.html">← 上一页 · 评估方法论</a><a href="../10-production-and-deployment/088-cost-optimization.html">下一页 → · LLM API 的成本优化策略</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Safety &amp; Alignment · 可交互讲解</p>
+      <h1>该停的时候，<br>必须停得下来。</h1>
+    </div>
+    <div>
+      <p class="lead">Human-in-the-Loop 是在 Agent 工作流中战略性嵌入人类判断：不是所有决策都该自动化，也不是所有操作都需要人工审核，关键是找到自动化效率和人类监督安全之间的平衡点。</p>
+      <p class="definition"><strong>核心边界：</strong>不可逆操作、合规监管要求、高风险领域、需要同理心的场景必须加人工介入。审批的默认超时行为必须在发起时预先声明，不能等超时了再由系统猜。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Safety &amp; Alignment</span><span class="pill">审批状态机</span><span class="pill">补偿事务</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="approval-title">
+    <div class="player-top">
+      <div class="player-label">高风险操作的审批状态机 <small>固定教学场景 · 本地模拟</small></div>
+      <div class="controls" role="group" aria-label="审批演示控制">
+        <button type="button" class="button button-quiet" id="reset-button">重置</button>
+        <button type="button" class="button" id="back-button" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="next-button">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="审批生命周期">
+      <ol style="--stages: 5">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>识别</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>提交</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>等待</button></li>
+        <li><button type="button" class="stage-button" data-stage="3"><span class="stage-number">4</span>决策</button></li>
+        <li><button type="button" class="stage-button" data-stage="4"><span class="stage-number">5</span>收尾</button></li>
+      </ol>
+    </nav>
+    <p class="sim-banner"><span><strong>本页不发起真实审批，也不调用任何审批系统。</strong>下面的批准、驳回、超时都由本地脚本模拟；不会向 Slack、邮件、LangGraph 或任何外部服务发送请求。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="scene-index">阶段 1 / 5 · 固定教学场景</p>
+      <h2 id="approval-title">先判断这笔操作该不该停下来</h2>
+      <p id="scene-subtitle">固定场景：一封准备发给 1,842 位客户的退款确认邮件。发送不可逆，必须审批。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="approval-scene"></div>
+      <p class="demo-note" id="scene-note">固定教学场景：请求编号、收件人数、时间线和审批人都是本页预设，不代表任何真实系统状态。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 本页不发起真实审批 · 不访问网络</span><span id="state-summary">阶段 1 / 5 · 尚未选择路径</span></div>
+  </section>
+  <p id="approval-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="when-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">判断边界</p><h2 id="when-title">哪些必须停，<br>哪些可以放手？</h2></div>
+      <p class="reading-intro">原文按风险性质划分：不可逆、合规、高风险和主观判断必须加 HITL；查询、格式转换、日志分析和低风险重复操作可以完全自动化。</p>
+    </div>
+    <div class="prose">
+      <h3>必须加 HITL 的四类场景</h3>
+      <div class="scope-grid">
+        <div class="scope-card must">
+          <h3>不可逆 / 破坏性操作</h3>
+          <ul>
+            <li>删除数据、文件、资源</li>
+            <li>发送外部通信（邮件、消息、通知）</li>
+            <li>金融交易（支付、转账）</li>
+            <li>修改权限或配置</li>
+          </ul>
+        </div>
+        <div class="scope-card must">
+          <h3>合规监管要求</h3>
+          <ul>
+            <li>合同审核（法律）</li>
+            <li>医疗建议（医疗）</li>
+            <li>投资建议（金融）</li>
+            <li>涉及隐私数据的操作</li>
+          </ul>
+        </div>
+        <div class="scope-card must">
+          <h3>高风险 / 高影响</h3>
+          <ul>
+            <li>影响客户的决策</li>
+            <li>影响业务指标的变更</li>
+            <li>安全关键操作</li>
+          </ul>
+        </div>
+        <div class="scope-card must">
+          <h3>主观判断</h3>
+          <ul>
+            <li>需要同理心的客服场景</li>
+            <li>创意内容的最终审定</li>
+            <li>复杂的优先级权衡</li>
+          </ul>
+        </div>
+      </div>
+      <h3>可以完全自动化的场景</h3>
+      <div class="scope-card auto">
+        <ul>
+          <li>信息查询和检索</li>
+          <li>数据格式转换</li>
+          <li>日志分析和报告生成</li>
+          <li>内部代码的 lint / 格式化</li>
+          <li>低风险的重复性操作</li>
+        </ul>
+      </div>
+      <div class="callout">
+        <p class="callout-label">原文的渐进策略</p>
+        <p>Phase 1 所有操作都需人工确认；Phase 2 低风险操作自动化，高风险保留人工；Phase 3 基于置信度动态路由；Phase 4 只在异常或边界情况升级人工。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="patterns-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">五种设计模式</p><h2 id="patterns-title">人放在哪一环，<br>决定系统怎么停。</h2></div>
+      <p class="reading-intro">原文给出五种模式：审批/检查点、置信度路由、Human-as-a-Tool、角色审批、异步升级。它们解决的不是同一个问题，可以组合使用。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data mode-table wide">
+          <caption class="sr-only">五种 HITL 设计模式的机制、适用场景和注意点</caption>
+          <thead><tr><th scope="col">模式</th><th scope="col">机制</th><th scope="col">适用</th><th scope="col">注意点</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">1. 审批 / 检查点</th><td>在关键操作前暂停，把动作、参数和推理展示给人，等待确认</td><td>删除、发送邮件、支付等高风险动作</td><td>驳回要带反馈；要定义回退位置</td></tr>
+            <tr><th scope="row">2. 置信度路由</th><td>Agent 给自身置信度打分，按阈值分流</td><td>有可用置信度信号的分类、抽取、问答</td><td>阈值是经验值，需要按业务校准</td></tr>
+            <tr><th scope="row">3. Human-as-a-Tool</th><td>把“人类”注册成可调用工具，Agent 不确定时主动提问</td><td>信息不足、需要业务规则确认的场景</td><td>必须设超时，避免无限等待</td></tr>
+            <tr><th scope="row">4. 角色审批</th><td>按操作类型要求不同角色批准</td><td>删除数据要 admin，发邮件要 reviewer</td><td>权限矩阵要覆盖所有敏感动作</td></tr>
+            <tr><th scope="row">5. 异步升级</th><td>非阻塞地把决策路由到 Slack、邮件或工单</td><td>不紧急的审核、批量处理</td><td>关键问题仍需同步等待</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>置信度路由的原文阈值是 <strong>0.7 和 0.4</strong>：置信度 ≥ 0.7 自动执行；≥ 0.4 转人工审核 Agent 的建议；低于 0.4 由人工完全接管。Human-as-a-Tool 的示例超时是 <strong>300 秒</strong>，渠道可以是 Slack、邮件或 UI 弹窗。</p>
+      <details>
+        <summary>查看五种模式的原文代码</summary>
+        <pre><code># 模式 1：审批/检查点模式（最常用）
+class ApprovalCheckpoint:
+    """在关键操作前暂停等待人类确认"""
+
+    async def execute_with_approval(self, agent, task):
+        plan = await agent.plan(task)
+
+        for step in plan.steps:
+            if step.requires_approval:
+                # 暂停执行，展示计划给人类
+                approval = await self.request_approval(
+                    action=step.action,
+                    params=step.params,
+                    context=step.reasoning,
+                )
+                if not approval.approved:
+                    return self.handle_rejection(approval.feedback)
+
+            await agent.execute_step(step)
+
+
+# 模式 2：置信度路由
+class ConfidenceBasedRouting:
+    """Agent 置信度低时自动升级给人类"""
+
+    def __init__(self, confidence_threshold=0.7):
+        self.threshold = confidence_threshold
+
+    async def route(self, agent_result):
+        if agent_result.confidence &gt;= self.threshold:
+            return {"action": "auto_execute", "result": agent_result}
+        elif agent_result.confidence &gt;= 0.4:
+            return {"action": "human_review", "result": agent_result}
+        else:
+            return {"action": "human_takeover", "result": agent_result}
+        # 高置信度 → 自动执行
+        # 中等置信度 → 人工审核 Agent 的建议
+        # 低置信度 → 人工完全接管
+
+
+# 模式 3：Human-as-a-Tool
+class HumanTool:
+    """Agent 将人类视为可调用的工具"""
+
+    name = "ask_human"
+    description = "当你不确定如何处理时，向人类提问"
+
+    async def execute(self, question: str) -&gt; str:
+        """Agent 主动向人类提问"""
+        response = await self.send_to_human(
+            question=question,
+            channel="slack",  # 或邮件、UI 弹窗
+            timeout=300,      # 等待 5 分钟
+        )
+        return response.answer
+
+
+# 模式 4：角色审批
+class RoleBasedApproval:
+    """根据操作类型要求不同角色审批"""
+
+    approval_matrix = {
+        "delete_data":     {"role": "admin",    "required": True},
+        "send_email":      {"role": "reviewer", "required": True},
+        "read_database":   {"role": "any",      "required": False},
+        "modify_config":   {"role": "admin",    "required": True},
+        "generate_report": {"role": "any",      "required": False},
+    }
+
+    async def check_approval(self, action, user):
+        rule = self.approval_matrix.get(action)
+        if not rule or not rule["required"]:
+            return True
+        return user.role == rule["role"] or user.role == "admin"
+
+
+# 模式 5：异步升级
+class AsyncEscalation:
+    """非阻塞的异步人工审核"""
+
+    async def escalate(self, issue, priority="normal"):
+        if priority == "critical":
+            # 关键问题：同步等待
+            return await self.sync_review(issue)
+        else:
+            # 一般问题：异步通知，Agent 继续其他工作
+            ticket = await self.create_review_ticket(issue)
+            await self.notify_slack(issue, ticket)
+            return {"status": "escalated", "ticket": ticket.id}</code></pre>
+      </details>
+
+      <h3>LangGraph 的 HITL 实现</h3>
+      <p>关键点：<code>interrupt()</code> 不是同步函数。它会抛出特殊异常暂停图执行，必须配合 Checkpointer 和 <code>Command(resume=...)</code> 才能正常工作。第一次 <code>invoke()</code> 执行到 interrupt 处暂停，返回结果里带 <code>__interrupt__</code>；外部 UI 据此展示审批表单。人工决定后，用同一个 <code>thread_id</code> 再次 <code>invoke()</code>，把决策通过 <code>Command(resume=...)</code> 注入，<code>interrupt()</code> 返回这个值，图继续往下执行。</p>
+      <details>
+        <summary>查看 LangGraph 原文代码</summary>
+        <pre><code># 关键点：interrupt() 不是同步函数！它会抛出特殊异常暂停图执行，
+# 必须配合 Checkpointer + Command(resume=...) 才能正常工作
+from langgraph.graph import StateGraph
+from langgraph.types import interrupt, Command
+from langgraph.checkpoint.memory import MemorySaver
+
+def agent_node(state):
+    """Agent 决策节点"""
+    result = llm.invoke(state["messages"])
+    return {"messages": [result], "pending_action": result.tool_calls}
+
+def human_review_node(state):
+    """人工审核节点——interrupt() 暂停并把 value 透传给外部"""
+    action = state["pending_action"]
+
+    # interrupt 抛 GraphInterrupt 异常，invoke() 会立即返回
+    # 外部拿到 interrupt value 后，由人决定，再用 Command(resume=...) 重新 invoke
+    human_decision = interrupt({
+        "action": action,
+        "question": f"Agent 想要执行: {action}，是否批准？",
+    })
+
+    # 当 Command(resume=...) 注入后，interrupt 返回这个 value，继续往下执行
+    if human_decision["approved"]:
+        return {"approved": True}
+    else:
+        return {"approved": False, "feedback": human_decision["reason"]}
+
+def should_review(state):
+    """路由：是否需要人工审核"""
+    action = state.get("pending_action")
+    if action and action["tool"] in HIGH_RISK_TOOLS:
+        return "human_review"
+    return "execute"
+
+# 必须配置 checkpointer，否则 interrupt 之后无法恢复
+checkpointer = MemorySaver()
+graph = StateGraph()
+graph.add_node("agent", agent_node)
+graph.add_node("human_review", human_review_node)
+graph.add_node("execute", execute_node)
+graph.add_conditional_edges("agent", should_review)
+graph.add_edge("human_review", "execute")
+app = graph.compile(checkpointer=checkpointer)
+
+# 第一次 invoke——执行到 interrupt 处暂停
+config = {"configurable": {"thread_id": "session-1"}}
+result = app.invoke({"messages": [...]}, config=config)
+# result 包含 __interrupt__ 字段，外部 UI 据此展示审批表单
+
+# 人工审批后——用 Command(resume=...) 把决策注入回去
+final = app.invoke(
+    Command(resume={"approved": True}),  # 此 dict 即 interrupt() 的返回值
+    config=config,  # 必须用同一 thread_id 让 checkpointer 恢复状态
+)</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="timeout-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">超时与补偿</p><h2 id="timeout-title">等不到人，<br>系统怎么收场？</h2></div>
+      <p class="reading-intro">审批不能无限等。发起审批时就要把超时后的默认动作写进配置并展示给审核人；时长按风险分级，等待期间要释放资源。</p>
+    </div>
+    <div class="prose">
+      <h3>超时只有三种默认动作</h3>
+      <div class="table-wrap">
+        <table class="data mid">
+          <caption class="sr-only">三种超时默认动作及其适用条件</caption>
+          <thead><tr><th scope="col">默认动作</th><th scope="col">含义</th><th scope="col">适用条件</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">默认通过（APPROVE）</th><td>超时后自动批准</td><td>仅限低危且可回滚</td></tr>
+            <tr><th scope="row">默认拒绝（DENY）</th><td>超时后自动拒绝，安全默认</td><td>高风险；涉及资金、权限、对外发送</td></tr>
+            <tr><th scope="row">挂起（PENDING）</th><td>流程保持未完成，不自动推进</td><td>需要人回来处理，宁可停着</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文给的时长是经验值：高危操作 5 分钟，低危 1 小时到 1 天，按业务响应能力调整。到 deadline 的 80% 发一次提醒，给审核人留出反应时间。审批请求落库后，工作流结束当前轮次，不占连接和 worker；人工决定或超时扫描通过事件唤醒续跑。多数生产场景在“默认拒绝”和“挂起”中选，涉及资金、权限、对外发送的操作应默认拒绝。</p>
+      <details>
+        <summary>查看 ApprovalGate 原文代码：提交、提醒、超时扫描、人工回调</summary>
+        <pre><code>from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
+from enum import Enum
+
+
+class TimeoutAction(str, Enum):
+    APPROVE = "approve"   # 仅限低危、可回滚
+    DENY = "deny"         # 安全默认
+    PENDING = "pending"   # 挂起，不自动推进
+
+
+@dataclass
+class ApprovalRequest:
+    id: str
+    action: str
+    risk: str                       # "high" / "low"
+    context: dict                   # 审批时的上下文快照，同时用于审计
+    created_at: datetime
+    deadline: datetime
+    status: str = "pending"         # pending / approved / denied
+    reminded: bool = False
+    decided_by: str | None = None
+
+
+class ApprovalGate:
+    """提交审批、到期扫描、按配置执行超时分支"""
+
+    def __init__(self, store, notifier):
+        self.store = store
+        self.notifier = notifier
+        # 经验值：高危 5 分钟，低危 1 小时
+        self.timeouts = {"high": timedelta(minutes=5), "low": timedelta(hours=1)}
+        # 超时默认动作必须显式配置；低危才允许 APPROVE
+        self.timeout_actions = {"high": TimeoutAction.DENY, "low": TimeoutAction.PENDING}
+
+    async def submit(self, action: str, risk: str, context: dict) -&gt; ApprovalRequest:
+        now = datetime.now(timezone.utc)
+        req = ApprovalRequest(
+            id=f"apr-{now.timestamp()}",
+            action=action,
+            risk=risk,
+            context=dict(context),      # 快照，避免后续修改影响审计
+            created_at=now,
+            deadline=now + self.timeouts[risk],
+        )
+        await self.store.save(req)          # 落库后工作流即可退出，不占连接
+        await self.notifier.send(req)
+        return req
+
+    async def sweep(self) -&gt; list[ApprovalRequest]:
+        """定时任务调用：处理提醒和超时，不阻塞工作流"""
+        handled = []
+        for req in await self.store.list_pending():
+            now = datetime.now(timezone.utc)
+            # 到 deadline 的 80% 时提醒一次
+            remind_at = req.created_at + (req.deadline - req.created_at) * 0.8
+            if not req.reminded and now &gt;= remind_at:
+                await self.notifier.remind(req)
+                req.reminded = True
+                await self.store.save(req)
+            if now &gt;= req.deadline:
+                action = self.timeout_actions[req.risk]
+                if action == TimeoutAction.PENDING:
+                    continue                # 挂起：保持 pending，等人回来
+                req.status = "approved" if action == TimeoutAction.APPROVE else "denied"
+                req.decided_by = "timeout"
+                await self.store.save(req)
+                await self.store.emit_resume(req)   # 唤醒续跑
+                handled.append(req)
+        return handled
+
+    async def decide(self, req_id: str, approved: bool, reviewer: str, feedback: str = ""):
+        """人工审批回调：写入决策并唤醒等待中的工作流"""
+        req = await self.store.get(req_id)
+        if req.status != "pending":
+            return                    # 已超时或已处理，忽略迟到的决定
+        req.status = "approved" if approved else "denied"
+        req.decided_by = reviewer
+        await self.store.save(req)
+        await self.store.emit_resume(req, feedback=feedback)</code></pre>
+      </details>
+
+      <h3>驳回之后：续跑与补偿</h3>
+      <p>驳回不是把错误原样抛回去。理由要收集并注入下一轮上下文，必填或至少引导填写；模型才知道哪里不对、该怎么改。回退位置取决于驳回对象：驳回单个动作，只重做该动作；驳回整体计划，退回计划生成阶段重新拆解，不要在错误计划上反复修补。</p>
+      <div class="table-wrap">
+        <table class="data mid">
+          <caption class="sr-only">不同驳回对象的回退位置和处理方式</caption>
+          <thead><tr><th scope="col">驳回对象</th><th scope="col">回退位置</th><th scope="col">处理方式</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">单个动作</th><td>该动作</td><td>只重做该动作，保留已批准的其他动作</td></tr>
+            <tr><th scope="row">整体计划</th><td>计划生成阶段</td><td>带着反馈重新拆解，不在错误计划上反复修补</td></tr>
+            <tr><th scope="row">部分批准</th><td>被拒的子任务</td><td>跳过或走替代路径，不能因为一个子任务否决整个计划</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>同一动作被驳回 <strong>2–3 次</strong>（原文经验值）就终止并上报，避免无限试探。高危动作配补偿事务（Saga）：正向执行成功后登记 undo，驳回、执行失败或后续步骤失败时按逆序回滚。不可回滚的操作（已发邮件、已转账）无法靠补偿兜底，只能在审批环节卡得更严，必要时双人复核。</p>
+      <details>
+        <summary>查看 Saga 与 RejectionHandler 原文代码</summary>
+        <pre><code>from collections import defaultdict
+from dataclasses import dataclass
+from typing import Awaitable, Callable
+
+
+@dataclass
+class CompensatingAction:
+    name: str
+    undo: Callable[[dict], Awaitable[None]]
+    irreversible: bool = False
+
+
+class Saga:
+    """正向执行时登记补偿动作，失败或驳回时按逆序回滚"""
+
+    def __init__(self):
+        self._registry: dict[str, CompensatingAction] = {}
+        self._done: list[tuple[str, dict]] = []
+
+    def register(self, action: CompensatingAction):
+        self._registry[action.name] = action
+
+    async def run(self, name: str, params: dict, execute: Callable[..., Awaitable[dict]]):
+        try:
+            result = await execute(**params)
+        except Exception:
+            await self.rollback()               # 执行失败，回滚已完成的步骤
+            raise
+        self._done.append((name, result))       # 成功后登记，供回滚使用
+        return result
+
+    async def rollback(self):
+        for name, result in reversed(self._done):
+            action = self._registry[name]
+            if action.irreversible:
+                raise RuntimeError(f"{name} 不可回滚，必须在审批阶段拦截")
+            await action.undo(result)
+        self._done.clear()
+
+
+class RejectionHandler:
+    """驳回后的续跑：收集理由、限制次数、决定回退位置"""
+
+    def __init__(self, max_rejections: int = 2):
+        self.max_rejections = max_rejections       # 经验值：2-3 次
+        self.counts: dict[str, int] = defaultdict(int)
+
+    async def handle(self, step, decision, saga, replan):
+        if not decision.feedback.strip():
+            raise ValueError("驳回必须填写理由")
+        self.counts[step.id] += 1
+        if self.counts[step.id] &gt; self.max_rejections:
+            await saga.rollback()
+            return {"status": "escalated", "reason": "同一动作被多次驳回"}
+        if decision.scope == "plan":
+            return await replan(feedback=decision.feedback)   # 退回计划生成
+        return await replan(feedback=decision.feedback, step_id=step.id)  # 只重做该动作
+
+    async def apply_partial(self, decisions, execute, fallback):
+        """部分批准：批准的继续，被拒的跳过或走替代路径"""
+        for d in decisions:
+            if d.approved:
+                await execute(d.step)
+            else:
+                await fallback(d.step, reason=d.feedback)</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="framework-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">决策框架与生态</p><h2 id="framework-title">两次分叉，<br>决定要不要人审。</h2></div>
+      <p class="reading-intro">原文的决策图先问“质量还是速度优先”，再问可逆性与风险。落地时按阶段逐步放开自动化，并用四项指标持续校准。</p>
+    </div>
+    <div class="prose">
+      <figure class="hitl-tree" aria-labelledby="hitl-tree-caption">
+        <p class="tree-start">新操作 → 按顺序回答三个问题</p>
+        <div class="decision-steps">
+          <section class="decision-step">
+            <h3><b>第 1 问</b>质量还是速度优先？</h3>
+            <ul>
+              <li><span>质量优先</span><span>→ 进入第 2 问</span></li>
+              <li><span>速度优先</span><span>→ 进入第 3 问</span></li>
+            </ul>
+          </section>
+          <section class="decision-step">
+            <h3><b>第 2 问</b>操作可逆？</h3>
+            <ul>
+              <li><span>不可逆</span><span>→ <strong>必须 HITL</strong></span></li>
+              <li><span>可逆</span><span>→ 可选 HITL</span></li>
+            </ul>
+          </section>
+          <section class="decision-step">
+            <h3><b>第 3 问</b>低风险操作？</h3>
+            <ul>
+              <li><span>是</span><span>→ 完全自动化</span></li>
+              <li><span>否</span><span>→ <strong>加 HITL</strong></span></li>
+            </ul>
+          </section>
+        </div>
+        <figcaption class="demo-note" id="hitl-tree-caption">图 1 · 要不要人审，两次分叉就定：先问质量还是速度，再问可逆性与风险。</figcaption>
+      </figure>
+      <details>
+        <summary>查看原文 Mermaid 决策图源码</summary>
+        <pre><code>flowchart TD
+    S["新操作"] --&gt; Q1{"质量还是速度优先？"}
+    Q1 -- "质量优先" --&gt; Q2{"操作可逆？"}
+    Q2 -- "不可逆" --&gt; M["必须 HITL"]
+    Q2 -- "可逆" --&gt; O["可选 HITL"]
+    Q1 -- "速度优先" --&gt; Q3{"低风险操作？"}
+    Q3 -- "是" --&gt; A2["完全自动化"]
+    Q3 -- "否" --&gt; H["加 HITL"]
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class Q1,Q2,Q3,M,O,H decision
+    class S,A2 proc</code></pre>
+        <p class="source-footnote">源码按原文保留，仅做 HTML 转义；上方图示按同一分叉关系呈现。</p>
+      </details>
+
+      <h3>推荐的渐进策略</h3>
+      <div class="phase-grid">
+        <div class="phase"><b>Phase 1</b><span>所有操作都需人工确认（最安全）</span></div>
+        <div class="phase"><b>Phase 2</b><span>低风险操作自动化，高风险保留人工</span></div>
+        <div class="phase"><b>Phase 3</b><span>基于置信度动态路由</span></div>
+        <div class="phase"><b>Phase 4</b><span>只在异常 / 边界情况升级人工</span></div>
+      </div>
+      <h3>关键指标</h3>
+      <div class="metric-list">
+        <div class="metric-row"><b>人工介入率</b><span>目标：逐步降低到 10–20%（原文经验值）</span></div>
+        <div class="metric-row"><b>人工审核响应时间</b><span>影响用户体验，也影响超时策略的选择</span></div>
+        <div class="metric-row"><b>人工否决率</b><span>反映 Agent 质量；否决率过低并不一定是好事</span></div>
+        <div class="metric-row"><b>自动化后的质量对比</b><span>确保放开自动化后质量没有下降</span></div>
+      </div>
+
+      <h3>HITL 工具生态</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">五种 HITL 工具及其能力</caption>
+          <thead><tr><th scope="col">工具</th><th scope="col">HITL 能力</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">LangGraph</th><td><code>interrupt()</code> 暂停图执行；完全控制路由和恢复</td></tr>
+            <tr><th scope="row">HumanLayer</th><td>框架无关的 HITL API/SDK；Slack / Email / UI 多渠道审批</td></tr>
+            <tr><th scope="row">Amazon Bedrock Agents</th><td>内置 user confirmation 功能；可配置哪些工具需要确认</td></tr>
+            <tr><th scope="row">CrewAI</th><td><code>human_input=True</code> 参数；Agent 级别的人工输入开关</td></tr>
+            <tr><th scope="row">Permit.io</th><td>基于 RBAC/ABAC 的细粒度审批；与 Agent 框架集成的权限管理</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="misconception-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="misconception-title">四个容易被追问的点。</h2></div>
+      <p class="reading-intro">前两条是误区，后两条是面试追问；答案都来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“HITL 只是临时方案，最终目标是完全自动化。”</h3><p>HITL 不是权宜之计，而是长期的架构模式。即使 AI 能力不断提升，高风险决策、合规审核和同理心判断仍然需要人类。随着 Agent 能力提升，人类的角色从“逐一审核”转向“战略监督和异常处理”。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“加了 HITL 就安全了。”</h3><p>HITL 本身也有失败模式：审核疲劳（人不仔细看就点批准）、响应延迟（人不在线导致 Agent 阻塞）、能力不匹配（审核者不理解技术细节）。需要配合良好的 UI 设计、轮值机制和明确的审核标准。SDK 侧的 fail-closed 语义也在持续收紧：Claude Agent SDK（TypeScript）v0.3.259（2026-09）提供 <code>permissionPrompts: 'none'</code>，无人值守会话中权限提示自动拒绝而非无限挂起；v0.3.269 起 plan mode 的写操作即使设置了 <code>allowDangerouslySkipPermissions</code> 也必须过 <code>canUseTool</code> 审查——“跳过权限”不再等于“跳过审查”。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>如何降低 HITL 对用户体验的影响？</h3><p>（1）异步审核——非阻塞操作用异步通知；（2）批量审核——收集多个待审项一次性处理；（3）预审批——用户提前授权某类操作；（4）置信度路由——只有低置信度的才需人工，大部分自动通过。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>如何量化 HITL 的投入产出？</h3><p>跟踪三个指标：（1）人工介入率及趋势，应该随 Agent 优化而下降；（2）人工否决后的实际影响，避免了多少潜在问题；（3）HITL 引入的延迟对业务指标的影响。如果否决率低于 2% 且历史无重大事故，可以考虑降低该类操作的审核要求。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《Human-in-the-Loop：何时以及如何引入人工审核？》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的六条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.permit.io/blog/human-in-the-loop-for-ai-agents-best-practices-frameworks-use-cases-and-demo" target="_blank" rel="noopener noreferrer">Human-in-the-Loop for AI Agents: Best Practices, Frameworks, Use Cases · Permit.io</a></li>
+          <li><a href="https://dev.to/camelai/agents-with-human-in-the-loop-everything-you-need-to-know-3fo5" target="_blank" rel="noopener noreferrer">Agents with Human in the Loop: Everything You Need to Know · CAMEL AI</a></li>
+          <li><a href="https://blog.ideafloats.com/human-in-the-loop-ai-in-2025/" target="_blank" rel="noopener noreferrer">Human-in-the-Loop AI in 2025: Proven Design Patterns · Ideafloats</a></li>
+          <li><a href="https://martinfowler.com/articles/exploring-gen-ai/humans-and-agents.html" target="_blank" rel="noopener noreferrer">Humans and Agents in Software Engineering Loops · Martin Fowler</a></li>
+          <li><a href="https://aws.amazon.com/blogs/machine-learning/implement-human-in-the-loop-confirmation-with-amazon-bedrock-agents/" target="_blank" rel="noopener noreferrer">Implement Human-in-the-Loop Confirmation with Amazon Bedrock Agents · AWS</a></li>
+          <li><a href="https://github.com/anthropics/claude-agent-sdk-typescript/releases" target="_blank" rel="noopener noreferrer">Claude Agent SDK (TypeScript) Releases</a> — v0.3.259 <code>permissionPrompts: 'none'</code> 无人值守自动拒绝；v0.3.269 plan mode 写操作强过 allowDangerouslySkipPermissions，须经 canUseTool（2026-09）</li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>09-safety-and-alignment/080-human-in-the-loop.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 2 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const PATHS = Object.freeze({
+    approve: {
+      label: "批准",
+      title: "批准之后：动作执行了，补偿也追不回来",
+      className: "approve",
+      summary: "审批通过后，Agent 执行发送。邮件已经离开系统，属于不可回滚操作；Saga 里没有能撤销它的 undo。",
+      detail: "收尾时记录谁批准、何时批准、批准时的上下文快照。若后续步骤失败，只能走人工补救，不能靠回滚假装没发生。",
+      warn: "不可回滚的操作只能在审批环节卡严：高风险发送建议加双人复核，或先小批量试发。",
+      events: ["审批通过：reviewer=admin", "执行步骤 B：发送 1,842 封邮件", "发送成功；该动作标记 irreversible", "审计记录已写入"]
+    },
+    deny: {
+      label: "驳回",
+      title: "驳回之后：带着理由重做，先回滚可逆动作",
+      className: "deny",
+      summary: "审核人驳回，理由必填：收件人清单包含 12 个已退订客户。系统按逆序回滚步骤 A，删除草稿与清单，再把反馈注入下一轮计划。",
+      detail: "这是第 1 次驳回，计数 1 / 2（原文经验值 2–3 次）。驳回对象是整体计划，所以退回计划生成阶段重新拆解，不在原计划上反复修补。",
+      warn: "如果同一动作被驳回超过 2 次，应终止并上报，避免 Agent 无限试探。",
+      events: ["人工驳回：reason=包含 12 个已退订客户", "按逆序回滚步骤 A：删除草稿与清单", "驳回计数 1 / 2", "带反馈退回计划生成；审计记录已写入"]
+    },
+    timeout: {
+      label: "超时",
+      title: "超时之后：按预先声明的默认动作拒绝",
+      className: "timeout",
+      summary: "到 deadline 仍无人决策，高危操作的默认动作是 DENY。系统不执行发送，回滚可逆的步骤 A，然后唤醒工作流走拒绝分支。",
+      detail: "默认动作在提交审批时就已写进配置并展示给审核人，不是超时后临时决定。decided_by 记为 timeout，和人工决定分开统计。",
+      warn: "如果业务不能接受自动拒绝，应该把默认动作改成挂起（PENDING），让流程保持未完成，而不是猜一个通过。",
+      events: ["到 deadline 未收到决策", "执行预声明默认动作：DENY", "不执行步骤 B；回滚步骤 A", "工作流被唤醒走拒绝分支；审计记录 decided_by=timeout"]
+    }
+  });
+
+  const SCENARIO = Object.freeze({
+    id: "apr-demo-001",
+    action: "向 1,842 位客户发送退款确认邮件",
+    risk: "high",
+    deadline: "5 分钟（原文经验值）",
+    reminder: "4 分钟（deadline 的 80%）",
+    timeoutAction: "默认拒绝（DENY）",
+    reviewer: "admin / 审核员",
+    context: "活动 2026-10 退款批次；模板 v3；收件人 1,842"
+  });
+
+  const STAGES = Object.freeze([
+    { nav: "识别", title: "先判断这笔操作该不该停下来", subtitle: "发送邮件不可逆，属于必须 HITL 的场景；先执行的草稿步骤可回滚，后面的发送步骤必须审批。" },
+    { nav: "提交", title: "提交审批：把上下文快照一起落库", subtitle: "审批请求写入存储后，工作流结束当前轮次，不占连接和 worker；到 deadline 的 80% 发一次提醒。" },
+    { nav: "等待", title: "等待决策：批准、驳回，还是等到超时？", subtitle: "三种选择对应三条路径。选一个，再点“下一步”看系统怎么收场。" },
+    { nav: "决策", title: "决策执行：不同路径，不同代价", subtitle: "批准会执行不可逆动作；驳回会回滚可逆动作并重新规划；超时按预声明默认动作处理。" },
+    { nav: "收尾", title: "收尾：审计记录是事后追责的唯一依据", subtitle: "记录谁在何时批了什么、当时的上下文快照，以及补偿动作是否执行。" }
+  ]);
+
+  const state = { stage: 0, decision: null };
+  const byId = (id) => document.getElementById(id);
+
+  function lanesHTML() {
+    const active = state.decision;
+    // 等待阶段只停在“待审批”；决策阶段才推进到结果节点；收尾阶段才到审计。
+    let nowIndex = -1;
+    if (active) {
+      if (state.stage === 3) nowIndex = 2;
+      else if (state.stage === 4) nowIndex = 4;
+      else if (state.stage >= 1) nowIndex = 0;
+    }
+    const lane = (key, name, steps) => {
+      const isActive = active === key;
+      const chips = steps.map((text, index) => {
+        const classes = [];
+        if (isActive && index === nowIndex) classes.push("now");
+        else if (isActive && nowIndex > -1 && index < nowIndex) classes.push("done");
+        if (text === "无回滚") classes.push("stop");
+        return `<i class="${classes.join(" ")}">${text}</i>`;
+      }).join("");
+      return `<div class="lane${isActive ? " active" : ""}" data-path="${key}"><span class="lane-name">${name}</span><span class="lane-steps">${chips}</span></div>`;
+    };
+    return `<div class="lanes" aria-label="三条审批路径">
+      ${lane("approve", "批准", ["待审批", "已批准", "执行发送（不可逆）", "无回滚", "审计"])}
+      ${lane("deny", "驳回", ["待审批", "已驳回", "回滚草稿", "重新规划", "审计"])}
+      ${lane("timeout", "超时", ["待审批", "超时", "默认拒绝", "不执行", "审计"])}
+    </div>`;
+  }
+
+  function logHTML(events) {
+    return `<ol class="event-log" aria-label="本路径的事件记录">${events.map((event, index) => `<li><span class="n">${String(index + 1).padStart(2, "0")}</span><span>${event}</span></li>`).join("")}</ol>`;
+  }
+
+  function riskScene() {
+    return `
+      <div class="risk-card">
+        <div class="risk-head">
+          <h3>${SCENARIO.action}</h3>
+          <span class="risk-badge">风险 high · 不可逆</span>
+        </div>
+        <div class="risk-grid">
+          <div class="risk-cell"><b>影响范围</b>1,842 位客户</div>
+          <div class="risk-cell"><b>超时默认</b>${SCENARIO.timeoutAction}</div>
+          <div class="risk-cell"><b>审批角色</b>${SCENARIO.reviewer}</div>
+        </div>
+        <ul class="plan-list">
+          <li class="plan-item"><span class="plan-index">A</span><span><strong>生成收件人清单与邮件草稿</strong><br>可回滚：删除草稿与清单</span><span class="plan-state done">已执行 · undo 已登记</span></li>
+          <li class="plan-item open"><span class="plan-index">B</span><span><strong>发送退款确认邮件</strong><br>不可回滚：邮件一旦发出无法撤回</span><span class="plan-state gated">等待审批</span></li>
+        </ul>
+        <p class="demo-note">为什么先执行 A：草稿可回滚，适合用来演示补偿；B 是不可逆动作，必须在审批通过后才允许执行。</p>
+      </div>`;
+  }
+
+  function submitScene() {
+    return `
+      <div class="request-grid">
+        <div class="request-cell"><b>请求编号</b>${SCENARIO.id}</div>
+        <div class="request-cell"><b>风险等级</b>${SCENARIO.risk}</div>
+        <div class="request-cell"><b>审批人角色</b>${SCENARIO.reviewer}</div>
+        <div class="request-cell"><b>超时时长</b>${SCENARIO.deadline}</div>
+        <div class="request-cell"><b>提醒时间</b>${SCENARIO.reminder}</div>
+        <div class="request-cell"><b>超时默认动作</b>${SCENARIO.timeoutAction}</div>
+      </div>
+      <div class="request-grid">
+        <div class="request-cell"><b>上下文快照</b>${SCENARIO.context}</div>
+        <div class="request-cell"><b>补偿登记</b>A 可回滚；B 不可回滚</div>
+      </div>
+      <p class="demo-note">请求落库后工作流退出当前轮次，不占连接和 worker；人工决定或超时扫描通过事件唤醒续跑。以上编号与快照均为固定教学数据。</p>`;
+  }
+
+  function waitingScene() {
+    const chosen = state.decision ? `<p class="chosen-note">已选择：<strong>${PATHS[state.decision].label}</strong>。点“下一步”查看这条路径的结果。</p>` : "";
+    return `
+      <div class="timeline">
+        <div class="timeline-point"><b>0 分钟</b><span>提交审批，状态 pending</span></div>
+        <div class="timeline-point"><b>4 分钟</b><span>到 deadline 80%，发送一次提醒</span></div>
+        <div class="timeline-point"><b>5 分钟</b><span>超时，执行预声明的默认动作</span></div>
+      </div>
+      <div class="decision-choices" role="group" aria-label="选择审批路径">
+        <button type="button" class="button" data-decision="approve" aria-pressed="false">批准</button>
+        <button type="button" class="button" data-decision="deny" aria-pressed="false">驳回（附理由）</button>
+        <button type="button" class="button" data-decision="timeout" aria-pressed="false">模拟超时</button>
+      </div>
+      ${chosen}
+      ${lanesHTML()}
+      <p class="demo-note">这些按钮只改变本地状态，不会向任何审批系统发送请求。驳回理由固定为“收件人清单包含 12 个已退订客户”，用于演示反馈如何进入下一轮。</p>`;
+  }
+
+  function decisionScene() {
+    if (!state.decision) {
+      return `<div class="outcome"><h3>还没有选择路径</h3><p>请回到“等待”阶段，选择批准、驳回或模拟超时，再继续。</p></div>${lanesHTML()}`;
+    }
+    const path = PATHS[state.decision];
+    return `
+      <div class="outcome ${path.className}">
+        <h3>${path.title}</h3>
+        <p>${path.summary}</p>
+        <p>${path.detail}</p>
+        <p class="warn-line">${path.warn}</p>
+      </div>
+      ${lanesHTML()}
+      ${logHTML(path.events)}`;
+  }
+
+  function closingScene() {
+    if (!state.decision) {
+      return `<div class="outcome"><h3>还没有选择路径</h3><p>收尾记录依赖前面的决策。请回到“等待”阶段选择一个路径。</p></div>`;
+    }
+    const path = PATHS[state.decision];
+    const decisionText = state.decision === "approve" ? "approved" : "denied";
+    const decidedBy = state.decision === "timeout" ? "timeout" : "admin";
+    return `
+      <div class="outcome ${path.className}">
+        <h3>审计记录：${path.label}路径</h3>
+        <table class="audit-table">
+          <caption class="sr-only">固定教学场景的审计记录字段</caption>
+          <thead><tr><th scope="col">字段</th><th scope="col">记录值</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">请求编号</th><td>${SCENARIO.id}</td></tr>
+            <tr><th scope="row">动作</th><td>${SCENARIO.action}</td></tr>
+            <tr><th scope="row">决策</th><td>${decisionText}</td></tr>
+            <tr><th scope="row">决策人</th><td>${decidedBy}</td></tr>
+            <tr><th scope="row">上下文快照</th><td>${SCENARIO.context}</td></tr>
+            <tr><th scope="row">补偿动作</th><td>${state.decision === "approve" ? "无可执行的 undo；发送不可回滚" : "已回滚步骤 A：删除草稿与清单"}</td></tr>
+          </tbody>
+        </table>
+        <p>${path.detail}</p>
+      </div>
+      <p class="demo-note">固定教学场景：以上记录用于展示审计字段，不是任何真实审批的日志。真实系统还应记录时间戳、审批意见全文、以及补偿执行结果。</p>
+      ${lanesHTML()}
+      ${logHTML(path.events)}`;
+  }
+
+  function sceneHTML(stage) {
+    if (stage === 0) return riskScene();
+    if (stage === 1) return submitScene();
+    if (stage === 2) return waitingScene();
+    if (stage === 3) return decisionScene();
+    return closingScene();
+  }
+
+  function renderStage(stage) {
+    state.stage = stage;
+    byId("approval-scene").innerHTML = sceneHTML(stage);
+    byId("scene-index").textContent = `阶段 ${stage + 1} / 5 · 固定教学场景`;
+    byId("approval-title").textContent = STAGES[stage].title;
+    byId("scene-subtitle").textContent = STAGES[stage].subtitle;
+    byId("back-button").disabled = stage === 0;
+    byId("next-button").disabled = stage === 4 || ((stage === 2 || stage === 3) && state.decision === null);
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      if (Number(button.dataset.stage) === stage) {
+        button.setAttribute("aria-current", "step");
+      } else {
+        button.removeAttribute("aria-current");
+      }
+    });
+    const pathLabel = state.decision ? `已选：${PATHS[state.decision].label}` : "尚未选择路径";
+    byId("state-summary").textContent = `阶段 ${stage + 1} / 5 · ${STAGES[stage].nav} · ${pathLabel}`;
+    byId("approval-announcement").textContent = `阶段 ${stage + 1}，${STAGES[stage].title}。${STAGES[stage].subtitle}`;
+    document.querySelectorAll("[data-decision]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.decision === state.decision));
+    });
+  }
+
+  function choose(decision) {
+    state.decision = decision;
+    renderStage(2);
+    byId("approval-announcement").textContent = `已选择${PATHS[decision].label}路径。点下一步查看结果。`;
+  }
+
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+  byId("approval-scene").addEventListener("click", (event) => {
+    const button = event.target.closest("[data-decision]");
+    if (button) choose(button.dataset.decision);
+  });
+  byId("back-button").addEventListener("click", () => {
+    if (state.stage > 0) renderStage(state.stage - 1);
+  });
+  byId("next-button").addEventListener("click", () => {
+    if (state.stage < 4 && !(state.stage === 2 && state.decision === null)) renderStage(state.stage + 1);
+  });
+  byId("reset-button").addEventListener("click", () => {
+    state.decision = null;
+    renderStage(0);
+    byId("approval-announcement").textContent = "已重置审批模拟，回到风险识别阶段。";
+  });
+  renderStage(0);
+</script>
+</body>
+</html>

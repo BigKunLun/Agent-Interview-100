@@ -1,0 +1,712 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>框架 vs 自研：什么时候应该自己构建 Agent 框架？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .data-tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); color: var(--text-dim); font: 11px/1.5 var(--mono); letter-spacing: .03em; }
+  .data-tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--series-2); }
+  .matrix-stage { padding: var(--s-4) var(--s-6) var(--s-5); }
+  .matrix-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: var(--s-5); align-items: start; }
+  .dims { display: grid; gap: var(--s-3); }
+  .dim-row { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3) var(--s-4); }
+  .dim-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); }
+  .dim-head label { font-size: var(--t-small); font-weight: 600; }
+  .dim-head output { font: 600 20px/1.2 var(--mono); }
+  .dim-head output small { font-size: 11px; color: var(--text-dim); font-weight: 400; }
+  .dim-row input[type="range"] { width: 100%; margin: var(--s-2) 0 0; accent-color: var(--accent); min-height: 32px; }
+  .dim-scale { display: flex; justify-content: space-between; gap: var(--s-2); font-size: 10px; line-height: 1.5; color: var(--text-dim); }
+  .dim-scale span:last-child { text-align: right; }
+  .score-panel { border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface-soft); padding: var(--s-4) var(--s-5); position: sticky; top: 16px; }
+  .score-panel .label { font: 11px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .score-value { font: 600 46px/1.1 var(--mono); margin-top: 2px; }
+  .score-value small { font-size: 14px; color: var(--text-dim); font-weight: 400; }
+  .score-band { display: inline-flex; align-items: center; margin-top: 6px; padding: 3px 10px; border: 1px solid var(--accent); border-radius: 999px; background: var(--accent-dim); color: var(--accent); font-size: 12px; font-weight: 600; }
+  .score-bar { position: relative; height: 10px; margin-top: var(--s-4); border-radius: 999px; background: linear-gradient(90deg, #9eb4c9, var(--accent) 50%, #6b21a8); }
+  .score-marker { position: absolute; top: -5px; width: 4px; height: 20px; border-radius: 2px; background: var(--ink); transform: translateX(-50%); transition: left var(--fast) var(--ease); }
+  .score-scale { display: flex; justify-content: space-between; gap: var(--s-2); margin-top: 5px; font-size: 10px; color: var(--text-dim); }
+  .score-summary { margin-top: var(--s-4); font-size: var(--t-small); }
+  .score-summary strong { font-weight: 600; }
+  .contrib { margin-top: var(--s-4); border-top: 1px solid var(--border); padding-top: var(--s-3); }
+  .contrib h3 { font-size: 12px; font-weight: 600; }
+  .contrib-row { display: grid; grid-template-columns: 96px minmax(0, 1fr) 44px; gap: 7px; align-items: center; margin-top: 6px; font-size: 11px; }
+  .contrib-row .bar { display: block; height: 6px; border-radius: 999px; background: var(--border); overflow: hidden; }
+  .contrib-row .fill { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+  .contrib-row output { text-align: right; font-family: var(--mono); color: var(--text-dim); }
+  .advice { margin-top: var(--s-4); border-top: 1px solid var(--border); padding-top: var(--s-3); }
+  .advice h3 { font-size: 12px; font-weight: 600; }
+  .advice ul { margin: var(--s-2) 0 0; padding-left: 1.2em; font-size: 12px; }
+  .advice li { margin-block: 5px; color: var(--text-dim); }
+  .advice li strong { color: var(--ink); }
+  .caveat { margin-top: var(--s-4); padding: 9px 11px; border: 1px dashed var(--border-bright); border-radius: var(--r-1); font-size: 11px; color: var(--text-dim); }
+  .split { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-5); margin-top: var(--s-4); }
+  .split-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4) var(--s-5); }
+  .split-card h3 { margin-top: 0; }
+  .split-card.benefit { border-top: 3px solid #2e7d32; }
+  .split-card.cost { border-top: 3px solid #b45309; }
+  .split-card ul { margin: var(--s-3) 0 0; padding-left: 1.25em; }
+  .split-card li { font-size: var(--t-small); margin-block: 6px; }
+  .signals { margin-top: var(--s-4); }
+  .signal-list { list-style: none; margin: var(--s-2) 0 0; padding: 0; display: grid; gap: 6px; }
+  .signal-list li { padding: 8px 11px; border: 1px solid var(--border); border-left: 3px solid var(--series-2); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .route { display: grid; gap: var(--s-2); margin-top: var(--s-4); }
+  .route-row { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: var(--s-3); padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .route-row b { font: 600 11px/1.6 var(--mono); color: var(--accent); }
+  .route-row span { color: var(--text-dim); }
+  .layers { display: grid; gap: 6px; margin-top: var(--s-4); }
+  .layer-row { display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: var(--s-3); padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .layer-row b { font-weight: 600; }
+  .layer-row span { color: var(--text-dim); }
+  .preset-note { margin-top: var(--s-3); font-size: 11px; color: var(--text-dim); }
+  @media (max-width: 1000px) {
+    .matrix-stage { padding-inline: var(--s-5); }
+    .matrix-grid { grid-template-columns: 1fr; }
+    .score-panel { position: static; }
+  }
+  @media (max-width: 720px) {
+    .prose .table-wrap table.data.mid { min-width: 520px; }
+    .prose .table-wrap table.data.wide { min-width: 760px; }
+    .matrix-stage { padding: var(--s-4); }
+    .score-panel { padding: var(--s-4); }
+    .score-value { font-size: 38px; }
+    .split { grid-template-columns: 1fr; gap: var(--s-4); }
+    .route-row, .layer-row { grid-template-columns: 1fr; gap: 2px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">098 / 框架 vs 自研</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 10 / 10 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="../10-production-and-deployment/088-cost-optimization.html">← 上一页 · LLM API 的成本优化策略</a><span class="disabled">下一页 →</span></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Frameworks · 可交互讲解</p>
+      <h1>框架不是答案，<br>边界才是。</h1>
+    </div>
+    <div>
+      <p class="lead">用框架还是自研，取决于项目阶段、团队经验、定制需求、性能要求、可调试性和维护成本。核心判断原则是：框架的价值 = 节省的开发时间 − 绕过框架限制的时间。</p>
+      <p class="definition"><strong>核心边界：</strong>框架适合快速原型和标准流程，自研适合深度定制和完全透明的控制流。大多数项目不需要一步到位的自研；渐进式替换通常更稳。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Frameworks</span><span class="pill">决策矩阵</span><span class="pill">渐进式策略</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="score-title">
+    <div class="player-top">
+      <div class="player-label">五维决策矩阵评分 <small>固定教学权重 · 本地计算</small></div>
+      <div class="controls" role="group" aria-label="决策矩阵演示控制">
+        <button type="button" class="button button-quiet" id="reset-button">重置为中立</button>
+        <button type="button" class="button" id="preset-prototype">载入原型示例</button>
+        <button type="button" class="button" id="preset-mature">载入成熟产品示例</button>
+      </div>
+    </div>
+    <div class="matrix-stage">
+      <div class="matrix-grid">
+        <div class="dims" id="dims"></div>
+        <aside class="score-panel" aria-labelledby="score-title">
+          <span class="label">加权得分 · 1 偏框架 / 5 偏自研</span>
+          <p class="score-value" id="score-value">3.00<small> / 5</small></p>
+          <span class="score-band" id="score-band">渐进混合</span>
+          <div class="score-bar" aria-hidden="true"><span class="score-marker" id="score-marker" style="left: 50%;"></span></div>
+          <div class="score-scale"><span>偏框架</span><span>混合</span><span>偏自研</span></div>
+          <p class="score-summary" id="score-summary">五个维度都取中立值 3，得分落在混合区。</p>
+          <div class="contrib">
+            <h3>各维度贡献</h3>
+            <div id="contrib-list"></div>
+          </div>
+          <div class="advice">
+            <h3>下一步检查</h3>
+            <ul id="advice-list"></ul>
+          </div>
+          <p class="caveat">评分维度、权重和分档是本页的固定教学数据，按原文决策矩阵改写。它是原文判断框架的演示，不是绝对结论；真实决策还要看团队、预算和业务约束。</p>
+        </aside>
+      </div>
+      <p class="preset-note">固定教学设置：权重为团队经验 0.25、时间 0.20、性能 0.20、可调试性 0.15、定制 0.20；得分为五项加权平均。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学权重 · 不调用模型 · 不访问网络</span><span id="state-summary">中立评分 3.00 · 渐进混合</span></div>
+  </section>
+  <p id="score-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="matrix-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">决策矩阵</p><h2 id="matrix-title">九个维度，<br>两种倾向。</h2></div>
+      <p class="reading-intro">原文用九个维度对比“选择框架”和“选择自研”。它不是打分表，而是提醒你：同一个项目在不同维度上可能同时有框架倾向和自研倾向。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data mid">
+          <caption class="sr-only">框架与自研在九个决策维度上的对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">选择框架</th><th scope="col">选择自研</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">项目阶段</th><td>PoC / MVP</td><td>成熟产品</td></tr>
+            <tr><th scope="row">团队经验</th><td>LLM 新手</td><td>LLM 老手</td></tr>
+            <tr><th scope="row">定制需求</th><td>标准流程</td><td>深度定制</td></tr>
+            <tr><th scope="row">性能要求</th><td>延迟不敏感</td><td>毫秒级优化</td></tr>
+            <tr><th scope="row">可调试性</th><td>黑箱可接受</td><td>需要完全透明</td></tr>
+            <tr><th scope="row">开发速度</th><td>急需上线</td><td>可以慢一点</td></tr>
+            <tr><th scope="row">维护成本</th><td>能接受框架升级</td><td>想控制依赖</td></tr>
+            <tr><th scope="row">生态需求</th><td>需要大量集成</td><td>集成点有限</td></tr>
+            <tr><th scope="row">团队规模</th><td>小团队（1–3 人）</td><td>有专人维护基建</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>先按调用规模走一遍</h3>
+      <p>原文的决策流程图先问“需要多少 LLM 调用”，把方案粗分成三档：</p>
+      <div class="route">
+        <div class="route-row"><b>单次调用</b><span>直接调用 API，不需要框架。</span></div>
+        <div class="route-row"><b>2–5 步链式</b><span>轻量封装或框架；步骤少时，自己写几十行可能更清楚。</span></div>
+        <div class="route-row"><b>复杂多步 Agent</b><span>标准 ReAct / RAG 模式用框架；高度定制流程自研。</span></div>
+      </div>
+      <p>这条流程只做初筛。真正决定是否迁移的，是框架带来的价值和代价能不能算平：<strong>框架的价值 = 节省的开发时间 − 绕过框架限制的时间</strong>。当绕过限制的时间开始超过节省的时间，就是考虑自研的信号。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="tradeoff-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">价值与代价</p><h2 id="tradeoff-title">框架省下的，<br>和它收走的。</h2></div>
+      <p class="reading-intro">原文把框架的好处和代价都列得很具体。判断是否自研，不是看框架“好不好”，而是看这些代价在你的场景里是否已经超过收益。</p>
+    </div>
+    <div class="prose">
+      <div class="split">
+        <div class="split-card benefit">
+          <h3>框架带来的价值</h3>
+          <ul>
+            <li><strong>快速启动</strong>：几行代码实现 RAG / Agent，开发速度 3–5x（原文示例）。</li>
+            <li><strong>最佳实践</strong>：内置 ReAct、Plan-and-Execute 等成熟模式。</li>
+            <li><strong>生态集成</strong>：几十种 LLM、向量数据库、工具的预集成。</li>
+            <li><strong>可观测性</strong>：LangSmith / Langfuse 等追踪工具的原生支持。</li>
+            <li><strong>社区支持</strong>：问题容易找到答案，示例丰富。</li>
+          </ul>
+        </div>
+        <div class="split-card cost">
+          <h3>框架带来的代价</h3>
+          <ul>
+            <li><strong>抽象税</strong>：多层封装导致调试困难，错误信息不直观。</li>
+            <li><strong>性能损耗</strong>：额外的序列化 / 反序列化、中间层开销。</li>
+            <li><strong>升级风险</strong>：API 频繁变更，升级可能破坏现有代码。</li>
+            <li><strong>灵活性限制</strong>：框架假设的流程可能不符合业务需求。</li>
+            <li><strong>依赖锁定</strong>：深度使用后难以迁移到其他方案。</li>
+            <li><strong>过度工程</strong>：简单需求也要遵循框架的复杂模式。</li>
+          </ul>
+        </div>
+      </div>
+      <div class="signals">
+        <h3>什么时候该考虑从框架迁移到自研</h3>
+        <ul class="signal-list">
+          <li>频繁绕过框架限制（monkey patch / 自定义 callback）。</li>
+          <li>调试时间 &gt; 开发时间。</li>
+          <li>框架升级导致回归问题。</li>
+          <li>需要的功能框架不支持，但又不能脱离框架实现。</li>
+          <li>性能瓶颈来自框架抽象层。</li>
+        </ul>
+      </div>
+      <p>原文的经验判断是：LangChain 非常适合原型阶段（开发速度快 3x），但一旦扩展到复杂生产场景，多层抽象会成为维护噩梦。这个 3x 是原文示例，不是对所有团队的保证。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="build-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">自研与渐进</p><h2 id="build-title">Agent 本质，<br>就是一个循环。</h2></div>
+      <p class="reading-intro">自研不等于从零造所有东西。原文的最小实现只有几十行：调用 LLM、检查工具调用、执行工具、循环。难的是错误处理、状态、可观测性和边界。</p>
+    </div>
+    <div class="prose">
+      <h3>最小可用的自研 Agent</h3>
+      <p>原文的 <code>MinimalAgent</code> 展示了核心结构：把工具注册成“函数 + JSON Schema”，在循环里调用模型；如果模型返回工具调用，就执行工具并把结果写回消息；没有工具调用就返回最终答案。核心洞察是：<strong>Agent 本质上就是一个 while 循环</strong>，不需要框架也能实现。</p>
+      <details>
+        <summary>查看 MinimalAgent 原文代码</summary>
+        <pre><code>import json
+from openai import OpenAI
+
+class MinimalAgent:
+    """最小可用的自研 Agent 框架"""
+
+    def __init__(self, model="gpt-4o", tools=None, system_prompt=""):
+        self.client = OpenAI()
+        self.model = model
+        self.tools = {t["function"]["name"]: t for t in (tools or [])}
+        self.tool_functions = {}
+        self.system_prompt = system_prompt
+
+    def register_tool(self, name, func, schema):
+        """注册工具：函数 + JSON Schema"""
+        self.tool_functions[name] = func
+        self.tools[name] = schema
+
+    def run(self, user_message, max_steps=10):
+        """Agent 执行循环——这就是 Agent 的本质"""
+        messages = [
+            {"role": "system", "content": self.system_prompt},
+            {"role": "user", "content": user_message},
+        ]
+
+        for step in range(max_steps):
+            # 1. 调用 LLM
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=messages,
+                tools=list(self.tools.values()) if self.tools else None,
+            )
+            msg = response.choices[0].message
+            messages.append(msg)
+
+            # 2. 检查是否需要调用工具
+            if not msg.tool_calls:
+                return msg.content  # 无工具调用 → 返回最终答案
+
+            # 3. 执行工具
+            for tool_call in msg.tool_calls:
+                func = self.tool_functions[tool_call.function.name]
+                args = json.loads(tool_call.function.arguments)
+                result = func(**args)
+                messages.append({
+                    "role": "tool",
+                    "tool_call_id": tool_call.id,
+                    "content": str(result),
+                })
+
+        return "达到最大步数限制"
+
+# 核心洞察：Agent 本质上就是一个 while 循环
+# LLM 调用 → 检查工具调用 → 执行工具 → 循环
+# 不需要框架也能实现</code></pre>
+      </details>
+
+      <h3>渐进式策略：四个阶段</h3>
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">从原型到完全自研的四个阶段</caption>
+          <thead><tr><th scope="col">阶段</th><th scope="col">方法</th><th scope="col">目标</th><th scope="col">产出</th><th scope="col">代码状态</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">阶段 1：原型验证（1–2 周）</th><td>使用框架（LangChain / LangGraph）</td><td>验证 Agent 方案可行性</td><td>可演示的原型</td><td>大量使用框架预构建组件</td></tr>
+            <tr><th scope="row">阶段 2：需求明确（2–4 周）</th><td>框架 + 自定义组件</td><td>明确生产需求和性能瓶颈</td><td>性能基线、需求文档</td><td>开始替换框架中的瓶颈组件</td></tr>
+            <tr><th scope="row">阶段 3：核心自研（1–3 月）</th><td>核心路径自研 + 非核心保留框架</td><td>优化性能、提高可控性</td><td>自研 Agent 核心 + 框架辅助模块</td><td>Agent Loop 自研，RAG / 工具可保留框架</td></tr>
+            <tr><th scope="row">阶段 4：完全自主（可选）</th><td>完全自研</td><td>只有当框架的存在确实造成显著问题时</td><td>—</td><td>大多数项目在阶段 3 就够了</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文的四条原则是：（1）不要一开始就自研，先用框架验证方向；（2）不要永远依赖框架，根据需求逐步自主化；（3）可以混用，核心路径自研、辅助功能用框架；（4）抽象边界，即使用框架，也要隔离框架依赖。</p>
+
+      <h3>自研时的五层架构</h3>
+      <div class="layers">
+        <div class="layer-row"><b>Layer 1 · LLM 接口层</b><span>封装 LLM API 调用，支持多提供商。适配器模式：统一接口，底层可切换，例如 <code>LLMClient(provider='openai'|'anthropic'|'google')</code>。</span></div>
+        <div class="layer-row"><b>Layer 2 · 工具层</b><span>工具注册、Schema 生成、执行。装饰器模式：<code>@tool</code> 自动生成 JSON Schema。</span></div>
+        <div class="layer-row"><b>Layer 3 · Agent Loop</b><span>核心执行循环：推理、行动、观察。策略模式：可插拔的推理策略，例如 <code>AgentLoop(strategy='react'|'plan_execute')</code>。</span></div>
+        <div class="layer-row"><b>Layer 4 · 状态管理</b><span>会话状态、检查点、记忆。仓库模式：可插拔的存储后端，例如 <code>StateStore(backend='memory'|'redis'|'postgres')</code>。</span></div>
+        <div class="layer-row"><b>Layer 5 · 可观测性</b><span>日志、追踪、指标。中间件模式：非侵入式，例如 <code>agent.use(TracingMiddleware())</code>。</span></div>
+      </div>
+      <p>这五层不是让你一次全写完。它的作用是划边界：LLM 接口、工具、循环、状态、可观测性各自可替换，避免自研之后又长成一个新的“框架黑箱”。</p>
+      <div class="callout">
+        <p class="callout-label">原文引用的官方建议</p>
+        <p>Anthropic 的建议是“Start with the simplest solution”：先用原生 API，只在确实需要时引入框架。OpenAI Agents SDK 的设计哲学是“最小抽象”：只封装 Agent Loop 和工具调用，其他交给开发者。原文认为这反映了行业趋势：框架在变轻，而非变重。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="misconception-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="misconception-title">四个容易被追问的点。</h2></div>
+      <p class="reading-intro">前两条是误区，后两条是面试追问；答案都来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“自研总是更好。”</h3><p>自研意味着你要维护 Agent Loop、错误处理、状态管理、工具集成、可观测性等所有组件。小团队可能无法承受这个维护成本。框架把这些“无差别劳动”打包好了，让你专注于业务逻辑。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“框架性能太差。”</h3><p>框架的额外开销通常在毫秒级，而 LLM API 调用在秒级。在大多数场景下，框架不是性能瓶颈。只有在极高并发或极低延迟的场景下，框架开销才值得关注。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>如何隔离框架依赖？</h3><p>使用端口-适配器模式（Hexagonal Architecture）：定义自己的接口（Port），用框架实现这些接口（Adapter）。业务代码只依赖自己的接口，切换框架只需替换 Adapter。这是“用框架但不被框架绑定”的关键。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>Anthropic / OpenAI 自己推荐怎么做？</h3><p>Anthropic 的建议是“Start with the simplest solution”：先用原生 API，只在确实需要时引入框架。OpenAI Agents SDK 的设计哲学是“最小抽象”：只封装 Agent Loop 和工具调用，其他交给开发者。这反映了行业趋势：框架在变轻，而非变重。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《框架 vs 自研：什么时候应该自己构建 Agent 框架？》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://medium.com/@candemir13/building-ai-agents-without-frameworks-what-langchain-wont-teach-you-035a11d9d80c" target="_blank" rel="noopener noreferrer">Building AI Agents Without Frameworks: What LangChain Won't Teach You · Medium</a></li>
+          <li><a href="https://www.turgon.ai/post/langchain-langgraph-or-custom-choosing-the-right-agentic-framework" target="_blank" rel="noopener noreferrer">LangChain, LangGraph, or Custom? Choosing the Right Agentic Framework · Turgon AI</a></li>
+          <li><a href="https://www.langflow.org/blog/the-complete-guide-to-choosing-an-ai-agent-framework-in-2025" target="_blank" rel="noopener noreferrer">The Complete Guide to Choosing an AI Agent Framework in 2025 · Langflow</a></li>
+          <li><a href="https://arsum.com/blog/posts/ai-agent-frameworks/" target="_blank" rel="noopener noreferrer">AI Agent Frameworks Compared: Architecture Patterns and Trade-offs · Arsum</a></li>
+          <li><a href="https://www.youtube.com/watch?v=TdcAslNDCGc" target="_blank" rel="noopener noreferrer">Stop Using Frameworks: Build an AI Agent From First Principles · YouTube</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>11-frameworks/098-framework-vs-custom.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 2 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const DIMENSIONS = Object.freeze([
+    { key: "experience", label: "团队经验", weight: 0.25, low: "LLM 新手 · 倾向框架", high: "LLM 老手 · 倾向自研" },
+    { key: "time", label: "时间压力", weight: 0.20, low: "急需上线 · 倾向框架", high: "可以慢一点 · 倾向自研" },
+    { key: "performance", label: "性能要求", weight: 0.20, low: "延迟不敏感 · 倾向框架", high: "毫秒级优化 · 倾向自研" },
+    { key: "compliance", label: "可调试性", weight: 0.15, low: "黑箱可接受 · 倾向框架", high: "需要完全透明 · 倾向自研" },
+    { key: "custom", label: "定制程度", weight: 0.20, low: "标准流程 · 倾向框架", high: "深度定制 · 倾向自研" }
+  ]);
+
+  const PRESETS = Object.freeze({
+    neutral: { experience: 3, time: 3, performance: 3, compliance: 3, custom: 3 },
+    prototype: { experience: 2, time: 1, performance: 2, compliance: 2, custom: 2 },
+    mature: { experience: 5, time: 4, performance: 5, compliance: 5, custom: 5 }
+  });
+
+  const values = { experience: 3, time: 3, performance: 3, compliance: 3, custom: 3 };
+  const byId = (id) => document.getElementById(id);
+
+  function bandFor(score) {
+    if (score <= 2.2) {
+      return {
+        name: "偏框架",
+        summary: "当前评分更接近“先用框架”。先验证方向，再用端口-适配器隔离框架依赖。",
+        advice: [
+          "先用框架跑通原型；优先复用 ReAct、RAG、工具集成等成熟组件。",
+          "从第一天就定义自己的接口，业务代码不要直接依赖框架类型。",
+          "把“频繁绕过框架限制”和“升级回归”记为迁移信号，到了再换。"
+        ]
+      };
+    }
+    if (score <= 3.4) {
+      return {
+        name: "渐进混合",
+        summary: "当前评分落在混合区。原型可以借框架，核心路径逐步自研。",
+        advice: [
+          "阶段 1–2 用框架验证需求；同时记录性能基线和调试痛点。",
+          "阶段 3 优先自研 Agent Loop、状态管理和可观测性，非核心保留框架。",
+          "用抽象边界隔开框架依赖；不要等框架造成显著问题才动手。"
+        ]
+      };
+    }
+    return {
+      name: "偏自研",
+      summary: "当前评分更接近“自研”。先确认迁移信号，再按五层架构逐步替换。",
+      advice: [
+        "先核对五个迁移信号：频繁绕过、调试时间大于开发时间、升级回归、功能不支持、性能瓶颈来自抽象层。",
+        "核心路径自研，非核心继续用框架；不要为了“纯自研”重写所有集成。",
+        "按五层架构划边界：LLM 接口、工具、Agent Loop、状态、可观测性。"
+      ]
+    };
+  }
+
+  function specificNotes() {
+    const notes = [];
+    if (values.experience <= 2) notes.push("<strong>团队经验偏少：</strong>框架的成熟模式和生态能降低起步成本，但要把框架用法记录下来。");
+    if (values.time <= 2) notes.push("<strong>时间紧：</strong>优先框架上线，先验证价值，再替换瓶颈。");
+    if (values.performance >= 4) notes.push("<strong>性能要求高：</strong>先用基准确认框架开销；原文说框架开销通常毫秒级，LLM 调用在秒级，别把非瓶颈当瓶颈。");
+    if (values.compliance >= 4) notes.push("<strong>可调试性要求高：</strong>需要完全透明的调用链和日志，框架黑箱可能不够；调试和审计点要自己控制。");
+    if (values.custom >= 4) notes.push("<strong>深度定制：</strong>检查是否频繁 monkey patch、调试时间是否超过开发时间；这些是原文列的迁移信号。");
+    return notes;
+  }
+
+  function renderDims() {
+    const host = byId("dims");
+    host.textContent = "";
+    DIMENSIONS.forEach((dim) => {
+      const row = document.createElement("div");
+      row.className = "dim-row";
+      row.innerHTML = `
+        <div class="dim-head"><label for="dim-${dim.key}">${dim.label}</label><output id="out-${dim.key}" for="dim-${dim.key}">${values[dim.key]}<small> / 5</small></output></div>
+        <input id="dim-${dim.key}" data-dim="${dim.key}" type="range" min="1" max="5" step="1" value="${values[dim.key]}" aria-describedby="scale-${dim.key}">
+        <div class="dim-scale" id="scale-${dim.key}"><span>${dim.low}</span><span>${dim.high}</span></div>`;
+      host.append(row);
+      row.querySelector("input").addEventListener("input", (event) => {
+        values[dim.key] = Number(event.target.value);
+        update();
+      });
+    });
+  }
+
+  function update() {
+    let score = 0;
+    DIMENSIONS.forEach((dim) => {
+      score += values[dim.key] * dim.weight;
+      byId(`out-${dim.key}`).innerHTML = `${values[dim.key]}<small> / 5</small>`;
+    });
+    const band = bandFor(score);
+    byId("score-value").innerHTML = `${score.toFixed(2)}<small> / 5</small>`;
+    byId("score-band").textContent = band.name;
+    byId("score-marker").style.left = `${((score - 1) / 4) * 100}%`;
+    byId("score-summary").textContent = band.summary;
+
+    const contrib = byId("contrib-list");
+    contrib.textContent = "";
+    DIMENSIONS.forEach((dim) => {
+      const row = document.createElement("div");
+      row.className = "contrib-row";
+      const weighted = values[dim.key] * dim.weight;
+      row.innerHTML = `<span>${dim.label}</span><span class="bar"><span class="fill" style="width:${(values[dim.key] / 5) * 100}%"></span></span><output>${weighted.toFixed(2)}</output>`;
+      contrib.append(row);
+    });
+
+    const advice = byId("advice-list");
+    advice.textContent = "";
+    band.advice.concat(specificNotes()).forEach((text) => {
+      const li = document.createElement("li");
+      li.innerHTML = text;
+      advice.append(li);
+    });
+
+    byId("state-summary").textContent = `评分 ${score.toFixed(2)} · ${band.name}`;
+    byId("score-announcement").textContent = `加权得分 ${score.toFixed(2)}，结论倾向：${band.name}。${band.summary}`;
+  }
+
+  function applyPreset(name) {
+    const preset = PRESETS[name];
+    Object.keys(preset).forEach((key) => { values[key] = preset[key]; });
+    renderDims();
+    update();
+    byId("score-announcement").textContent = name === "prototype" ? "已载入原型示例：偏框架。" : name === "mature" ? "已载入成熟产品示例：偏自研。" : "已重置为中立评分。";
+  }
+
+  byId("reset-button").addEventListener("click", () => applyPreset("neutral"));
+  byId("preset-prototype").addEventListener("click", () => applyPreset("prototype"));
+  byId("preset-mature").addEventListener("click", () => applyPreset("mature"));
+  renderDims();
+  update();
+</script>
+</body>
+</html>

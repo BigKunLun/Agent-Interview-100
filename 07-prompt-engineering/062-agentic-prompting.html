@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Agentic Prompting：如何编写让 LLM 自主执行任务的 Prompt？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .ap-stage { padding-top: var(--s-2); }
+  .ap-toggles { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 var(--s-6) var(--s-4); }
+  .ap-toggle { min-height: 38px; display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: 12px; color: var(--text-dim); }
+  .ap-toggle:hover { border-color: var(--accent); }
+  .ap-toggle[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+  .ap-toggle .dot { width: 7px; height: 7px; border-radius: 50%; background: #8b928c; flex: 0 0 auto; }
+  .ap-toggle[aria-pressed="true"] .dot { background: var(--accent); }
+  .ap-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+  .ap-main { min-width: 0; }
+  .ap-side { min-width: 0; }
+  .ap-bar { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px; margin-bottom: 4px; }
+  .ap-bar b { font-size: 13px; }
+  .ap-bar span { font: 10px/1.6 var(--mono); color: var(--text-dim); }
+  .ap-prompt { max-height: 430px; overflow: auto; margin-top: 0; }
+  .ap-prompt code { font-size: 11.5px; }
+  .ap-missing-line { color: #8f1d1d; }
+  .ap-status { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3); }
+  .ap-status h3 { margin: 0 0 4px; font-size: 13px; }
+  .ap-list { list-style: none; margin: 0; padding: 0; }
+  .ap-list li { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 11px; }
+  .ap-list li:last-child { border-bottom: 0; }
+  .ap-list .name { min-width: 0; }
+  .ap-list .name small { display: block; color: var(--text-dim); font: 9px/1.5 var(--mono); }
+  .ap-badge { display: inline-flex; align-items: center; min-height: 20px; padding: 1px 7px; border-radius: 999px; border: 1px solid transparent; font: 600 10px/1.4 var(--mono); white-space: nowrap; }
+  .ap-badge.ok { color: #1c5e20; background: #e8f2e7; border-color: #b9d8b7; }
+  .ap-badge.bad { color: #8f1d1d; background: #fbeaea; border-color: #e2b6b6; }
+  .ap-risks { margin-top: var(--s-3); }
+  .ap-risk { border: 1px solid #e2b6b6; background: #fbeaea; border-radius: var(--r-1); padding: 8px 10px; margin-top: 6px; }
+  .ap-risk b { display: block; font-size: 11px; color: #8f1d1d; }
+  .ap-risk p { margin-top: 2px; font-size: 11px; line-height: 1.65; color: #5f2626; }
+  .ap-risk.none { border-color: #b9d8b7; background: #e8f2e7; }
+  .ap-risk.none b, .ap-risk.none p { color: #1c5e20; }
+  .ap-note { margin-top: var(--s-3); font-size: 10px; line-height: 1.7; color: var(--text-dim); }
+  .ap-two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: var(--s-3); }
+  .ap-two > div, .ap-card { min-width: 0; }
+  .ap-two pre { max-width: 100%; }
+  .ap-two pre { margin: 0; font-size: 11px; }
+  .ap-two .label { display: block; font: 10px/1.6 var(--mono); color: var(--text-dim); margin-bottom: 3px; }
+  .ap-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: var(--s-3); }
+  .ap-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3); }
+  .ap-card b { display: block; font-size: 12px; }
+  .ap-card p { margin-top: 3px; font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .ap-card code { font-size: 10.5px; }
+  .ap-role { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; margin-top: var(--s-3); }
+  .ap-role div { border: 1px solid var(--border); border-radius: 4px; background: var(--surface); padding: 7px 8px; }
+  .ap-role b { display: block; font: 600 10px/1.4 var(--mono); color: var(--accent); }
+  .ap-role span { display: block; margin-top: 2px; font-size: 10px; line-height: 1.5; color: var(--text-dim); }
+  @media (max-width: 960px) {
+    .ap-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+    .ap-role { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px) {
+    .ap-toggles { padding: 0 var(--s-4) var(--s-3); }
+    .ap-toggle { padding: 4px 9px; font-size: 11px; }
+    .ap-two, .ap-cards { grid-template-columns: minmax(0, 1fr); }
+    .ap-role { grid-template-columns: 1fr 1fr; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">062 / Agentic Prompting</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 9 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="060-few-shot-vs-zero-shot.html">← 上一页 · Few-Shot vs Zero-S…</a><a href="063-prompt-chaining.html">下一页 → · Prompt Chaining</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Prompt Engineering · 可交互讲解</p>
+      <h1>让模型知道，<br>它能做什么。</h1>
+    </div>
+    <div>
+      <p class="lead">Agentic Prompt 不是把任务写得更长，而是把 Agent 执行任务需要的五件事交代清楚：身份与目标、工具、推理格式、约束、输出规范。它优化的是多步决策链，不是一次回答。</p>
+      <p class="definition">关键边界：<strong>工具描述是决策依据，不是说明书装饰</strong>。模型靠描述判断该不该调用、调用哪个；描述含糊会直接变成误调用和漏调用。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Prompt Engineering</span><span class="pill">Agent Prompt</span><span class="pill">固定教学模板</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="ap-caption-title">
+    <div class="player-top">
+      <div class="player-label">Agentic Prompt 组装台 <small>开关组件，看 Prompt 和风险怎么变</small></div>
+      <div class="controls" role="group" aria-label="模板预设">
+        <button type="button" class="button button-quiet" id="ap-reset">重置</button>
+        <button type="button" class="button" id="ap-min">最小模板</button>
+        <button type="button" class="button button-primary" id="ap-full">完整模板</button>
+      </div>
+    </div>
+    <div class="ap-toggles" role="group" aria-label="开关 Prompt 组件">
+      <button type="button" class="ap-toggle" data-part="role" aria-pressed="true"><span class="dot"></span>角色 / 目标 / 流程</button>
+      <button type="button" class="ap-toggle" data-part="tools" aria-pressed="true"><span class="dot"></span>工具描述</button>
+      <button type="button" class="ap-toggle" data-part="format" aria-pressed="true"><span class="dot"></span>推理格式</button>
+      <button type="button" class="ap-toggle" data-part="guard" aria-pressed="true"><span class="dot"></span>约束与护栏</button>
+      <button type="button" class="ap-toggle" data-part="output" aria-pressed="true"><span class="dot"></span>输出规范</button>
+    </div>
+    <div class="scene-host">
+      <div class="ap-stage scene" id="ap-scene" data-scene="prompt-builder">
+        <div class="ap-grid">
+          <section class="ap-main" aria-label="Prompt 预览">
+            <div class="ap-bar"><b>Agent 看到的 Prompt</b><span id="ap-count">5 / 5 段 · 0 字符</span></div>
+            <pre class="ap-prompt" aria-label="固定教学 Prompt 预览"><code id="ap-code"></code></pre>
+          </section>
+          <aside class="ap-side" aria-labelledby="ap-caption-title">
+            <p class="figure-index" id="ap-figure">图 1 · 组件状态</p>
+            <h2 id="ap-caption-title">缺哪段，<br>就多一种失败方式。</h2>
+            <p id="ap-desc">开关会实时改变左边的固定模板。右边的风险卡说明缺失组件时，Agent 可能怎样失败；这些是原文机制的固定教学示例，不是模型实测输出。</p>
+            <div class="ap-status">
+              <h3>组件状态</h3>
+              <ul class="ap-list" id="ap-list"></ul>
+            </div>
+            <div class="ap-risks" id="ap-risks"></div>
+            <p class="ap-note">固定教学数据（模板）：五段文本、开关状态和风险说明都写死在页面里；页面不调用模型，也不执行任何工具。原文中的基准结论只按原文转述，未联网核实。</p>
+          </aside>
+        </div>
+      </div>
+      <p class="demo-note">组装台说明：完整模板取自原文的代码调试 Agent 示例，最小模板只保留角色与目标。字符数为实际文本长度，不代表 token 数；风险卡是机制说明，不是真实运行结果。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学模板 · 5 个组件 · 3 个预设</span><span id="ap-summary">完整模板 · 5 / 5 段启用</span></div>
+  </section>
+  <p id="ap-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="diff-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">标准 Prompt vs Agentic Prompt</p><h2 id="diff-title">一个问一句，<br>一个跑一段。</h2></div>
+      <p class="reading-intro">标准 Prompt 把模型当成回答者；Agentic Prompt 把模型当成执行者，要交代它能用什么、按什么节奏走、什么时候停。</p>
+    </div>
+    <div class="prose">
+      <div class="ap-two">
+        <div>
+          <span class="label">标准 Prompt：一问一答</span>
+          <pre><code>请分析以下代码的 bug：
+{code}</code></pre>
+          <p>模型输出一段分析就结束。没有工具、没有中间状态，也没有“下一步做什么”。</p>
+        </div>
+        <div>
+          <span class="label">Agentic Prompt：赋予执行能力</span>
+          <pre><code>你是一个代码调试 Agent。你的目标是找到并修复代码中的 bug。
+
+## 可用工具
+- read_file(path): 读取源文件
+- run_tests(path): 运行测试套件
+- edit_file(path, old_text, new_text): 修改文件
+- search_code(pattern): 搜索代码库
+
+## 工作流程
+1. 先阅读错误信息和相关代码
+2. 分析可能的原因
+3. 修改代码
+4. 运行测试验证修复
+5. 如果测试仍然失败，回到步骤 1
+
+## 推理格式
+Thought: [你的分析和计划]
+Action: [工具名称]
+Action Input: [工具参数]
+Observation: [工具返回结果]
+
+## 约束
+- 最多执行 15 步
+- 不要修改测试文件
+- 每次只修改一处，验证后再继续
+
+## 输出规范
+Final Answer: [修复总结]</code></pre>
+        </div>
+      </div>
+      <p>两段 Prompt 的差别不在长度，而在职责：标准 Prompt 只需要模型“答对”；Agentic Prompt 要模型自己决定读哪个文件、跑哪条测试、失败后怎么回退。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="parts-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">核心组件</p><h2 id="parts-title">五个问题，<br>缺一不可。</h2></div>
+      <p class="reading-intro">原文模板用 WHO / WHAT / WITH WHAT / HOW / BOUNDARIES / OUTPUT 六段组织；其中 WHO 与 WHAT 可以合并成“角色、目标与流程”。</p>
+    </div>
+    <div class="prose">
+      <div class="ap-role" role="img" aria-label="Agentic Prompt 的六个组成部分：角色、目标、工具、推理格式、约束、输出规范">
+        <div><b>WHO</b><span>你是谁：身份与专业范围</span></div>
+        <div><b>WHAT</b><span>做什么：任务与成功标准</span></div>
+        <div><b>WITH WHAT</b><span>用什么：工具、参数、边界</span></div>
+        <div><b>HOW</b><span>怎么想：Thought / Action / Observation</span></div>
+        <div><b>BOUNDARIES</b><span>停在哪：步数、禁止项、降级</span></div>
+        <div><b>OUTPUT</b><span>交什么：最终格式</span></div>
+      </div>
+      <p>这六段各自回答一个独立问题。把“成功标准”写进目标段，Agent 才知道什么时候算完成；把“最多 15 步”写进约束段，循环才有硬停止条件。</p>
+      <details>
+        <summary>展开原文的通用模板（占位符按原文保留）</summary>
+        <pre><code># 1. 角色定义（WHO）
+你是 {agent_name}，一个专注于 {domain} 的 AI Agent。
+你的核心能力是 {capabilities}。
+
+# 2. 目标定义（WHAT）
+你的任务是：{task_description}
+成功标准：{success_criteria}
+
+# 3. 工具描述（WITH WHAT）
+你可以使用以下工具：
+
+### {tool_name_1}
+- 功能：{description}
+- 参数：{parameters}
+- 返回：{return_type}
+- 使用场景：{when_to_use}
+- 注意事项：{caveats}
+
+# 4. 推理与行动格式（HOW）
+Thought: 分析当前状况，决定下一步
+Action: 选择一个工具
+Action Input: 提供工具参数（JSON 格式）
+Observation: 观察工具返回的结果
+
+# 5. 约束与护栏（BOUNDARIES）
+- 最多执行 {max_steps} 步
+- 不确定时问用户而非猜测
+- 涉及 {dangerous_actions} 时必须确认
+- 如果连续 3 次失败，报告问题并停止
+
+# 6. 输出规范（OUTPUT）
+完成后使用：
+Final Answer: {output_format}</code></pre>
+      </details>
+
+      <h3>工具描述的最佳实践</h3>
+      <p>原文的判断很直接：工具描述的质量直接影响 Agent 的工具选择准确率。在 ToolBench / API-Bank 等工具调用基准上，清晰的工具描述（功能 + 参数语义 + 使用边界）是降低误调用与漏调用的关键变量，比堆“角色扮演”指令更重要。以上为原文观点，未联网核实。</p>
+      <div class="ap-two">
+        <div>
+          <span class="label">✗ 差的描述</span>
+          <pre><code>{
+  "name": "search",
+  "description": "搜索功能"
+}</code></pre>
+          <p>模型不知道搜什么、什么时候该用、和别的搜索工具有什么区别。</p>
+        </div>
+        <div>
+          <span class="label">✓ 好的描述</span>
+          <pre><code>{
+  "name": "web_search",
+  "description": "搜索互联网获取最新信息。适用于需要实时数据、最新新闻或模型训练数据中不包含的信息的场景。不适合搜索代码库内部信息（请用 search_code）。",
+  "parameters": {
+    "query": {
+      "type": "string",
+      "description": "搜索关键词，建议使用英文以获得更多结果"
+    },
+    "max_results": {
+      "type": "integer",
+      "description": "返回结果数量，默认 5",
+      "default": 5
+    }
+  }
+}</code></pre>
+        </div>
+      </div>
+      <p>好的描述同时说清四件事：做什么、什么时候用、什么时候不用、参数怎么填。最后一条“不适合……”尤其重要，它把工具之间的边界画了出来。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="react-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">ReAct 模式</p><h2 id="react-title">想一步，<br>做一步，看一眼。</h2></div>
+      <p class="reading-intro">ReAct 把推理和行动交替写进同一个循环：Thought 说明为什么，Action 调用工具，Observation 接收结果，再进入下一轮。</p>
+    </div>
+    <div class="prose">
+      <pre><code>请按照 ReAct 模式解决问题。
+
+问题：{question}
+
+你可以使用以下工具：
+{tool_descriptions}
+
+按以下格式回答：
+
+Thought: 我需要思考下一步做什么。首先分析问题，然后决定用什么工具。
+Action: tool_name
+Action Input: {"param1": "value1"}
+
+等待工具返回结果后继续：
+
+Observation: [工具返回的结果]
+Thought: 根据结果，我需要...
+Action: ...
+
+当你有足够信息时：
+Thought: 我现在有了足够的信息来回答问题。
+Final Answer: [最终答案]
+
+重要规则：
+- 每次只执行一个 Action
+- 在 Thought 中解释你的推理过程
+- 如果工具调用失败，在 Thought 中分析原因并尝试替代方案
+- 不要编造工具不存在的返回结果</code></pre>
+      <p>最后一条规则是护栏：模型很容易在 Observation 里“脑补”一个工具结果。Prompt 必须明确禁止编造，执行侧还要用真实工具返回值覆盖模型输出。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="advanced-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">进阶技巧</p><h2 id="advanced-title">四个小改动，<br>减少四类失误。</h2></div>
+      <p class="reading-intro">原文给出四种增强：具体身份、结构化思考、失败处理指令、输出前自检。它们都服务于同一个目标：让行为可预测。</p>
+    </div>
+    <div class="prose">
+      <div class="ap-cards">
+        <div class="ap-card"><b>角色强化</b><p>给具体专家身份，而不是“有帮助的助手”。原文示例：<code>你是一个有 10 年经验的 SRE 工程师</code>。预期是更专业的判断和更谨慎的行动。</p></div>
+        <div class="ap-card"><b>思维链引导</b><p>在 Thought 里固定四行：当前状态、目标差距、下一步计划、风险评估。让每一步推理都有结构，方便回放和排错。</p></div>
+        <div class="ap-card"><b>失败处理指令</b><p>写清失败后的顺序：分析原因 → 改参数重试（最多 2 次）→ 换替代工具 → 仍失败则向用户报告。不要让模型自己即兴决定。</p></div>
+        <div class="ap-card"><b>输出前自检</b><p>在 Final Answer 前检查三件事：是否完整回答、数据是否来自工具真实返回、是否有遗漏的重要信息。</p></div>
+      </div>
+      <p>这些技巧不是越多越好。原文的提醒是：明确“做什么”和“边界在哪”，在“怎么做”上留出适当自由度；对强模型堆微观指令，反而可能降低效果。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="multi-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">多 Agent Prompt</p><h2 id="multi-title">调度者说分工，<br>执行者说边界。</h2></div>
+      <p class="reading-intro">多 Agent 系统里，每个角色只需要知道自己那一份职责。Supervisor 负责分解和分配，Worker 负责确认范围、执行、返回结构化结果。</p>
+    </div>
+    <div class="prose">
+      <div class="ap-two">
+        <div>
+          <span class="label">Supervisor</span>
+          <pre><code>你是任务调度 Agent。你的职责是将用户任务
+分配给合适的专家 Agent。
+
+可用的专家 Agent：
+- researcher: 擅长信息搜索和数据收集
+- analyst: 擅长数据分析和可视化
+- writer: 擅长报告撰写和内容创作
+
+你的工作流程：
+1. 分析用户任务
+2. 将任务分解为子任务
+3. 将每个子任务分配给最合适的专家
+4. 收集结果并汇总
+
+使用 delegate(agent_name, task) 工具来分配任务。</code></pre>
+        </div>
+        <div>
+          <span class="label">Worker</span>
+          <pre><code>你是 {role_name}，接受调度 Agent 的任务指派。
+你只负责 {specialization}，其他类型的任务请回复
+"超出能力范围"。
+
+收到任务后：
+1. 确认任务在你的能力范围内
+2. 执行任务
+3. 返回结构化结果</code></pre>
+        </div>
+      </div>
+      <p>Worker 的“超出能力范围”不是客套话，它是防止任务在 Agent 之间被悄悄吞掉的护栏。没有这句，Worker 可能硬做不擅长的事，最后没人发现。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">两个误区，<br>两个追问。</h2></div>
+      <p class="reading-intro">两条误区都在“写得更细就更好”；两条追问分别问工具滥用和跨模型可移植性。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“Agentic Prompt 越详细越好。”</h3><p>过度详细的指令可能限制 Agent 的灵活性。好的 Agentic Prompt 应该明确“做什么”和“边界在哪”，但在“怎么做”上给予适当自由度。尤其对强模型，过多的微观指令反而可能降低效果。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“标准 Prompt 技巧直接适用于 Agent。”</h3><p>Agent Prompt 有独特挑战：多轮交互、工具调用结果的不确定性、长上下文中的指令遗忘。标准 Prompt 优化单次生成，Agent Prompt 优化整个决策链。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>如何减少 Agent 的“工具滥用”？</h3><p>在 Prompt 中明确工具使用条件：“只在需要外部信息时使用搜索工具，能通过推理得到的答案不要搜索。”同时用 negative example 展示不该使用工具的场景。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>Agentic Prompt 在不同模型间可移植吗？</h3><p>不太可移植。不同模型对推理格式、工具调用方式的偏好仍有差异。但原文指出，2025–2026 已大幅收敛：GPT-4/5 系列和 Claude 4.x 都原生支持 tool use / structured outputs，输入格式不再强依赖 JSON 或 XML 包裹。早期“Claude 偏好 XML、GPT 偏好 JSON”是 Claude 2/3 时代的经验法则，到 Claude 4.x native tool use 之后已经不重要。最佳实践仍是针对每个目标模型跑评测验证，不要把“XML for Claude / JSON for GPT”当成定律。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《Agentic Prompting：如何编写让 LLM 自主执行任务的 Prompt？》。原文中的模型版本与基准结论只按原文转述，未联网核实。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://apxml.com/courses/prompt-engineering-agentic-workflows/chapter-1-foundations-agentic-ai-systems/contrasting-agent-standard-prompts" target="_blank" rel="noopener noreferrer">Agent Prompts vs Standard LLM Prompts (APXML)</a></li>
+          <li><a href="https://www.clarifai.com/blog/agentic-prompt-engineering" target="_blank" rel="noopener noreferrer">Agentic Prompt Engineering: A Deep Dive into LLM Roles (Clarifai)</a></li>
+          <li><a href="https://www.philschmid.de/agentic-pattern" target="_blank" rel="noopener noreferrer">Zero to One: Learning Agentic Patterns (Phil Schmid)</a></li>
+          <li><a href="https://medium.com/@vithika16k/how-to-write-killer-prompts-for-your-agentic-ai-workflow-183e37390808" target="_blank" rel="noopener noreferrer">How to Write Killer Prompts for Agentic AI Workflow (Medium)</a></li>
+          <li><a href="https://www.promptingguide.ai/agents/introduction" target="_blank" rel="noopener noreferrer">Introduction to AI Agents (Prompt Engineering Guide)</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>07-prompt-engineering/062-agentic-prompting.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 5 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const AP_PARTS = [
+    { key: "role", label: "角色、目标与流程", short: "WHO / WHAT", text:
+      "你是一个代码调试 Agent。你的目标是找到并修复代码中的 bug。\n\n" +
+      "## 工作流程\n" +
+      "1. 先阅读错误信息和相关代码\n" +
+      "2. 分析可能的原因\n" +
+      "3. 修改代码\n" +
+      "4. 运行测试验证修复\n" +
+      "5. 如果测试仍然失败，回到步骤 1" },
+    { key: "tools", label: "工具描述", short: "WITH WHAT", text:
+      "## 可用工具\n" +
+      "- read_file(path): 读取源文件\n" +
+      "- run_tests(path): 运行测试套件\n" +
+      "- edit_file(path, old_text, new_text): 修改文件\n" +
+      "- search_code(pattern): 搜索代码库" },
+    { key: "format", label: "推理格式", short: "HOW", text:
+      "## 推理格式\n" +
+      "Thought: [你的分析和计划]\n" +
+      "Action: [工具名称]\n" +
+      "Action Input: [工具参数]\n" +
+      "Observation: [工具返回结果]\n" +
+      "... (重复直到问题解决)\n" +
+      "Final Answer: [修复总结]" },
+    { key: "guard", label: "约束与护栏", short: "BOUNDARIES", text:
+      "## 约束\n" +
+      "- 最多执行 15 步\n" +
+      "- 不要修改测试文件\n" +
+      "- 每次只修改一处，验证后再继续\n" +
+      "- 连续 3 次失败，报告问题并停止" },
+    { key: "output", label: "输出规范", short: "OUTPUT", text:
+      "## 输出规范\n" +
+      "Final Answer: 修复摘要 + 改动文件 + 测试结果" }
+  ];
+
+  const AP_RISKS = {
+    role: { title: "目标与流程缺失", text: "不知道做到什么算完成，也不知道先读代码还是先改代码；容易把“解释 bug”当成“修好 bug”，或在无关文件里改动。" },
+    tools: { title: "工具描述缺失", text: "模型只能猜有哪些工具、参数怎么填。原文强调工具描述质量直接影响选择准确率；缺了它，误调用和漏调用都会上升。" },
+    format: { title: "推理格式缺失", text: "没有 Thought / Action / Observation 结构，过程不可审计。失败后无法看出它为什么调这个工具，也难回放定位。" },
+    guard: { title: "约束缺失", text: "没有最大步数和禁止项，Agent 可能反复试错停不下来，甚至改测试文件让测试通过。" },
+    output: { title: "输出规范缺失", text: "最终输出格式不固定，下游无法解析，人也无法快速判断任务是否真的完成。" }
+  };
+
+  const apState = { enabled: new Set(AP_PARTS.map((part) => part.key)) };
+  const apById = (id) => document.getElementById(id);
+
+  function apEl(tag, cls, text) {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function apPrompt() {
+    const chunks = AP_PARTS.filter((part) => apState.enabled.has(part.key)).map((part) => part.text);
+    return chunks.length ? chunks.join("\n\n") : "（模板为空：Agent 只收到用户问题，没有任何执行说明。）";
+  }
+
+  function apRender() {
+    const code = apById("ap-code");
+    const prompt = apPrompt();
+    code.textContent = prompt;
+    const count = apState.enabled.size;
+    apById("ap-count").textContent = count + " / 5 段 · " + prompt.length + " 字符";
+
+    const list = apById("ap-list");
+    list.textContent = "";
+    AP_PARTS.forEach((part) => {
+      const li = document.createElement("li");
+      const name = apEl("span", "name", part.label);
+      name.append(apEl("small", "", part.short));
+      li.append(name, apEl("span", "ap-badge " + (apState.enabled.has(part.key) ? "ok" : "bad"), apState.enabled.has(part.key) ? "已启用" : "缺失"));
+      list.append(li);
+    });
+
+    const risks = apById("ap-risks");
+    risks.textContent = "";
+    const missing = AP_PARTS.filter((part) => !apState.enabled.has(part.key));
+    if (!missing.length) {
+      const none = apEl("div", "ap-risk none");
+      none.append(apEl("b", "", "五段齐全"), apEl("p", "", "没有缺失组件。注意：齐全不代表写得对，工具描述是否具体、约束是否可执行，仍要逐条检查。"));
+      risks.append(none);
+    } else {
+      missing.forEach((part) => {
+        const card = apEl("div", "ap-risk");
+        card.append(apEl("b", "", AP_RISKS[part.key].title), apEl("p", "", AP_RISKS[part.key].text));
+        risks.append(card);
+      });
+    }
+
+    document.querySelectorAll("[data-part]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(apState.enabled.has(button.dataset.part)));
+    });
+    apById("ap-summary").textContent = (count === 5 ? "完整模板" : count === 1 && apState.enabled.has("role") ? "最小模板" : "自定义模板") + " · " + count + " / 5 段启用";
+  }
+
+  let apAnnounceTimer = 0;
+  function apAnnounce(message) {
+    const region = apById("ap-announcement");
+    window.clearTimeout(apAnnounceTimer);
+    apAnnounceTimer = window.setTimeout(() => {
+      region.textContent = message;
+    }, 60);
+  }
+
+  document.querySelectorAll("[data-part]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = button.dataset.part;
+      if (apState.enabled.has(key)) {
+        apState.enabled.delete(key);
+      } else {
+        apState.enabled.add(key);
+      }
+      apRender();
+      const part = AP_PARTS.find((item) => item.key === key);
+      apAnnounce(part.label + (apState.enabled.has(key) ? "已启用。" : "已关闭，左侧 Prompt 中对应段落消失。"));
+    });
+  });
+
+  apById("ap-full").addEventListener("click", () => {
+    apState.enabled = new Set(AP_PARTS.map((part) => part.key));
+    apRender();
+    apAnnounce("已载入完整模板，五段全部启用。");
+  });
+  apById("ap-min").addEventListener("click", () => {
+    apState.enabled = new Set(["role"]);
+    apRender();
+    apAnnounce("已载入最小模板，只保留角色、目标与流程。");
+  });
+  apById("ap-reset").addEventListener("click", () => {
+    apState.enabled = new Set(AP_PARTS.map((part) => part.key));
+    apRender();
+    apAnnounce("已重置为完整模板。");
+  });
+
+  apRender();
+</script>
+</body>
+</html>

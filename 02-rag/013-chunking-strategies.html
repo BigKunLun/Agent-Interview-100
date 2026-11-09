@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>文档分块（Chunking）策略有哪些？各有什么优缺点？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .ck-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .ck-grid { display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+  .ck-left { min-width: 0; }
+  .ck-source { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .ck-source-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px; }
+  .ck-source-head b { font: 600 13px/1.5 var(--sans); }
+  .ck-source-head span { font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .ck-text { margin-top: var(--s-3); font: 15px/2 var(--serif); color: var(--ink); }
+  .ck-text mark { background: #ffe7a3; color: inherit; padding: 1px 0; border-radius: 2px; }
+  .ck-text .ck-char { color: #8b908b; }
+  .ck-ranges { margin-top: var(--s-3); }
+  .ck-range-row { display: grid; grid-template-columns: 34px minmax(0, 1fr) 72px; gap: 7px; align-items: center; margin-top: 4px; }
+  .ck-range-id { font: 600 9px/1.5 var(--mono); color: var(--text-dim); text-align: right; }
+  .ck-track { position: relative; height: 15px; border: 1px solid var(--border); border-radius: 3px; background: var(--surface-soft); overflow: hidden; }
+  .ck-bar { position: absolute; top: 0; bottom: 0; border-right: 1px solid rgba(255,255,255,.7); opacity: .85; }
+  .ck-range-row.is-selected .ck-bar { opacity: 1; outline: 2px solid #202421; outline-offset: -2px; }
+  .ck-range-len { font: 9px/1.5 var(--mono); color: var(--text-dim); white-space: nowrap; }
+  .ck-range-row.is-selected .ck-range-len { color: var(--ink); font-weight: 600; }
+  .ck-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); margin-top: var(--s-3); }
+  .ck-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: 8px 9px; text-align: left; }
+  .ck-card:hover { border-color: var(--accent); }
+  .ck-card.is-selected { border-color: var(--accent); background: var(--accent-dim); }
+  .ck-card-head { display: flex; justify-content: space-between; gap: 6px; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .ck-card-head b { color: var(--accent); font-weight: 600; }
+  .ck-card p { margin-top: 3px; font-size: 10px; line-height: 1.6; color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .ck-card small { display: block; margin-top: 2px; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .ck-detail { margin-top: var(--s-3); padding: 8px 10px; border: 1px dashed var(--border-bright); border-radius: 4px; background: var(--surface); font-size: 10px; line-height: 1.65; color: var(--text-dim); }
+  .ck-detail b { color: var(--ink); }
+  .ck-calc { margin-top: var(--s-3); padding: 8px 10px; border-radius: 4px; background: #f3f1e8; font: 10px/1.75 var(--mono); color: var(--ink); overflow-wrap: anywhere; }
+
+  .ck-panel { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: #f7f6f1; padding: var(--s-4); }
+  .ck-panel h2 { font: 600 19px/1.45 var(--serif); }
+  .ck-control { margin-top: var(--s-3); }
+  .ck-control-head { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 11px; }
+  .ck-control-head label { font-weight: 600; }
+  .ck-control-head output { font: 600 13px/1.4 var(--mono); color: var(--accent); }
+  .ck-control input[type="range"] { width: 100%; margin-top: 3px; accent-color: var(--accent); }
+  .ck-control small { display: block; font-size: 10px; line-height: 1.5; color: var(--text-dim); }
+  .ck-presets { display: flex; flex-wrap: wrap; gap: 5px; margin-top: var(--s-3); }
+  .ck-preset { min-height: 32px; padding: 4px 9px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font: 10px/1.4 var(--mono); }
+  .ck-preset:hover { border-color: var(--accent); background: var(--accent-dim); }
+  .ck-preset.is-active { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+  .ck-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; margin-top: var(--s-3); }
+  .ck-metric { padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); }
+  .ck-metric dt { font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .ck-metric dd { margin: 0; font: 600 16px/1.3 var(--mono); }
+  .ck-metric dd small { font: 9px/1.3 var(--mono); font-weight: 400; color: var(--text-dim); }
+  .ck-verdict { display: inline-block; margin-top: var(--s-3); padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border-bright); font: 10px/1.6 var(--mono); background: var(--surface); }
+  .ck-caption { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px solid var(--border); }
+  .ck-caption h2 { font: 600 21px/1.45 var(--serif); }
+  .ck-caption p { margin-top: var(--s-2); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+
+  /* 阅读 */
+  .ck-three { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .ck-strategy { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); border-top: 4px solid var(--series-1); }
+  .ck-strategy.recursive { border-top-color: var(--series-2); }
+  .ck-strategy.semantic { border-top-color: var(--series-3); }
+  .ck-strategy h3 { margin-top: 0; font-size: 17px; }
+  .ck-strategy p { font-size: 12px; }
+  .ck-strategy .recall { display: inline-block; margin-top: var(--s-2); padding: 2px 8px; border: 1px solid var(--border-bright); border-radius: 999px; font: 9px/1.5 var(--mono); color: var(--accent); background: var(--accent-dim); }
+  .ck-table th:first-child { width: 104px; }
+  .ck-note { font-size: 11px; line-height: 1.7; color: var(--text-dim); margin-top: var(--s-2); }
+  .ck-callout-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); margin-top: var(--s-4); }
+  .ck-callout { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3); }
+  .ck-callout h3 { margin-top: 0; font-size: 15px; }
+  .ck-callout p { font-size: 12px; }
+
+  @media (max-width: 960px) {
+    .ck-grid { grid-template-columns: 1fr; }
+    .ck-three { grid-template-columns: 1fr; }
+    .ck-callout-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .ck-stage { padding: var(--s-4); }
+    .ck-cards { grid-template-columns: 1fr; }
+    .ck-text { font-size: 14px; line-height: 1.95; }
+    .ck-range-row { grid-template-columns: 26px minmax(0, 1fr) 78px; }
+    .ck-metrics { grid-template-columns: 1fr 1fr; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">013 / 分块策略</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 12 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="011-rag-overview-and-pipeline.html">← 上一页 · RAG 概念、Pipeline 与组…</a><a href="014-vector-database-comparison.html">下一页 → · 向量数据库选型</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">基础 · RAG · 可交互讲解</p>
+      <h1>切多大，<br>决定找得准不准。</h1>
+    </div>
+    <div>
+      <p class="lead">分块决定 Embedding 的语义质量、检索精度、生成上下文和 token 成本。三种主路线是固定大小、递归、语义分块；核心权衡永远是上下文保留 vs 检索精度。</p>
+      <p class="definition">关键边界：<strong>块越大不代表越好，块越小也不代表越准</strong>。大块保留上下文但稀释相关性，小块匹配精确但容易丢上下文。本页互动用固定中文文本和字符数做真实切块算术，不调用 tokenizer 或 Embedding 模型。</p>
+      <div class="hero-meta"><span class="pill">基础</span><span class="pill">RAG</span><span class="pill">Chunking</span><span class="pill">真实切块算术</span><span class="pill">固定教学文本</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="ck-title">
+    <div class="player-top">
+      <div class="player-label">同一段文本，改 chunk_size 和 overlap 看边界 <small>按字符切分 · 不调用 tokenizer</small></div>
+      <div class="controls" role="group" aria-label="切块演示控制">
+        <button type="button" class="button button-quiet" id="ck-reset">重置 80 / 16</button>
+      </div>
+    </div>
+    <div class="ck-stage scene" id="ck-scene">
+      <div class="ck-grid">
+        <div class="ck-left">
+          <div class="ck-source">
+            <div class="ck-source-head"><b>固定教学文本</b><span id="ck-total">总字数 —</span></div>
+            <p class="ck-text" id="ck-text"></p>
+            <div class="ck-ranges" id="ck-ranges" aria-label="各块在原文中的位置"></div>
+            <div class="ck-cards" id="ck-cards"></div>
+            <div class="ck-detail" id="ck-detail">点击任一块，查看它的起止字符和原文片段。</div>
+            <div class="ck-calc" id="ck-calc"></div>
+          </div>
+          <p class="demo-note">固定教学文本：所有字符数、块边界和重叠量都由页面脚本按字符实时计算。中文 token 与字符不是一对一，真实系统若按 token 切分，需要 tokenizer；本页不模拟 token 数，也不调用任何模型。</p>
+        </div>
+
+        <aside class="ck-panel" aria-labelledby="ck-title">
+          <h2 id="ck-title">调参数，块数会变。</h2>
+          <div class="ck-control">
+            <div class="ck-control-head"><label for="ck-size">chunk_size · 每块字符数</label><output id="ck-size-out" for="ck-size">80</output></div>
+            <input id="ck-size" type="range" min="40" max="160" step="8" value="80" aria-describedby="ck-size-help">
+            <small id="ck-size-help">每块最多包含的字符数。滑块步长 8 字符。</small>
+          </div>
+          <div class="ck-control">
+            <div class="ck-control-head"><label for="ck-overlap">chunk_overlap · 重叠字符数</label><output id="ck-overlap-out" for="ck-overlap">16</output></div>
+            <input id="ck-overlap" type="range" min="0" max="40" step="4" value="16" aria-describedby="ck-overlap-help">
+            <small id="ck-overlap-help">相邻块共享的字符数；必须小于 chunk_size，页面会自动夹紧。</small>
+          </div>
+          <div class="ck-presets" role="group" aria-label="切块参数预设">
+            <button type="button" class="ck-preset" data-size="120" data-overlap="0">120 / 0</button>
+            <button type="button" class="ck-preset is-active" data-size="80" data-overlap="16">80 / 16</button>
+            <button type="button" class="ck-preset" data-size="48" data-overlap="8">48 / 8</button>
+          </div>
+          <dl class="ck-metrics">
+            <div class="ck-metric"><dt>总字符数</dt><dd id="ck-m-total">—</dd></div>
+            <div class="ck-metric"><dt>步长（size − overlap）</dt><dd id="ck-m-step">—</dd></div>
+            <div class="ck-metric"><dt>块数</dt><dd id="ck-m-count">—</dd></div>
+            <div class="ck-metric"><dt>覆盖</dt><dd id="ck-m-cover">—</dd></div>
+          </dl>
+          <span class="ck-verdict" id="ck-verdict">默认参数 · 10–20% overlap</span>
+          <p class="ck-note">覆盖按原文每个字符至少落入一个块计算；重叠会产生重复覆盖，重复字数显示在下方计算行。</p>
+        </aside>
+      </div>
+      <div class="ck-caption">
+        <p class="figure-index" id="ck-caption-index">图 1 · 固定大小分块演示</p>
+        <h2 id="ck-caption-title">块越大，块数越少；重叠越大，重复越多。</h2>
+        <p id="ck-caption-desc">调整 chunk_size 和 overlap，观察块数、边界和重复覆盖的变化。所有数字由当前文本长度实时计算。</p>
+      </div>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学文本 · 字符级切块，不调用 tokenizer</span><span id="ck-state-summary">80 / 16 · 等待计算</span></div>
+  </section>
+  <p id="ck-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">一 · 为什么分块重要</p><h2 id="why-title">它不是预处理，<br>是设计决策。</h2></div>
+      <p class="reading-intro">分块策略同时决定四件事：Embedding 的语义质量、检索精度和召回率、生成的上下文充分性、token 使用效率和成本。</p>
+    </div>
+    <div class="prose">
+      <div class="ck-callout-grid">
+        <div class="ck-callout"><h3>语义质量</h3><p>块是否表达一个完整概念。切在句子中间，Embedding 会把半句话当成主题。</p></div>
+        <div class="ck-callout"><h3>检索精度与召回</h3><p>块太大，相关性被稀释；块太小，召回到的片段缺少回答所需的信息。</p></div>
+        <div class="ck-callout"><h3>生成上下文</h3><p>LLM 拿到的是块，不是整篇文档。块不完整，回答就会缺前提。</p></div>
+        <div class="ck-callout"><h3>成本</h3><p>块越小、数量越多，索引和检索的存储与计算开销越高。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="strategies-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">二 · 三种主路线</p><h2 id="strategies-title">固定、递归、<br>语义。</h2></div>
+      <p class="reading-intro">三条路线的复杂度依次上升。原文引用 Chroma 的测试：递归分块在 400–512 tokens 时 Recall 85–90%，语义分块 91–92%，只差 2–3 个百分点，但语义分块要多做一遍 Embedding。</p>
+    </div>
+    <div class="prose">
+      <div class="ck-three">
+        <article class="ck-strategy">
+          <h3>固定大小分块</h3>
+          <p><strong>按预定的字符数或 token 数均匀切分</strong>，通常带 overlap。实现最简单，无需 NLP 库，计算成本最低；但完全忽略语义结构，可能在句子甚至单词中间切断。</p>
+          <span class="recall">成本最低 · 适合原型</span>
+        </article>
+        <article class="ck-strategy recursive">
+          <h3>递归分块</h3>
+          <p><strong>按层次分隔符递归切分</strong>：先段落（<code>\n\n</code>），太大再句子（<code>\n</code>），再空格，最后字符。尽可能保持段落和句子完整，是推荐的通用默认方案。</p>
+          <span class="recall">原文测试 Recall 85–90%</span>
+        </article>
+        <article class="ck-strategy semantic">
+          <h3>语义分块</h3>
+          <p><strong>先给每个句子生成 Embedding</strong>，计算相邻句子余弦相似度，在相似度急剧下降的“主题转换点”切分。召回最高，但要为每个句子做 Embedding，成本和延迟更高。</p>
+          <span class="recall">原文测试 Recall 91–92%</span>
+        </article>
+      </div>
+      <p class="ck-note">Recall 数字按原文引用的 Chroma 测试保留，本页未复现实验，也不代表所有数据集上的结果。</p>
+
+      <h3>固定大小：怎么切</h3>
+      <p>按字符数均匀切，<code>chunk_size=500</code>、<code>chunk_overlap=50</code>，相邻块共享 50 字符以保留边界上下文。</p>
+      <details>
+        <summary>展开原文代码：CharacterTextSplitter</summary>
+        <pre><code>from langchain.text_splitter import CharacterTextSplitter
+
+splitter = CharacterTextSplitter(
+    chunk_size=500,      # 每块 500 字符
+    chunk_overlap=50,    # 相邻块重叠 50 字符
+    separator=""         # 按字符切
+)
+chunks = splitter.split_text(document)</code></pre>
+      </details>
+      <div class="table-wrap">
+        <table class="data ck-table">
+          <caption class="sr-only">固定大小分块的优缺点</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">说明</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">优点</th><td>实现最简单，无需 NLP 库；计算成本最低；块大小均匀，便于索引优化；适合快速原型。</td></tr>
+            <tr><th scope="row">缺点</th><td>完全忽略语义结构；可能在句子甚至单词中间切断；可能混合不相关的主题；即使有 overlap 也不能保证语义完整。</td></tr>
+            <tr><th scope="row">最佳场景</th><td>同质化数据集（新闻、博客等格式统一的内容）、快速原型验证。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>递归：默认方案</h3>
+      <p>分隔符优先级是段落 &gt; 换行 &gt; 句号 &gt; 逗号 &gt; 空格 &gt; 字符。原文推荐参数：<strong>400–512 tokens，10–20% overlap</strong>。注意 <code>chunk_size</code> 默认单位是字符，不是 token；要按 token 切，需用 <code>from_tiktoken_encoder</code> 或传 <code>length_function</code>。</p>
+      <details>
+        <summary>展开原文代码：RecursiveCharacterTextSplitter</summary>
+        <pre><code>from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+# 注意：默认 chunk_size 单位是「字符」，不是 token。若需按 token 切，
+# 用 RecursiveCharacterTextSplitter.from_tiktoken_encoder(...) 或显式传 length_function。
+splitter = RecursiveCharacterTextSplitter(
+    chunk_size=512,        # 字符数，中文常按 1.5-2 字符/token 估算
+    chunk_overlap=50,
+    separators=["\n\n", "\n", "。", "，", " ", ""]
+    # 优先级：段落 &gt; 换行 &gt; 句号 &gt; 逗号 &gt; 空格 &gt; 字符
+)
+chunks = splitter.split_text(document)
+
+# 若需严格按 token：
+# splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
+#     chunk_size=512, chunk_overlap=50,
+# )</code></pre>
+      </details>
+      <div class="table-wrap">
+        <table class="data ck-table">
+          <caption class="sr-only">递归分块的优缺点</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">说明</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">优点</th><td>实用的默认方案；显著减少句子被截断的概率；Chroma 测试 400–512 tokens 时 Recall 85–90%；计算成本仍然很低。</td></tr>
+            <tr><th scope="row">缺点</th><td>仍可能在某些复杂结构处切断；不处理表格、列表等特殊元素；不同文档格式需要不同分隔符集；不考虑语义相似度。</td></tr>
+            <tr><th scope="row">最佳场景</th><td>通用默认方案；结构化文本（技术文档、报告）、代码文件（配合语言特定分隔符）。</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>语义：在主题转换处切</h3>
+      <p>先对每个句子生成 Embedding，再计算相邻句子余弦相似度。低于阈值（如 95 分位）就切分。块大小自适应内容，但块大小不均匀，可能影响索引优化。</p>
+      <details>
+        <summary>展开原文代码：SemanticChunker</summary>
+        <pre><code>from langchain_experimental.text_splitter import SemanticChunker
+from langchain_openai import OpenAIEmbeddings
+
+splitter = SemanticChunker(
+    embeddings=OpenAIEmbeddings(),
+    breakpoint_threshold_type="percentile",
+    breakpoint_threshold_amount=95  # 相似度低于 95 分位数时切分
+)
+chunks = splitter.split_text(document)</code></pre>
+      </details>
+      <div class="table-wrap">
+        <table class="data ck-table">
+          <caption class="sr-only">语义分块的优缺点</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">说明</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">优点</th><td>最高的检索召回率（原文称 91–92%）；保持主题连续性和语义完整性；块大小自适应内容；适合叙述性文档。</td></tr>
+            <tr><th scope="row">缺点</th><td>需要对每个句子生成 Embedding；计算成本高（API 调用或本地推理）；处理速度比固定 / 递归慢；块大小不均匀，可能影响索引优化。</td></tr>
+            <tr><th scope="row">最佳场景</th><td>准确率优先的场景、叙述性 / 研究性文档、预算允许额外计算开销时。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="other-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三 · 其他策略</p><h2 id="other-title">按文档结构切，<br>或小块检索大块返回。</h2></div>
+      <p class="reading-intro">除了三种主路线，还有两类常见工程做法：利用文档自身结构，以及把“检索用的块”和“返回给 LLM 的块”分开。</p>
+    </div>
+    <div class="prose">
+      <h3>文档结构分块（Structure-Aware）</h3>
+      <p>用标题、章节、HTML 标签作为分块边界。Markdown 可以按 <code>#</code> / <code>##</code> / <code>###</code> 标题切，天然保留章节层级。</p>
+      <details>
+        <summary>展开原文代码：MarkdownHeaderTextSplitter</summary>
+        <pre><code># Markdown 文档按标题分块
+from langchain.text_splitter import MarkdownHeaderTextSplitter
+
+splitter = MarkdownHeaderTextSplitter(
+    headers_to_split_on=[
+        ("#", "h1"), ("##", "h2"), ("###", "h3")
+    ]
+)</code></pre>
+      </details>
+      <h3>小块检索 + 大块上下文（Parent-Child / Small-to-Big）</h3>
+      <p>用小块做精确检索，命中后返回包含它的大块作为上下文。小块负责“找得准”，大块负责“答得全”。</p>
+      <details>
+        <summary>展开原文代码：small → large 映射</summary>
+        <pre><code># 检索时用小块（200 tokens）匹配精确
+# 返回时给 LLM 提供大块（2000 tokens）保留上下文
+small_chunks = split(doc, chunk_size=200)
+large_chunks = split(doc, chunk_size=2000)
+# 建立 small → large 的映射关系</code></pre>
+      </details>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">三种主策略的快速对比</caption>
+          <thead><tr><th scope="col">策略</th><th scope="col">切分依据</th><th scope="col">成本</th><th scope="col">原文测试 Recall</th><th scope="col">适用</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">固定大小</th><td>字符 / token 数</td><td>最低</td><td>未给出</td><td>同质化数据、快速原型</td></tr>
+            <tr><th scope="row">递归</th><td>段落 → 句子 → 词</td><td>低</td><td>85–90%</td><td>通用默认、技术文档、代码</td></tr>
+            <tr><th scope="row">语义</th><td>相邻句子 Embedding 相似度</td><td>高</td><td>91–92%</td><td>叙述性文档、准确率优先</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="tradeoff-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四 · 核心权衡</p><h2 id="tradeoff-title">上下文保留，<br>还是检索精度。</h2></div>
+      <p class="reading-intro">块的大小同时影响检索精度、Embedding 语义、上下文完整性、存储和无关信息。原文的经验法则是：400–512 tokens 是大多数场景的最佳起点。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">小块与大块的权衡</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">小块（100–200 tokens）</th><th scope="col">大块（1000–2000 tokens）</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">检索精度</th><td>高，匹配更精确</td><td>相关性被稀释，匹配变粗</td></tr>
+            <tr><th scope="row">Embedding 语义</th><td>语义集中</td><td>语义被稀释</td></tr>
+            <tr><th scope="row">上下文</th><td>可能丢失上下文</td><td>信息丰富，保持段落完整性</td></tr>
+            <tr><th scope="row">存储</th><td>需要更多块 → 更多存储</td><td>块数少，存储成本更低</td></tr>
+            <tr><th scope="row">无关信息</th><td>不易混入无关内容</td><td>可能包含无关信息</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <p class="callout-label">经验法则</p>
+        <p>400–512 tokens 是大多数场景的最佳起点。overlap 通常设为 chunk_size 的 10–20%，例如 512 tokens 的块用 50–100 tokens overlap。</p>
+      </div>
+      <h3>是否需要分块？</h3>
+      <p>一个常被忽略的问题：当文档本身就很小、聚焦，且直接匹配用户问题时，分块反而可能损害检索精度。先评估是否需要分块，而不是默认总要分块。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">语义不一定最好，<br>块也不一定越小越好。</h2></div>
+      <p class="reading-intro">两条误区和两条追问，覆盖语义分块的性价比、块大小、overlap 设置和 chunk_size 选择。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <p class="misconception-label">误区 1</p>
+        <div><h3>“语义分块一定最好。”</h3><p>Chroma 的测试数据显示，递归分块（85–90% Recall）和语义分块（91–92% Recall）仅差 2–3%，但语义分块的计算成本显著更高。大多数场景递归分块就够了。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">误区 2</p>
+        <div><h3>“块越小越好。”</h3><p>太小的块会丢失上下文，导致 LLM 无法理解信息的含义。需要在精度和上下文之间找平衡。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 1</p>
+        <div><h3>overlap 有什么用？设多少合适？</h3><p>Overlap 确保分块边界处的信息不会丢失。通常设置为 chunk_size 的 10–20%，如 512 tokens 的块用 50–100 tokens overlap。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 2</p>
+        <div><h3>如何选择最佳的 chunk_size？</h3><p>没有通用最优值。应该在你的数据集上实验——用检索评估指标（Recall@k、MRR）比较不同 chunk_size 的效果。通常从 512 tokens 开始调。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《文档分块（Chunking）策略有哪些？各有什么优缺点？》。Recall 数字为原文引用的 Chroma 测试，本页未复现。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.firecrawl.dev/blog/best-chunking-strategies-rag" target="_blank" rel="noopener noreferrer">Best Chunking Strategies for RAG in 2026 · Firecrawl</a></li>
+          <li><a href="https://weaviate.io/blog/chunking-strategies-for-rag" target="_blank" rel="noopener noreferrer">Chunking Strategies for RAG · Weaviate</a></li>
+          <li><a href="https://stackoverflow.blog/2024/12/27/breaking-up-is-hard-to-do-chunking-in-rag-applications/" target="_blank" rel="noopener noreferrer">Breaking Up Is Hard to Do: Chunking in RAG Applications · Stack Overflow</a></li>
+          <li><a href="https://unstructured.io/blog/chunking-for-rag-best-practices" target="_blank" rel="noopener noreferrer">Chunking Strategies for RAG: Best Practices · Unstructured</a></li>
+          <li><a href="https://community.databricks.com/t5/technical-blog/the-ultimate-guide-to-chunking-strategies-for-rag-applications/ba-p/113089" target="_blank" rel="noopener noreferrer">The Ultimate Guide to Chunking Strategies · Databricks</a></li>
+        </ul>
+        <p class="source-footnote">以上链接按原文保留，不表示本页已核验。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>02-rag/013-chunking-strategies.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 3 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  (() => {
+    const byId = (id) => document.getElementById(id);
+
+    const TEXT = "RAG 系统在检索前要把长文档切成小块。块太大，检索会带入无关信息，稀释相关性；块太小，上下文被切断，模型难以理解完整含义。固定大小分块按字符数均匀切分，简单但可能切断句子。递归分块先按段落、再按句子切分，是通用的默认方案。语义分块在主题转换处切分，召回更高，但需要额外的 Embedding 开销。实际选型要在上下文保留和检索精度之间权衡，并用 Recall@k 等指标在自有数据上验证。";
+    const TOTAL = TEXT.length;
+    const COLORS = ["#2a78d6", "#c2410c", "#2e7d32", "#6b21a8"];
+
+    let selected = 0;
+
+    function clampOverlap(size, overlap) {
+      return Math.max(0, Math.min(overlap, size - 8));
+    }
+
+    function chunkText(size, overlap) {
+      const step = size - overlap;
+      const chunks = [];
+      let start = 0;
+      while (start < TOTAL) {
+        const end = Math.min(start + size, TOTAL);
+        chunks.push({ start, end, length: end - start, index: chunks.length });
+        if (end >= TOTAL) break;
+        start += step;
+      }
+      return chunks;
+    }
+
+    function selectedContent(chunk) {
+      return TEXT.slice(chunk.start, chunk.end);
+    }
+
+    function renderText(chunk) {
+      const host = byId("ck-text");
+      host.textContent = "";
+      if (!chunk) {
+        host.textContent = TEXT;
+        return;
+      }
+      const before = TEXT.slice(0, chunk.start);
+      const middle = TEXT.slice(chunk.start, chunk.end);
+      const after = TEXT.slice(chunk.end);
+      host.append(document.createTextNode(before));
+      const mark = document.createElement("mark");
+      mark.textContent = middle;
+      host.append(mark);
+      host.append(document.createTextNode(after));
+    }
+
+    function render(announce = true) {
+      const size = Number(byId("ck-size").value);
+      let overlap = Number(byId("ck-overlap").value);
+      const clamped = clampOverlap(size, overlap);
+      if (clamped !== overlap) {
+        overlap = clamped;
+        byId("ck-overlap").value = String(overlap);
+      }
+      byId("ck-size-out").textContent = String(size);
+      byId("ck-overlap-out").textContent = String(overlap);
+
+      const chunks = chunkText(size, overlap);
+      if (selected >= chunks.length) selected = chunks.length - 1;
+      if (selected < 0) selected = 0;
+
+      renderText(chunks[selected] || null);
+
+      const ranges = byId("ck-ranges");
+      ranges.textContent = "";
+      const cards = byId("ck-cards");
+      cards.textContent = "";
+      chunks.forEach((chunk, index) => {
+        const row = document.createElement("div");
+        row.className = "ck-range-row" + (index === selected ? " is-selected" : "");
+        const id = document.createElement("span");
+        id.className = "ck-range-id";
+        id.textContent = `#${index + 1}`;
+        const track = document.createElement("div");
+        track.className = "ck-track";
+        const bar = document.createElement("span");
+        bar.className = "ck-bar";
+        bar.style.left = `${(chunk.start / TOTAL) * 100}%`;
+        bar.style.width = `${(chunk.length / TOTAL) * 100}%`;
+        bar.style.background = COLORS[index % COLORS.length];
+        track.append(bar);
+        const len = document.createElement("span");
+        len.className = "ck-range-len";
+        len.textContent = `${chunk.length} 字 · ${chunk.start}–${chunk.end}`;
+        row.append(id, track, len);
+        row.addEventListener("click", () => {
+          selected = index;
+          render(true);
+        });
+        ranges.append(row);
+
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "ck-card" + (index === selected ? " is-selected" : "");
+        card.addEventListener("click", () => {
+          selected = index;
+          render(true);
+        });
+        const head = document.createElement("div");
+        head.className = "ck-card-head";
+        const name = document.createElement("b");
+        name.textContent = `块 #${index + 1}`;
+        const range = document.createElement("span");
+        range.textContent = `${chunk.start}–${chunk.end}`;
+        head.append(name, range);
+        const preview = document.createElement("p");
+        preview.textContent = selectedContent(chunk);
+        const meta = document.createElement("small");
+        meta.textContent = `${chunk.length} 字`;
+        card.append(head, preview, meta);
+        cards.append(card);
+      });
+
+      const chosen = chunks[selected];
+      byId("ck-detail").innerHTML = `当前选中 <b>块 #${selected + 1}</b>：原文第 ${chosen.start}–${chosen.end} 字符，共 ${chosen.length} 字。高亮显示的是这一块的实际内容。`;
+
+      const totalLen = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+      const duplicated = totalLen - TOTAL;
+      const coverage = Math.round((Math.min(TOTAL, totalLen) / TOTAL) * 100);
+      byId("ck-total").textContent = `总字数 ${TOTAL}`;
+      byId("ck-m-total").textContent = String(TOTAL);
+      byId("ck-m-step").textContent = String(size - overlap);
+      byId("ck-m-count").textContent = String(chunks.length);
+      byId("ck-m-cover").innerHTML = `${coverage}% <small>· 重复 ${duplicated} 字</small>`;
+      byId("ck-calc").textContent = `块数 = ceil((${TOTAL} − ${overlap}) / (${size} − ${overlap})) = ceil(${((TOTAL - overlap) / (size - overlap)).toFixed(2)}) = ${chunks.length}；总切片 ${totalLen} 字，重复覆盖 ${duplicated} 字（${((duplicated / TOTAL) * 100).toFixed(1)}%）。`;
+
+      byId("ck-verdict").textContent = overlap === 0
+        ? "无重叠 · 边界处信息可能丢失"
+        : `重叠占块大小 ${((overlap / size) * 100).toFixed(0)}%`;
+      byId("ck-caption-index").textContent = `图 1 · ${size} / ${overlap} 字符`;
+      byId("ck-caption-title").textContent = `${chunks.length} 块，覆盖 ${coverage}%，重复 ${duplicated} 字。`;
+      byId("ck-caption-desc").textContent = `总字数 ${TOTAL}，步长 ${size - overlap}。块越大，块数越少；重叠越大，重复覆盖越多。这是固定大小分块的字符级算术。`;
+      byId("ck-state-summary").textContent = `${size} / ${overlap} · ${chunks.length} 块 · 重复 ${duplicated} 字`;
+
+      document.querySelectorAll(".ck-preset").forEach((button) => {
+        button.classList.toggle("is-active", Number(button.dataset.size) === size && Number(button.dataset.overlap) === overlap);
+      });
+
+      if (announce) {
+        byId("ck-announcement").textContent = `当前 chunk_size ${size} 字符，overlap ${overlap} 字符，共 ${chunks.length} 块，覆盖 ${coverage}%，重复覆盖 ${duplicated} 字。选中第 ${selected + 1} 块，原文第 ${chosen.start} 到 ${chosen.end} 字符。`;
+      }
+    }
+
+    byId("ck-size").addEventListener("input", () => {
+      selected = 0;
+      render(true);
+    });
+    byId("ck-overlap").addEventListener("input", () => {
+      selected = 0;
+      render(true);
+    });
+    document.querySelectorAll(".ck-preset").forEach((button) => {
+      button.addEventListener("click", () => {
+        byId("ck-size").value = button.dataset.size;
+        byId("ck-overlap").value = button.dataset.overlap;
+        selected = 0;
+        render(true);
+      });
+    });
+    byId("ck-reset").addEventListener("click", () => {
+      byId("ck-size").value = "80";
+      byId("ck-overlap").value = "16";
+      selected = 0;
+      render(true);
+      byId("ck-announcement").textContent = "已重置为 chunk_size 80、overlap 16。";
+    });
+
+    render(false);
+  })();
+</script>
+</body>
+</html>

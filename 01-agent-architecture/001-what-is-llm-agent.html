@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>什么是 LLM Agent？与传统 LLM 应用有何区别？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .a1-triage { padding: var(--s-4) var(--s-6) var(--s-5); }
+  .a1-task-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .a1-task-label { font: var(--t-label)/1.6 var(--mono); color: var(--text-dim); margin-right: 2px; }
+  .a1-chip { min-height: 44px; padding: 7px 12px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: var(--t-label); line-height: 1.4; }
+  .a1-chip:hover { background: var(--surface-soft); }
+  .a1-chip[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .a1-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(280px, .85fr); gap: var(--s-4); margin-top: var(--s-4); align-items: start; }
+  .a1-qa { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .a1-q-index { font: 10px/1.6 var(--mono); letter-spacing: .06em; color: var(--text-dim); }
+  .a1-q-text { margin-top: 3px; font-size: var(--t-body); font-weight: 600; line-height: 1.6; }
+  .a1-q-hint { margin-top: 4px; font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .a1-answers { display: flex; gap: 8px; margin-top: var(--s-3); }
+  .a1-answer { min-width: 96px; min-height: 44px; padding: 8px 18px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: var(--t-small); }
+  .a1-answer:hover { background: var(--surface-soft); }
+  .a1-answer[data-choice="yes"] { border-color: #9eb4c9; }
+  .a1-answer[data-choice="no"] { border-color: #d3b29a; }
+  .a1-log { list-style: none; margin: var(--s-4) 0 0; padding: 0; border-top: 1px dashed var(--border); }
+  .a1-log li { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 7px 0; border-bottom: 1px dashed var(--border); font-size: 12px; line-height: 1.6; }
+  .a1-log .a1-log-q { color: var(--text-dim); }
+  .a1-log .a1-log-a { font-family: var(--mono); white-space: nowrap; }
+  .a1-log .is-yes { color: var(--accent); }
+  .a1-log .is-no { color: #8a2c0a; }
+  .a1-verdict { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: var(--s-4); min-height: 100%; }
+  .a1-verdict-label { font: 10px/1.6 var(--mono); letter-spacing: .06em; color: var(--text-dim); }
+  .a1-level { font: 600 26px/1.25 var(--serif); margin-top: 2px; }
+  .a1-level-name { font-size: var(--t-small); color: var(--accent); margin-top: 2px; }
+  .a1-verdict p { font-size: 12px; line-height: 1.75; margin-top: var(--s-2); color: var(--text-dim); }
+  .a1-spectrum { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 3px; margin-top: var(--s-4); }
+  .a1-spectrum span { display: grid; place-items: center; min-height: 40px; padding: 3px; border: 1px solid var(--border); background: var(--surface); font: 9px/1.35 var(--mono); text-align: center; color: var(--text-dim); }
+  .a1-spectrum span.is-on { border-color: var(--accent); background: var(--accent-dim); color: var(--ink); font-weight: 600; }
+  .a1-expected { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px dashed var(--border); font-size: 12px; line-height: 1.7; }
+  .a1-expected b { color: var(--ink); }
+  .a1-note { margin-top: var(--s-4); }
+  .a1-flow { display: flex; align-items: stretch; gap: 6px; margin-top: var(--s-4); flex-wrap: wrap; }
+  .a1-flow-node { flex: 1 1 120px; min-width: 0; padding: 9px 10px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: 12px; line-height: 1.5; }
+  .a1-flow-node b { display: block; font: 600 10px/1.6 var(--mono); color: var(--text-dim); }
+  .a1-flow-arrow { align-self: center; color: var(--text-dim); }
+  .a1-loop-note { margin-top: var(--s-3); padding: 8px 11px; border: 1px dashed #c2410c; border-radius: var(--r-1); background: #fdf1ea; font-size: 11px; line-height: 1.7; color: #8a2c0a; }
+  @media (max-width: 1000px) {
+    .a1-triage { padding-inline: var(--s-5); }
+  }
+  @media (max-width: 720px) {
+    .a1-triage { padding: var(--s-4); }
+    .a1-grid { grid-template-columns: 1fr; }
+    .a1-task-label { flex-basis: 100%; }
+    .a1-spectrum span { font-size: 8px; min-height: 36px; }
+    .a1-flow { flex-direction: column; }
+    .a1-flow-arrow { transform: rotate(90deg); align-self: flex-start; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">001 / 什么是 LLM Agent</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 1 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><span class="disabled">← 上一页</span><a href="002-agent-core-components.html">下一页 → · 解释 Agent 的核心组件</a></div>
+    </nav>
+    <main id="main-content">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">基础 · Agent 架构 · 可交互讲解</p>
+          <h1>不是所有 LLM 应用，<br>都叫 Agent。</h1>
+        </div>
+        <div>
+          <p class="lead">LLM Agent 以大语言模型为核心推理引擎，能自主感知环境、制定计划、调用工具并执行多步任务。传统 LLM 应用是单轮、无状态的高级文本处理器；Agent 是有状态、目标驱动、能与外部世界交互的自主系统。</p>
+          <p class="definition"><strong>分界线是自主决策循环，不是有没有调用模型。</strong>Function Calling 只是组件；缺少“规划 → 执行 → 观察 → 调整”的闭环，仍然只是工具增强的 LLM 应用。</p>
+          <div class="hero-meta"><span class="pill">基础</span><span class="pill">Agent 架构</span><span class="pill">自主性光谱</span><span class="pill">任务分诊</span></div>
+        </div>
+      </header>
+
+      <section class="walkthrough" id="explainer" aria-labelledby="triage-title">
+        <div class="player-top">
+          <div class="player-label">任务分诊台 <small>三个问题，判断要不要 Agent</small></div>
+          <div class="controls" role="group" aria-label="任务分诊控制">
+            <button type="button" class="button button-quiet" id="a1-reset">重置</button>
+          </div>
+        </div>
+
+        <div class="scene-caption">
+          <p class="figure-index">决策路径 · 固定教学任务</p>
+          <h2 id="triage-title">先选一个任务，再回答三个问题。</h2>
+          <p id="a1-subtitle">每次选择都决定下一个问题或直接给出结论。结论按“原文自主性光谱”落位，不调用模型。</p>
+        </div>
+
+        <div class="scene-host">
+          <div class="a1-triage">
+            <div class="a1-task-row" role="group" aria-label="选择固定教学任务">
+              <span class="a1-task-label">任务</span>
+              <button type="button" class="a1-chip" data-task="0" aria-pressed="true">翻译产品说明</button>
+              <button type="button" class="a1-chip" data-task="1" aria-pressed="false">压缩长文摘要</button>
+              <button type="button" class="a1-chip" data-task="2" aria-pressed="false">查物流并回复</button>
+              <button type="button" class="a1-chip" data-task="3" aria-pressed="false">调研市场写报告</button>
+              <button type="button" class="a1-chip" data-task="4" aria-pressed="false">跨系统对账</button>
+              <button type="button" class="a1-chip" data-task="5" aria-pressed="false">FAQ 单轮问答</button>
+            </div>
+
+            <div class="a1-grid">
+              <div class="a1-qa">
+                <p class="a1-q-index" id="a1-q-index">问题 1 / 3</p>
+                <p class="a1-q-text" id="a1-q-text">一次模型调用就能得到最终答案吗？</p>
+                <p class="a1-q-hint" id="a1-q-hint">看任务是否需要多步操作。翻译和摘要通常一次生成就能交付；查物流要先拿到外部数据。</p>
+                <div class="a1-answers" id="a1-answers">
+                  <button type="button" class="a1-answer" data-choice="yes">是</button>
+                  <button type="button" class="a1-answer" data-choice="no">否</button>
+                </div>
+                <ul class="a1-log" id="a1-log" aria-label="已作答记录"></ul>
+                <p class="a1-note demo-note">固定教学数据：任务与预期判断都写在页面脚本里；本页不调用模型，也不访问任何业务系统。</p>
+              </div>
+
+              <div class="a1-verdict" id="a1-verdict">
+                <p class="a1-verdict-label">当前结论</p>
+                <p class="a1-level" id="a1-level">等待回答</p>
+                <p class="a1-level-name" id="a1-level-name">尚未完成分诊</p>
+                <p id="a1-verdict-text">按顺序回答三个问题后，这里给出对应层级、理由和下一步建议。</p>
+                <div class="a1-spectrum" id="a1-spectrum" aria-label="自主性光谱 Level 0 到 Level 5">
+                  <span data-level="0">L0<br>纯 LLM</span>
+                  <span data-level="1">L1<br>Chain</span>
+                  <span data-level="2">L2<br>Router</span>
+                  <span data-level="3">L3<br>工具增强</span>
+                  <span data-level="4">L4<br>自主 Agent</span>
+                  <span data-level="5">L5<br>多 Agent</span>
+                </div>
+                <p class="a1-expected" id="a1-expected" hidden></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="walkthrough-foot"><span>固定教学数据 · 不调用模型</span><span id="a1-state">任务：翻译产品说明 · 第 1 / 3 问</span></div>
+      </section>
+      <p id="a1-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+      <section class="reading" aria-labelledby="a1-traditional-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">一、传统 LLM 应用</p><h2 id="a1-traditional-title">一个高级文本处理器：<br>输入 Prompt，返回文本。</h2></div>
+          <p class="reading-intro">传统 LLM 应用的本质是单轮、无状态的文本转换。典型场景是文案生成、摘要、翻译和代码补全。</p>
+        </div>
+        <div class="prose">
+          <p>用户输入 Prompt，模型返回文本输出，整个交互是单轮、无状态的。它不会主动发起行为，也不保留上一次调用的记忆。</p>
+          <ul>
+            <li><strong>被动响应：</strong>完全依赖用户输入，不会主动发起行为。</li>
+            <li><strong>无状态：</strong>每次调用独立，不保留先前交互的记忆。</li>
+            <li><strong>纯文本：</strong>输入输出都是文本，无法直接操作外部系统。</li>
+            <li><strong>单步完成：</strong>一次调用生成最终结果，没有多步推理过程。</li>
+          </ul>
+          <figure>
+            <div class="a1-flow" role="img" aria-label="传统 LLM 应用：用户 Prompt 进入模型，直接返回文本输出，流程结束">
+              <div class="a1-flow-node"><b>输入</b>用户 Prompt</div>
+              <span class="a1-flow-arrow" aria-hidden="true">→</span>
+              <div class="a1-flow-node"><b>处理</b>一次模型调用</div>
+              <span class="a1-flow-arrow" aria-hidden="true">→</span>
+              <div class="a1-flow-node"><b>输出</b>文本结果</div>
+            </div>
+            <figcaption class="read-figure-note">图 1 · 传统 LLM 应用是开环的：输出即终点，没有观察、重试或外部动作。</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a1-agent-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">二、LLM Agent</p><h2 id="a1-agent-title">从文本生成器，<br>升级为决策引擎。</h2></div>
+          <p class="reading-intro">Agent 接收一个高层目标，自主分解任务、选择工具、执行操作，并根据反馈调整策略，直到目标完成。</p>
+        </div>
+        <div class="prose">
+          <ul>
+            <li><strong>自主性（Autonomy）：</strong>定义目标后，Agent 自主决定“如何做”。</li>
+            <li><strong>有状态（Stateful）：</strong>维护短期记忆（当前任务上下文）和长期记忆（跨会话知识）。</li>
+            <li><strong>工具使用（Tool Use）：</strong>能调用 API、查询数据库、执行代码、操作文件系统。</li>
+            <li><strong>多步推理（Multi-step Reasoning）：</strong>通过循环迭代完成复杂任务。</li>
+            <li><strong>自适应（Adaptive）：</strong>根据中间结果和错误反馈动态调整策略。</li>
+          </ul>
+          <figure>
+            <div class="a1-flow" role="img" aria-label="Agent Loop：目标进入推理，推理产生行动，行动得到观察，观察回到推理形成循环，最后输出结果">
+              <div class="a1-flow-node"><b>起点</b>高层目标</div>
+              <span class="a1-flow-arrow" aria-hidden="true">→</span>
+              <div class="a1-flow-node"><b>循环</b>推理 / 规划</div>
+              <span class="a1-flow-arrow" aria-hidden="true">→</span>
+              <div class="a1-flow-node"><b>循环</b>行动 / 工具调用</div>
+              <span class="a1-flow-arrow" aria-hidden="true">→</span>
+              <div class="a1-flow-node"><b>循环</b>观察结果</div>
+              <span class="a1-flow-arrow" aria-hidden="true">→</span>
+              <div class="a1-flow-node"><b>终点</b>完成或终止</div>
+            </div>
+            <p class="a1-loop-note">观察结果不是终点：它回到推理，决定下一步行动，形成 Agent Loop。只有循环里出现“根据结果改变下一步”，才具备自主决策。</p>
+            <figcaption class="read-figure-note">图 2 · Agent 的闭环：推理、行动、观察反复迭代；循环由终止条件收口，而不是一次生成就结束。</figcaption>
+          </figure>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a1-table-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">三、关键区别</p><h2 id="a1-table-title">七个维度，<br>看清两种系统。</h2></div>
+          <p class="reading-intro">区别不只在“能不能调工具”，还在交互模式、状态、错误处理和可观测性。Agent 的调试对象从一条 Prompt 变成整条 Trace。</p>
+        </div>
+        <div class="prose">
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">传统 LLM 应用与 LLM Agent 的七个维度对照</caption>
+              <thead><tr><th scope="col">维度</th><th scope="col">传统 LLM 应用</th><th scope="col">LLM Agent</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">交互模式</th><td>单轮问答</td><td>多轮循环（Loop）</td></tr>
+                <tr><th scope="row">状态管理</th><td>无状态</td><td>有状态（记忆系统）</td></tr>
+                <tr><th scope="row">外部交互</th><td>仅文本 I/O</td><td>工具调用、API、数据库</td></tr>
+                <tr><th scope="row">任务复杂度</th><td>单步任务</td><td>多步复合任务</td></tr>
+                <tr><th scope="row">自主程度</th><td>被动响应</td><td>目标驱动的自主执行</td></tr>
+                <tr><th scope="row">错误处理</th><td>无</td><td>自我纠正、重试、回退</td></tr>
+                <tr><th scope="row">可观测性</th><td>Prompt → Response</td><td>Trace（思考→行动→观察循环）</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a1-spectrum-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">四、自主性光谱</p><h2 id="a1-spectrum-title">不是二元分类，<br>是六级连续光谱。</h2></div>
+          <p class="reading-intro">“传统 LLM”和“Agent”之间还有很多中间形态。大多数实际生产应用处于 Level 2–4 之间。</p>
+        </div>
+        <div class="prose">
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">自主性光谱六个层级与特征</caption>
+              <thead><tr><th scope="col">层级</th><th scope="col">名称</th><th scope="col">特征</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">Level 0</th><td>纯 LLM</td><td>直接调用模型 API，无任何额外逻辑</td></tr>
+                <tr><th scope="row">Level 1</th><td>Chain / Pipeline</td><td>多个 LLM 调用串联，但流程固定</td></tr>
+                <tr><th scope="row">Level 2</th><td>Router</td><td>根据输入路由到不同的处理分支</td></tr>
+                <tr><th scope="row">Level 3</th><td>Tool-augmented LLM</td><td>LLM 可以调用工具，但流程仍由人控制</td></tr>
+                <tr><th scope="row">Level 4</th><td>Autonomous Agent</td><td>LLM 自主决策、规划、执行，人仅定义目标</td></tr>
+                <tr><th scope="row">Level 5</th><td>Multi-Agent System</td><td>多个自主 Agent 协作完成复杂任务</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p>层级越高不等于越好。每上升一级，延迟、成本和调试难度都会增加；能停在低层级完成任务，就不必升到高层级。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a1-code-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">五、代码示例</p><h2 id="a1-code-title">从一次调用，<br>到持续运行的循环。</h2></div>
+          <p class="reading-intro">原文用两段 Python 代码对照：传统应用只调用一次；Agent 在 <code>while True</code> 里持续运行，直到模型不再请求工具。</p>
+        </div>
+        <div class="prose">
+          <p class="code-label">传统 LLM 应用 · 原文代码</p>
+          <pre><code># 传统 LLM 应用：单轮文本生成
+from anthropic import Anthropic
+
+client = Anthropic()
+response = client.messages.create(
+    model="claude-sonnet-4-5-20250929",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "总结这篇文章"}]
+)
+print(response.content[0].text)</code></pre>
+
+          <p class="code-label">LLM Agent · 原文代码（Agent Loop）</p>
+          <pre><code># LLM Agent：多步自主执行
+# Agent 接收目标 → 规划 → 调用工具 → 观察结果 → 继续或结束
+import anthropic
+
+client = anthropic.Anthropic()
+
+tools = [
+    {
+        "name": "search_web",
+        "description": "Search the web for information",
+        "input_schema": {
+            "type": "object",
+            "properties": {"query": {"type": "string"}},
+            "required": ["query"]
+        }
+    }
+]
+
+messages = [{"role": "user", "content": "调研 2026 年 AI Agent 市场规模并写一份报告"}]
+
+# Agent Loop: 持续运行直到任务完成
+while True:
+    response = client.messages.create(
+        model="claude-sonnet-4-5-20250929",
+        max_tokens=4096,
+        tools=tools,
+        messages=messages
+    )
+    # 如果模型选择使用工具，执行工具并继续循环
+    if response.stop_reason == "tool_use":
+        # 关键：tool_result 必须包装为 content block，且 tool_use_id 与 tool_use 一一对应
+        tool_results = [
+            {
+                "type": "tool_result",
+                "tool_use_id": block.id,
+                "content": run_tool(block.name, block.input),  # 返回 string
+            }
+            for block in response.content
+            if block.type == "tool_use"
+        ]
+        messages.append({"role": "assistant", "content": response.content})
+        messages.append({"role": "user", "content": tool_results})
+    else:
+        # 模型认为任务完成，退出循环
+        print(response.content[0].text)
+        break</code></pre>
+          <p><strong>两段代码的分界点：</strong>第二段把工具结果追加回 <code>messages</code>，让模型看到观察结果后再次决策。没有这个回灌，工具调用只是一次性动作，不构成循环。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a1-mis-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="a1-mis-title">两条误区，<br>两条追问。</h2></div>
+          <p class="reading-intro">前两条纠正概念，后两条指向调试和选型。答案都来自原文。</p>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">误区 1</p>
+          <div><h3>“有了 Function Calling 就是 Agent。”</h3><p>Function Calling 只是 Agent 的一个能力组件。真正的 Agent 需要自主决策循环（Agent Loop），包括规划、执行、观察、反思的完整闭环。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">误区 2</p>
+          <div><h3>“Agent 比传统 LLM 应用总是更好。”</h3><p>Agent 引入了额外的复杂性、延迟和成本。简单任务用传统 LLM 应用更高效。选择 Agent 的信号是：任务需要多步推理、外部交互、或动态决策。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">追问 1</p>
+          <div><h3>Agent 调试比传统 LLM 应用难在哪里？</h3><p>传统 LLM 应用失败时只需检查 Prompt。Agent 失败可能源于规划逻辑错误、工具调用失败、记忆损坏、或无限循环，调试需要分析完整的执行 Trace。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">追问 2</p>
+          <div><h3>如何决定一个任务是否需要 Agent？</h3><p>问自己：这个任务能用单次 LLM 调用完成吗？如果需要多步操作、外部数据获取、或根据中间结果做决策，就考虑用 Agent。</p></div>
+        </div>
+      </section>
+
+      <section class="source-section" aria-labelledby="a1-source-title">
+        <p class="eyebrow">技术细节，按需展开</p>
+        <h2 class="source-heading" id="a1-source-title">原文参考资料</h2>
+        <p class="source-summary">讲解依据《什么是 LLM Agent？与传统 LLM 应用有何区别？》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+        <details>
+          <summary>展开原文列出的五条参考链接</summary>
+          <div class="source-content">
+            <ul>
+              <li><a href="https://medium.com/@speaktoharisudhan/llms-vs-ai-agents-what-is-the-actual-difference-cebd4cb789cd" target="_blank" rel="noopener noreferrer">LLMs vs AI Agents: What Is The Actual Difference (Medium)</a></li>
+              <li><a href="https://www.ema.ai/additional-blogs/addition-blogs/ai-agent-vs-llm-key-differences" target="_blank" rel="noopener noreferrer">Understanding AI Agents vs LLMs: Key Differences Explained (EMA)</a></li>
+              <li><a href="https://kanerika.com/blogs/ai-agents-vs-llm/" target="_blank" rel="noopener noreferrer">AI Agent vs LLM: Everything You Need to Know (Kanerika)</a></li>
+              <li><a href="https://www.ibm.com/think/topics/ai-agents" target="_blank" rel="noopener noreferrer">What Are AI Agents? (IBM)</a></li>
+              <li><a href="https://www.lyzr.ai/blog/agentic-ai-vs-llm/" target="_blank" rel="noopener noreferrer">Agentic AI vs LLM: Comparing What Scales Better (Lyzr AI)</a></li>
+            </ul>
+            <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+          </div>
+        </details>
+      </section>
+    </main>
+    <footer><span>Agent-Interview-100 · <code>01-agent-architecture/001-what-is-llm-agent.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 3 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const A1_TASKS = [
+    {
+      name: "翻译产品说明",
+      expected: [true],
+      level: "Level 0–1",
+      levelName: "传统 LLM 应用",
+      why: "一次调用就能返回译文，没有外部动作，也没有根据结果改变下一步。"
+    },
+    {
+      name: "压缩长文摘要",
+      expected: [true],
+      level: "Level 0–1",
+      levelName: "传统 LLM 应用",
+      why: "输入和输出都是文本，一次生成即可交付，不需要工具或循环。"
+    },
+    {
+      name: "查物流并回复",
+      expected: [false, true, false],
+      level: "Level 3",
+      levelName: "工具增强 LLM",
+      why: "需要调用物流接口拿外部数据，但“查询 → 回复”的流程固定，仍由代码控制。"
+    },
+    {
+      name: "调研市场写报告",
+      expected: [false, true, true],
+      level: "Level 4",
+      levelName: "自主 Agent",
+      why: "需要多轮搜索，且要根据搜到的内容决定下一轮查什么，属于目标驱动的自主执行。"
+    },
+    {
+      name: "跨系统对账",
+      expected: [false, true, true],
+      level: "Level 4",
+      levelName: "自主 Agent",
+      why: "要读取多个系统、比对差异，并根据异常继续追查；下一步依赖中间结果。"
+    },
+    {
+      name: "FAQ 单轮问答",
+      expected: [true],
+      level: "Level 0–1",
+      levelName: "传统 LLM 应用",
+      why: "知识已在 Prompt 或上下文中，单轮回答即可，不需要外部交互。"
+    }
+  ];
+
+  const A1_QUESTIONS = [
+    {
+      text: "一次模型调用就能得到最终答案吗？",
+      hint: "看任务是否需要多步操作。翻译和摘要通常一次生成就能交付；查物流要先拿到外部数据。"
+    },
+    {
+      text: "需要调用外部工具或读取外部数据吗？",
+      hint: "查数据库、调 API、读文件都算外部交互。只靠上下文里的文本答题，不算。"
+    },
+    {
+      text: "需要根据中间结果动态决定下一步吗？",
+      hint: "流程固定、每步做什么事先写死，属于工具增强；下一步要看上一步结果再定，才进入自主循环。"
+    }
+  ];
+
+  const state = { task: 0, step: 0, answers: [], done: false };
+  const byId = (id) => document.getElementById(id);
+
+  function classify() {
+    const a = state.answers;
+    if (a[0] === true) {
+      return {
+        level: "Level 0–1",
+        range: [0, 1],
+        name: "传统 LLM 应用",
+        text: "单次调用即可完成。可以停在 Level 0 的直接调用，或 Level 1 的固定链；不需要 Agent Loop。"
+      };
+    }
+    if (a[1] === false) {
+      return {
+        level: "Level 1–2",
+        range: [1, 2],
+        name: "固定流程应用",
+        text: "没有外部交互，但需要多步或分支。用固定链路或 Router 编排即可，流程由代码决定。"
+      };
+    }
+    if (a[2] === false) {
+      return {
+        level: "Level 3",
+        range: [3, 3],
+        name: "工具增强 LLM",
+        text: "需要工具，但流程仍由人控制：先查什么、后做什么是写死的。补上动态决策才进入 Agent。"
+      };
+    }
+    return {
+      level: "Level 4",
+      range: [4, 4],
+      name: "自主 Agent",
+      text: "需要工具，且下一步依赖中间结果。模型要在循环里自主规划、执行、观察和调整。"
+    };
+  }
+
+  function renderTaskChips() {
+    document.querySelectorAll(".a1-chip").forEach((chip) => {
+      chip.setAttribute("aria-pressed", Number(chip.dataset.task) === state.task ? "true" : "false");
+    });
+  }
+
+  function renderLog() {
+    const log = byId("a1-log");
+    log.textContent = "";
+    state.answers.forEach((answer, index) => {
+      const li = document.createElement("li");
+      const q = document.createElement("span");
+      q.className = "a1-log-q";
+      q.textContent = `${index + 1}. ${A1_QUESTIONS[index].text}`;
+      const a = document.createElement("span");
+      a.className = answer ? "a1-log-a is-yes" : "a1-log-a is-no";
+      a.textContent = answer ? "是" : "否";
+      li.append(q, a);
+      log.append(li);
+    });
+  }
+
+  function renderSpectrum(range) {
+    document.querySelectorAll("#a1-spectrum span").forEach((span) => {
+      const level = Number(span.dataset.level);
+      span.classList.toggle("is-on", Boolean(range) && level >= range[0] && level <= range[1]);
+    });
+  }
+
+  function renderVerdict() {
+    const task = A1_TASKS[state.task];
+    if (!state.done) {
+      byId("a1-level").textContent = state.step === 0 ? "等待回答" : `已答 ${state.step} / 3`;
+      byId("a1-level-name").textContent = state.step === 0 ? "尚未完成分诊" : "继续回答下一问";
+      byId("a1-verdict-text").textContent = state.step === 0
+        ? "按顺序回答三个问题后，这里给出对应层级、理由和下一步建议。"
+        : "结论会在回答完当前问题后出现；中途可以重置，换一个任务重新分诊。";
+      byId("a1-expected").hidden = true;
+      renderSpectrum(null);
+      return;
+    }
+    const result = classify();
+    byId("a1-level").textContent = result.level;
+    byId("a1-level-name").textContent = result.name;
+    byId("a1-verdict-text").textContent = result.text;
+    renderSpectrum(result.range);
+    const expected = byId("a1-expected");
+    expected.hidden = false;
+    expected.innerHTML = `<b>本例固定教学判断：${task.level} · ${task.levelName}。</b>${task.why}`;
+  }
+
+  function renderQuestion() {
+    if (state.done) {
+      byId("a1-q-index").textContent = "分诊完成";
+      byId("a1-q-text").textContent = "结论已生成，可换任务或重置。";
+      byId("a1-q-hint").textContent = "三个问题分别对应：单次调用、外部交互、动态决策。换任务会清空当前答案。";
+      byId("a1-answers").hidden = true;
+      return;
+    }
+    byId("a1-answers").hidden = false;
+    byId("a1-q-index").textContent = `问题 ${state.step + 1} / 3`;
+    byId("a1-q-text").textContent = A1_QUESTIONS[state.step].text;
+    byId("a1-q-hint").textContent = A1_QUESTIONS[state.step].hint;
+  }
+
+  function render() {
+    const task = A1_TASKS[state.task];
+    renderTaskChips();
+    renderLog();
+    renderQuestion();
+    renderVerdict();
+    byId("a1-subtitle").textContent = `当前任务：${task.name}。每次选择决定下一个问题或直接给出结论；结论按原文自主性光谱落位。`;
+    byId("a1-state").textContent = state.done
+      ? `任务：${task.name} · 分诊完成 · ${classify().level}`
+      : `任务：${task.name} · 第 ${state.step + 1} / 3 问`;
+  }
+
+  function answer(choice) {
+    if (state.done) return;
+    state.answers.push(choice);
+    state.step += 1;
+    const singleCall = state.step === 1 && choice === true;
+    const noExternal = state.step === 2 && choice === false;
+    if (singleCall || noExternal || state.step >= A1_QUESTIONS.length) {
+      state.done = true;
+    }
+    render();
+    if (state.done) {
+      const result = classify();
+      byId("a1-announce").textContent = `分诊完成：${result.level}，${result.name}。${result.text}`;
+    } else {
+      byId("a1-announce").textContent = `第 ${state.step} 问：${A1_QUESTIONS[state.step].text}`;
+    }
+  }
+
+  function setTask(index) {
+    state.task = index;
+    state.step = 0;
+    state.answers = [];
+    state.done = false;
+    render();
+    byId("a1-announce").textContent = `已选择任务：${A1_TASKS[index].name}。${A1_QUESTIONS[0].text}`;
+  }
+
+  document.querySelectorAll(".a1-chip").forEach((chip) => {
+    chip.addEventListener("click", () => setTask(Number(chip.dataset.task)));
+  });
+  document.querySelectorAll(".a1-answer").forEach((button) => {
+    button.addEventListener("click", () => answer(button.dataset.choice === "yes"));
+  });
+  byId("a1-reset").addEventListener("click", () => {
+    setTask(state.task);
+    byId("a1-announce").textContent = "已重置任务分诊。";
+  });
+
+  render();
+</script>
+</body>
+</html>

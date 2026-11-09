@@ -1,0 +1,1051 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>评估方法论：从 LLM 评估到 Agent 评估 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .data-tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); color: var(--text-dim); font: 11px/1.5 var(--mono); letter-spacing: .03em; }
+  .data-tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--series-2); }
+  .trace-layout { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, .95fr); gap: var(--s-5); align-items: start; }
+  .trace-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: var(--s-4) var(--s-5); min-width: 0; }
+  .trace-card h3 { font-size: var(--t-h3); line-height: 1.45; font-weight: 600; }
+  .trace-card p { font-size: var(--t-small); margin-top: var(--s-3); }
+  .task-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .task-cell { padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: var(--t-small); }
+  .task-cell b { display: block; font: 11px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; margin-bottom: 3px; }
+  .step-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .step-card + .step-card { margin-top: var(--s-3); }
+  .step-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; }
+  .step-name { font: 600 var(--t-small)/1.5 var(--mono); overflow-wrap: anywhere; }
+  .step-score { font: 600 20px/1.2 var(--mono); white-space: nowrap; }
+  .step-score small { font: 11px/1.4 var(--mono); color: var(--text-dim); font-weight: 400; }
+  .step-args { margin-top: var(--s-2); font: 12px/1.7 var(--mono); color: var(--text-dim); overflow-wrap: anywhere; }
+  .step-result { margin-top: var(--s-2); font-size: var(--t-small); }
+  .step-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: var(--s-3); }
+  .tag { display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-soft); font-size: 11px; color: var(--text-dim); }
+  .tag.good { border-color: #9cc39e; background: #eef7ee; color: #1b5e20; }
+  .tag.warn { border-color: #d9b47a; background: #fdf3e3; color: #7a4b00; }
+  .tag.bad { border-color: #d9a3a3; background: #fbecec; color: #8a1f1f; }
+  .trace-aside { display: grid; gap: var(--s-3); }
+  .score-box { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .score-box .label { font: 11px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .score-box .value { font: 600 30px/1.2 var(--mono); margin-top: 2px; }
+  .score-box .value small { font-size: 13px; color: var(--text-dim); font-weight: 400; }
+  .score-box p { font-size: var(--t-label); color: var(--text-dim); margin-top: 6px; }
+  .layer-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-2); }
+  .layer-cell { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3); font-size: 12px; }
+  .layer-cell b { display: block; font: 600 11px/1.5 var(--mono); color: var(--accent); }
+  .layer-cell span { display: block; margin-top: 3px; color: var(--text-dim); }
+  .rubric { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: var(--s-3); }
+  .rubric th, .rubric td { text-align: left; vertical-align: top; padding: 7px 8px; border-bottom: 1px solid var(--border); }
+  .rubric thead th { color: var(--text-dim); font-weight: 500; font-size: 11px; }
+  .rubric tbody tr:last-child td { border-bottom: 0; }
+  .summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
+  .summary-cell { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .summary-cell b { display: block; font: 11px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .summary-cell strong { display: block; font: 600 24px/1.3 var(--mono); margin-top: 2px; }
+  .summary-cell span { display: block; font-size: var(--t-label); color: var(--text-dim); margin-top: 4px; }
+  .verdict { margin-top: var(--s-4); border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); font-size: var(--t-small); }
+  .eval-shift { margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .shift-grid { display: grid; grid-template-columns: minmax(0, .9fr) minmax(0, 1.35fr); gap: var(--s-4); }
+  .shift-panel { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: var(--s-4); min-width: 0; }
+  .shift-title { font: 600 12px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .shift-flow { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin-top: var(--s-3); }
+  .shift-node { padding: 7px 10px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .shift-node.agent { background: #f3e5f5; border-color: #6b21a8; }
+  .shift-node.store { background: #e8f5e9; border-color: #2e7d32; }
+  .shift-arrow { color: var(--text-dim); font-size: 13px; }
+  .cycle-box { margin-top: var(--s-3); border: 1px dashed var(--border-bright); border-radius: var(--r-1); padding: var(--s-3); }
+  .cycle-row { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+  .cycle-return { display: block; margin-top: var(--s-2); font-size: 11px; color: var(--accent); line-height: 1.7; }
+  .cycle-exit { display: flex; align-items: center; gap: 6px; margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px solid var(--border); }
+  .shift-note { margin-top: var(--s-3); font-size: 11px; color: var(--text-dim); }
+  .layer-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .layer-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .layer-card h4 { margin: 0; font-size: var(--t-small); font-weight: 600; }
+  .layer-card .q { margin-top: var(--s-2); font-size: 12px; color: var(--accent); }
+  .layer-card p { margin-top: var(--s-2); font-size: 12px; color: var(--text-dim); }
+  .layer-card dl { margin: var(--s-2) 0 0; font-size: 12px; }
+  .layer-card dt { font: 11px/1.6 var(--mono); color: var(--text-dim); margin-top: 5px; }
+  .layer-card dd { margin: 0; }
+  .chain { display: grid; gap: 6px; margin-top: var(--s-3); }
+  .chain-row { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: var(--s-3); align-items: start; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .chain-row b { font: 600 11px/1.6 var(--mono); color: var(--accent); }
+  .pending-note { border: 1px dashed var(--border-bright); border-radius: var(--r-1); padding: 3px 7px; color: var(--text-dim); font-size: 11px; white-space: nowrap; }
+  @media (max-width: 1000px) {
+    .trace-layout, .shift-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .prose .table-wrap table.data.mid { min-width: 520px; }
+    .prose .table-wrap table.data.wide { min-width: 760px; }
+    .stage-nav ol { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .trace-card, .step-card, .score-box, .summary-cell, .layer-card { padding: var(--s-3); }
+    .task-grid, .layer-grid, .summary-grid { grid-template-columns: 1fr; }
+    .layer-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .trace-layout { gap: var(--s-3); }
+    .chain-row { grid-template-columns: 62px minmax(0, 1fr); }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">069 / 评估方法论</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 7 / 10 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="../07-prompt-engineering/061-structured-output.html">← 上一页 · 结构化输出（Structured O…</a><a href="../09-safety-and-alignment/080-human-in-the-loop.html">下一页 → · Human-in-the-Loop</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">基础 · Evaluation · 可交互讲解</p>
+      <h1>结果对，<br>不等于过程对。</h1>
+    </div>
+    <div>
+      <p class="lead">LLM 评估有三类方法：自动指标、人工评估、LLM-as-Judge。评估对象换成 Agent 后，还要看多步轨迹：任务完成、推理质量、工具使用、错误恢复和行为安全。</p>
+      <p class="definition"><strong>核心边界：</strong>Agent 评估的对象是整条决策轨迹，不是一次输出。最终答案正确，也可能过程冗余、工具用错，或者只是碰巧答对。</p>
+      <div class="hero-meta"><span class="pill">基础</span><span class="pill">Evaluation</span><span class="pill">轨迹评估</span><span class="pill">四层模型</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="trace-title">
+    <div class="player-top">
+      <div class="player-label">一条轨迹的四层评分 <small>固定教学数据 · 本地计算</small></div>
+      <div class="controls" role="group" aria-label="轨迹演示控制">
+        <button type="button" class="button button-quiet" id="reset-button">重置</button>
+        <button type="button" class="button" id="back-button" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="next-button">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="演示阶段">
+      <ol style="--stages: 6">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>任务</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>步骤 1–2</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>步骤 3</button></li>
+        <li><button type="button" class="stage-button" data-stage="3"><span class="stage-number">4</span>步骤 4</button></li>
+        <li><button type="button" class="stage-button" data-stage="4"><span class="stage-number">5</span>步骤 5</button></li>
+        <li><button type="button" class="stage-button" data-stage="5"><span class="stage-number">6</span>汇总</button></li>
+      </ol>
+    </nav>
+    <div class="scene-caption">
+      <p class="figure-index" id="scene-index">阶段 1 / 6 · 固定教学数据</p>
+      <h2 id="trace-title">先定评分规则</h2>
+      <p id="scene-subtitle">同一条轨迹，结果和过程分开看；每一步都留下可复核的分数和标签。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="trace-scene"></div>
+      <p class="demo-note" id="scene-note">固定教学数据：任务、工具返回和分数都是本页预设，不来自真实 Agent 运行。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 不调用模型 · 不访问网络</span><span id="state-summary">阶段 1 / 6 · 尚未开始评分</span></div>
+  </section>
+  <p id="trace-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="llm-methods-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">LLM 评估</p><h2 id="llm-methods-title">三类方法，<br>各有各的盲区。</h2></div>
+      <p class="reading-intro">自动指标快而便宜，人工评估准而贵，LLM-as-Judge 试图在两者之间取得规模和质量的平衡。生产环境通常不是三选一，而是分层组合。</p>
+    </div>
+    <div class="prose">
+      <h3>一、LLM 评估方法全景</h3>
+      <p>原文把 LLM 评估分成三大类：<strong>自动指标</strong>用算法计算确定性指标，速度快、成本低，但只能衡量表面特征；<strong>人工评估</strong>由人类标注者评判输出质量，是“金标准”，但成本高、难以规模化；<strong>LLM-as-Judge</strong> 用强 LLM 评估其他 LLM 的输出，是近年主流趋势。</p>
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">三类 LLM 评估方法在代表手段、速度、成本、质量和规模上的对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">自动指标</th><th scope="col">LLM-as-Judge</th><th scope="col">人工评估</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">代表手段</th><td>BLEU / ROUGE、精确匹配、F1、Perplexity</td><td>GPT-4 打分、多维度评估、Pairwise 对比、Rubric 评分</td><td>专家评审、众包标注、用户反馈、A/B 测试</td></tr>
+            <tr><th scope="row">速度</th><td>最快</td><td>中等</td><td>最慢</td></tr>
+            <tr><th scope="row">成本</th><td>最低</td><td>中等</td><td>最高</td></tr>
+            <tr><th scope="row">质量</th><td>有限</td><td>较好</td><td>最好</td></tr>
+            <tr><th scope="row">规模</th><td>无限</td><td>大</td><td>小</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Sebastian Raschka 把 LLM 评估总结为四种方法：多选基准、人类偏好、自动化 LLM 评估和编程基准。这四种视角和上面的三类方法不是一一对应，但可以互相补充：多选基准和编程基准偏自动，人类偏好偏人工，自动化 LLM 评估就是 LLM-as-Judge。</p>
+
+      <h3>二、自动指标评估：快，但只看表面</h3>
+      <p>自动指标适合有明确参考答案或可运行测试的任务。原文给出四种常见指标的实现：精确匹配、BLEU、ROUGE 和 F1。</p>
+      <pre><code># 常见自动评估指标
+
+# 1. 精确匹配（Exact Match）
+def exact_match(prediction, reference):
+    return prediction.strip() == reference.strip()
+# 适用：数学题答案、事实性问题、代码输出
+
+# 2. BLEU（机器翻译质量）
+from nltk.translate.bleu_score import sentence_bleu
+score = sentence_bleu([reference.split()], prediction.split())
+# 衡量 n-gram 重叠度，0-1 分
+
+# 3. ROUGE（摘要质量，recall-oriented；与 precision-oriented 的 BLEU 互补）
+from rouge_score import rouge_scorer
+scorer = rouge_scorer.RougeScorer(['rouge1', 'rougeL'])
+scores = scorer.score(reference, prediction)
+# ROUGE-1: unigram 召回率（reference 中有多少出现在 prediction）
+# ROUGE-L: 最长公共子序列（衡量句子级流畅度）
+# 对比 BLEU：BLEU 是 precision-oriented（prediction 中有多少匹配 reference）
+# 摘要任务用 ROUGE，翻译任务用 BLEU 是因为这两类任务对漏掉信息 vs 多说信息的容忍度不同
+
+# 4. F1 Score（信息提取）
+def token_f1(prediction, reference):
+    pred_tokens = set(prediction.split())
+    ref_tokens = set(reference.split())
+    common = pred_tokens &amp; ref_tokens
+    precision = len(common) / len(pred_tokens) if pred_tokens else 0
+    recall = len(common) / len(ref_tokens) if ref_tokens else 0
+    f1 = 2 * precision * recall / (precision + recall) if (precision + recall) else 0
+    return f1</code></pre>
+      <p>这些指标的共同局限是：只看词面，不看语义。原文的例子是“北京是中国的首都”和“中国的首都是北京”，两句话语义完全相同，但 BLEU/ROUGE 可能拿不到满分；它们也无法评估回答的有用性、创造性和安全性。LLM 时代，这些传统指标的参考价值有限，更适合作为初筛信号，而不是质量结论。</p>
+
+      <h3>三、LLM-as-Judge：用强模型评弱模型</h3>
+      <p>LLM-as-Judge 用强 LLM 评估其他 LLM 的输出。原文给出的关键数字是：顶级 Judge（GPT-4o / Claude Opus）与人工评估的 <strong>Cohen's Kappa ≈ 0.78–0.84</strong>，已经逼近人类-人类一致性（κ ≈ 0.80）。Cohen's Kappa 衡量的是“扣除随机一致之后，评估者之间到底有多一致”，所以比单纯的 percent agreement 更能反映 Judge 的可靠性。</p>
+      <p><strong>percent agreement 容易虚高。</strong>原文的例子是：κ = 0.62 时，表面一致率仍可能超过 80%。学术界在 “Judging the Judges”（arXiv:2406.12624）中建议用 Cohen's Kappa 作为 Judge 可靠性的正确指标，而不是只看一致率。</p>
+      <div class="table-wrap">
+        <table class="data mid">
+          <caption class="sr-only">LLM-as-Judge 的四种已知偏差与缓解方式</caption>
+          <thead><tr><th scope="col">偏差</th><th scope="col">表现</th><th scope="col">缓解方式</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">位置偏差</th><td>倾向于给排在前面的回答更高分</td><td>交换 A/B 位置做两次评估取平均</td></tr>
+            <tr><th scope="row">冗长偏差</th><td>倾向于给更长的回答更高分</td><td>用明确的评分 Rubric 约束</td></tr>
+            <tr><th scope="row">自我偏好</th><td>GPT-4 作为 Judge 时偏爱 GPT-4 自己的输出</td><td>使用与被评估模型不同的 Judge 模型</td></tr>
+            <tr><th scope="row">格式偏差</th><td>倾向于给格式更好看的回答更高分</td><td>统一输出格式，评分只看内容维度</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="code-label">Pointwise 与 Pairwise 两种问法 · 原文代码</p>
+      <pre><code>async def llm_as_judge(question, answer, reference=None):
+    """用 LLM 评估回答质量"""
+
+    # 方式 1：直接评分（Pointwise）
+    pointwise_prompt = f"""
+    请评估以下回答的质量（1-5分）：
+
+    问题：{question}
+    回答：{answer}
+    {"参考答案：" + reference if reference else ""}
+
+    评分维度：
+    - 准确性 (1-5)：事实是否正确？
+    - 完整性 (1-5)：是否全面回答了问题？
+    - 有用性 (1-5)：对提问者是否有帮助？
+    - 清晰度 (1-5)：表达是否清楚？
+
+    请给出每个维度的分数和简要理由，最后给出总分。
+    """
+
+    # 方式 2：对比评分（Pairwise）
+    pairwise_prompt = f"""
+    问题：{question}
+
+    回答 A：{answer_a}
+    回答 B：{answer_b}
+
+    哪个回答更好？请从准确性、完整性和清晰度三个维度比较。
+    输出：A 更好 / B 更好 / 差不多
+    """
+
+    return await judge_llm.invoke(pointwise_prompt)</code></pre>
+      <h3>四、人工评估：金标准，但难以规模化</h3>
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">三种人工评估方式的方法、优势、劣势和适用场景</caption>
+          <thead><tr><th scope="col">方式</th><th scope="col">方法</th><th scope="col">优势</th><th scope="col">劣势</th><th scope="col">适用</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">专家评审</th><td>领域专家按预定标准打分</td><td>质量最高，能评估专业细节</td><td>成本高、速度慢、难规模化</td><td>医疗、法律、金融等高风险场景</td></tr>
+            <tr><th scope="row">众包标注</th><td>通过 Scale AI、Toloka 等平台招募标注者</td><td>可规模化，成本相对可控</td><td>标注者质量参差，需要质量控制</td><td>大规模偏好数据收集</td></tr>
+            <tr><th scope="row">用户反馈</th><td>收集真实用户的点赞、点踩、投诉</td><td>最真实的质量信号</td><td>反馈稀疏，存在偏差</td><td>生产环境的持续监控</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>五、混合评估框架（推荐）</h3>
+      <p><strong>混合评估是生产推荐方案：</strong>自动指标做初筛，LLM-as-Judge 做质量评估，人工评估做最终校准。原文的三层结构是：Layer 1 自动指标全量跑，毫秒级；Layer 2 LLM Judge 全量或采样，秒级；Layer 3 把低分和边界案例送人工审核。</p>
+      <pre><code>class HybridEvaluator:
+    """混合评估：自动指标 + LLM Judge + 人工抽检"""
+
+    async def evaluate(self, test_set):
+        results = []
+
+        for example in test_set:
+            prediction = await self.model.invoke(example.input)
+            scores = {}
+
+            # Layer 1: 自动指标（全量，毫秒级）
+            scores["exact_match"] = exact_match(prediction, example.reference)
+            scores["f1"] = token_f1(prediction, example.reference)
+
+            # Layer 2: LLM-as-Judge（全量或采样，秒级）
+            scores["llm_judge"] = await llm_as_judge(
+                example.input, prediction, example.reference
+            )
+
+            # Layer 3: 标记需要人工审核的案例
+            if scores["llm_judge"]["total"] &lt; 3 or scores["f1"] &lt; 0.5:
+                scores["needs_human_review"] = True
+
+            results.append(scores)
+
+        # Layer 3 继续：人工审核低分和边界案例
+        flagged = [r for r in results if r.get("needs_human_review")]
+        # 送人工审核队列...
+
+        return results</code></pre>
+
+      <h3>六、指标怎么选</h3>
+      <p>原文按任务类型给出推荐指标。这里的“自动”指可运行测试或计算，“LLM Judge”指模型评分，“人工”指人工抽检或评审。</p>
+      <div class="table-wrap">
+        <table class="data mid">
+          <caption class="sr-only">不同任务类型的推荐评估指标与评估方式</caption>
+          <thead><tr><th scope="col">任务类型</th><th scope="col">推荐指标</th><th scope="col">评估方式</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">事实性问答</th><td>精确匹配 / F1</td><td>自动</td></tr>
+            <tr><th scope="row">文本摘要</th><td>ROUGE + LLM</td><td>自动 + LLM Judge</td></tr>
+            <tr><th scope="row">翻译</th><td>BLEU + 人工</td><td>自动 + 人工</td></tr>
+            <tr><th scope="row">创意写作</th><td>人工 + LLM</td><td>LLM Judge + 人工</td></tr>
+            <tr><th scope="row">对话质量</th><td>LLM 多维评分</td><td>LLM Judge</td></tr>
+            <tr><th scope="row">代码生成</th><td>Pass@k</td><td>自动（运行测试）</td></tr>
+            <tr><th scope="row">Agent 任务</th><td>任务完成率</td><td>自动 + 轨迹评估</td></tr>
+            <tr><th scope="row">安全性</th><td>拒绝率 / 攻击成功率</td><td>自动 + 红队测试</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <p class="callout-label">原文提醒</p>
+        <p>自动指标只能衡量表面特征。两个语义相同但措辞不同的回答（“北京是中国的首都”与“中国的首都是北京”）可能得到不同的 BLEU/ROUGE 分数；这些分数也无法评估回答的有用性、创造性和安全性。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="agent-shift-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">从 LLM 到 Agent</p><h2 id="agent-shift-title">评估对象，<br>从一次输出变成一条轨迹。</h2></div>
+      <p class="reading-intro">自动指标、人工评估、LLM-as-Judge 仍然适用于 Agent，但只评最终输出会漏掉关键信息：它是怎么走到答案的，路上有没有绕路、用错工具或掩盖错误。</p>
+    </div>
+    <div class="prose">
+      <h3>七、核心差异</h3>
+      <figure class="eval-shift" aria-labelledby="shift-caption">
+        <div class="shift-grid">
+          <div class="shift-panel">
+            <p class="shift-title">LLM 评估 · 单次输出</p>
+            <div class="shift-flow" role="img" aria-label="LLM 评估：输入进入 LLM，LLM 产生输出">
+              <span class="shift-node">输入</span><span class="shift-arrow" aria-hidden="true">→</span>
+              <span class="shift-node agent">LLM</span><span class="shift-arrow" aria-hidden="true">→</span>
+              <span class="shift-node">输出</span>
+            </div>
+            <p class="shift-note">评的是这一轮生成的质量：准确、流畅、有用。</p>
+          </div>
+          <div class="shift-panel">
+            <p class="shift-title">Agent 评估 · 整条循环轨迹</p>
+            <div class="cycle-box" role="img" aria-label="Agent 评估：任务进入推理，推理调用工具，工具返回观察，观察回到推理；推理判断完成后产出最终结果">
+              <div class="cycle-row"><span class="shift-node">任务</span><span class="shift-arrow" aria-hidden="true">→</span><span class="shift-node agent">推理</span><span class="shift-arrow" aria-hidden="true">→</span><span class="shift-node">工具调用</span></div>
+              <span class="cycle-return">↓ 工具返回观察 · ↺ 观察回到推理，进入下一轮</span>
+              <div class="cycle-exit"><span class="shift-node store">最终结果</span><span class="shift-note">推理判断任务完成时才退出循环</span></div>
+            </div>
+            <p class="shift-note">评的是整条轨迹：结果、推理、工具使用、效率、错误恢复、安全。</p>
+          </div>
+        </div>
+        <figcaption class="demo-note" id="shift-caption">图 1 · LLM 评估评单次输出，Agent 评估评「推理 ⇄ 工具 ⇄ 观察」整条循环轨迹。</figcaption>
+      </figure>
+      <details>
+        <summary>查看原文 Mermaid 图源码</summary>
+        <pre><code>flowchart TD
+    subgraph S1["LLM 评估&lt;br/&gt;评单次输出（准确、流畅、有用）"]
+        I["输入"] --&gt; L["LLM"]
+        L --&gt; O["输出"]
+    end
+    subgraph S2["Agent 评估&lt;br/&gt;评整条循环轨迹"]
+        T["任务"] --&gt; R["推理"]
+        R --&gt; U["工具调用"]
+        U --&gt; B["观察"]
+        B --&gt; R
+        R --&gt; F["最终结果"]
+    end
+    S1 --- S2
+    F -.-&gt; D["评估维度：最终结果 · 推理质量 · 工具使用&lt;br/&gt;效率 · 错误恢复 · 安全性"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class I,O,T,U proc
+    class B,F,D store
+    class L,R agent</code></pre>
+        <p class="source-footnote">源码按原文保留，仅做 HTML 转义；上方图示按同一结构呈现，观察会回到推理，不是单向串行。</p>
+      </details>
+      <div class="table-wrap">
+        <table class="data mid">
+          <caption class="sr-only">LLM 评估与 Agent 评估在八个维度上的差异</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">LLM 评估</th><th scope="col">Agent 评估</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">评估对象</th><td>单次生成</td><td>多步决策轨迹</td></tr>
+            <tr><th scope="row">评估范围</th><td>输出文本质量</td><td>任务完成 + 过程</td></tr>
+            <tr><th scope="row">确定性</th><td>较高</td><td>低（多路径可行）</td></tr>
+            <tr><th scope="row">关键指标</th><td>准确率、BLEU</td><td>任务完成率、效率</td></tr>
+            <tr><th scope="row">工具使用</th><td>无</td><td>核心评估维度</td></tr>
+            <tr><th scope="row">安全性</th><td>输出安全</td><td>行为安全（操作）</td></tr>
+            <tr><th scope="row">评估复杂度</th><td>低</td><td>高</td></tr>
+            <tr><th scope="row">基准测试</th><td>MMLU、GSM8K</td><td>SWE-bench、GAIA</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>ACL 2025 的 Agent 评估综述提出二维分类法：一维问“评估什么能力”（推理、规划、工具使用等），另一维问“用什么方法”（基准测试、人工评估、LLM Judge 等）。这两维交叉，才构成完整的 Agent 评估设计空间。</p>
+
+      <h3>八、Agent 评估的四层模型</h3>
+      <p>这四层按<strong>评估对象</strong>横向划分：结果、轨迹、工具、鲁棒性。后面的“推理质量层次”是按<strong>推理深度</strong>纵向划分，两者互补，不是同一张表。</p>
+      <div class="layer-grid">
+        <article class="layer-card">
+          <h4>Layer 1 · 结果评估（What）</h4>
+          <p class="q">Agent 是否完成了任务？</p>
+          <dl><dt>指标</dt><dd>任务完成率、答案准确率、部分完成度</dd><dt>方法</dt><dd>自动化检查最终状态</dd><dt>示例</dt><dd>SWE-bench：代码修改后测试是否通过</dd></dl>
+        </article>
+        <article class="layer-card">
+          <h4>Layer 2 · 轨迹评估（How）</h4>
+          <p class="q">Agent 的决策路径是否合理？</p>
+          <dl><dt>指标</dt><dd>步骤合理性、是否有冗余步骤、是否走了弯路</dd><dt>方法</dt><dd>LLM-as-Judge 或人工评估 Trace</dd><dt>示例</dt><dd>10 步完成 vs 3 步完成，效率差异巨大</dd></dl>
+        </article>
+        <article class="layer-card">
+          <h4>Layer 3 · 工具评估（With What）</h4>
+          <p class="q">Agent 是否正确使用了工具？</p>
+          <dl><dt>指标</dt><dd>工具选择准确率、参数正确率、调用次数</dd><dt>方法</dt><dd>与最优工具使用序列对比</dd><dt>示例</dt><dd>应该用计算器时却去搜索</dd></dl>
+        </article>
+        <article class="layer-card">
+          <h4>Layer 4 · 鲁棒性评估（What If）</h4>
+          <p class="q">Agent 面对异常情况如何表现？</p>
+          <dl><dt>指标</dt><dd>错误恢复率、幻觉率、安全违规率</dd><dt>方法</dt><dd>注入故障和对抗样本</dd><dt>示例</dt><dd>工具返回错误时是否能换策略重试</dd></dl>
+        </article>
+      </div>
+
+      <h3>九、轨迹评估：把“怎么做的”拆开打分</h3>
+      <p>轨迹评估通常拆成四类分数：步骤质量、轨迹效率、目标达成度、错误恢复率。原文的 <code>TrajectoryEvaluator</code> 对每一步调用 LLM 评分，再分别计算效率、目标是否达成，以及发生错误后是否恢复。</p>
+      <pre><code>class TrajectoryEvaluator:
+    """评估 Agent 的完整执行轨迹"""
+
+    async def evaluate_trajectory(self, task, trajectory):
+        scores = {}
+
+        # 1. 步骤级评估：每一步是否合理
+        step_scores = []
+        for i, step in enumerate(trajectory.steps):
+            step_score = await self.evaluate_step(
+                task=task,
+                step=step,
+                context=trajectory.steps[:i],  # 前序上下文
+            )
+            step_scores.append(step_score)
+        scores["step_quality"] = np.mean(step_scores)
+
+        # 2. 轨迹效率：是否有冗余步骤
+        scores["efficiency"] = self.compute_efficiency(
+            actual_steps=len(trajectory.steps),
+            optimal_steps=self.get_optimal_length(task),
+        )
+
+        # 3. 目标达成度
+        scores["goal_achieved"] = await self.check_goal(
+            task=task,
+            final_state=trajectory.final_state,
+        )
+
+        # 4. 错误恢复：遇到错误后的处理
+        errors = [s for s in trajectory.steps if s.is_error]
+        if errors:
+            recovery_rate = sum(1 for e in errors if e.was_recovered) / len(errors)
+            scores["error_recovery"] = recovery_rate
+
+        return scores</code></pre>
+      <p>每一步的 <code>evaluate_step</code> 会用 LLM 判断三件事：这一步是否推进了任务目标、工具选择是否正确、参数是否合理，并给出 1–5 分。上方互动演示就是这条思路的固定数据版：五个步骤得到 5、5、3、2、4 分，平均 3.80；最优 4 步、实际 5 步，效率按 <code>optimal / actual</code> 算得 0.80。原文只给出 <code>compute_efficiency(actual_steps, optimal_steps)</code> 的函数名，没有规定具体公式，所以“效率 = 最优步数 / 实际步数”是本页演示的<strong>明确假设</strong>，不是原文结论。</p>
+
+      <h3>十、主要 Agent 基准</h3>
+      <div class="table-wrap">
+        <table class="data mid">
+          <caption class="sr-only">四类 Agent 基准测试及其衡量内容</caption>
+          <thead><tr><th scope="col">类别</th><th scope="col">基准</th><th scope="col">衡量什么</th></tr></thead>
+          <tbody>
+            <tr><th scope="row" rowspan="3">代码 Agent</th><td>SWE-bench</td><td>修复真实 GitHub Issue（Resolved Rate）</td></tr>
+            <tr><td>HumanEval</td><td>生成函数代码（Pass@k）</td></tr>
+            <tr><td>MBPP</td><td>Python 编程任务（Pass@k）</td></tr>
+            <tr><th scope="row" rowspan="3">Web Agent</th><td>WebArena</td><td>在真实网站完成复杂任务</td></tr>
+            <tr><td>Mind2Web</td><td>跨网站的通用网页操作</td></tr>
+            <tr><td>VisualWebArena</td><td>需要视觉理解的网页任务</td></tr>
+            <tr><th scope="row" rowspan="3">通用推理 Agent</th><td>ALFWorld</td><td>文本版家庭环境中的任务执行</td></tr>
+            <tr><td>WebShop</td><td>模拟电商购物任务</td></tr>
+            <tr><td>GAIA</td><td>通用 AI 助手评估（需要多工具组合）</td></tr>
+            <tr><th scope="row" rowspan="3">工具使用 Agent</th><td>ToolBench</td><td>评估 API 工具的选择和使用</td></tr>
+            <tr><td>API-Bank</td><td>评估 API 调用的正确性</td></tr>
+            <tr><td>TaskBench</td><td>多工具组合任务</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>十一、生产环境评估框架</h3>
+      <p>原文把生产指标分成三组：核心指标（任务完成率、平均步骤数、平均延迟、平均成本）、质量指标（轨迹质量、工具使用准确率、幻觉率）、安全指标（安全违规率、越权操作率）。每次执行都保留完整轨迹，再按同一套维度打分。</p>
+      <pre><code>class ProductionAgentEvaluator:
+    """生产环境中的 Agent 评估"""
+
+    async def run_eval_suite(self, agent, test_cases):
+        results = []
+        for case in test_cases:
+            # 执行并记录完整轨迹
+            trajectory = await agent.execute_with_trace(case.task)
+
+            # 多维评估
+            eval_result = {
+                "task_success": self.check_success(trajectory, case.expected),
+                "steps": len(trajectory.steps),
+                "cost": trajectory.total_cost,
+                "latency": trajectory.total_time,
+                "trajectory_score": await self.judge_trajectory(trajectory),
+                "tool_accuracy": self.check_tool_usage(trajectory),
+                "safety": self.check_safety(trajectory),
+            }
+            results.append(eval_result)
+
+        return self.aggregate(results)</code></pre>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="reasoning-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">推理过程评估</p><h2 id="reasoning-title">答案对，<br>推理不一定对。</h2></div>
+      <p class="reading-intro">这一节从“Agent 做了什么”深入到“Agent 是怎么想的”。原文说明这部分整合自 #057（#057 原文已并入本节），聚焦过程奖励、推理忠实性、推理质量层次和 Trace 诊断规则。</p>
+    </div>
+    <div class="prose">
+      <h3>1. 推理质量的四个层次</h3>
+      <div class="chain" role="list" aria-label="推理质量从低到高的四个层次">
+        <div class="chain-row" role="listitem"><b>Level 1</b><span><strong>单步推理正确性</strong>：每一步推理是否逻辑正确？</span></div>
+        <div class="chain-row" role="listitem"><b>Level 2</b><span><strong>工具使用合理性</strong>：是否选对了工具？参数是否正确？</span></div>
+        <div class="chain-row" role="listitem"><b>Level 3</b><span><strong>推理路径质量</strong>：推理过程是否高效、合理、有无弯路？</span></div>
+        <div class="chain-row" role="listitem"><b>Level 4</b><span><strong>任务完成度</strong>：Agent 是否完成了用户的请求？</span></div>
+      </div>
+      <p><strong>结果正确 ≠ 过程正确。</strong>一个 Agent 可能因为错误的推理偶然得到正确答案（right answer, wrong reason）。只看 Level 4 会高估它的推理能力；只有 Level 1–3 同时成立，结果才可靠、可复现。这也是纯结果评估（ORM）会漏掉“答案对但推理错”的原因。</p>
+
+      <h3>2. PRM vs ORM：过程奖励与结果奖励</h3>
+      <div class="table-wrap">
+        <table class="data mid">
+          <caption class="sr-only">结果奖励模型与过程奖励模型的五个维度对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">ORM（Outcome Reward Model）</th><th scope="col">PRM（Process Reward Model）</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">评估对象</th><td>只看最终答案是否正确</td><td>对推理过程的每一步打分</td></tr>
+            <tr><th scope="row">错误定位</th><td>无法定位错误在哪一步</td><td>精确定位第一个出错的步骤</td></tr>
+            <tr><th scope="row">实现成本</th><td>低（一次打分）</td><td>高（每步都要打分，需逐步标注）</td></tr>
+            <tr><th scope="row">适合场景</th><td>大规模自动评估、初筛</td><td>训练奖励信号、调试、争议案例深挖</td></tr>
+            <tr><th scope="row">典型盲区</th><td>right-answer-wrong-reason 被漏掉</td><td>标注成本高，难以全量铺开</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文的例子：一道算术题，Step 1 算“15 × 20 = 300”得 0.95 分，Step 2“卖掉 120 个”得 0.90 分，Step 3 写成“剩余 300 + 120 = 420”只得 0.05 分。ORM 只看到最终答案 420 是错的，知道错但不知道错在哪一步；PRM 能定位到 Step 3 的运算符号错误。实践建议是两者结合：ORM 做便宜的全量初筛，PRM 对失败或争议案例做深入分析。</p>
+      <p>在 Agentic-RL 训练中，PRM 提供的逐步奖励信号比 ORM 更能稳定提升推理能力。这条线的展开在 <a href="../06-planning-and-reasoning/103-agentic-rl-grpo.html">103 Agentic-RL / GRPO</a>。</p>
+
+      <h3>3. Faithfulness：推理链是否真的被使用</h3>
+      <p><strong>忠实性（Faithfulness）</strong>指推理链是否真实反映模型的决策过程，而不是事后合理化。模型可能先得出答案，再编一条看似合理的推理链来“解释”这个答案；这样的推理链是装饰性的，不是功能性的。</p>
+      <p>核心检测思路是<strong>干预法</strong>：篡改推理链中的某个关键步骤，看最终答案是否随之改变。改掉关键步骤后答案若不变，说明模型没有真正使用这条推理链，它是不忠实的。</p>
+      <pre><code>def check_faithfulness(model, problem, original_reasoning):
+    """忠实性检测：改掉关键步骤，看答案是否真的依赖它"""
+    # 1. 原始推理链及其答案
+    original_answer = model.solve(problem, reasoning_hint=original_reasoning)
+
+    # 2. 篡改中间某个关键步骤（如把中间计算结果改错）
+    tampered = tamper_step(original_reasoning, step_idx=3, new_value="999")
+
+    # 3. 答案若不变 → 模型并未真正依赖这条推理链 → 不忠实
+    tampered_answer = model.solve(problem, reasoning_hint=tampered)
+    is_faithful = original_answer != tampered_answer
+    return is_faithful</code></pre>
+      <p>OpenAI 的 CoT Monitorability 研究正在系统性地探索思维链在多大程度上能被忠实监控。这与推理模型的可解释性直接相关：如果一个推理模型的 CoT 不可忠实监控，基于 CoT 的安全审查就形同虚设。推理模型本身的讨论在 <a href="../06-planning-and-reasoning/055-reasoning-models.html">055 Reasoning Models</a>。</p>
+
+      <h3>4. 基于 Trace 的生产诊断规则</h3>
+      <p>生产环境不可能逐条人工审推理，通常把推理与工具调用记录成 Span 级别的 Trace，再用启发式规则自动标红异常轨迹。原文给出四条规则，分别对应循环、重试、选型和开销四类隐患。</p>
+      <div class="table-wrap">
+        <table class="data mid">
+          <caption class="sr-only">四条 Trace 自动评估规则及对应的隐患</caption>
+          <thead><tr><th scope="col">规则</th><th scope="col">触发条件</th><th scope="col">说明</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">循环推理</th><td>推理步骤数 &gt; 阈值</td><td>可能陷入循环或来回兜圈</td></tr>
+            <tr><th scope="row">工具滥用</th><td>同一工具连续调用 &gt; 3 次</td><td>可能在重试无效操作</td></tr>
+            <tr><th scope="row">策略失误</th><td>工具调用失败率 &gt; 30%</td><td>工具选择策略有问题</td></tr>
+            <tr><th scope="row">效率异常</th><td>总 token 消耗远超同类任务均值</td><td>推理效率低</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>典型工具栈是 Langfuse / LangSmith / Arize Phoenix。这些平台原生支持 Span 属性（输入、输出、延迟、token）和父子关系，上述规则可以配置成告警阈值，不需要手写轮询逻辑。Trace 结构本身在 <a href="074-traces-and-spans.html">074 Traces and Spans</a>；把规则接入持续评估流水线在 <a href="077-continuous-evaluation-pipeline.html">077 Continuous Evaluation Pipeline</a>。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="misconception-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="misconception-title">八个容易被追问的点。</h2></div>
+      <p class="reading-intro">前四条是误区，后四条是面试追问；答案都来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“BLEU/ROUGE 分数高就说明质量好。”</h3><p>这些指标只衡量表面词汇重叠，无法评估语义正确性、逻辑合理性和实用性。两个语义相同但措辞不同的回答可能得到很不同的 BLEU 分数；LLM 时代这些传统指标的参考价值有限。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“LLM-as-Judge 完全可以替代人工。”</h3><p>LLM Judge 有系统性偏差（冗长偏好、位置偏差、自我偏好），在医学、法律等专业领域的判断可能不可靠。生产中应该定期用人工评估校准 LLM Judge 的准确性。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 3</p>
+      <div><h3>“Agent 评估只看最终结果就够了。”</h3><p>最终结果正确但过程不合理的 Agent 同样有问题：可能走了弯路浪费资源，可能碰巧得到正确结果但推理错误（不可靠），也可能使用了不安全的操作。轨迹评估和结果评估同等重要。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 4</p>
+      <div><h3>“用 LLM 基准测试就能评估 Agent。”</h3><p>MMLU 这类 LLM 基准测试的是知识和推理能力，无法反映 Agent 的工具使用、规划和错误恢复能力。Agent 需要专用基准，如 SWE-bench、WebArena、GAIA。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>如何提高 LLM-as-Judge 的可靠性？</h3><p>（1）提供详细的评分 Rubric，而不是让 Judge 自由打分；（2）交换位置做两次评估取平均，消除位置偏差；（3）用多个 Judge 模型投票；（4）定期用人工标注校准。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>评估数据集从哪里来？</h3><p>三个来源：（1）从生产日志中采样真实问题；（2）人工构造边界案例和对抗样本；（3）使用公开基准（MMLU、GSM8K 等）。最佳实践是三者结合：公开基准评估通用能力，私有数据集评估业务场景。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 3</p>
+      <div><h3>如何评估 Agent 的效率？</h3><p>三个维度：（1）步骤效率——完成任务用了多少步，对比最优步数；（2）成本效率——消耗了多少 token 或金钱；（3）时间效率——端到端延迟。权衡是：更多步骤可能提升准确率，但也会增加成本。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 4</p>
+      <div><h3>Agent 评估的最大难点是什么？</h3><p>非确定性。同一任务可能有多条正确路径，无法用固定的“标准答案”对比。解决方案：（1）评估最终状态而非中间步骤；（2）用 LLM Judge 评估轨迹的合理性；（3）多次运行取统计指标。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《评估方法论：从 LLM 评估到 Agent 评估》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的十条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://magazine.sebastianraschka.com/p/llm-evaluation-4-approaches" target="_blank" rel="noopener noreferrer">Understanding the 4 Main Approaches to LLM Evaluation · Sebastian Raschka</a></li>
+          <li><a href="https://www.confident-ai.com/blog/llm-evaluation-metrics-everything-you-need-for-llm-evaluation" target="_blank" rel="noopener noreferrer">LLM Evaluation Metrics: The Ultimate Guide · Confident AI</a></li>
+          <li><a href="https://medium.com/@lmpo/llm-evaluation-benchmarks-vs-human-judgment-f1cdd16098c0" target="_blank" rel="noopener noreferrer">LLM Evaluation: Benchmarks vs. Human Judgment · Medium</a></li>
+          <li><a href="https://www.evidentlyai.com/llm-guide/llm-evaluation-metrics" target="_blank" rel="noopener noreferrer">LLM Evaluation Metrics and Methods, Explained Simply · Evidently AI</a></li>
+          <li><a href="https://arxiv.org/pdf/2406.03339" target="_blank" rel="noopener noreferrer">An Analysis of Automated, Human, and LLM-Based Approaches · arXiv</a></li>
+          <li><a href="https://www.getmaxim.ai/articles/agent-evaluation-vs-model-evaluation-whats-the-difference-and-why-it-matters/" target="_blank" rel="noopener noreferrer">Agent Evaluation vs Model Evaluation: What's the Difference · Maxim</a></li>
+          <li><a href="https://arxiv.org/html/2507.21504v1" target="_blank" rel="noopener noreferrer">Evaluation and Benchmarking of LLM Agents: A Survey · ACL 2025</a></li>
+          <li><a href="https://www.confident-ai.com/blog/llm-agent-evaluation-complete-guide" target="_blank" rel="noopener noreferrer">LLM Agent Evaluation: Assessing Tool Use, Task Completion · Confident AI</a></li>
+          <li><a href="https://www.adaline.ai/blog/complete-guide-llm-ai-agent-evaluation-2026" target="_blank" rel="noopener noreferrer">The Complete Guide to LLM &amp; AI Agent Evaluation in 2026 · Adaline</a></li>
+          <li><a href="https://objectways.com/blog/understanding-how-ai-agent-trajectories-guide-agent-evaluation/" target="_blank" rel="noopener noreferrer">Understanding How AI Agent Trajectories Guide Agent Evaluation · Objectways</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>08-evaluation/069-evaluation-methodology.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 2 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const SCORES = Object.freeze([5, 5, 3, 2, 4]);
+  const OPTIMAL_STEPS = 4;
+  const STAGES = Object.freeze([
+    { nav: "任务", title: "先定评分规则", subtitle: "同一条轨迹，结果和过程分开看；每一步都留下可复核的分数和标签。" },
+    { nav: "步骤 1–2", title: "前两步正常推进", subtitle: "先查订单，再查支付状态；工具选择和参数都正确。" },
+    { nav: "步骤 3", title: "工具没错，但没有推进任务", subtitle: "第三次调用命中了通用说明，信息与已有结果重复，属于过程冗余。" },
+    { nav: "步骤 4", title: "参数写错，触发一次错误", subtitle: "订单号多加了后缀，工具返回 not_found；这是工具参数错误，也是鲁棒性评估要记录的错误事件。" },
+    { nav: "步骤 5", title: "改对参数，恢复执行", subtitle: "同一个工具用正确订单号重试成功；错误恢复率按“已恢复错误 / 错误总数”计算。" },
+    { nav: "汇总", title: "结果通过，过程有瑕疵", subtitle: "四个层面分别给分；只看最终答案会漏掉冗余步骤和参数错误。" }
+  ]);
+
+  const STEPS = Object.freeze([
+    { id: 1, tool: "search_orders", args: 'customer_id = "C-1042"', result: "返回 3 笔订单，最新一笔是 O-7781。", score: 5, tags: [{ text: "推进目标", kind: "good" }, { text: "工具选择正确", kind: "good" }] },
+    { id: 2, tool: "get_payment_status", args: 'order_id = "O-7781"', result: "支付成功，银行侧已扣款。", score: 5, tags: [{ text: "推进目标", kind: "good" }, { text: "参数正确", kind: "good" }] },
+    { id: 3, tool: "search_knowledge_base", args: 'query = "支付延迟"', result: "命中一篇通用说明，没有新增事实。", score: 3, tags: [{ text: "工具调用正确", kind: "good" }, { text: "未推进目标 · 冗余", kind: "warn" }] },
+    { id: 4, tool: "get_payment_status", args: 'order_id = "O-7781-OLD"', result: "错误：not_found。", score: 2, tags: [{ text: "参数错误", kind: "bad" }, { text: "触发错误事件", kind: "bad" }] },
+    { id: 5, tool: "get_payment_status", args: 'order_id = "O-7781"', result: "重试成功，确认银行已扣款。", score: 4, tags: [{ text: "恢复成功", kind: "good" }, { text: "多花一步", kind: "warn" }] }
+  ]);
+
+  let currentStage = 0;
+  const byId = (id) => document.getElementById(id);
+  const mean = (values) => values.reduce((sum, value) => sum + value, 0) / values.length;
+
+  function stepCard(step) {
+    const tags = step.tags.map((tag) => `<span class="tag ${tag.kind}">${tag.text}</span>`).join("");
+    return `
+      <article class="step-card">
+        <div class="step-head">
+          <span class="step-name">步骤 ${step.id} · ${step.tool}</span>
+          <span class="step-score">${step.score}<small> / 5</small></span>
+        </div>
+        <p class="step-args">参数：${step.args}</p>
+        <p class="step-result">返回：${step.result}</p>
+        <div class="step-tags">${tags}</div>
+      </article>`;
+  }
+
+  function renderTask() {
+    return `
+      <div class="trace-layout">
+        <div class="trace-card">
+          <h3>任务：核实一笔“已付款但订单未更新”的客诉</h3>
+          <p>期望答案：支付已成功，订单状态是同步延迟，不是支付失败。</p>
+          <div class="task-grid">
+            <div class="task-cell"><b>实际步骤</b>5 步</div>
+            <div class="task-cell"><b>参考最优</b>4 步</div>
+            <div class="task-cell"><b>结果判定</b>最终答案与期望一致</div>
+            <div class="task-cell"><b>数据性质</b>固定教学数据</div>
+          </div>
+        </div>
+        <aside class="trace-aside">
+          <div class="score-box">
+            <span class="label">本页的评分规则</span>
+            <table class="rubric">
+              <thead><tr><th scope="col">层面</th><th scope="col">本页算法</th></tr></thead>
+              <tbody>
+                <tr><td>结果</td><td>答案与期望一致 → 通过</td></tr>
+                <tr><td>过程</td><td>步骤分平均</td></tr>
+                <tr><td>效率</td><td>最优 / 实际（本页假设）</td></tr>
+                <tr><td>工具</td><td>选择与参数都正确的步骤 / 总步骤</td></tr>
+                <tr><td>鲁棒</td><td>已恢复错误 / 错误总数</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="score-box">
+            <span class="label">阅读方式</span>
+            <p>先看每一步的分数和标签，再看汇总。每一步只回答两件事：有没有推进任务，工具用得对不对。</p>
+          </div>
+        </aside>
+      </div>`;
+  }
+
+  function renderSteps(start, end) {
+    const slice = STEPS.slice(start, end);
+    const average = mean(SCORES.slice(0, end));
+    return `
+      <div class="trace-layout">
+        <div>${slice.map(stepCard).join("")}</div>
+        <aside class="trace-aside">
+          <div class="score-box">
+            <span class="label">到当前步骤的平均分</span>
+            <p class="value">${average.toFixed(2)}<small> / 5</small></p>
+            <p>已评 ${end} 步：${SCORES.slice(0, end).join("、")} 分。</p>
+          </div>
+          <div class="score-box">
+            <span class="label">对应评估层</span>
+            <p>步骤质量看 Layer 2；工具选择和参数看 Layer 3。当前还没有错误事件，Layer 4 暂不计算。</p>
+          </div>
+        </aside>
+      </div>`;
+  }
+
+  function renderSingleStep(index) {
+    const step = STEPS[index];
+    const average = mean(SCORES.slice(0, index + 1));
+    let note = "这一步工具选择和参数都正确，也推进了任务。";
+    let layer = "Layer 2 轨迹 · Layer 3 工具";
+    if (step.id === 3) {
+      note = "工具调用本身正确，但知识库说明与已查到的支付状态重复。它对最终答案没有贡献，属于 Layer 2 的冗余步骤。";
+      layer = "Layer 2 轨迹 · 冗余";
+    }
+    if (step.id === 4) {
+      note = "订单号多了 -OLD 后缀，工具返回 not_found。这是 Layer 3 的参数错误，同时触发 Layer 4 的错误事件。";
+      layer = "Layer 3 工具 · Layer 4 鲁棒";
+    }
+    if (step.id === 5) {
+      note = "改用正确订单号重试成功。错误总数 1，已恢复 1，恢复率 1.00；但比最优路径多花了一步。";
+      layer = "Layer 4 鲁棒 · 恢复";
+    }
+    return `
+      <div class="trace-layout">
+        <div>${stepCard(step)}</div>
+        <aside class="trace-aside">
+          <div class="score-box">
+            <span class="label">到当前步骤的平均分</span>
+            <p class="value">${average.toFixed(2)}<small> / 5</small></p>
+            <p>已评 ${index + 1} 步：${SCORES.slice(0, index + 1).join("、")} 分。</p>
+          </div>
+          <div class="score-box">
+            <span class="label">这一步在看什么</span>
+            <p>${note}</p>
+            <p><strong>${layer}</strong></p>
+          </div>
+        </aside>
+      </div>`;
+  }
+
+  function renderSummary() {
+    const average = mean(SCORES);
+    const efficiency = OPTIMAL_STEPS / SCORES.length;
+    const toolAccuracy = 4 / SCORES.length;
+    const recovery = 1 / 1;
+    return `
+      <div class="summary-grid">
+        <div class="summary-cell"><b>Layer 1 · 结果</b><strong>通过</strong><span>最终答案与期望一致：1 / 1</span></div>
+        <div class="summary-cell"><b>Layer 2 · 过程</b><strong>${average.toFixed(2)}</strong><span>平均步骤分；效率 ${OPTIMAL_STEPS} / ${SCORES.length} = ${efficiency.toFixed(2)}</span></div>
+        <div class="summary-cell"><b>Layer 3 · 工具</b><strong>${toolAccuracy.toFixed(2)}</strong><span>选择与参数都正确：4 / ${SCORES.length}</span></div>
+        <div class="summary-cell"><b>Layer 4 · 鲁棒</b><strong>${recovery.toFixed(2)}</strong><span>已恢复错误 / 错误总数：1 / 1</span></div>
+      </div>
+      <p class="verdict"><strong>结论：</strong>结果通过，过程有瑕疵。第 3 步是冗余步骤，第 4 步是参数错误；只看最终答案会把这两类问题都漏掉。效率按 <code>optimal / actual</code> 计算是本页演示假设，原文没有规定 <code>compute_efficiency</code> 的公式。</p>`;
+  }
+
+  function sceneHTML(stage) {
+    if (stage === 0) return renderTask();
+    if (stage === 1) return renderSteps(0, 2);
+    if (stage === 5) return renderSummary();
+    return renderSingleStep(stage);
+  }
+
+  function renderStage(stage) {
+    currentStage = stage;
+    byId("trace-scene").innerHTML = sceneHTML(stage);
+    byId("scene-index").textContent = `阶段 ${stage + 1} / 6 · 固定教学数据`;
+    byId("trace-title").textContent = STAGES[stage].title;
+    byId("scene-subtitle").textContent = STAGES[stage].subtitle;
+    byId("back-button").disabled = stage === 0;
+    byId("next-button").disabled = stage === STAGES.length - 1;
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      if (Number(button.dataset.stage) === stage) {
+        button.setAttribute("aria-current", "step");
+      } else {
+        button.removeAttribute("aria-current");
+      }
+    });
+    byId("state-summary").textContent = `阶段 ${stage + 1} / 6 · ${STAGES[stage].nav}`;
+    byId("trace-announcement").textContent = `阶段 ${stage + 1}，${STAGES[stage].title}。${STAGES[stage].subtitle}`;
+  }
+
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+  byId("back-button").addEventListener("click", () => {
+    if (currentStage > 0) renderStage(currentStage - 1);
+  });
+  byId("next-button").addEventListener("click", () => {
+    if (currentStage < STAGES.length - 1) renderStage(currentStage + 1);
+  });
+  byId("reset-button").addEventListener("click", () => {
+    renderStage(0);
+    byId("trace-announcement").textContent = "已重置到任务阶段。";
+  });
+  renderStage(0);
+</script>
+</body>
+</html>

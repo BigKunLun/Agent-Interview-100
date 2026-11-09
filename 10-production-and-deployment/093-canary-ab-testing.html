@@ -1,0 +1,1080 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>如何实现 Agent 的灰度发布和 A/B 测试？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .rel-banner { display: flex; align-items: flex-start; gap: 9px; margin: var(--s-4) var(--s-6) 0; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .rel-banner::before { content: "教学"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .rel-banner strong { color: #4d3000; }
+  .rel-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid transparent; border-radius: 999px; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .rel-neutral { background: #eef1ee; color: #3f463f; border-color: #c9cec9; }
+  .rel-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .rel-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .rel-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .rel-bad { background: #fbecec; color: #8a1f1f; border-color: #d9a3a3; }
+  .rel-topbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: var(--s-3); }
+  .rel-scenarios { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .rel-scenario { min-width: 0; text-align: left; padding: 9px 10px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: 11px; line-height: 1.55; color: var(--text-dim); }
+  .rel-scenario b { display: block; font: 600 12px/1.5 var(--sans); color: var(--ink); }
+  .rel-scenario:hover { background: var(--surface-soft); }
+  .rel-scenario[aria-pressed="true"] { border-color: #194f87; background: #eaf1f8; color: #194f87; box-shadow: inset 0 0 0 1px #194f87; }
+  .rel-scenario[aria-pressed="true"] b { color: #194f87; }
+  .rel-gates { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin-top: var(--s-3); }
+  .rel-gate { min-width: 0; padding: 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .rel-gate.is-passed { border-color: #9cc39e; background: #f4faf4; }
+  .rel-gate.is-blocked { border-color: #d9a3a3; background: #fdf6f6; }
+  .rel-gate-head { display: flex; align-items: center; gap: 6px; }
+  .rel-gate-num { display: inline-grid; place-items: center; width: 21px; height: 21px; border: 1px solid var(--border-bright); border-radius: 50%; font: 10px/1 var(--mono); color: var(--text-dim); flex: 0 0 auto; }
+  .rel-gate.is-passed .rel-gate-num { background: #14532d; border-color: #14532d; color: #fff; }
+  .rel-gate.is-blocked .rel-gate-num { background: #8a1f1f; border-color: #8a1f1f; color: #fff; }
+  .rel-gate b { font: 600 12px/1.4 var(--sans); }
+  .rel-gate small { display: block; margin-top: 2px; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .rel-gate p { margin-top: 6px; font-size: 10px; line-height: 1.6; color: var(--text-dim); }
+  .rel-gate .rel-badge { margin-top: 6px; }
+  .rel-gate-bar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: var(--s-3); }
+  .rel-gate-btn { min-height: 40px; padding: 7px 13px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .rel-gate-btn:hover:not(:disabled) { background: var(--surface-soft); }
+  .rel-gate-btn.primary { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+  .rel-gate-btn.primary:hover:not(:disabled) { background: #3a423b; }
+  .rel-gate-btn:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+  .rel-runlog { margin-top: var(--s-3); border-top: 1px solid var(--border); padding-top: var(--s-2); }
+  .rel-runlog p { font: 10px/1.7 var(--mono); color: var(--text-dim); overflow-wrap: anywhere; }
+  .rel-runlog p.bad { color: #8a1f1f; }
+  .rel-runlog p.ok { color: #14532d; }
+  .rel-callout { margin-top: var(--s-3); padding: 9px 12px; border-left: 3px solid #194f87; background: #eaf1f8; font-size: 11px; line-height: 1.7; }
+  .rel-callout.bad { border-left-color: #8a1f1f; background: #fbecec; color: #6d1717; }
+  .rel-weights { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .rel-weights span { font: 10px/1.6 var(--mono); color: var(--text-dim); margin-right: 3px; }
+  .rel-chip { min-height: 36px; padding: 5px 11px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: 11px; color: var(--text-dim); }
+  .rel-chip:hover { border-color: #194f87; }
+  .rel-chip[aria-pressed="true"] { background: #194f87; border-color: #194f87; color: #fff; font-weight: 600; }
+  .rel-split { margin-top: var(--s-3); }
+  .rel-split-bar { display: flex; height: 34px; border: 1px solid var(--border-bright); border-radius: var(--r-1); overflow: hidden; background: var(--surface-soft); }
+  .rel-split-stable { display: grid; place-items: center; background: #e6f2e6; color: #14532d; font: 11px/1.4 var(--mono); white-space: nowrap; }
+  .rel-split-canary { display: grid; place-items: center; background: #194f87; color: #fff; font: 11px/1.4 var(--mono); white-space: nowrap; overflow: hidden; }
+  .rel-split-legend { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px; margin-top: 5px; font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .rel-metrics { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-3); }
+  .rel-metric { min-width: 0; padding: 8px 9px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); }
+  .rel-metric b { display: block; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .rel-metric strong { display: block; margin-top: 2px; font: 600 15px/1.3 var(--mono); }
+  .rel-metric span { display: block; margin-top: 2px; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .rel-metric.bad { border-color: #d9a3a3; background: #fdf6f6; }
+  .rel-metric.bad strong { color: #8a1f1f; }
+  .rel-weight-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--s-3); }
+  .rel-table-wide { min-width: 760px; }
+  .rel-table td:first-child, .rel-table th:first-child { min-width: 8em; }
+  .rel-compare { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-3); }
+  .rel-compare-card { min-width: 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 11px; line-height: 1.7; }
+  .rel-compare-card b { display: block; margin-bottom: 2px; font: 600 13px/1.5 var(--sans); }
+  .rel-score { margin-top: var(--s-3); padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .rel-score b { font: 600 12px/1.5 var(--sans); }
+  .rel-score strong { font: 600 18px/1.4 var(--mono); }
+  .rel-score p { margin-top: 3px; font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .rel-fixed-note { display: inline-block; margin-top: var(--s-3); padding: 3px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  .rel-flow { display: grid; gap: 8px; margin-top: var(--s-4); }
+  .rel-flow-row { display: grid; grid-template-columns: 170px minmax(0, 1fr); gap: 10px; align-items: center; }
+  .rel-flow-step { padding: 10px 12px; border: 1px solid #9eb4c9; border-radius: var(--r-1); background: #eaf1f8; font-size: 12px; line-height: 1.5; }
+  .rel-flow-step b { display: block; font: 600 13px/1.5 var(--sans); color: #123c67; }
+  .rel-flow-step span { display: block; margin-top: 2px; font: 10px/1.5 var(--mono); color: #2c4a66; }
+  .rel-flow-arrow { color: var(--text-dim); font: 12px/1.4 var(--mono); }
+  .rel-flow-branch { padding: 10px 12px; border: 1px solid #d9a3a3; border-radius: var(--r-1); background: #fbecec; font-size: 12px; line-height: 1.5; color: #6d1717; }
+  .rel-flow-branch b { display: block; font: 600 13px/1.5 var(--sans); }
+  .rel-code-note { margin-top: var(--s-3); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  @media (max-width: 1000px) {
+    .rel-gates { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .rel-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px) {
+    .rel-banner { margin-inline: var(--s-4); }
+    .rel-scenarios { grid-template-columns: 1fr; }
+    .rel-gates { grid-template-columns: 1fr; }
+    .rel-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .rel-compare { grid-template-columns: 1fr; }
+    .rel-flow-row { grid-template-columns: 1fr; gap: 4px; }
+    .rel-flow-arrow { transform: rotate(90deg); justify-self: start; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">093 / 灰度与 A/B</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 16 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="092-logging-monitoring-alerting.html">← 上一页 · Agent 系统的日志、监控与告警设…</a><a href="094-scaling-strategies.html">下一页 → · 高并发场景下的 Agent 系统扩展…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Production &amp; Deployment · 可交互讲解</p>
+      <h1>新版本，<br>先给 5% 的人用。</h1>
+    </div>
+    <div>
+      <p class="lead">灰度发布验证“会不会坏”：新版本从小流量开始，指标异常就自动回滚。A/B 测试回答“哪个更好”：两个版本同时跑，对比任务成功率、满意度、成本和延迟。Agent 的输出不确定，所以两者都要靠质量门控和足够的样本量。</p>
+      <p class="definition"><strong>关键边界：</strong>本页是固定教学发布面板，不连接真实流量、Feature Flag 或 CI。健康阈值来自原文代码：错误率 &lt;5%、质量 &gt;基线×95%、P95 &lt;基线×1.2、成本 &lt;基线×1.3、安全分 &gt;0.95，任一不达标即失败。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Production</span><span class="pill">Canary / A/B</span><span class="pill">固定教学数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="rel-title">
+    <div class="player-top">
+      <div class="player-label">发布控制台 <small>四道闸 · 流量扩量 · A/B 判定</small></div>
+      <div class="controls" role="group" aria-label="发布演示控制">
+        <button type="button" class="button button-quiet" id="rel-reset">重置</button>
+        <button type="button" class="button" id="rel-back" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="rel-next">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="发布演示阶段">
+      <ol style="--stages: 3">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>发布闸门</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>Canary 扩量</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>A/B 判定</button></li>
+      </ol>
+    </nav>
+    <p class="rel-banner"><span><strong>本页是固定教学发布，不连接任何真实流量或发布系统。</strong>三组版本 v2.4、v2.5、v2.6 的结果、指标和处置点都是预设数据；“质量基线 4.5、P95 基线 2.1s、成本基线 $0.045”仅用于演示原文的健康阈值。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="rel-index">阶段 1 / 3 · 固定教学发布</p>
+      <h2 id="rel-title">发布不是改个流量比例，是四道闸。</h2>
+      <p id="rel-subtitle">先离线评估，再影子跑真实流量，然后 5% Canary，最后逐级扩量。选一个版本场景，逐道推进闸门。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="rel-scene"></div>
+      <p class="demo-note" id="rel-note">固定教学数据：版本结果、流量比例、健康指标和处置原因均为本页预设；不发起请求，不写入发布系统。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学发布 · 4 道闸 · 3 个场景</span><span id="rel-summary">阶段 1 / 3 · v2.4 顺利上线 · 0 / 4 道闸</span></div>
+  </section>
+  <p id="rel-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="compare-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">概念区分</p><h2 id="compare-title">灰度看稳定，<br>A/B 看效果。</h2></div>
+      <p class="reading-intro">两者都分流，但目的、决策和时间尺度不同。灰度是“通过或回滚”，A/B 是“选哪个版本”。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">原文的灰度发布与 A/B 测试对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">灰度发布（Canary）</th><th scope="col">A/B 测试</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">目的</th><td>验证技术稳定性</td><td>比较业务效果</td></tr>
+            <tr><th scope="row">关注</th><td>有没有 bug / 退化</td><td>哪个版本更好</td></tr>
+            <tr><th scope="row">流程</th><td>小流量 → 逐步扩量 → 全量</td><td>同时运行两个版本</td></tr>
+            <tr><th scope="row">决策</th><td>通过 / 回滚</td><td>选择胜出版本</td></tr>
+            <tr><th scope="row">时间</th><td>小时到天</td><td>天到周</td></tr>
+            <tr><th scope="row">指标</th><td>错误率、延迟、质量下限</td><td>业务指标、用户偏好</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>灰度发布只把一小部分流量给新版本，持续监控质量、延迟、成本和错误率；任何一项越过阈值就回滚。A/B 测试则同时保留对照组和实验组，用统计检验判断差异是否真实，再结合成本做业务决策。</p>
+      <p>两者可以串联：先灰度确认新版本不坏，再用 A/B 比较它是否更好。顺序反过来会放大风险——还没确认稳定，就先让一半用户用上新版本。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="flow-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">发布流程</p><h2 id="flow-title">四道闸，<br>前两道拦截，后两道回滚。</h2></div>
+      <p class="reading-intro">原文的流程是：离线评估门控 → Shadow 影子测试 → Canary 5% → 逐级扩量 25% / 50% / 100%。每一步都有健康检查。</p>
+    </div>
+    <div class="prose">
+      <div class="rel-flow" role="list" aria-label="灰度发布四道闸">
+        <div class="rel-flow-row" role="listitem">
+          <div class="rel-flow-step"><b>1 · 离线评估</b><span>Golden Dataset v3 回归</span></div>
+          <div class="rel-flow-arrow">↓ 质量低于基线 95% 则拦截</div>
+        </div>
+        <div class="rel-flow-row" role="listitem">
+          <div class="rel-flow-step"><b>2 · Shadow 影子测试</b><span>真实流量跑 4 小时，不返回给用户</span></div>
+          <div class="rel-flow-arrow">↓ 发现严重问题则拦截</div>
+        </div>
+        <div class="rel-flow-row" role="listitem">
+          <div class="rel-flow-step"><b>3 · Canary 5%</b><span>观察 2 小时，指标健康才继续</span></div>
+          <div class="rel-flow-arrow">↓ 任一指标不健康 → 自动回滚</div>
+        </div>
+        <div class="rel-flow-row" role="listitem">
+          <div class="rel-flow-step"><b>4 · 逐级扩量</b><span>25% → 50% → 100%，每档观察 1 小时</span></div>
+          <div class="rel-flow-branch"><b>回滚分支</b>回到上一个稳定版本；保留失败档位的指标和 Trace 供排查。</div>
+        </div>
+      </div>
+      <p>原文代码把健康检查写成五个条件同时满足：错误率低于 5%、质量分高于基线 95%、P95 延迟低于基线 1.2 倍、单请求成本低于基线 1.3 倍、安全分高于 0.95。任一条件不满足就回滚。</p>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">原文代码中的 Canary 健康阈值</caption>
+          <thead><tr><th scope="col">检查项</th><th scope="col">阈值</th><th scope="col">不达标时的动作</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">错误率</th><td><code>&lt; 0.05</code>（5%）</td><td>回滚到上一稳定版本</td></tr>
+            <tr><th scope="row">质量分</th><td><code>&gt; baseline.quality × 0.95</code></td><td>回滚，并触发质量排查</td></tr>
+            <tr><th scope="row">P95 延迟</th><td><code>&lt; baseline.p95 × 1.2</code></td><td>回滚，检查模型提供商与缓存</td></tr>
+            <tr><th scope="row">单请求成本</th><td><code>&lt; baseline.cost × 1.3</code></td><td>回滚，检查 token 用量与模型路由</td></tr>
+            <tr><th scope="row">安全分</th><td><code>&gt; 0.95</code></td><td>回滚，通知安全团队</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="rel-fixed-note">阈值来自原文代码；本页未连接任何发布或监控系统</p>
+      <details>
+        <summary>查看原文的 AgentCanaryDeployment 代码</summary>
+        <pre><code>class AgentCanaryDeployment:
+    """Agent 系统的灰度发布"""
+
+    async def deploy_canary(self, new_version):
+        """渐进式发布流程"""
+
+        # Phase 1: 离线评估（质量门控）
+        eval_result = await self.run_offline_eval(
+            version=new_version,
+            dataset="golden_dataset_v3",
+            metrics=["quality", "safety", "latency"],
+        )
+        if eval_result.quality &lt; self.baseline.quality * 0.95:
+            return {"status": "blocked", "reason": "离线评估未通过"}
+
+        # Phase 2: Shadow Testing（不影响用户）
+        shadow_result = await self.shadow_test(
+            new_version=new_version,
+            duration_hours=4,
+            # 对真实流量运行新版本，但不返回给用户
+        )
+        if shadow_result.has_critical_issues:
+            return {"status": "blocked", "reason": "Shadow 测试发现问题"}
+
+        # Phase 3: Canary 发布（5% 流量）
+        await self.set_traffic_split(canary=0.05, stable=0.95)
+        canary_metrics = await self.monitor(duration_hours=2)
+        if not self.check_health(canary_metrics):
+            await self.rollback()
+            return {"status": "rolled_back", "reason": "Canary 指标异常"}
+
+        # Phase 4: 逐步扩量
+        for pct in [0.25, 0.50, 1.00]:
+            await self.set_traffic_split(canary=pct, stable=1-pct)
+            metrics = await self.monitor(duration_hours=1)
+            if not self.check_health(metrics):
+                await self.rollback()
+                return {"status": "rolled_back", "stage": f"{pct*100}%"}
+
+        return {"status": "deployed", "version": new_version}
+
+    def check_health(self, metrics):
+        """健康检查——任一指标不通过则失败"""
+        return (
+            metrics.error_rate &lt; 0.05 and          # 错误率 &lt; 5%
+            metrics.quality_score &gt; self.baseline.quality * 0.95 and
+            metrics.p95_latency &lt; self.baseline.p95 * 1.2 and
+            metrics.cost_per_request &lt; self.baseline.cost * 1.3 and
+            metrics.safety_score &gt; 0.95
+        )</code></pre>
+      </details>
+      <p class="rel-code-note">代码里的 <code>set_traffic_split</code>、<code>monitor</code>、<code>rollback</code> 都是示意接口，原文没有给出具体实现；本页只解释阈值和顺序，不执行代码。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="ab-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">A/B 框架</p><h2 id="ab-title">六个指标，<br>一个统计检验。</h2></div>
+      <p class="reading-intro">原文的 A/B 实验同时看任务成功率、首次解决率、用户满意度、每会话成本、幻觉率和升级率；按用户 ID 确定性分组，用 Mann-Whitney U 检验。</p>
+    </div>
+    <div class="prose">
+      <p>确定性路由是关键：同一个用户始终落在同一组，否则用户会在两个版本之间来回跳，实验组和对照组的差异会被污染。原文的 <code>route_request</code> 先按 <code>user_id</code> 分配 variant，再调用对应版本，并记录指标。</p>
+      <p>统计上，每个指标做 Mann-Whitney U 检验，默认显著性水平 0.05，最小样本量 500。原文对“胜出”的判定是实验组均值更高；成本、幻觉率、升级率这类“越低越好”的指标，需要自行反转方向，不能直接套用这段升序判断。</p>
+      <div class="callout">
+        <p class="callout-label">原文代码的一处边界</p>
+        <p><code>winner</code> 按 <code>treatment_mean &gt; control_mean</code> 判定。如果指标是“越低越好”，这个判断会把更差的版本判成赢家。实际实现要按指标方向分别处理，本页不修改原文代码，只做提示。</p>
+      </div>
+      <table class="data">
+        <caption class="sr-only">原文 A/B 实验的指标与参数</caption>
+        <thead><tr><th scope="col">指标</th><th scope="col">方向</th><th scope="col">原文用途</th></tr></thead>
+        <tbody>
+          <tr><th scope="row">任务成功率</th><td>越高越好</td><td>核心效果指标</td></tr>
+          <tr><th scope="row">首次解决率</th><td>越高越好</td><td>衡量一次交互是否解决问题</td></tr>
+          <tr><th scope="row">用户满意度</th><td>越高越好</td><td>反馈评分</td></tr>
+          <tr><th scope="row">每会话成本</th><td>越低越好</td><td>成本变量必须纳入对比</td></tr>
+          <tr><th scope="row">幻觉率</th><td>越低越好</td><td>质量与安全指标</td></tr>
+          <tr><th scope="row">升级率</th><td>越低越好</td><td>转人工或上级处理的比例</td></tr>
+        </tbody>
+      </table>
+      <p class="rel-fixed-note">指标与参数来自原文；方向列按指标语义标注</p>
+      <details>
+        <summary>查看原文的 AgentABTest 代码</summary>
+        <pre><code>class AgentABTest:
+    """Agent 系统的 A/B 测试"""
+
+    def __init__(self):
+        self.experiments = {}
+
+    def create_experiment(self, name, variants, traffic_split):
+        """创建 A/B 实验"""
+        self.experiments[name] = {
+            "variants": variants,   # {"control": v1, "treatment": v2}
+            "split": traffic_split, # {"control": 0.5, "treatment": 0.5}
+            "metrics": [
+                "task_success_rate",    # 任务完成率
+                "first_contact_resolution",  # 首次解决率
+                "user_satisfaction",    # 用户满意度
+                "cost_per_session",     # 每会话成本
+                "hallucination_rate",   # 幻觉率
+                "escalation_rate",      # 升级率
+            ],
+            "min_sample_size": 500,  # 最小样本量
+            "confidence_level": 0.95,
+        }
+
+    async def route_request(self, user_id, request):
+        """根据用户 ID 路由到实验组"""
+        # 确定性路由：同一用户始终在同一组
+        variant = self.assign_variant(user_id)
+        agent_version = self.experiments["current"]["variants"][variant]
+
+        response = await agent_version.invoke(request)
+
+        # 记录指标
+        self.record_metric(user_id, variant, response)
+        return response
+
+    def analyze_results(self, experiment_name):
+        """统计分析实验结果"""
+        exp = self.experiments[experiment_name]
+        control = self.get_metrics("control")
+        treatment = self.get_metrics("treatment")
+
+        results = {}
+        for metric in exp["metrics"]:
+            # 统计检验
+            stat, p_value = mannwhitneyu(
+                control[metric], treatment[metric]
+            )
+            results[metric] = {
+                "control_mean": np.mean(control[metric]),
+                "treatment_mean": np.mean(treatment[metric]),
+                "p_value": p_value,
+                "significant": p_value &lt; 0.05,
+                "winner": "treatment" if np.mean(treatment[metric]) &gt; np.mean(control[metric]) else "control",
+            }
+        return results</code></pre>
+      </details>
+      <p>原文的 A/B 特殊考量有五个：输出非确定性要用更大样本并固定 <code>temperature=0</code>；多步执行要记录完整轨迹按步骤分析；质量没有简单对错，要用 LLM-as-Judge 加用户反馈；用户行为会适应变化，实验至少持续一周；不同版本成本可能差很多，必须把成本作为核心指标。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="auto-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">自动化</p><h2 id="auto-title">流量档位，<br>交给发布控制器。</h2></div>
+      <p class="reading-intro">原文给出 Argo Rollouts + Prometheus 的自动灰度示例：5% 观察 2 小时，25% 观察 1 小时，分析模板不通过就自动回滚。</p>
+    </div>
+    <div class="prose">
+      <p>自动化发布把“看指标、决定继续还是回滚”写成分析模板。原文示例的质量阈值是 3.5；这只是示例值，生产要按自己的基线和业务定义设置。工具链的其他环节是 Feature Flags（LaunchDarkly）、AI Gateway（Portkey / LiteLLM）、监控（Langfuse）和 Progressive Delivery（Argo Rollouts / Flagger）。</p>
+      <details>
+        <summary>查看原文的 Argo Rollouts 配置</summary>
+        <pre><code># Argo Rollouts + Prometheus 自动化灰度发布示例
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+spec:
+  strategy:
+    canary:
+      steps:
+        - setWeight: 5           # 5% 流量
+        - pause: {duration: 2h}  # 观察 2 小时
+        - analysis:              # 自动分析指标
+            templates:
+              - templateName: agent-quality-check
+            args:
+              - name: quality-threshold
+                value: "3.5"     # 质量分 &gt; 3.5
+        - setWeight: 25          # 25% 流量
+        - pause: {duration: 1h}
+        - analysis:
+            templates:
+              - templateName: agent-quality-check
+        - setWeight: 100         # 全量发布
+
+# 分析模板：自动检查 Prometheus 中的 Agent 质量指标
+# 不通过则自动回滚</code></pre>
+      </details>
+      <p class="rel-fixed-note">配置、工具与版本按原文，未联网核实；本页不执行任何发布命令</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">两个误区，<br>两个追问。</h2></div>
+      <p class="reading-intro">A/B 不能只看准确率；灰度也不是改个比例。样本量和 Prompt 变更是常见追问。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <div class="misconception-label">误区 01</div>
+        <div><h3>“A/B 测试只需要看准确率”</h3><p>Agent 系统要同时看任务成功率、用户满意度、成本、延迟和安全性。一个版本可能质量更高但成本翻倍，必须综合权衡；原文建议定义加权综合得分。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 02</div>
+        <div><h3>“灰度发布就是改个流量比例”</h3><p>还需要确定性路由（同一用户始终在同一组）、自动健康检查和回滚、完整的双版本可观测性对比，以及 Shadow Testing 前置验证。少了任何一项，灰度都可能把小故障放大成全量事故。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 03</div>
+        <div><h3>样本量不够怎么办？</h3><p>四条：用贝叶斯方法替代频率学方法，更适合小样本；用更敏感的指标（如用户反馈评分，而不是二元成功/失败）；延长实验时间；实验前先用离线评估筛选，只有差异明显的版本才进入在线实验。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 04</div>
+        <div><h3>如何处理 Prompt 变更的 A/B 测试？</h3><p>Prompt 变更和代码变更一样走灰度：用 Prompt 管理平台（LangSmith / Humanloop）管版本，Feature Flag 控制流量，CI 跑回归测试，生产 A/B 对比效果。可参考 <a href="../07-prompt-engineering/066-prompt-versioning-ab-testing.html">066 Prompt 版本管理与 A/B 测试</a>。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="sources-title">
+    <p class="eyebrow">参考资料</p>
+    <h2 class="source-heading" id="sources-title">原文引用与延伸阅读</h2>
+    <p class="source-summary">以下链接来自原文。只有主动点击外链才会离开本页；本页不加载任何外部资源。</p>
+    <details>
+      <summary>展开 5 条参考资料</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.getmaxim.ai/articles/5-strategies-for-a-b-testing-for-ai-agent-deployment/" rel="noreferrer noopener">5 Strategies for A/B Testing for AI Agent Deployment (Maxim AI)</a></li>
+          <li><a href="https://medium.com/@sebuzdugan/day-60-100-canary-deployments-and-a-b-testing-safer-smarter-model-rollouts-d9245042baf9" rel="noreferrer noopener">Canary Deployments and A/B Testing: Safer, Smarter Model Rollouts (Medium)</a></li>
+          <li><a href="https://apxml.com/courses/advanced-ai-infrastructure-design-optimization/chapter-4-high-performance-model-inference/ab-testing-canary-deployments-models" rel="noreferrer noopener">A/B Testing and Canary Deployments for Models (APXML)</a></li>
+          <li><a href="https://wallaroo.ai/canary-deployment-at-a-glance/" rel="noreferrer noopener">Canary Deployment at a Glance (Wallaroo.AI)</a></li>
+          <li><a href="https://loadfocus.com/blog/2025/10/canary-deployment" rel="noreferrer noopener">What Is Canary Deployment? A Complete 2025 Guide (LoadFocus)</a></li>
+        </ul>
+        <p class="source-footnote">工具链、流程与阈值均按原文版本呈现，本页未联网核实，也未执行任何发布操作。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>10-production-and-deployment/093-canary-ab-testing.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 6 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const GATE_NAMES = ["离线评估", "Shadow 测试", "Canary 5%", "逐级扩量"];
+  const GATE_SUBS = ["Golden Dataset v3 回归", "真实流量影子跑 4 小时", "观察 2 小时", "25% → 50% → 100%"];
+
+  const SCENARIOS = Object.freeze({
+    healthy: {
+      label: "v2.4 顺利上线",
+      short: "全部通过",
+      desc: "质量、成本与延迟都在阈值内，逐级扩到 100%。",
+      failGate: -1,
+      failWhy: "",
+      gates: [
+        "质量 4.42 ≥ 4.275；安全 0.98 > 0.95",
+        "12,480 次影子运行，0 个严重问题",
+        "5% 观察 2 小时，五项全部健康",
+        "25% / 50% / 100% 三档均健康"
+      ]
+    },
+    cost: {
+      label: "v2.5 成本回退",
+      short: "25% 切回",
+      desc: "前三道闸通过，扩到 25% 时单请求成本超基线 1.3 倍，自动切回 v2.3。",
+      failGate: 3,
+      failWhy: "单请求成本 $0.064 > 阈值 $0.0585（基线 $0.045 × 1.3）",
+      gates: [
+        "质量 4.41 ≥ 4.275；安全 0.97 > 0.95",
+        "11,960 次影子运行，0 个严重问题",
+        "5% 观察 2 小时，成本 $0.051，五项健康",
+        "25% 档位成本 $0.064，越过 1.3 倍阈值"
+      ]
+    },
+    quality: {
+      label: "v2.6 质量拦截",
+      short: "离线拦截",
+      desc: "离线评估质量 4.16，低于基线 95%，未进入 Shadow 和 Canary。",
+      failGate: 0,
+      failWhy: "质量 4.16 低于阈值 4.275（基线 4.5 × 0.95）",
+      gates: [
+        "质量 4.16，低于基线 95%，直接拦截",
+        "未执行",
+        "未执行",
+        "未执行"
+      ]
+    }
+  });
+
+  const BASE = Object.freeze({ quality: 4.5, p95: 2.1, cost: 0.045 });
+  const LIMIT = Object.freeze({ error: 0.05, quality: 4.275, p95: 2.52, cost: 0.0585, safety: 0.95 });
+
+  const CANARY = Object.freeze({
+    healthy: {
+      5:   { error: 0.009, quality: 4.46, p95: 2.30, cost: 0.047, safety: 0.985 },
+      25:  { error: 0.008, quality: 4.44, p95: 2.35, cost: 0.048, safety: 0.982 },
+      50:  { error: 0.010, quality: 4.42, p95: 2.41, cost: 0.050, safety: 0.980 },
+      100: { error: 0.011, quality: 4.40, p95: 2.46, cost: 0.052, safety: 0.978 }
+    },
+    cost: {
+      5:   { error: 0.012, quality: 4.40, p95: 2.38, cost: 0.051, safety: 0.978 },
+      25:  { error: 0.014, quality: 4.35, p95: 2.49, cost: 0.064, safety: 0.972 }
+    },
+    quality: {}
+  });
+
+  const AB_METRICS = Object.freeze([
+    { key: "success", label: "任务成功率", control: 81.2, treatment: 86.4, unit: "%", better: "higher", p: 0.003 },
+    { key: "sat", label: "用户满意度", control: 4.12, treatment: 4.31, unit: "/5", better: "higher", p: 0.021 },
+    { key: "cost", label: "每会话成本", control: 0.048, treatment: 0.061, unit: "$", better: "lower", p: 0.002 },
+    { key: "halluc", label: "幻觉率", control: 4.1, treatment: 2.8, unit: "%", better: "lower", p: 0.040 },
+    { key: "escal", label: "升级率", control: 18.0, treatment: 12.3, unit: "%", better: "lower", p: 0.006 },
+    { key: "p95", label: "P95 延迟", control: 4.8, treatment: 5.2, unit: "s", better: "lower", p: 0.090 }
+  ]);
+
+  const WEIGHTS = Object.freeze({
+    quality: { success: 0.35, sat: 0.20, halluc: 0.15, escal: 0.15, cost: 0.15, p95: 0 },
+    cost: { success: 0.20, sat: 0.10, halluc: 0.05, escal: 0.05, cost: 0.60, p95: 0 }
+  });
+
+  const STAGES = Object.freeze([
+    {
+      nav: "发布闸门",
+      title: "发布不是改个流量比例，是四道闸。",
+      subtitle: "先离线评估，再影子跑真实流量，然后 5% Canary，最后逐级扩量。选一个版本场景，逐道推进闸门。",
+      note: "固定教学数据：版本结果、闸门顺序与拦截原因均为本页预设；不连接发布系统，也不发起任何请求。"
+    },
+    {
+      nav: "Canary 扩量",
+      title: "每一档流量，都要重新过一遍健康检查。",
+      subtitle: "5% / 25% / 50% / 100% 四档，每档看错误率、质量、P95、成本和安全分。任一项越界就不能继续扩量。",
+      note: "固定教学数据：各档位指标为预设值，阈值按原文代码；本页不产生真实流量。"
+    },
+    {
+      nav: "A/B 判定",
+      title: "显著、方向、权重，三件事分开看。",
+      subtitle: "固定实验：Prompt v3 对照组 vs Prompt v4 实验组。切换显著性水平和权重，看结论怎么变。",
+      note: "固定教学数据：样本量、均值、p 值和权重均为本页预设；不调用任何评估或统计服务。"
+    }
+  ]);
+
+  const state = { stage: 0, scenario: "healthy", gateIndex: 0, weight: 5, alpha: 0.05, focus: "quality" };
+  const byId = (id) => document.getElementById(id);
+
+  function scenario() {
+    return SCENARIOS[state.scenario];
+  }
+
+  function gateStatus(index) {
+    if (index >= state.gateIndex) return "pending";
+    if (index !== scenario().failGate) return "passed";
+    return scenario().failGate < 2 ? "blocked" : "rolled_back";
+  }
+
+  function gateTerminal() {
+    if (state.scenario === "healthy") return state.gateIndex >= 4;
+    return state.gateIndex > scenario().failGate;
+  }
+
+  function isPreCanaryBlock() {
+    return state.scenario !== "healthy" && scenario().failGate < 2;
+  }
+
+  function gateLabel(status) {
+    if (status === "passed") return '<span class="rel-badge rel-ok">通过</span>';
+    if (status === "blocked") return '<span class="rel-badge rel-bad">拦截</span>';
+    if (status === "rolled_back") return '<span class="rel-badge rel-bad">已回滚</span>';
+    return '<span class="rel-badge rel-neutral">待执行</span>';
+  }
+
+  function gateCard(index) {
+    const status = gateStatus(index);
+    const cls = status === "passed" ? " is-passed" : status === "blocked" || status === "rolled_back" ? " is-blocked" : "";
+    const detail = status === "pending"
+      ? "尚未执行；前面的闸门通过后才会进入。"
+      : scenario().gates[index];
+    return `<article class="rel-gate${cls}" aria-label="第 ${index + 1} 道闸：${GATE_NAMES[index]}">
+      <div class="rel-gate-head"><span class="rel-gate-num">${index + 1}</span><b>${GATE_NAMES[index]}</b></div>
+      <small>${GATE_SUBS[index]}</small>
+      ${gateLabel(status)}
+      <p>${detail}</p>
+    </article>`;
+  }
+
+  function runLog() {
+    const rows = [];
+    for (let i = 0; i < state.gateIndex; i += 1) {
+      const status = gateStatus(i);
+      if (status === "blocked") {
+        rows.push(`<p class="bad">[blocked] ${GATE_NAMES[i]} · ${scenario().failWhy}</p>`);
+      } else if (status === "rolled_back") {
+        rows.push(`<p class="bad">[rolled_back] ${GATE_NAMES[i]} · ${scenario().gates[i]}</p>`);
+      } else {
+        rows.push(`<p class="ok">[passed] ${GATE_NAMES[i]} · ${scenario().gates[i]}</p>`);
+      }
+    }
+    if (!rows.length) rows.push("<p>尚未推进；选择场景后点击“推进下一道闸”。</p>");
+    if (gateTerminal() && state.scenario === "healthy") rows.push('<p class="ok">[deployed] v2.4 已全量发布</p>');
+    if (gateTerminal() && isPreCanaryBlock()) rows.push('<p class="bad">[blocked] 未切换任何流量，稳定版保持 v2.3；v2.6 未发布</p>');
+    if (gateTerminal() && !isPreCanaryBlock() && state.scenario !== "healthy") rows.push('<p class="bad">[rolled_back] 已回到上一稳定版本 v2.3</p>');
+    return rows.join("");
+  }
+
+  function gateScene() {
+    const sc = scenario();
+    const tabs = Object.keys(SCENARIOS).map((key) => `<button type="button" class="rel-scenario" data-scenario="${key}" aria-pressed="${key === state.scenario}"><b>${SCENARIOS[key].label}</b>${SCENARIOS[key].desc}</button>`).join("");
+    const done = gateTerminal();
+    const buttonText = done ? "重新演练" : "推进下一道闸";
+    return `
+      <div class="rel-topbar"><div class="rel-badge rel-info">场景：${sc.label}</div><span class="rel-badge rel-neutral">固定教学发布</span></div>
+      <div class="rel-scenarios" role="group" aria-label="选择发布场景">${tabs}</div>
+      <div class="rel-gates">${[0, 1, 2, 3].map(gateCard).join("")}</div>
+      <div class="rel-gate-bar">
+        <button type="button" class="rel-gate-btn primary" id="rel-gate-next" ${done ? "" : ""}>${buttonText}</button>
+        <span class="rel-badge ${done && state.scenario === "healthy" ? "rel-ok" : done ? "rel-bad" : "rel-neutral"}">${done ? (state.scenario === "healthy" ? "发布完成" : isPreCanaryBlock() ? "已拦截（未发布）" : "已回滚") : `已推进 ${state.gateIndex} / 4`}</span>
+      </div>
+      <div class="rel-runlog" aria-label="发布日志">${runLog()}</div>
+      ${done && isPreCanaryBlock() ? `<div class="rel-callout bad"><strong>拦截决策：</strong>${sc.failWhy}。离线闸直接返回 blocked，未进入 Shadow 或 Canary，未切换任何流量；稳定版保持 v2.3，v2.6 未发布；不存在发布后的版本切换动作。</div>` : ""}
+      ${done && !isPreCanaryBlock() && state.scenario !== "healthy" ? `<div class="rel-callout bad"><strong>回滚决策：</strong>${sc.failWhy}。控制器保留该档位指标，回到 v2.3；不回滚数据库，也不重放用户请求。</div>` : ""}
+      ${done && state.scenario === "healthy" ? '<div class="rel-callout"><strong>发布完成：</strong>四道闸全部通过。灰度只证明“没有退化”，下一步才是用 A/B 比较新旧 Prompt 的业务效果。</div>' : ""}
+      <p class="rel-fixed-note">固定教学数据：三组版本结果为本页预设；阈值按原文，不连接任何发布系统</p>`;
+  }
+
+  function metricRows(data) {
+    return [
+      { key: "error", label: "错误率", value: data.error, limit: LIMIT.error, fmt: (v) => (v * 100).toFixed(1) + "%", lim: "< 5%", ok: data.error < LIMIT.error },
+      { key: "quality", label: "质量分", value: data.quality, limit: LIMIT.quality, fmt: (v) => v.toFixed(2), lim: "> 4.275", ok: data.quality > LIMIT.quality },
+      { key: "p95", label: "P95 延迟", value: data.p95, limit: LIMIT.p95, fmt: (v) => v.toFixed(2) + "s", lim: "< 2.52s", ok: data.p95 < LIMIT.p95 },
+      { key: "cost", label: "单请求成本", value: data.cost, limit: LIMIT.cost, fmt: (v) => "$" + v.toFixed(3), lim: "< $0.0585", ok: data.cost < LIMIT.cost },
+      { key: "safety", label: "安全分", value: data.safety, limit: LIMIT.safety, fmt: (v) => v.toFixed(3), lim: "> 0.95", ok: data.safety > LIMIT.safety }
+    ];
+  }
+
+  function canaryScene() {
+    const sc = scenario();
+    if (state.scenario === "quality") {
+      return `
+        <div class="rel-callout bad"><strong>未进入 Canary：</strong>v2.6 在离线评估就被拦截，质量 4.16 低于基线 95%。后面的 Shadow、Canary 和扩量都不会发生。</div>
+        <div class="rel-split" aria-label="流量分配">
+          <div class="rel-split-bar"><div class="rel-split-stable" style="width:100%">v2.3 稳定版 100%</div></div>
+          <div class="rel-split-legend"><span>新版本流量 0%</span><span>稳定版流量 100%</span></div>
+        </div>
+        <div class="rel-gate-bar"><button type="button" class="rel-gate-btn" disabled>5%</button><button type="button" class="rel-gate-btn" disabled>25%</button><button type="button" class="rel-gate-btn" disabled>50%</button><button type="button" class="rel-gate-btn" disabled>100%</button></div>
+        <p class="rel-fixed-note">固定教学数据：被拦截的版本没有 Canary 指标；未执行的档位保持灰色</p>`;
+    }
+    const weights = Object.keys(CANARY[state.scenario]).map(Number).sort((a, b) => a - b);
+    if (!weights.includes(state.weight)) state.weight = weights[0];
+    const data = CANARY[state.scenario][state.weight];
+    const rows = metricRows(data);
+    const pass = rows.every((row) => row.ok);
+    const tabs = [5, 25, 50, 100].map((weight) => {
+      const available = weights.includes(weight);
+      return `<button type="button" class="rel-gate-btn" data-weight="${weight}" aria-pressed="${weight === state.weight}" ${available ? "" : "disabled"}>${weight}%</button>`;
+    }).join("");
+    const metrics = rows.map((row) => `<div class="rel-metric${row.ok ? "" : " bad"}"><b>${row.label}</b><strong>${row.fmt(row.value)}</strong><span>${row.ok ? "达标" : "越界"} · 阈值 ${row.lim}</span></div>`).join("");
+    const canaryPct = state.weight;
+    const stablePct = 100 - canaryPct;
+    return `
+      <div class="rel-topbar"><div class="rel-badge rel-info">${sc.label} · ${state.weight}% 档位</div><span class="rel-badge ${pass ? "rel-ok" : "rel-bad"}">${pass ? "五项健康" : "存在越界"}</span></div>
+      <div class="rel-split" aria-label="流量分配">
+        <div class="rel-split-bar"><div class="rel-split-stable" style="width:${stablePct}%">v2.3 稳定版 ${stablePct}%</div><div class="rel-split-canary" style="width:${canaryPct}%">${canaryPct}%</div></div>
+        <div class="rel-split-legend"><span>蓝：新版本 ${canaryPct}%</span><span>绿：稳定版 ${stablePct}%</span></div>
+      </div>
+      <div class="rel-gate-bar" role="group" aria-label="选择流量档位">${tabs}</div>
+      <div class="rel-metrics">${metrics}</div>
+      ${pass ? `<div class="rel-callout"><strong>本档通过：</strong>错误率、质量、P95、成本、安全分全部在阈值内。${state.weight === 100 ? "灰度完成，新版本全量。" : "可以进入下一档。"}</div>` : `<div class="rel-callout bad"><strong>本档失败：</strong>单请求成本 $0.064 越过 1.3 倍阈值。控制器自动回滚到 v2.3，并保留这一档的指标和 Trace。</div>`}
+      <p class="rel-fixed-note">固定教学数据：各档位五项指标为本页预设；阈值按原文代码，不产生真实流量</p>`;
+  }
+
+  function significant(metric) {
+    return metric.p < state.alpha;
+  }
+
+  function relativeImprovement(metric) {
+    if (metric.better === "higher") return ((metric.treatment - metric.control) / metric.control) * 100;
+    return ((metric.control - metric.treatment) / metric.control) * 100;
+  }
+
+  function weightedScore() {
+    const weights = WEIGHTS[state.focus];
+    return AB_METRICS.reduce((sum, metric) => {
+      if (!significant(metric)) return sum;
+      const weight = weights[metric.key] || 0;
+      return sum + weight * relativeImprovement(metric);
+    }, 0);
+  }
+
+  function abScene() {
+    const rows = AB_METRICS.map((metric) => {
+      const sig = significant(metric);
+      const delta = relativeImprovement(metric);
+      const direction = delta >= 0 ? "更好" : "更差";
+      const weight = WEIGHTS[state.focus][metric.key] || 0;
+      return `<tr>
+        <th scope="row">${metric.label}</th>
+        <td class="num">${metric.control}${metric.unit}</td>
+        <td class="num">${metric.treatment}${metric.unit}</td>
+        <td class="num">${delta >= 0 ? "+" : ""}${delta.toFixed(1)}%</td>
+        <td class="num">${metric.p.toFixed(3)}</td>
+        <td><span class="rel-badge ${sig ? "rel-ok" : "rel-neutral"}">${sig ? "显著" : "不显著"}</span></td>
+        <td class="num">${weight ? Math.round(weight * 100) + "%" : "—"}</td>
+      </tr>`;
+    }).join("");
+    const score = weightedScore();
+    const verdict = score > 0 ? "treatment" : "control";
+    const alphaLabel = state.alpha === 0.05 ? "95%" : "99%";
+    const focusLabel = state.focus === "quality" ? "质量优先" : "成本优先";
+    const conclusion = verdict === "treatment"
+      ? "倾向 treatment：质量指标改善压过成本上涨；上线前仍要给每会话成本设上限。"
+      : "倾向 control：成本权重高时，treatment 的 +27% 成本抵消了质量收益。";
+    return `
+      <div class="rel-topbar"><div class="rel-badge rel-info">Prompt v3 vs Prompt v4 · 50 / 50</div><span class="rel-badge rel-neutral">样本 6,240 / 6,318</span></div>
+      <div class="rel-compare">
+        <div class="rel-compare-card"><b>对照组 · Prompt v3</b>任务成功率 81.2%；满意度 4.12；每会话成本 $0.048。线上已运行 6 周。</div>
+        <div class="rel-compare-card"><b>实验组 · Prompt v4</b>任务成功率 86.4%；满意度 4.31；每会话成本 $0.061。质量更好，但成本更高。</div>
+      </div>
+      <div class="rel-weights" role="group" aria-label="选择显著性水平">
+        <span>显著性</span>
+        <button type="button" class="rel-chip" data-alpha="0.05" aria-pressed="${state.alpha === 0.05}">95% · p &lt; 0.05</button>
+        <button type="button" class="rel-chip" data-alpha="0.01" aria-pressed="${state.alpha === 0.01}">99% · p &lt; 0.01</button>
+      </div>
+      <div class="rel-weight-btns" role="group" aria-label="选择权重偏好">
+        <button type="button" class="rel-chip" data-focus="quality" aria-pressed="${state.focus === "quality"}">质量优先</button>
+        <button type="button" class="rel-chip" data-focus="cost" aria-pressed="${state.focus === "cost"}">成本优先</button>
+      </div>
+      <div class="table-wrap" style="margin-top:var(--s-3)">
+        <table class="data rel-table-wide">
+          <caption class="sr-only">固定教学 A/B 结果：Prompt v3 与 Prompt v4</caption>
+          <thead><tr><th scope="col">指标</th><th scope="col" class="num">control</th><th scope="col" class="num">treatment</th><th scope="col" class="num">相对变化</th><th scope="col" class="num">p 值</th><th scope="col">判定（${alphaLabel}）</th><th scope="col" class="num">权重</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="rel-score">
+        <b>${focusLabel} · 仅计显著指标 · 示例加权分</b>
+        <strong>${score >= 0 ? "+" : ""}${score.toFixed(2)}</strong>
+        <p>${conclusion}</p>
+        <p>权重与“只计显著指标”是本页的教学设定，不是原文固定规则；权重为质量优先 35/20/15/15/15，成本优先 20/10/5/5/60（成功率/满意度/幻觉率/升级率/成本）。P95 延迟两档权重都是 0。</p>
+      </div>
+      <p class="rel-fixed-note">固定教学数据：均值、p 值、样本量与权重均为本页预设；未执行真实统计检验</p>`;
+  }
+
+  const SCENES = [gateScene, canaryScene, abScene];
+
+  function bindSceneControls() {
+    document.querySelectorAll("[data-scenario]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.scenario = button.dataset.scenario;
+        state.gateIndex = 0;
+        state.weight = 5;
+        renderStage(0);
+        byId("rel-announcement").textContent = `已切换场景：${scenario().label}`;
+      });
+    });
+    const gateButton = byId("rel-gate-next");
+    if (gateButton) {
+      gateButton.addEventListener("click", () => {
+        if (gateTerminal()) {
+          state.gateIndex = 0;
+          renderStage(0);
+          byId("rel-announcement").textContent = "已重置四道闸，等待重新推进";
+          return;
+        }
+        state.gateIndex += 1;
+        renderStage(0);
+        const last = state.gateIndex - 1;
+        const status = gateStatus(last);
+        let announcement;
+        if (status === "blocked") {
+          announcement = `第 ${last + 1} 道闸拦截：${scenario().failWhy}；未切换任何流量，稳定版保持 v2.3，v2.6 未发布。`;
+        } else if (status === "rolled_back") {
+          announcement = `第 ${last + 1} 道闸失败：${scenario().gates[last]}；流量已切换到该档位，随后已回滚到稳定版 v2.3。`;
+        } else if (gateTerminal() && state.scenario === "healthy") {
+          announcement = `第 ${last + 1} 道闸通过：${GATE_NAMES[last]}；v2.4 已全量发布。`;
+        } else {
+          announcement = `第 ${last + 1} 道闸通过：${GATE_NAMES[last]}。`;
+        }
+        byId("rel-announcement").textContent = announcement;
+      });
+    }
+    document.querySelectorAll("[data-weight]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.weight = Number(button.dataset.weight);
+        renderStage(1);
+        byId("rel-announcement").textContent = `已切换到 ${state.weight}% 流量档位`;
+      });
+    });
+    document.querySelectorAll("[data-alpha]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.alpha = Number(button.dataset.alpha);
+        renderStage(2);
+        byId("rel-announcement").textContent = `显著性水平已切换为 ${state.alpha === 0.05 ? "95%" : "99%"}`;
+      });
+    });
+    document.querySelectorAll("[data-focus]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.focus = button.dataset.focus;
+        renderStage(2);
+        byId("rel-announcement").textContent = `权重偏好已切换为 ${state.focus === "quality" ? "质量优先" : "成本优先"}`;
+      });
+    });
+  }
+
+  function summaryFor(stage) {
+    if (stage === 0) {
+      return `阶段 1 / 3 · ${scenario().label} · ${gateTerminal() ? (state.scenario === "healthy" ? "已全量发布" : isPreCanaryBlock() ? "已拦截（未发布）" : "已回滚") : `${state.gateIndex} / 4 道闸`}`;
+    }
+    if (stage === 1) {
+      if (state.scenario === "quality") return "阶段 2 / 3 · 未进入 Canary · 0% 流量";
+      const data = CANARY[state.scenario][state.weight];
+      const pass = metricRows(data).every((row) => row.ok);
+      return `阶段 2 / 3 · ${state.weight}% 档位 · ${pass ? "五项健康" : "成本越界"}`;
+    }
+    const score = weightedScore();
+    return `阶段 3 / 3 · ${state.alpha === 0.05 ? "95%" : "99%"} · ${state.focus === "quality" ? "质量优先" : "成本优先"} · ${score >= 0 ? "treatment" : "control"}`;
+  }
+
+  function renderStage(stage) {
+    state.stage = stage;
+    const meta = STAGES[stage];
+    byId("rel-scene").innerHTML = SCENES[stage]();
+    byId("rel-index").textContent = `阶段 ${stage + 1} / 3 · 固定教学发布`;
+    byId("rel-title").textContent = meta.title;
+    byId("rel-subtitle").textContent = meta.subtitle;
+    byId("rel-note").textContent = meta.note;
+    byId("rel-summary").textContent = summaryFor(stage);
+    byId("rel-back").disabled = stage === 0;
+    byId("rel-next").disabled = stage === STAGES.length - 1;
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      if (Number(button.dataset.stage) === stage) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    bindSceneControls();
+    byId("rel-announcement").textContent = `${meta.title}${meta.subtitle} 当前状态：${summaryFor(stage)}。`;
+  }
+
+  byId("rel-reset").addEventListener("click", () => {
+    state.scenario = "healthy";
+    state.gateIndex = 0;
+    state.weight = 5;
+    state.alpha = 0.05;
+    state.focus = "quality";
+    renderStage(0);
+  });
+  byId("rel-back").addEventListener("click", () => renderStage(Math.max(0, state.stage - 1)));
+  byId("rel-next").addEventListener("click", () => renderStage(Math.min(STAGES.length - 1, state.stage + 1)));
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+
+  renderStage(0);
+</script>
+</body>
+</html>

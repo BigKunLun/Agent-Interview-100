@@ -1,0 +1,1169 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>RAG 评估指标体系：原理、计算与实战 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .metric-stage { padding: var(--s-4) var(--s-6) var(--s-5); }
+  .metric-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); }
+  .metric-panel { min-width: 0; }
+  .k-row { display: grid; grid-template-columns: auto 1fr auto; gap: var(--s-3); align-items: center; padding-bottom: var(--s-3); border-bottom: 1px solid var(--border); }
+  .k-row label { font-size: var(--t-small); font-weight: 600; }
+  .k-row output { font: 600 24px/1.2 var(--mono); }
+  .k-range { grid-column: 1 / -1; }
+  .k-buttons { display: flex; gap: 6px; flex-wrap: wrap; margin-top: var(--s-3); }
+  .k-button { min-height: 44px; min-width: 52px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font: 12px/1 var(--mono); }
+  .k-button:hover { background: var(--surface-soft); }
+  .k-button[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .retrieved-list { list-style: none; margin: var(--s-4) 0 0; padding: 0; border-top: 1px solid var(--border); }
+  .retrieved-item { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: var(--s-3); align-items: center; min-height: 48px; padding: 8px 10px; border-bottom: 1px solid var(--border); font-size: var(--t-small); }
+  .retrieved-item.in-window { background: var(--accent-dim); }
+  .retrieved-item.boundary { border-bottom: 2px solid var(--accent); }
+  .retrieved-item.out-window { opacity: .5; }
+  .retrieved-rank { font: var(--t-label)/1 var(--mono); color: var(--text-dim); }
+  .retrieved-doc { font-family: var(--mono); font-size: 13px; }
+  .retrieved-rel { font-size: var(--t-label); white-space: nowrap; }
+  .retrieved-item.hit .retrieved-rel { color: #1b5e20; font-weight: 600; }
+  .retrieved-item.miss .retrieved-rel { color: var(--text-dim); }
+  .hits-line { margin-top: var(--s-4); font-size: var(--t-small); color: var(--text-dim); }
+  .hits-line strong { color: var(--ink); font-size: var(--t-body); }
+  .metric-cards { display: grid; gap: var(--s-3); }
+  .metric-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: var(--s-4); }
+  .metric-name { font: 600 var(--t-small)/1.4 var(--sans); }
+  .metric-formula { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; margin-top: var(--s-3); font-size: 18px; }
+  .metric-exact { margin-top: var(--s-2); font: 12px/1.7 var(--mono); color: var(--text-dim); }
+  .metric-note { margin-top: var(--s-3); font-size: var(--t-label); color: var(--text-dim); }
+  .frac { display: inline-flex; flex-direction: column; vertical-align: middle; text-align: center; line-height: 1.25; margin-inline: 2px; }
+  .frac .num { padding: 0 5px; border-bottom: 1px solid currentColor; }
+  .frac .den { padding: 0 5px; }
+  .formula-block { overflow-x: auto; margin-top: var(--s-3); padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .formula-block .formula { display: flex; align-items: center; flex-wrap: wrap; gap: 7px; font: 17px/1.9 var(--serif); min-width: max-content; }
+  .formula-label { font: var(--t-label)/1.6 var(--mono); color: var(--text-dim); }
+  .var-note { font-size: var(--t-label); color: var(--text-dim); margin-top: var(--s-2); }
+  .pipeline { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: var(--s-4); }
+  .pipeline-node { padding: 9px 12px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: var(--t-small); }
+  .pipeline-node.store { background: #e8f5e9; border-color: #2e7d32; }
+  .pipeline-node.agent { background: #f3e5f5; border-color: #6a1b9a; }
+  .pipeline-arrow { color: var(--text-dim); }
+  .pipeline-metrics { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-2); margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px dashed var(--border); }
+  .pipeline-metric { font-size: var(--t-label); color: var(--text-dim); border-left: 2px solid var(--series-2); padding-left: var(--s-2); }
+  .pipeline-metric strong { display: block; color: var(--ink); font-size: 12px; }
+  .practice { margin-top: var(--s-6); }
+  .practice h3 { margin-top: 0; }
+  .practice ul { max-width: 48em; }
+  .metric-tables { display: grid; gap: var(--s-5); margin-top: var(--s-4); }
+  @media (max-width: 1000px) {
+    .metric-stage { padding-inline: var(--s-5); }
+    .metric-grid { gap: var(--s-4); }
+  }
+  @media (max-width: 720px) {
+    .metric-stage { padding: var(--s-4); }
+    .metric-grid { grid-template-columns: 1fr; gap: var(--s-5); }
+    .k-row { grid-template-columns: auto 1fr auto; }
+    .pipeline { gap: 5px; }
+    .pipeline-node { padding: 7px 9px; font-size: 12px; }
+    .pipeline-metrics { grid-template-columns: 1fr; }
+    .formula-block .formula { font-size: 15px; }
+    .metric-card { padding: var(--s-3); }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">020 / RAG 评估指标</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 3 / 4 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="016-hybrid-retrieval.html">← 上一页 · 混合检索</a><a href="../03-tool-use/021-function-calling-basics.html">下一页 → · 什么是 Function Calli…</a></div>
+    </nav>
+    <main id="main-content">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">高级 · RAG · 可交互讲解</p>
+          <h1>先量检索，<br>再量生成。</h1>
+        </div>
+        <div>
+          <p class="lead">RAG 系统的评估需要从检索质量和生成质量两个维度同时度量。检索侧用 Precision@K、Recall@K、MRR、MAP、NDCG 衡量“找得准不准”；生成侧用 Faithfulness 和 Answer Relevancy 衡量“答得好不好”。</p>
+          <p class="definition"><strong>检索质量是生成质量的上界。</strong>检索阶段丢失了关键信息，生成阶段不可能凭空补回来。实践中应先优化检索，再调优生成。</p>
+          <div class="hero-meta"><span class="pill">高级</span><span class="pill">RAG</span><span class="pill">评估指标</span><span class="pill">RAGAS</span></div>
+        </div>
+      </header>
+
+      <section class="walkthrough" id="explainer" aria-labelledby="metric-title">
+        <div class="player-top">
+          <div class="player-label">Precision / Recall 手算 <small>固定 5 篇结果，4 篇相关</small></div>
+          <div class="controls" role="group" aria-label="手算演示控制">
+            <button type="button" class="button button-quiet" id="reset-button">重置 K = 5</button>
+          </div>
+        </div>
+        <div class="metric-stage">
+          <div class="metric-grid">
+            <div class="metric-panel">
+              <div class="k-row">
+                <label for="k-input">截断位置 <code>K</code></label>
+                <output id="k-output" for="k-input">5</output>
+                <span class="var-note">范围 1–5</span>
+                <input class="k-range" id="k-input" type="range" min="1" max="5" step="1" value="5" aria-describedby="k-help">
+              </div>
+              <div class="k-buttons" role="group" aria-label="快速选择 K">
+                <button type="button" class="k-button" data-k="1" aria-pressed="false">K=1</button>
+                <button type="button" class="k-button" data-k="2" aria-pressed="false">K=2</button>
+                <button type="button" class="k-button" data-k="3" aria-pressed="false">K=3</button>
+                <button type="button" class="k-button" data-k="4" aria-pressed="false">K=4</button>
+                <button type="button" class="k-button" data-k="5" aria-pressed="true">K=5</button>
+              </div>
+              <ol class="retrieved-list" id="retrieved-list" aria-label="检索返回的前 5 篇文档及是否相关">
+                <li class="retrieved-item hit" data-index="1" data-relevant="true"><span class="retrieved-rank">1</span><span class="retrieved-doc">Doc A</span><span class="retrieved-rel">相关 ✓</span></li>
+                <li class="retrieved-item miss" data-index="2" data-relevant="false"><span class="retrieved-rank">2</span><span class="retrieved-doc">Doc B</span><span class="retrieved-rel">不相关 ✕</span></li>
+                <li class="retrieved-item hit" data-index="3" data-relevant="true"><span class="retrieved-rank">3</span><span class="retrieved-doc">Doc C</span><span class="retrieved-rel">相关 ✓</span></li>
+                <li class="retrieved-item hit" data-index="4" data-relevant="true"><span class="retrieved-rank">4</span><span class="retrieved-doc">Doc D</span><span class="retrieved-rel">相关 ✓</span></li>
+                <li class="retrieved-item miss" data-index="5" data-relevant="false"><span class="retrieved-rank">5</span><span class="retrieved-doc">Doc E</span><span class="retrieved-rel">不相关 ✕</span></li>
+              </ol>
+              <p class="hits-line" id="hits-line">前 <strong>5</strong> 篇命中 <strong>3</strong> 篇；相关文档总数固定为 <strong>4</strong>。</p>
+              <p class="demo-note" id="k-help">固定演示数据：相关性序列是 [真, 假, 真, 真, 假]，不是实时检索结果。K 只截取前 K 篇，不会重新排序。</p>
+            </div>
+            <div class="metric-panel">
+              <div class="metric-cards">
+                <div class="metric-card">
+                  <p class="metric-name">Precision@K · 精确率</p>
+                  <div class="metric-formula" aria-label="Precision@K 等于命中数除以 K">
+                    <span class="frac"><span class="num" id="p-num">3</span><span class="den" id="p-den">5</span></span>
+                    <span>=</span><strong id="p-value">0.6</strong>
+                  </div>
+                  <p class="metric-exact" id="p-exact">Precision@5 = 3 / 5 = 0.6</p>
+                  <p class="metric-note">前 K 篇里，相关文档占多少。</p>
+                </div>
+                <div class="metric-card">
+                  <p class="metric-name">Recall@K · 召回率</p>
+                  <div class="metric-formula" aria-label="Recall@K 等于命中数除以全部相关文档数">
+                    <span class="frac"><span class="num" id="r-num">3</span><span class="den">4</span></span>
+                    <span>=</span><strong id="r-value">0.75</strong>
+                  </div>
+                  <p class="metric-exact" id="r-exact">Recall@5 = 3 / 4 = 0.75</p>
+                  <p class="metric-note">全部相关文档里，前 K 篇覆盖了多少。</p>
+                </div>
+              </div>
+              <p class="metric-note">分母 4 是 ground truth 中的相关文档总数。原文示例在 K=5 时得到 Precision 0.6、Recall 0.75；拖动 K 或点上方按钮会真实重算。</p>
+            </div>
+          </div>
+        </div>
+        <div class="walkthrough-foot"><span>固定演示数据 · 计算在本地浏览器完成</span><span id="state-summary">K = 5 · Precision 0.6 · Recall 0.75</span></div>
+      </section>
+      <p id="metric-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+      <section class="reading" aria-labelledby="framework-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">一、整体框架</p><h2 id="framework-title">一条流水线，<br>两个评估维度。</h2></div>
+          <p class="reading-intro">检索质量是生成质量的上界——如果检索阶段丢失了关键信息，生成阶段不可能凭空补回来。</p>
+        </div>
+        <div class="prose">
+          <figure>
+            <div class="pipeline" aria-label="RAG 流水线：Query 到 Retriever 到 Contexts 到 Generator 到 Answer">
+              <span class="pipeline-node">Query</span><span class="pipeline-arrow" aria-hidden="true">→</span>
+              <span class="pipeline-node agent">Retriever</span><span class="pipeline-arrow" aria-hidden="true">→</span>
+              <span class="pipeline-node store">Contexts</span><span class="pipeline-arrow" aria-hidden="true">→</span>
+              <span class="pipeline-node agent">Generator</span><span class="pipeline-arrow" aria-hidden="true">→</span>
+              <span class="pipeline-node store">Answer</span>
+            </div>
+            <div class="pipeline-metrics">
+              <p class="pipeline-metric"><strong>检索质量评估</strong>Precision / Recall / MRR / NDCG</p>
+              <p class="pipeline-metric"><strong>生成质量评估</strong>Faithfulness / Relevancy</p>
+            </div>
+            <figcaption class="demo-note">图 1 · RAG 评估按流水线拆两半：Retriever 侧量找得准不准，Generator 侧量答得好不好，检索质量是生成质量的上界。</figcaption>
+          </figure>
+          <details>
+            <summary>查看原文 Mermaid 流程图源码（整体框架）</summary>
+            <pre><code>flowchart LR
+    Q["Query"] --&gt; R["Retriever"] --&gt; C["Contexts"] --&gt; G["Generator"] --&gt; A["Answer"]
+    R -.-> M1["检索质量评估&lt;br/&gt;Precision / Recall / MRR / NDCG"]
+    G -.-> M2["生成质量评估&lt;br/&gt;Faithfulness / Relevancy"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    class Q,R,G proc
+    class C,A store
+    class M1,M2 decision</code></pre>
+          </details>
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">RAG 评估的两个维度、核心问题与代表指标</caption>
+              <thead><tr><th scope="col">维度</th><th scope="col">核心问题</th><th scope="col">代表指标</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">检索质量</th><td>检索到的文档是否相关？排序是否合理？</td><td>Precision@K, Recall@K, Context Precision, Context Recall, MRR, MAP, NDCG</td></tr>
+                <tr><th scope="row">生成质量</th><td>答案是否忠于检索到的上下文？是否切题？</td><td>Faithfulness, Answer Relevancy</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="callout">
+            <p class="callout-label">关键认知</p>
+            <p>检索质量是生成质量的上界。如果检索阶段丢失了关键信息，生成阶段不可能凭空补回来。因此实践中应先优化检索，再调优生成。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="retrieval-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">二、检索质量指标</p><h2 id="retrieval-title">先看找得准不准，<br>再看排得对不对。</h2></div>
+          <p class="reading-intro">Precision 和 Recall 只看相关性集合；Context Precision、MRR、MAP、NDCG 进一步考虑排名位置，NDCG 还支持多级相关性。</p>
+        </div>
+        <div class="prose">
+          <h3>2.1 Precision@K 与 Recall@K</h3>
+          <p><strong>Precision@K（精确率@K）</strong>：在检索返回的前 K 个文档中，相关文档所占的比例。</p>
+          <div class="formula-block">
+            <p class="formula-label">Precision@K</p>
+            <div class="formula"><span>Precision@K =</span><span class="frac"><span class="num">|{前 K 个文档} ∩ {相关文档}|</span><span class="den">K</span></span></div>
+          </div>
+          <p><strong>Recall@K（召回率@K）</strong>：在所有相关文档中，被检索返回的前 K 个文档覆盖了多少比例。</p>
+          <div class="formula-block">
+            <p class="formula-label">Recall@K</p>
+            <div class="formula"><span>Recall@K =</span><span class="frac"><span class="num">|{前 K 个文档} ∩ {相关文档}|</span><span class="den">|{全部相关文档}|</span></span></div>
+          </div>
+          <p>上方的互动演示就是原文的手算示例：对于一个 query，共有 4 篇相关文档（ground truth），检索器返回 Top-5 结果。下表是这 5 篇文档的相关性。</p>
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">Top-5 检索结果与相关性</caption>
+              <thead><tr><th scope="col" class="num">排名</th><th scope="col">文档</th><th scope="col">是否相关</th></tr></thead>
+              <tbody>
+                <tr><td class="num">1</td><td>Doc A</td><td>✅ 相关</td></tr>
+                <tr><td class="num">2</td><td>Doc B</td><td>❌ 不相关</td></tr>
+                <tr><td class="num">3</td><td>Doc C</td><td>✅ 相关</td></tr>
+                <tr><td class="num">4</td><td>Doc D</td><td>✅ 相关</td></tr>
+                <tr><td class="num">5</td><td>Doc E</td><td>❌ 不相关</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>Precision@5 = 3 / 5 = 0.6
+Recall@5    = 3 / 4 = 0.75</code></pre>
+          <details>
+            <summary>展开 Python 验证代码</summary>
+            <pre><code>def precision_at_k(retrieved: list[bool], k: int) -&gt; float:
+    """retrieved: 按排名顺序的相关性列表，True 表示相关"""
+    return sum(retrieved[:k]) / k
+
+def recall_at_k(retrieved: list[bool], k: int, total_relevant: int) -&gt; float:
+    return sum(retrieved[:k]) / total_relevant
+
+# 示例数据
+retrieved = [True, False, True, True, False]
+total_relevant = 4
+
+print(f"Precision@5 = {precision_at_k(retrieved, 5)}")   # 0.6
+print(f"Recall@5    = {recall_at_k(retrieved, 5, total_relevant)}")  # 0.75</code></pre>
+          </details>
+
+          <h3>2.2 Context Precision 与 Context Recall</h3>
+          <p>这两个指标是 RAGAS 框架对传统 Precision/Recall 的 RAG 场景适配版本，核心区别在于<strong>用 LLM 判断相关性</strong>而非人工标注。</p>
+          <p><strong>Context Precision</strong>：检索到的上下文中，每个相关上下文的排名加权精确率。排名越靠前的位置出现相关上下文，得分越高。</p>
+          <div class="formula-block">
+            <p class="formula-label">Context Precision</p>
+            <div class="formula"><span>Context Precision =</span><span class="frac"><span class="num">Σ<sub>k=1</sub><sup>K</sup> ( Precision@k × <b>1</b>[d<sub>k</sub> 相关] )</span><span class="den">|{相关上下文}|</span></span></div>
+            <p class="var-note">其中 <b>1</b>[d<sub>k</sub> 相关] 是指示函数，当第 k 个文档相关时为 1，否则为 0。</p>
+          </div>
+          <p><strong>Context Recall</strong>：ground truth 答案中的每个关键陈述（claim）是否都能在检索到的上下文中找到支撑。</p>
+          <div class="formula-block">
+            <p class="formula-label">Context Recall</p>
+            <div class="formula"><span>Context Recall =</span><span class="frac"><span class="num">|{被上下文支撑的 claims}|</span><span class="den">|{ground truth 中的全部 claims}|</span></span></div>
+          </div>
+          <p>手算示例：检索返回 4 个上下文，相关性判断为 <code>[1, 0, 1, 0]</code>（1=相关，0=不相关）。</p>
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">Context Precision 手算：每个位置的 Precision@k 与计入值</caption>
+              <thead><tr><th scope="col" class="num">排名 k</th><th scope="col" class="num">Precision@k</th><th scope="col">是否相关</th><th scope="col" class="num">计入值</th></tr></thead>
+              <tbody>
+                <tr><td class="num">1</td><td class="num">1/1 = 1.000</td><td>相关</td><td class="num">1.000 × 1 = 1.000</td></tr>
+                <tr><td class="num">2</td><td class="num">1/2 = 0.500</td><td>不相关</td><td class="num">0.500 × 0 = 0</td></tr>
+                <tr><td class="num">3</td><td class="num">2/3 ≈ 0.667</td><td>相关</td><td class="num">0.667 × 1 = 0.667</td></tr>
+                <tr><td class="num">4</td><td class="num">2/4 = 0.500</td><td>不相关</td><td class="num">0.500 × 0 = 0</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>Context Precision = (1.0 + 0 + 0.667 + 0) / 2 = 0.833
+Context Recall    = 4 / 5 = 0.8</code></pre>
+          <p>Context Recall 的手算假设：ground truth 包含 5 个关键陈述，其中 4 个能在检索上下文中找到支撑。</p>
+          <details>
+            <summary>展开 Python 验证代码</summary>
+            <pre><code>def context_precision(relevance: list[int]) -&gt; float:
+    """relevance: 按排名顺序的相关性列表，1=相关，0=不相关"""
+    num_relevant = sum(relevance)
+    if num_relevant == 0:
+        return 0.0
+    score = 0.0
+    cumulative_relevant = 0
+    for k, rel in enumerate(relevance, 1):
+        cumulative_relevant += rel
+        precision_at_k = cumulative_relevant / k
+        score += precision_at_k * rel
+    return score / num_relevant
+
+def context_recall(claims_supported: int, total_claims: int) -&gt; float:
+    return claims_supported / total_claims
+
+# 示例数据
+relevance = [1, 0, 1, 0]
+print(f"Context Precision = {context_precision(relevance):.3f}")  # 0.833
+print(f"Context Recall    = {context_recall(4, 5)}")  # 0.8</code></pre>
+          </details>
+
+          <h3>2.3 MRR（Mean Reciprocal Rank）</h3>
+          <p>对于一组 query，每个 query 取第一个相关文档的排名倒数，再求平均。反映“用户最快多久能找到想要的结果”。</p>
+          <div class="formula-block">
+            <p class="formula-label">MRR</p>
+            <div class="formula"><span>MRR =</span><span class="frac"><span class="num">1</span><span class="den">|Q|</span></span><span>Σ<sub>i=1</sub><sup>|Q|</sup></span><span class="frac"><span class="num">1</span><span class="den">rank<sub>i</sub></span></span></div>
+            <p class="var-note">rank<sub>i</sub> 是第 i 个 query 的第一个相关文档的排名位置。</p>
+          </div>
+          <p>3 个 query 的检索结果（✅ 表示第一个相关文档）：</p>
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">MRR 手算：三个 query 的第一个相关文档排名与倒数排名</caption>
+              <thead><tr><th scope="col">Query</th><th scope="col">检索结果排名</th><th scope="col" class="num">第一个相关排名</th><th scope="col" class="num">Reciprocal Rank</th></tr></thead>
+              <tbody>
+                <tr><td>Q1</td><td>❌ ✅ ❌ ❌ ❌</td><td class="num">2</td><td class="num">1/2 = 0.500</td></tr>
+                <tr><td>Q2</td><td>✅ ❌ ❌ ❌ ❌</td><td class="num">1</td><td class="num">1/1 = 1.000</td></tr>
+                <tr><td>Q3</td><td>❌ ❌ ❌ ✅ ❌</td><td class="num">4</td><td class="num">1/4 = 0.250</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>MRR = (0.500 + 1.000 + 0.250) / 3 = 0.583</code></pre>
+          <details>
+            <summary>展开 Python 验证代码</summary>
+            <pre><code>def reciprocal_rank(retrieved: list[bool]) -&gt; float:
+    """返回第一个相关文档的排名倒数"""
+    for i, is_relevant in enumerate(retrieved, 1):
+        if is_relevant:
+            return 1.0 / i
+    return 0.0
+
+def mrr(queries: list[list[bool]]) -&gt; float:
+    return sum(reciprocal_rank(q) for q in queries) / len(queries)
+
+# 示例数据
+queries = [
+    [False, True, False, False, False],   # Q1: 第一个相关在位置 2
+    [True, False, False, False, False],    # Q2: 第一个相关在位置 1
+    [False, False, False, True, False],    # Q3: 第一个相关在位置 4
+]
+
+print(f"MRR = {mrr(queries):.3f}")  # 0.583</code></pre>
+          </details>
+
+          <h3>2.4 MAP（Mean Average Precision）</h3>
+          <p>对每个 query 计算 Average Precision（AP），再对所有 query 取平均。AP 考虑了每个相关文档出现位置的精确率，比 Precision@K 更全面地衡量排序质量。</p>
+          <div class="formula-block">
+            <p class="formula-label">AP 与 MAP</p>
+            <div class="formula"><span>AP =</span><span class="frac"><span class="num">1</span><span class="den">|{相关文档}|</span></span><span>Σ<sub>k=1</sub><sup>N</sup> Precision@k × <b>1</b>[d<sub>k</sub> 相关]</span></div>
+            <div class="formula" style="margin-top: 8px"><span>MAP =</span><span class="frac"><span class="num">1</span><span class="den">|Q|</span></span><span>Σ<sub>i=1</sub><sup>|Q|</sup> AP<sub>i</sub></span></div>
+          </div>
+          <p>手算示例：Query 的检索结果（Top-6），共 3 个相关文档。</p>
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">AP 手算：Top-6 每个位置的 Precision@k 与计入值</caption>
+              <thead><tr><th scope="col" class="num">排名 k</th><th scope="col">是否相关</th><th scope="col" class="num">Precision@k</th><th scope="col" class="num">相关时计入</th></tr></thead>
+              <tbody>
+                <tr><td class="num">1</td><td>✅</td><td class="num">1/1 = 1.000</td><td class="num">1.000</td></tr>
+                <tr><td class="num">2</td><td>❌</td><td class="num">1/2 = 0.500</td><td class="num">—</td></tr>
+                <tr><td class="num">3</td><td>✅</td><td class="num">2/3 = 0.667</td><td class="num">0.667</td></tr>
+                <tr><td class="num">4</td><td>❌</td><td class="num">2/4 = 0.500</td><td class="num">—</td></tr>
+                <tr><td class="num">5</td><td>❌</td><td class="num">2/5 = 0.400</td><td class="num">—</td></tr>
+                <tr><td class="num">6</td><td>✅</td><td class="num">3/6 = 0.500</td><td class="num">0.500</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>AP  = (1.000 + 0.667 + 0.500) / 3 = 0.722
+MAP = (0.722 + 0.500) / 2 = 0.611</code></pre>
+          <details>
+            <summary>展开 Python 验证代码</summary>
+            <pre><code>def average_precision(retrieved: list[bool]) -&gt; float:
+    num_relevant = sum(retrieved)
+    if num_relevant == 0:
+        return 0.0
+    score = 0.0
+    cumulative_relevant = 0
+    for k, is_relevant in enumerate(retrieved, 1):
+        if is_relevant:
+            cumulative_relevant += 1
+            score += cumulative_relevant / k
+    return score / num_relevant
+
+def mean_average_precision(queries: list[list[bool]]) -&gt; float:
+    return sum(average_precision(q) for q in queries) / len(queries)
+
+# 示例数据
+q1 = [True, False, True, False, False, True]   # AP = 0.722
+q2 = [False, True, False, True, False, False]   # AP = 0.500
+
+print(f"AP(Q1) = {average_precision(q1):.3f}")  # 0.722
+print(f"AP(Q2) = {average_precision(q2):.3f}")  # 0.500
+print(f"MAP    = {mean_average_precision([q1, q2]):.3f}")  # 0.611</code></pre>
+          </details>
+
+          <h3>2.5 NDCG（Normalized Discounted Cumulative Gain）</h3>
+          <p>在二元相关性之上，NDCG 支持多级相关性评分（如 0/1/2/3），并通过对数折扣惩罚排名靠后的结果。它衡量的是排序结果与理想排序的接近程度。</p>
+          <div class="formula-block">
+            <p class="formula-label">DCG 与 NDCG</p>
+            <div class="formula"><span>DCG@K =</span><span>Σ<sub>k=1</sub><sup>K</sup></span><span class="frac"><span class="num">2<sup>rel<sub>k</sub></sup> − 1</span><span class="den">log<sub>2</sub>(k + 1)</span></span></div>
+            <div class="formula" style="margin-top: 8px"><span>NDCG@K =</span><span class="frac"><span class="num">DCG@K</span><span class="den">IDCG@K</span></span></div>
+            <p class="var-note">IDCG 是将所有文档按相关性降序排列后的理想 DCG 值。</p>
+          </div>
+          <p>手算示例：检索返回 Top-5，相关性评分（0~3）。</p>
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">DCG@5 手算：实际排序的增益</caption>
+              <thead><tr><th scope="col" class="num">排名 k</th><th scope="col" class="num">相关性 rel</th><th scope="col" class="num">2^rel − 1</th><th scope="col" class="num">log₂(k+1)</th><th scope="col" class="num">Gain</th></tr></thead>
+              <tbody>
+                <tr><td class="num">1</td><td class="num">3</td><td class="num">7</td><td class="num">1.000</td><td class="num">7.000</td></tr>
+                <tr><td class="num">2</td><td class="num">0</td><td class="num">0</td><td class="num">1.585</td><td class="num">0.000</td></tr>
+                <tr><td class="num">3</td><td class="num">2</td><td class="num">3</td><td class="num">2.000</td><td class="num">1.500</td></tr>
+                <tr><td class="num">4</td><td class="num">1</td><td class="num">1</td><td class="num">2.322</td><td class="num">0.431</td></tr>
+                <tr><td class="num">5</td><td class="num">2</td><td class="num">3</td><td class="num">2.585</td><td class="num">1.161</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>DCG@5 = 7.000 + 0.000 + 1.500 + 0.431 + 1.161 = 10.092</code></pre>
+          <p>理想排序（降序）：<code>[3, 2, 2, 1, 0]</code>。</p>
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">IDCG@5 手算：理想排序的增益</caption>
+              <thead><tr><th scope="col" class="num">排名 k</th><th scope="col" class="num">相关性 rel</th><th scope="col" class="num">2^rel − 1</th><th scope="col" class="num">log₂(k+1)</th><th scope="col" class="num">Gain</th></tr></thead>
+              <tbody>
+                <tr><td class="num">1</td><td class="num">3</td><td class="num">7</td><td class="num">1.000</td><td class="num">7.000</td></tr>
+                <tr><td class="num">2</td><td class="num">2</td><td class="num">3</td><td class="num">1.585</td><td class="num">1.893</td></tr>
+                <tr><td class="num">3</td><td class="num">2</td><td class="num">3</td><td class="num">2.000</td><td class="num">1.500</td></tr>
+                <tr><td class="num">4</td><td class="num">1</td><td class="num">1</td><td class="num">2.322</td><td class="num">0.431</td></tr>
+                <tr><td class="num">5</td><td class="num">0</td><td class="num">0</td><td class="num">2.585</td><td class="num">0.000</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>IDCG@5 = 7.000 + 1.893 + 1.500 + 0.431 + 0.000 = 10.824
+NDCG@5 = 10.092 / 10.824 = 0.932</code></pre>
+          <details>
+            <summary>展开 Python 验证代码</summary>
+            <pre><code>import math
+
+def dcg_at_k(relevances: list[int], k: int) -&gt; float:
+    return sum(
+        (2 ** rel - 1) / math.log2(i + 2)  # i+2 因为 enumerate 从 0 开始
+        for i, rel in enumerate(relevances[:k])
+    )
+
+def ndcg_at_k(relevances: list[int], k: int) -&gt; float:
+    dcg = dcg_at_k(relevances, k)
+    ideal = sorted(relevances, reverse=True)
+    idcg = dcg_at_k(ideal, k)
+    return dcg / idcg if idcg &gt; 0 else 0.0
+
+# 示例数据
+relevances = [3, 0, 2, 1, 2]
+
+print(f"DCG@5  = {dcg_at_k(relevances, 5):.3f}")   # 10.092
+print(f"NDCG@5 = {ndcg_at_k(relevances, 5):.3f}")  # 0.932</code></pre>
+          </details>
+
+          <h3>检索指标诊断价值对比表</h3>
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">七个检索指标关注的维度与诊断价值</caption>
+              <thead><tr><th scope="col">指标</th><th scope="col">关注维度</th><th scope="col">考虑排序</th><th scope="col">多级相关性</th><th scope="col">诊断价值</th></tr></thead>
+              <tbody>
+                <tr><td>Precision@K</td><td>准确性</td><td>❌</td><td>❌</td><td>检索噪声有多大</td></tr>
+                <tr><td>Recall@K</td><td>覆盖度</td><td>❌</td><td>❌</td><td>是否遗漏关键文档</td></tr>
+                <tr><td>Context Precision</td><td>准确性（加权）</td><td>✅</td><td>❌</td><td>相关文档是否排在前面</td></tr>
+                <tr><td>Context Recall</td><td>覆盖度（语义）</td><td>❌</td><td>❌</td><td>关键信息是否被覆盖</td></tr>
+                <tr><td>MRR</td><td>首个相关排名</td><td>✅</td><td>❌</td><td>用户最快找到答案的速度</td></tr>
+                <tr><td>MAP</td><td>综合排序质量</td><td>✅</td><td>❌</td><td>所有相关文档的排序全貌</td></tr>
+                <tr><td>NDCG</td><td>加权排序质量</td><td>✅</td><td>✅</td><td>最全面的排序质量评估</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>适用场景速查表</h3>
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">不同场景推荐的检索指标</caption>
+              <thead><tr><th scope="col">场景</th><th scope="col">推荐指标</th><th scope="col">原因</th></tr></thead>
+              <tbody>
+                <tr><td>问答系统（只需 1 个答案）</td><td>MRR</td><td>只关心第一个命中的位置</td></tr>
+                <tr><td>多文档摘要</td><td>Recall@K + MAP</td><td>需要尽可能多地召回相关文档</td></tr>
+                <tr><td>RAG 对话系统</td><td>Context Precision + Faithfulness</td><td>需要精准上下文 + 忠实生成</td></tr>
+                <tr><td>搜索引擎排序</td><td>NDCG</td><td>支持多级相关性，最贴近用户体验</td></tr>
+                <tr><td>端到端 RAG 评估</td><td>RAGAS 全套指标</td><td>检索 + 生成联合评估</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="generation-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">三、生成质量指标</p><h2 id="generation-title">答案忠于上下文，<br>还要切题。</h2></div>
+          <p class="reading-intro">Faithfulness 衡量“有没有编造”；Answer Relevancy 衡量“有没有答到点上”。两者不能互相替代。</p>
+        </div>
+        <div class="prose">
+          <h3>3.1 Faithfulness（忠实度）</h3>
+          <p>生成的答案中，有多少比例的陈述（claim）可以从检索到的上下文中找到依据。衡量“幻觉”程度。</p>
+          <div class="formula-block">
+            <p class="formula-label">Faithfulness</p>
+            <div class="formula"><span>Faithfulness =</span><span class="frac"><span class="num">|{被上下文支撑的 claims}|</span><span class="den">|{答案中的全部 claims}|</span></span></div>
+          </div>
+          <p>评估流程（LLM-as-Judge）：</p>
+          <pre><code>Step 1: 用 LLM 将生成答案拆解为独立的事实性陈述（claims）
+Step 2: 逐条判断每个 claim 是否能在检索上下文中找到支撑
+Step 3: 计算被支撑的 claims 占总 claims 的比例</code></pre>
+          <p>手算示例：</p>
+          <pre><code>检索上下文：
+"Python 是 Guido van Rossum 在 1991 年发布的编程语言。
+ Python 3.0 于 2008 年发布。"
+
+生成答案：
+"Python 由 Guido van Rossum 创建，于 1991 年首次发布，
+ 是目前最流行的编程语言之一。"
+
+Claim 拆解：
+1. "Python 由 Guido van Rossum 创建"     → ✅ 上下文支撑
+2. "Python 于 1991 年首次发布"            → ✅ 上下文支撑
+3. "Python 是目前最流行的编程语言之一"    → ❌ 上下文无此信息
+
+Faithfulness = 2 / 3 = 0.667</code></pre>
+          <details>
+            <summary>展开 Python 验证代码</summary>
+            <pre><code>def faithfulness(claims_supported: int, total_claims: int) -&gt; float:
+    """手动计算忠实度（实际场景中 claim 拆解和判断由 LLM 完成）"""
+    if total_claims == 0:
+        return 1.0  # 无 claim 视为完全忠实
+    return claims_supported / total_claims
+
+print(f"Faithfulness = {faithfulness(2, 3):.3f}")  # 0.667</code></pre>
+          </details>
+
+          <h3>3.2 Answer Relevancy（答案相关性）</h3>
+          <p>生成的答案与原始问题的语义相关程度。通过反向生成问题来衡量——如果从答案中能还原出与原始问题语义一致的问题，说明答案是切题的。</p>
+          <div class="formula-block">
+            <p class="formula-label">Answer Relevancy</p>
+            <div class="formula"><span>Answer Relevancy =</span><span class="frac"><span class="num">1</span><span class="den">N</span></span><span>Σ<sub>i=1</sub><sup>N</sup> cos(e<sub>q<sub>i</sub></sub>, e<sub>q<sub>orig</sub></sub>)</span></div>
+            <p class="var-note">q<sub>i</sub> 是从答案反向生成的第 i 个问题，q<sub>orig</sub> 是原始问题，e 表示 embedding 向量。</p>
+          </div>
+          <p>评估流程：</p>
+          <pre><code>Step 1: 用 LLM 基于生成答案反向生成 N 个问题
+Step 2: 将反向生成的问题和原始问题分别做 embedding
+Step 3: 计算每个反向问题与原始问题的余弦相似度
+Step 4: 取平均值作为最终得分</code></pre>
+          <p>手算示例：</p>
+          <pre><code>原始问题："什么是 RAG？"
+
+生成答案："RAG 是检索增强生成，通过检索外部知识来增强 LLM 的回答质量。"
+
+反向生成的 3 个问题：
+  Q1: "RAG 是什么技术？"         → cos(e_Q1, e_orig) = 0.95
+  Q2: "如何通过检索增强 LLM？"    → cos(e_Q2, e_orig) = 0.82
+  Q3: "什么是检索增强生成？"       → cos(e_Q3, e_orig) = 0.97
+
+Answer Relevancy = (0.95 + 0.82 + 0.97) / 3 = 0.913</code></pre>
+          <details>
+            <summary>展开 Python 验证代码</summary>
+            <pre><code>import numpy as np
+
+def answer_relevancy(similarities: list[float]) -&gt; float:
+    """给定反向问题与原始问题的余弦相似度列表，计算答案相关性"""
+    return np.mean(similarities)
+
+# 示例数据
+similarities = [0.95, 0.82, 0.97]
+print(f"Answer Relevancy = {answer_relevancy(similarities):.3f}")  # 0.913</code></pre>
+          </details>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="ragas-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">四、RAGAS 评估框架</p><h2 id="ragas-title">把指标装进<br>一条自动流水线。</h2></div>
+          <p class="reading-intro">RAGAS（Retrieval-Augmented Generation Assessment）集成了上述核心指标，并使用 LLM-as-Judge 实现自动化评估。</p>
+        </div>
+        <div class="prose">
+          <p>RAGAS 是目前最流行的 RAG 评估框架，项目地址见原文参考资料中的 GitHub 链接。</p>
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">RAGAS 核心指标、所需输入与评估维度</caption>
+              <thead><tr><th scope="col">指标</th><th scope="col">所需输入</th><th scope="col">评估维度</th></tr></thead>
+              <tbody>
+                <tr><td>Context Precision</td><td>question, contexts, ground_truth</td><td>检索排序质量</td></tr>
+                <tr><td>Context Recall</td><td>question, contexts, ground_truth</td><td>检索覆盖度</td></tr>
+                <tr><td>Faithfulness</td><td>question, contexts, answer</td><td>生成忠实度</td></tr>
+                <tr><td>Answer Relevancy</td><td>question, answer</td><td>生成相关性</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <details>
+            <summary>展开 RAGAS 完整代码示例</summary>
+            <pre><code>from datasets import Dataset
+from ragas import evaluate
+from ragas.metrics import (
+    context_precision,
+    context_recall,
+    faithfulness,
+    answer_relevancy,
+)
+
+# 准备评估数据集
+eval_data = {
+    "question": [
+        "什么是 RAG？",
+        "向量数据库有哪些选择？",
+    ],
+    "answer": [
+        "RAG 是检索增强生成技术，通过在生成前检索相关文档来提升 LLM 回答的准确性和时效性。",
+        "常见的向量数据库包括 Pinecone、Milvus、Weaviate、Qdrant 和 Chroma。",
+    ],
+    "contexts": [
+        [
+            "RAG（Retrieval-Augmented Generation）是一种将检索模块与生成模型结合的技术。",
+            "RAG 通过在推理时检索外部知识库来增强 LLM 的回答能力。",
+        ],
+        [
+            "主流向量数据库包括 Pinecone、Milvus、Weaviate 等。",
+            "Chroma 和 Qdrant 是轻量级的开源向量数据库。",
+        ],
+    ],
+    "ground_truth": [
+        "RAG 是检索增强生成，结合检索和生成两个阶段，先从知识库检索相关文档，再基于检索结果生成答案。",
+        "常见向量数据库有 Pinecone、Milvus、Weaviate、Qdrant、Chroma、pgvector 等。",
+    ],
+}
+
+dataset = Dataset.from_dict(eval_data)
+
+# 执行评估
+results = evaluate(
+    dataset,
+    metrics=[
+        context_precision,
+        context_recall,
+        faithfulness,
+        answer_relevancy,
+    ],
+)
+
+# 输出结果
+print(results)
+# 输出示例：
+# {'context_precision': 0.92, 'context_recall': 0.85,
+#  'faithfulness': 0.90, 'answer_relevancy': 0.88}
+
+# 转为 DataFrame 查看每条数据的详细得分
+df = results.to_pandas()
+print(df)</code></pre>
+          </details>
+          <details>
+            <summary>展开自定义评估指标代码</summary>
+            <pre><code>from ragas.metrics.base import MetricWithLLM
+from dataclasses import dataclass
+
+@dataclass
+class DomainAccuracy(MetricWithLLM):
+    name: str = "domain_accuracy"
+
+    def _score(self, row: dict) -&gt; float:
+        """自定义打分逻辑：检查答案是否包含领域关键术语"""
+        answer = row["answer"]
+        domain_terms = ["检索", "向量", "embedding", "chunk"]
+        matches = sum(1 for term in domain_terms if term in answer)
+        return matches / len(domain_terms)</code></pre>
+          </details>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="practice-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">五、最佳实践与流水线</p><h2 id="practice-title">评估不是一次打分，<br>是持续闭环。</h2></div>
+          <p class="reading-intro">从高质量数据集开始，建立基线，接入 CI/CD 质量门禁，再用异常诊断表定位瓶颈。</p>
+        </div>
+        <div class="prose">
+          <figure>
+            <div class="pipeline" aria-label="评估流水线：评估数据集到 RAG Pipeline 到 RAGAS 评估到结果仪表盘，再反馈回数据集">
+              <span class="pipeline-node store">评估数据集<br><small>Q/A/Context</small></span><span class="pipeline-arrow" aria-hidden="true">→</span>
+              <span class="pipeline-node agent">RAG Pipeline<br><small>推理</small></span><span class="pipeline-arrow" aria-hidden="true">→</span>
+              <span class="pipeline-node">RAGAS 评估<br><small>自动打分</small></span><span class="pipeline-arrow" aria-hidden="true">→</span>
+              <span class="pipeline-node store">结果仪表盘<br><small>可视化</small></span>
+            </div>
+            <p class="demo-note">↺ 反馈优化循环：仪表盘结果回到评估数据集，持续补充和修正样本。</p>
+            <figcaption class="demo-note">图 2 · RAGAS 把评估做成闭环：数据集 → 推理 → 自动打分 → 仪表盘，结果反馈回数据集持续优化。</figcaption>
+          </figure>
+          <details>
+            <summary>查看原文 Mermaid 流程图源码（评估流水线）</summary>
+            <pre><code>flowchart LR
+    D["评估数据集&lt;br/&gt;(Q/A/Context)"] --&gt; P["RAG Pipeline&lt;br/&gt;(推理)"]
+    P --&gt; E["RAGAS 评估&lt;br/&gt;(自动打分)"]
+    E --&gt; V["结果仪表盘&lt;br/&gt;(可视化)"]
+    V -.->|"反馈优化循环"| D
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    class P,E proc
+    class D,V store</code></pre>
+          </details>
+
+          <div class="practice">
+            <h3>1. 构建高质量评估数据集</h3>
+            <pre><code># 评估数据集结构（黄金标准）
+eval_sample = {
+    "question": "...",          # 真实用户问题或合成问题
+    "ground_truth": "...",      # 人工标注的标准答案
+    "ground_truth_contexts": [] # 人工标注的相关文档
+}</code></pre>
+            <ul>
+              <li>数据集规模建议：至少 50~100 条，覆盖高频 query 类型。</li>
+              <li>包含简单 / 中等 / 困难三个梯度的问题。</li>
+              <li>包含边界用例：多跳推理、否定性问题、模糊查询。</li>
+            </ul>
+          </div>
+
+          <div class="practice">
+            <h3>2. 建立评估基线与持续监控</h3>
+            <details>
+              <summary>展开 CI/CD 质量门禁代码</summary>
+              <pre><code>import json
+
+THRESHOLDS = {
+    "context_precision": 0.80,
+    "context_recall": 0.75,
+    "faithfulness": 0.85,
+    "answer_relevancy": 0.80,
+}
+
+def check_quality_gate(results: dict) -&gt; bool:
+    """质量门禁：所有指标必须超过阈值"""
+    for metric, threshold in THRESHOLDS.items():
+        score = results[metric]
+        if score &lt; threshold:
+            print(f"❌ {metric}: {score:.3f} &lt; {threshold}")
+            return False
+        print(f"✅ {metric}: {score:.3f} &gt;= {threshold}")
+    return True
+
+# 在 CI 流水线中调用
+results = {"context_precision": 0.92, "context_recall": 0.85,
+           "faithfulness": 0.90, "answer_relevancy": 0.88}
+
+if not check_quality_gate(results):
+    raise SystemExit("Quality gate failed!")</code></pre>
+            </details>
+          </div>
+
+          <div class="practice">
+            <h3>3. 指标异常的诊断思路</h3>
+            <div class="table-wrap">
+              <table class="data">
+                <caption class="sr-only">指标异常现象、可能原因与优化方向</caption>
+                <thead><tr><th scope="col">异常现象</th><th scope="col">可能原因</th><th scope="col">优化方向</th></tr></thead>
+                <tbody>
+                  <tr><td>Recall 低</td><td>Chunk 粒度太粗 / Embedding 模型弱</td><td>调整分块策略 / 更换 Embedding 模型</td></tr>
+                  <tr><td>Precision 低</td><td>检索 K 值过大 / 相似度阈值过低</td><td>减小 K 值 / 加入 Reranker</td></tr>
+                  <tr><td>MRR 低</td><td>排序模型质量差</td><td>引入 Cross-Encoder Reranker</td></tr>
+                  <tr><td>Faithfulness 低</td><td>LLM 幻觉严重</td><td>加强 prompt 约束 / 降低 temperature</td></tr>
+                  <tr><td>Answer Relevancy 低</td><td>Query 理解偏差 / 上下文干扰</td><td>优化 Query Rewriting / 减少噪声文档</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="practice">
+            <h3>4. A/B 评估对比模板</h3>
+            <details>
+              <summary>展开 A/B 对比代码</summary>
+              <pre><code>def ab_evaluate(pipeline_a, pipeline_b, eval_dataset):
+    """对比两个 RAG pipeline 的评估结果"""
+    results_a = evaluate(pipeline_a(eval_dataset))
+    results_b = evaluate(pipeline_b(eval_dataset))
+
+    print("=" * 50)
+    print(f"{'指标':&lt;25} {'Pipeline A':&gt;10} {'Pipeline B':&gt;10} {'Δ':&gt;8}")
+    print("=" * 50)
+    for metric in THRESHOLDS:
+        a = results_a[metric]
+        b = results_b[metric]
+        delta = b - a
+        arrow = "↑" if delta &gt; 0 else "↓" if delta &lt; 0 else "="
+        print(f"{metric:&lt;25} {a:&gt;10.3f} {b:&gt;10.3f} {delta:&gt;+7.3f}{arrow}")</code></pre>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="misconception-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="misconception-title">五个误区，<br>四个追问。</h2></div>
+          <p class="reading-intro">指标不是越高越好，也不能用一个综合分数代替分阶段诊断。</p>
+        </div>
+        <div class="prose">
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">RAG 评估的常见误区与正解</caption>
+              <thead><tr><th scope="col">误区</th><th scope="col">正解</th></tr></thead>
+              <tbody>
+                <tr><td>“Precision 和 Recall 选一个优化就行”</td><td>两者存在 trade-off，需结合业务场景权衡。RAG 场景通常优先保证 Recall（不漏关键信息），再用 Reranker 提升 Precision。</td></tr>
+                <tr><td>“NDCG 和 MAP 效果差不多”</td><td>MAP 只支持二元相关性，NDCG 支持多级相关性。当文档有不同重要程度时，必须使用 NDCG。</td></tr>
+                <tr><td>“Faithfulness = 1.0 就说明答案完美”</td><td>Faithfulness 只衡量“不编造”，不衡量“是否完整”。只复述上下文原文的答案 Faithfulness 为 1.0，但可能完全没回答问题。</td></tr>
+                <tr><td>“评估指标高就可以上线”</td><td>评估数据集的分布是否代表真实流量？是否覆盖了 corner case？离线指标和线上体验之间还有鸿沟。</td></tr>
+                <tr><td>“用一个综合分数就能评价 RAG”</td><td>单一分数会掩盖问题。必须分别看检索和生成的指标，才能定位瓶颈在哪个阶段。</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <h3>Q1：MRR、MAP、NDCG 三者如何选择？</h3>
+          <ul>
+            <li><strong>MRR</strong>：只关心第一个相关结果，适合“只需一个答案”的场景（如问答）。</li>
+            <li><strong>MAP</strong>：关心所有相关结果的排名分布，适合“需要多个相关文档”的场景（如多文档摘要）。</li>
+            <li><strong>NDCG</strong>：在 MAP 基础上支持多级相关性，适合“文档重要程度有差异”的场景（如搜索排序）。</li>
+          </ul>
+
+          <h3>Q2：RAGAS 使用 LLM-as-Judge 有什么局限？</h3>
+          <ul>
+            <li>LLM 本身可能存在偏见（如偏好更长的答案）。</li>
+            <li>不同 LLM 的评估结果可能不一致，需固定评估模型版本。</li>
+            <li>Claim 拆解的粒度影响 Faithfulness 得分的稳定性。</li>
+            <li>对于需要领域专业知识的场景，通用 LLM 的判断可能不准确。</li>
+          </ul>
+
+          <h3>Q3：如何构建 RAG 评估数据集？</h3>
+          <ul>
+            <li><strong>人工标注</strong>：质量最高，但成本高。适合核心场景。</li>
+            <li><strong>LLM 合成</strong>：用 LLM 基于文档自动生成 QA 对，再人工校验。</li>
+            <li><strong>线上日志挖掘</strong>：从真实用户 query 中采样，标注相关文档和参考答案。</li>
+            <li><strong>对抗样本</strong>：故意构造 LLM 容易出错的问题（多跳推理、否定性问题、需要计算的问题）。</li>
+          </ul>
+
+          <h3>Q4：检索质量和生成质量之间的关系是什么？</h3>
+          <ul>
+            <li>检索质量是生成质量的上界：<code>生成质量 ≤ f(检索质量)</code>。</li>
+            <li>当 Recall 低时，优化生成端收益有限——信息都没检索到，LLM 再强也无法凭空生成。</li>
+            <li>当 Faithfulness 低时，可能是检索 Precision 低（噪声文档干扰）或 LLM 自身幻觉。</li>
+            <li>建议从左到右排查：先确保检索质量达标，再优化生成质量。</li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="source-section" aria-labelledby="source-title">
+        <p class="eyebrow">技术细节，按需展开</p>
+        <h2 class="source-heading" id="source-title">原文参考资料</h2>
+        <p class="source-summary">讲解依据《RAG 评估指标体系：原理、计算与实战》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+        <details>
+          <summary>展开原文列出的参考链接与文献</summary>
+          <div class="source-content">
+            <ul>
+              <li><a href="https://docs.ragas.io/" target="_blank" rel="noopener noreferrer">RAGAS 官方文档</a></li>
+              <li><a href="https://github.com/explodinggradients/ragas" target="_blank" rel="noopener noreferrer">RAGAS GitHub</a></li>
+              <li>Manning, Raghavan, Schütze. <em>Introduction to Information Retrieval</em>. Cambridge University Press.</li>
+              <li><a href="https://huggingface.co/docs/transformers/model_doc/rag" target="_blank" rel="noopener noreferrer">Hugging Face · RAG 评估指南</a></li>
+              <li><a href="https://docs.llamaindex.ai/en/stable/module_guides/evaluating/" target="_blank" rel="noopener noreferrer">LlamaIndex · Evaluation Module</a></li>
+              <li>Järvelin, K., &amp; Kekäläinen, J. (2002). <em>Cumulated gain-based evaluation of IR techniques</em>. ACM TOIS.</li>
+              <li>Es, S., James, J., Espinosa-Anke, L., &amp; Schockaert, S. (2023). <em>RAGAS: Automated Evaluation of Retrieval Augmented Generation</em>. arXiv:2309.15217.</li>
+            </ul>
+            <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+          </div>
+        </details>
+      </section>
+    </main>
+    <footer><span>Agent-Interview-100 · <code>02-rag/020-rag-evaluation-metrics.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 1 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const RELEVANCE = Object.freeze([true, false, true, true, false]);
+  const TOTAL_RELEVANT = 4;
+  const state = { k: 5 };
+  const byId = (id) => document.getElementById(id);
+
+  function trim(value) {
+    return String(Number(value.toFixed(3)));
+  }
+
+  function render(announce = false) {
+    const k = state.k;
+    const hits = RELEVANCE.slice(0, k).filter(Boolean).length;
+    const precision = hits / k;
+    const recall = hits / TOTAL_RELEVANT;
+
+    byId("k-output").value = String(k);
+    byId("k-input").value = String(k);
+    document.querySelectorAll("[data-k]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(Number(button.dataset.k) === k));
+    });
+
+    byId("p-num").textContent = String(hits);
+    byId("p-den").textContent = String(k);
+    byId("p-value").textContent = trim(precision);
+    byId("p-exact").textContent = `Precision@${k} = ${hits} / ${k} = ${trim(precision)}`;
+    byId("r-num").textContent = String(hits);
+    byId("r-value").textContent = trim(recall);
+    byId("r-exact").textContent = `Recall@${k} = ${hits} / ${TOTAL_RELEVANT} = ${trim(recall)}`;
+
+    const hitsLine = byId("hits-line");
+    hitsLine.textContent = "";
+    hitsLine.append("前 ");
+    const kStrong = document.createElement("strong");
+    kStrong.textContent = String(k);
+    hitsLine.append(kStrong, " 篇命中 ");
+    const hitStrong = document.createElement("strong");
+    hitStrong.textContent = String(hits);
+    hitsLine.append(hitStrong, " 篇；相关文档总数固定为 ");
+    const totalStrong = document.createElement("strong");
+    totalStrong.textContent = String(TOTAL_RELEVANT);
+    hitsLine.append(totalStrong, "。");
+
+    document.querySelectorAll(".retrieved-item").forEach((item) => {
+      const index = Number(item.dataset.index);
+      const inWindow = index <= k;
+      item.classList.toggle("in-window", inWindow);
+      item.classList.toggle("out-window", !inWindow);
+      item.classList.toggle("boundary", index === k);
+    });
+
+    byId("state-summary").textContent = `K = ${k} · Precision ${trim(precision)} · Recall ${trim(recall)}`;
+    if (announce) {
+      byId("metric-announcement").textContent = `K 为 ${k} 时，命中 ${hits} 篇，Precision ${trim(precision)}，Recall ${trim(recall)}。`;
+    }
+  }
+
+  byId("k-input").addEventListener("input", (event) => {
+    state.k = Number(event.target.value);
+    render(false);
+  });
+  byId("k-input").addEventListener("change", () => render(true));
+  document.querySelectorAll("[data-k]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.k = Number(button.dataset.k);
+      render(true);
+    });
+  });
+  byId("reset-button").addEventListener("click", () => {
+    state.k = 5;
+    render(true);
+    byId("metric-announcement").textContent = "已重置，K 回到 5。";
+  });
+  render(false);
+</script>
+</body>
+</html>

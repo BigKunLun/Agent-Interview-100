@@ -1,0 +1,1070 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>如何设计 Agent 间的任务分配与协调？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .ta-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .ta-modes { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 var(--s-6); margin-top: var(--s-4); }
+  .ta-mode { min-height: 40px; padding: 7px 13px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: 12px; color: var(--text-dim); }
+  .ta-mode:hover { background: var(--surface-soft); }
+  .ta-mode[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+  .ta-mode small { display: block; font: 9px/1.4 var(--mono); font-weight: 400; color: inherit; opacity: .85; }
+  .ta-grid { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+  .ta-board, .ta-panel { min-width: 0; }
+  .ta-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 7px; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .ta-toolbar b { font-weight: 600; color: var(--ink); }
+  .ta-legend { display: flex; flex-wrap: wrap; gap: 9px; }
+  .ta-legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .ta-swatch { width: 14px; height: 7px; border-radius: 2px; border: 1px solid var(--border-bright); }
+  .ta-swatch.done { background: #eef7ee; border-color: #2e7d32; }
+  .ta-swatch.run { background: var(--accent-dim); border-color: var(--accent); }
+  .ta-swatch.plan { background: repeating-linear-gradient(135deg, #f1f0eb 0 3px, #ffffff 3px 6px); border-color: #8b908b; }
+  .ta-chart { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px 10px 4px; }
+  .ta-axis { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 6px; margin-bottom: 3px; }
+  .ta-axis-track { position: relative; height: 14px; font: 8px/1 var(--mono); color: var(--text-dim); }
+  .ta-axis-tick { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+  .ta-axis-tick:first-child { transform: none; }
+  .ta-axis-tick:last-child { transform: translateX(-100%); }
+  .ta-lane { display: grid; grid-template-columns: 62px minmax(0, 1fr); gap: 6px; align-items: center; padding: 5px 0; border-top: 1px dashed var(--border); }
+  .ta-lane-label { font: 9px/1.35 var(--mono); color: var(--text-dim); }
+  .ta-lane-label b { display: block; font: 600 11px/1.35 var(--sans); color: var(--ink); }
+  .ta-track { position: relative; min-height: 26px; border-left: 1px solid var(--border); background: repeating-linear-gradient(90deg, transparent 0 calc(20% - 1px), #ecebe4 calc(20% - 1px) 20%); border-radius: 2px; }
+  .ta-bar { position: absolute; top: 3px; min-height: 20px; padding: 3px 4px; border: 1px solid var(--border-bright); border-radius: 3px; font: 8px/1.2 var(--mono); color: #4b514b; background: var(--surface-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: background var(--fast) var(--ease); }
+  .ta-bar.done { background: #eef7ee; border-color: #2e7d32; color: #1b5e20; }
+  .ta-bar.run { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+  .ta-bar.plan { background: repeating-linear-gradient(135deg, #f1f0eb 0 3px, #ffffff 3px 6px); border-style: dashed; color: #5f645f; }
+  .ta-bar small { font-size: 7px; }
+  .ta-task-list { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 4px; }
+  .ta-task { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 6px; align-items: center; padding: 5px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); font-size: 10px; line-height: 1.45; }
+  .ta-task.is-now { border-color: var(--accent); background: #f4f8fc; }
+  .ta-task-id { font: 600 9px/1.5 var(--mono); color: var(--text-dim); }
+  .ta-task-main { min-width: 0; }
+  .ta-task-main b { display: block; font: 600 10px/1.45 var(--sans); color: var(--ink); overflow-wrap: anywhere; }
+  .ta-task-main span { font: 8px/1.4 var(--mono); color: var(--text-dim); overflow-wrap: anywhere; }
+  .ta-badge { padding: 1px 6px; border-radius: 999px; border: 1px solid var(--border-bright); background: var(--surface-soft); color: #4b514b; font: 8px/1.5 var(--mono); white-space: nowrap; }
+  .ta-badge.run { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+  .ta-badge.done { border-color: #2e7d32; background: #eef7ee; color: #1b5e20; }
+  .ta-badge.wait { border-color: #b98a2f; background: #fffaf0; color: #5f430f; }
+  .ta-panel { border: 1px solid var(--border); border-radius: var(--r-1); background: #f7f6f1; padding: var(--s-4); }
+  .ta-panel h2 { font: 600 19px/1.45 var(--serif); }
+  .ta-panel > p { margin-top: var(--s-2); font-size: 12px; line-height: 1.7; }
+  .ta-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; margin-top: var(--s-3); }
+  .ta-metric { padding: 5px 7px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); }
+  .ta-metric dt { font: 8px/1.4 var(--mono); color: var(--text-dim); }
+  .ta-metric dd { margin: 0; font: 600 14px/1.3 var(--mono); color: var(--ink); }
+  .ta-decision { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: 4px; background: var(--surface); padding: 7px 8px; }
+  .ta-decision-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 5px; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .ta-decision-head b { color: var(--ink); }
+  .ta-scores { width: 100%; border-collapse: collapse; margin-top: 4px; font-size: 9px; }
+  .ta-scores th, .ta-scores td { padding: 3px 4px; border-top: 1px solid var(--border); text-align: left; }
+  .ta-scores thead th { border-top: 0; font: 8px/1.4 var(--mono); color: var(--text-dim); font-weight: 400; }
+  .ta-scores td.num { text-align: right; font-family: var(--mono); }
+  .ta-scores tr.chosen td { background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+  .ta-formula { margin-top: 4px; font: 8px/1.55 var(--mono); color: var(--text-dim); overflow-wrap: anywhere; }
+  .ta-boundary { margin-top: var(--s-3); padding: 7px 9px; border: 1px solid #b98a2f; border-radius: 4px; background: #fffaf0; color: #5f430f; font-size: 10px; line-height: 1.6; }
+  .ta-boundary b { color: #4a340b; }
+  .ta-log { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 3px; }
+  .ta-log li { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 5px; padding: 3px 5px; border: 1px solid var(--border); border-radius: 3px; background: var(--surface); font-size: 9px; line-height: 1.5; }
+  .ta-log li b { font: 600 8px/1.5 var(--mono); color: var(--accent); }
+  .ta-log li.is-now { border-color: var(--accent); background: #f4f8fc; }
+
+  .ta-flow { margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .ta-flow-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+  .ta-flow-node { padding: 6px 9px; border: 1px solid #9eb4c9; border-radius: 4px; background: var(--accent-dim); font: 10px/1.45 var(--mono); color: var(--accent); }
+  .ta-flow-node span { display: block; font-size: 8px; color: var(--text-dim); }
+  .ta-flow-arrow { font: 11px/1 var(--mono); color: var(--text-dim); }
+  .ta-flow figcaption { margin-top: var(--s-3); font-size: 10px; line-height: 1.6; color: var(--text-dim); }
+
+  @media (max-width: 1000px) { .ta-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 720px) {
+    .ta-stage { padding: var(--s-4); }
+    .ta-modes { padding: 0 var(--s-4); margin-top: var(--s-3); }
+    .ta-mode { flex: 1 1 45%; padding: 6px 9px; font-size: 11px; }
+    .ta-axis, .ta-lane { grid-template-columns: 50px minmax(0, 1fr); }
+    .ta-chart { padding-inline: 7px; }
+    .ta-panel { padding: var(--s-3); }
+    .ta-task { grid-template-columns: 24px minmax(0, 1fr) auto; }
+    .ta-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">034 / 任务分配与协调</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 9 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="032-communication-patterns.html">← 上一页 · 多 Agent 通信模式</a><a href="035-conflict-resolution.html">下一页 → · 多 Agent 系统中的冲突解决机制</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Multi-Agent · 可交互讲解</p>
+      <h1>把大任务拆开，<br>再交对人。</h1>
+    </div>
+    <div>
+      <p class="lead">任务分配与协调要连续解决四个问题：把复杂任务拆成子任务，把子任务交给合适的 Agent，按依赖关系协调执行，最后合并结果。集中式规划和动态分配解决的是同一组问题，区别在于“什么时候做决定”。</p>
+      <p class="definition">关键边界：<strong>集中式规划在开工前一次性排好全部子任务，动态分配在依赖满足时逐个决定</strong>。前者计划清晰，后者更适应运行时的负载和表现变化；两者都必须处理依赖、失败和结果聚合。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Multi-Agent</span><span class="pill">任务分配</span><span class="pill">固定教学轨迹</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="ta-caption-title">
+    <div class="player-top">
+      <div class="player-label">固定分派演播室 <small>同一张任务图，两种决策时机</small></div>
+      <div class="controls" role="group" aria-label="任务分配演示控制">
+        <button type="button" class="button button-quiet" id="ta-reset">重置</button>
+        <button type="button" class="button" id="ta-prev" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="ta-next">下一步 →</button>
+      </div>
+    </div>
+    <div class="ta-modes" role="group" aria-label="选择分配策略">
+      <button type="button" class="ta-mode" data-mode="central" aria-pressed="true">集中式规划<small>先排全部，再执行</small></button>
+      <button type="button" class="ta-mode" data-mode="dynamic" aria-pressed="false">动态分配<small>依赖就绪再决定</small></button>
+    </div>
+    <nav class="stage-nav" aria-label="六个固定协调步骤">
+      <ol style="--stages: 6">
+        <li><button type="button" class="stage-button" data-step="0" aria-current="step" aria-controls="ta-scene" aria-label="第 1 步：启动"><span class="stage-number">1</span><span>启动</span></button></li>
+        <li><button type="button" class="stage-button" data-step="1" aria-controls="ta-scene" aria-label="第 2 步：并行"><span class="stage-number">2</span><span>并行</span></button></li>
+        <li><button type="button" class="stage-button" data-step="2" aria-controls="ta-scene" aria-label="第 3 步：依赖"><span class="stage-number">3</span><span>依赖</span></button></li>
+        <li><button type="button" class="stage-button" data-step="3" aria-controls="ta-scene" aria-label="第 4 步：汇合"><span class="stage-number">4</span><span>汇合</span></button></li>
+        <li><button type="button" class="stage-button" data-step="4" aria-controls="ta-scene" aria-label="第 5 步：审阅"><span class="stage-number">5</span><span>审阅</span></button></li>
+        <li><button type="button" class="stage-button" data-step="5" aria-controls="ta-scene" aria-label="第 6 步：聚合"><span class="stage-number">6</span><span>聚合</span></button></li>
+      </ol>
+    </nav>
+    <div class="ta-stage scene" id="ta-scene" data-scene="allocation">
+      <div class="ta-grid">
+        <section class="ta-board" aria-label="任务时间线">
+          <div class="ta-toolbar">
+            <span><b>时间轴</b> · 固定教学时间，不是真实计时</span>
+            <div class="ta-legend" aria-hidden="true">
+              <span><i class="ta-swatch done"></i>已完成</span>
+              <span><i class="ta-swatch run"></i>执行中</span>
+              <span><i class="ta-swatch plan"></i>已排期未开始</span>
+            </div>
+          </div>
+          <div class="ta-chart">
+            <div class="ta-axis"><span></span><div class="ta-axis-track" id="ta-axis"></div></div>
+            <div id="ta-lanes"></div>
+          </div>
+          <ol class="ta-task-list" id="ta-tasks" aria-label="任务状态"></ol>
+        </section>
+        <aside class="ta-panel" aria-labelledby="ta-caption-title">
+          <p class="figure-index" id="ta-figure">图 1 · 集中式规划 · 第 1 / 6 步</p>
+          <h2 id="ta-caption-title">先排好五个子任务。</h2>
+          <p id="ta-desc">规划器先拆出五个子任务，算出依赖和批次，再把整张计划交给执行器。第一步只启动没有依赖的检索任务。</p>
+          <dl class="ta-metrics">
+            <div class="ta-metric"><dt>教学时刻</dt><dd id="ta-clock">+2.0s</dd></div>
+            <div class="ta-metric"><dt>执行中</dt><dd id="ta-running">1</dd></div>
+            <div class="ta-metric"><dt>已完成</dt><dd id="ta-done">0 / 5</dd></div>
+          </dl>
+          <div class="ta-decision" id="ta-decision"></div>
+          <div class="ta-boundary" id="ta-boundary"><b>角色边界：</b>规划器只拆任务和排批次，不替执行 Agent 干活；执行 Agent 只领自己那一格。</div>
+          <ul class="ta-log" id="ta-log"></ul>
+        </aside>
+      </div>
+      <p class="demo-note">固定教学数据：任务图、Agent 能力分、历史亲和度、负载和所有时间点都是写死的；页面按当前步骤计算状态，不调用模型、调度器或任何真实 Agent。动态分配的分数只用于演示公式，不代表任何团队的实测效果。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 5 个子任务 · 4 个执行 Agent</span><span id="ta-state-summary">集中式规划 · 第 1 / 6 步 · 没有连接 Agent</span></div>
+  </section>
+  <p id="ta-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="flow-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">基本流程</p><h2 id="flow-title">分解、分配、<br>协调、聚合。</h2></div>
+      <p class="reading-intro">四段流水线，每段解决一个协作问题。任务图里能并行的分支，不应该被写成串行。</p>
+    </div>
+    <div class="prose">
+      <figure class="ta-flow">
+        <div class="ta-flow-row">
+          <span class="ta-flow-node">复杂任务<span>输入</span></span><span class="ta-flow-arrow">→</span>
+          <span class="ta-flow-node">分解 Decompose<span>拆成子任务</span></span><span class="ta-flow-arrow">→</span>
+          <span class="ta-flow-node">分配 Allocate<span>匹配 Agent</span></span><span class="ta-flow-arrow">→</span>
+          <span class="ta-flow-node">协调执行 Coordinate<span>依赖 · 同步 · 冲突</span></span><span class="ta-flow-arrow">→</span>
+          <span class="ta-flow-node">聚合 Aggregate<span>合并输出</span></span>
+        </div>
+        <figcaption>离线可读版：原图是 Mermaid 横向流程图。Mermaid 源码见下方折叠块。</figcaption>
+      </figure>
+      <details>
+        <summary>展开原文 Mermaid 源码</summary>
+        <pre><code>flowchart TD
+    A["复杂任务"] --&gt; B["任务分解 Decompose&lt;br/&gt;将大任务拆成子任务"]
+    B --&gt; C["任务分配 Allocate&lt;br/&gt;将子任务匹配给合适的 Agent"]
+    C --&gt; D["协调执行 Coordinate&lt;br/&gt;管理依赖 · 同步 · 冲突"]
+    D --&gt; E["结果聚合 Aggregate&lt;br/&gt;合并各 Agent 的输出"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class B,C,D,E proc
+    class A neutral</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="s1-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">策略 1</p><h2 id="s1-title">集中式规划，<br>分散执行。</h2></div>
+      <p class="reading-intro">中央规划器负责全局分解和分配，再把同一批无依赖的子任务并行发出去。控制权集中，执行权分散。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">中央规划器 · 原文代码</p>
+      <pre><code>class CentralPlanner:
+    """中央规划器负责全局任务分解和分配"""
+
+    def __init__(self, agents: dict[str, Agent]):
+        self.agents = agents
+
+    async def plan_and_execute(self, task: str):
+        subtasks = await self.decompose(task)
+        assignments = self.assign(subtasks)
+
+        results = {}
+        for batch in self.topological_sort(assignments):
+            # 同一批次的任务无依赖，可并行
+            batch_results = await asyncio.gather(
+                *[self.agents[a.agent_id].execute(a.subtask, results)
+                  for a in batch]
+            )
+            results.update(zip([a.subtask.id for a in batch], batch_results))
+
+        return results
+
+    def assign(self, subtasks):
+        """基于 Agent 能力描述的自动匹配"""
+        assignments = []
+        for subtask in subtasks:
+            best_agent = max(
+                self.agents.values(),
+                key=lambda a: self.capability_match(a, subtask)
+            )
+            assignments.append(Assignment(subtask, best_agent.id))
+        return assignments</code></pre>
+      <p>这段代码的关键在 <code>topological_sort</code> 之后的分批：同一批任务放进 <code>asyncio.gather</code>，才是真正的并行；不同批次之间按依赖串行。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="s2-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">策略 2</p><h2 id="s2-title">让 LLM 当<br>协调器。</h2></div>
+      <p class="reading-intro">把任务和所有 Agent 的能力描述一起交给 LLM，由它输出“谁做什么、依赖哪一步”的计划，再解析执行。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">LLM 协调器 · 原文代码</p>
+      <pre><code>class LLMCoordinator:
+    async def coordinate(self, task, agents):
+        agent_descriptions = "\n".join([
+            f"- {a.name}: {a.description}, 擅长: {a.capabilities}"
+            for a in agents
+        ])
+
+        plan = await self.llm.generate(f"""
+        任务: {task}
+
+        可用 Agent:
+        {agent_descriptions}
+
+        请分解任务并分配给合适的 Agent。
+        输出格式:
+        1. [Agent名] → 子任务描述 (依赖: 无/步骤N)
+        2. ...
+        """)
+
+        return self.parse_and_execute(plan)</code></pre>
+      <div class="callout">
+        <p class="callout-label">原文结论</p>
+        <p>原文引用研究称：Planner 方法（先生成完整计划再执行）在处理并发操作时优于 Orchestrator 方法（逐步决策），因为 Planner 能更好地识别可并行的子任务。这是原文引用的结论，不是本页实测。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="s3-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">策略 3</p><h2 id="s3-title">角色写清楚，<br>再谈能力匹配。</h2></div>
+      <p class="reading-intro">每个 Agent 声明角色、能力和约束，路由器按语义相似度匹配子任务。约束和能力同样重要：能做什么、不能做什么都要写。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">CAMEL 风格的角色分配 · 原文代码</p>
+      <pre><code>class RoleBasedAllocation:
+    def __init__(self):
+        self.agents = {
+            "researcher": Agent(
+                role="研究分析师",
+                capabilities=["web_search", "paper_analysis", "data_collection"],
+                constraints=["只能读取数据，不能修改"],
+            ),
+            "developer": Agent(
+                role="软件工程师",
+                capabilities=["code_generation", "debugging", "testing"],
+                constraints=["只能修改 src/ 目录下的文件"],
+            ),
+            "reviewer": Agent(
+                role="质量审核员",
+                capabilities=["code_review", "fact_checking"],
+                constraints=["不能直接修改代码，只能提出建议"],
+            ),
+        }
+
+    def match(self, subtask: str) -> str:
+        """基于语义匹配找到最合适的 Agent"""
+        subtask_embedding = embed(subtask)
+        scores = {
+            name: cosine_similarity(subtask_embedding, embed(a.capabilities))
+            for name, a in self.agents.items()
+        }
+        return max(scores, key=scores.get)</code></pre>
+      <p>能力描述只说明“会什么”，约束说明“允许做什么”。只做前者，容易出现越权修改；两者都写，才能把角色边界落到路由层。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="s4-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">策略 4</p><h2 id="s4-title">动态分配：<br>把运行时状态算进分数。</h2></div>
+      <p class="reading-intro">静态分配假设能力和环境不变；DRAMA 方法用能力、历史表现、当前负载和空闲程度四项加权，在选择时动态算分。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">动态分配与亲和度更新 · 原文代码</p>
+      <pre><code>class DynamicAllocator:
+    """基于亲和度的事件驱动动态分配"""
+
+    def __init__(self, agents):
+        self.agents = agents
+        self.affinity_scores = {}  # (agent, task_type) → 历史成功率
+
+    async def allocate(self, subtask):
+        candidates = []
+        for agent in self.agents:
+            score = self.compute_score(agent, subtask)
+            candidates.append((agent, score))
+        best = max(candidates, key=lambda x: x[1])
+        return best[0]
+
+    def compute_score(self, agent, subtask):
+        return (
+            0.4 * self.capability_match(agent, subtask) +
+            0.3 * self.affinity_scores.get((agent.id, subtask.type), 0.5) +
+            0.2 * (1 - agent.current_load / agent.max_load) +
+            0.1 * self.recency_bonus(agent)
+        )
+
+    def update_affinity(self, agent_id, task_type, success: bool):
+        key = (agent_id, task_type)
+        old = self.affinity_scores.get(key, 0.5)
+        self.affinity_scores[key] = old * 0.8 + (1.0 if success else 0.0) * 0.2</code></pre>
+      <p>四项权重加起来等于 1，每项都在 0–1 之间，所以总分也在 0–1 之间。动态分配的代价是每次决策都要现算，而且历史分数可能让某个 Agent 长期被偏爱，需要额外设计探索机制。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="challenge-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">协调的关键挑战</p><h2 id="challenge-title">依赖、冗余、<br>失败。</h2></div>
+      <p class="reading-intro">分配只是开始。任务图要能表达依赖，传递要控制冗余，执行要能超时降级，这三件事决定系统能不能稳定收口。</p>
+    </div>
+    <div class="prose">
+      <h3>1. 依赖管理</h3>
+      <p class="code-label">DAG 与拓扑批次 · 原文代码</p>
+      <pre><code>task_graph = {
+    "search":    {"depends_on": []},
+    "analyze":   {"depends_on": ["search"]},
+    "visualize": {"depends_on": ["search"]},      # 和 analyze 并行
+    "report":    {"depends_on": ["analyze", "visualize"]},
+}
+
+# Batch 1: search（无依赖）
+# Batch 2: analyze, visualize（并行）
+# Batch 3: report（等待前两个）</code></pre>
+      <p><code>analyze</code> 和 <code>visualize</code> 都只依赖 <code>search</code>，所以它们属于同一批，可以同时跑。把它们画成串行，会让总耗时从 3 个批次变成 4 个批次。</p>
+      <h3>2. Token 冗余控制</h3>
+      <p>原文引用研究称多 Agent 框架中 token 重复率达 53%–86%（原文数据，未联网核实）。常见做法是交接时传摘要，而不是把完整输出反复转述。</p>
+      <pre><code>def compress_for_handoff(agent_output: str, max_tokens: int = 500):
+    if count_tokens(agent_output) > max_tokens:
+        return summarize(agent_output, max_tokens=max_tokens)
+    return agent_output</code></pre>
+      <h3>3. 失败处理</h3>
+      <pre><code>class ResilientCoordinator:
+    async def execute_with_fallback(self, subtask, primary_agent, backup_agent):
+        try:
+            return await asyncio.wait_for(
+                primary_agent.execute(subtask),
+                timeout=30
+            )
+        except (TimeoutError, AgentError):
+            return await backup_agent.execute(subtask)</code></pre>
+      <p>超时和 Agent 错误降级到备选 Agent；如果备选也失败，还要有上层兜底。降级不是静默重试，结果里应该记录“用了哪个备选”。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="principle-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">设计原则</p><h2 id="principle-title">五条能落地的<br>检查项。</h2></div>
+      <p class="reading-intro">这些原则来自原文总结，适合当作设计评审清单，不是性能承诺。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">任务分配与协调的五条设计原则</caption>
+          <thead><tr><th scope="col">原则</th><th scope="col">说明</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">明确角色边界</th><td>每个 Agent 有清晰的能力和约束定义</td></tr>
+            <tr><th scope="row">从小开始</th><td>先 3–5 个 Agent，验证后再扩展</td></tr>
+            <tr><th scope="row">匹配通信模式</th><td>简单链用 Pipeline，复杂协调用 Hierarchical</td></tr>
+            <tr><th scope="row">健壮的错误处理</th><td>断路器、重试、降级回退</td></tr>
+            <tr><th scope="row">可观测性</th><td>追踪每个 Agent 的输入 / 输出 / 耗时</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">四个容易<br>答偏的点。</h2></div>
+      <p class="reading-intro">前两条是误区，后两条是面试追问；答案来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“Agent 越多越好。”</h3><p>每增加一个 Agent 都增加通信开销和协调复杂度。最佳实践是从一个 Agent 开始，遇到明确瓶颈才拆分。原文建议初始阶段限制在 3–5 个 Agent。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“用 LLM 做所有协调决策。”</h3><p>LLM 协调灵活但慢且贵。确定性的任务路由用代码规则更可靠。混合方式最佳：简单路由用代码，复杂判断用 LLM。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>如何处理 Agent 间的目标冲突？</h3><p>明确优先级规则（如安全 &gt; 效率 &gt; 成本）；引入仲裁 Agent 或投票机制；把冲突升级给人类决策者。系统性的冲突解决机制见第 035 题。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>分布式 Agent 系统如何保证一致性？</h3><p>非关键系统接受最终一致即可。关键操作（如金融交易）使用事务性协调：先锁定资源，再执行操作，最后确认或回滚。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《如何设计 Agent 间的任务分配与协调？》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://apxml.com/courses/agentic-llm-memory-architectures/chapter-5-multi-agent-systems/coordination-mechanisms-mas" target="_blank" rel="noopener noreferrer">Coordination Mechanisms in Multi-Agent Systems (APXML)</a></li>
+          <li><a href="https://galileo.ai/blog/multi-agent-coordination-strategies" target="_blank" rel="noopener noreferrer">Multi-Agent Coordination: Fix With 10 Strategies (Galileo)</a></li>
+          <li><a href="https://arxiv.org/html/2508.04332v1" target="_blank" rel="noopener noreferrer">DRAMA: Dynamic and Robust Allocation-based Multi-Agent System (arXiv)</a></li>
+          <li><a href="https://arxiv.org/html/2504.02051v1" target="_blank" rel="noopener noreferrer">Self-Resource Allocation in Multi-Agent LLM Systems (arXiv)</a></li>
+          <li><a href="https://arxiv.org/html/2501.06322v1" target="_blank" rel="noopener noreferrer">Multi-Agent Collaboration Mechanisms: A Survey (arXiv)</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>04-multi-agent/034-task-allocation-coordination.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 4 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const TA_MAX_TIME = 15;
+  const TA_WORKERS = Object.freeze([
+    { id: "R", name: "研究员" },
+    { id: "A", name: "分析员" },
+    { id: "W", name: "写手" },
+    { id: "V", name: "审阅员" }
+  ]);
+  const TA_TASKS = Object.freeze([
+    { id: "T1", name: "检索 3 家厂商数据", type: "search", deps: [], worker: "R" },
+    { id: "T2", name: "对比分析", type: "analyze", deps: ["T1"], worker: "A" },
+    { id: "T3", name: "制作对比图表", type: "visualize", deps: ["T1"], worker: "W" },
+    { id: "T4", name: "撰写简报", type: "report", deps: ["T2", "T3"], worker: "W" },
+    { id: "T5", name: "事实核查", type: "review", deps: ["T4"], worker: "V" }
+  ]);
+  const TA_TIMELINE = Object.freeze({
+    central: {
+      T1: { start: 2, end: 5 }, T2: { start: 5, end: 9 }, T3: { start: 5, end: 8 },
+      T4: { start: 9, end: 12 }, T5: { start: 12, end: 14 }
+    },
+    dynamic: {
+      T1: { start: 0.5, end: 3.5 }, T2: { start: 3.5, end: 7.5 }, T3: { start: 3.5, end: 6.5 },
+      T4: { start: 7.5, end: 10.5 }, T5: { start: 10.5, end: 12.5 }
+    }
+  });
+  const TA_MODES = Object.freeze({
+    central: {
+      label: "集中式规划",
+      steps: [
+        {
+          clock: 2, title: "先排好五个子任务。",
+          desc: "规划器先拆出五个子任务，算出依赖和批次，再把整张计划交给执行器。第一步只启动没有依赖的检索任务。",
+          boundary: "规划器只拆任务和排批次，不替执行 Agent 干活；执行 Agent 只领自己那一格。",
+          decision: { kind: "plan", note: "整张计划一次排完：T1 → (T2 ∥ T3) → T4 → T5。" },
+          log: "规划完成 · 派发 T1 给研究员"
+        },
+        {
+          clock: 5, title: "第一批并行：分析 + 图表。",
+          desc: "检索完成后，T2 和 T3 的依赖同时满足，在同一批并行启动。两个任务分别占用分析员和写手，互不等待。",
+          boundary: "同批任务之间没有依赖，可以同时执行；但它们都要等 T1 的结果，不能提前启动。",
+          decision: { kind: "plan", note: "批次 2：T2 分析员，T3 写手，同时启动。" },
+          log: "T1 完成 · 并行派发 T2 和 T3"
+        },
+        {
+          clock: 8, title: "图表先完成，分析还在跑。",
+          desc: "T3 在 +8s 完成，T2 要到 +9s 才完成。T4 依赖两者，所以此刻仍在等待，不能提前开工。",
+          boundary: "一个前驱完成不等于全部前驱完成；T4 必须等 T2 和 T3 都结束。",
+          decision: { kind: "plan", note: "T3 已完成；T2 执行中；T4 等待依赖。" },
+          log: "T3 完成 · T2 仍在执行"
+        },
+        {
+          clock: 9, title: "依赖齐了，写手接简报。",
+          desc: "T2 和 T3 都完成，T4 启动，交给写手。此时研究员和分析员都空闲，但计划里没有给它们新任务。",
+          boundary: "集中式计划不会因为某个 Agent 空闲就临时改派；空闲是计划内的结果。",
+          decision: { kind: "plan", note: "批次 3：T4 写手启动。" },
+          log: "T2 完成 · 派发 T4 给写手"
+        },
+        {
+          clock: 12, title: "简报完成，进入核查。",
+          desc: "T4 完成，T5 启动，交给审阅员。写手空闲下来；审阅员只做核查，不改写简报。",
+          boundary: "审阅员的角色约束是只提意见或核查，不直接修改别人的产出。",
+          decision: { kind: "plan", note: "批次 4：T5 审阅员启动。" },
+          log: "T4 完成 · 派发 T5 给审阅员"
+        },
+        {
+          clock: 14, title: "全部完成，聚合结果。",
+          desc: "T5 完成，五个任务全部结束。执行器把各子任务输出合并成最终简报，并附上每个任务的执行记录。",
+          boundary: "聚合由协调器负责；执行 Agent 只交自己的产物，不负责最终合并。",
+          decision: { kind: "plan", note: "5 / 5 完成；聚合输出最终简报。" },
+          log: "T5 完成 · 聚合 5 份产物"
+        }
+      ]
+    },
+    dynamic: {
+      label: "动态分配",
+      steps: [
+        {
+          clock: 0.5, title: "不排全表，先把 T1 发出去。",
+          desc: "动态分配器不为整张图预先排期。T1 没有依赖，立即按能力、亲和度、负载和空闲程度算分，选研究员执行。",
+          boundary: "动态分配只在任务就绪时做决定；此刻 T2–T5 还没有分配结果。",
+          decision: {
+            kind: "score", task: "T1 检索",
+            rows: [["研究员 R", 0.92, true], ["分析员 A", 0.55, false], ["写手 W", 0.40, false], ["审阅员 V", 0.50, false]],
+            formula: "0.4×能力 + 0.3×亲和度 + 0.2×空闲度 + 0.1×近期空闲"
+          },
+          log: "T1 就绪 · 选研究员 R（0.92）"
+        },
+        {
+          clock: 3.5, title: "两个任务同时就绪，各算各的。",
+          desc: "T1 完成后，T2 和 T3 同时就绪。分配器为两者分别算分：分析员拿到 T2，写手拿到 T3，两个任务并行启动。",
+          boundary: "两个决策互不等待；但它们共享同一批 Agent，分配器要避免把两个任务塞给同一个 Agent 造成排队。",
+          decision: {
+            kind: "score", task: "T2 分析 / T3 图表",
+            rows: [["T2 → 分析员 A", 0.88, true], ["T2 → 研究员 R", 0.61, false], ["T3 → 写手 W", 0.82, true], ["T3 → 分析员 A", 0.78, false]],
+            formula: "同一公式分别计算；T2 选 A，T3 选 W"
+          },
+          log: "并行派发 T2→A、T3→W"
+        },
+        {
+          clock: 6.5, title: "T3 完成，T4 还不能开工。",
+          desc: "T3 在 +6.5s 完成，T2 仍在执行。T4 依赖 T2 和 T3，所以分配器现在不分配 T4，只把它标为等待依赖。",
+          boundary: "动态不等于提前：依赖没满足就不分配，避免执行 Agent 空转或拿到不完整输入。",
+          decision: { kind: "wait", note: "T4 等待 T2；此刻不做分配决策。" },
+          log: "T3 完成 · T4 等待 T2"
+        },
+        {
+          clock: 7.5, title: "T2 完成，T4 立即算分。",
+          desc: "T2 完成后，T4 就绪。分配器重新算分，写手的报告能力最高，拿到 T4，启动撰写。",
+          boundary: "每次就绪都重新算分；历史分数和当前负载都可能改变结果。",
+          decision: {
+            kind: "score", task: "T4 撰写",
+            rows: [["写手 W", 0.84, true], ["分析员 A", 0.66, false], ["审阅员 V", 0.60, false], ["研究员 R", 0.35, false]],
+            formula: "T4 选写手 W（0.84）"
+          },
+          log: "T2 完成 · 派发 T4 给写手 W"
+        },
+        {
+          clock: 10.5, title: "简报完成，核查就绪。",
+          desc: "T4 完成，T5 就绪。审阅员在事实核查项上的分数最高，拿到 T5。",
+          boundary: "审阅员只核查，不改写；角色约束优先于分数，分数再高也不能越过权限。",
+          decision: {
+            kind: "score", task: "T5 核查",
+            rows: [["审阅员 V", 0.95, true], ["分析员 A", 0.70, false], ["写手 W", 0.55, false], ["研究员 R", 0.50, false]],
+            formula: "T5 选审阅员 V（0.95）"
+          },
+          log: "T4 完成 · 派发 T5 给审阅员 V"
+        },
+        {
+          clock: 12.5, title: "全部完成，聚合输出。",
+          desc: "T5 完成，五个任务全部结束。相比集中式，动态轨迹在 +0.5s 就启动 T1，总完成时间提前到 +12.5s；这是固定教学时间，不是实测加速比。",
+          boundary: "聚合仍由协调器负责；动态分配改变的是“何时、由谁执行”，不改变最终合并责任。",
+          decision: { kind: "plan", note: "5 / 5 完成；聚合输出最终简报。" },
+          log: "T5 完成 · 聚合 5 份产物"
+        }
+      ]
+    }
+  });
+
+  const taState = { mode: "central", step: 0 };
+  const taById = (id) => document.getElementById(id);
+  const TA_NAMES = Object.fromEntries(TA_WORKERS.map((w) => [w.id, w.name]));
+
+  function taTaskStatus(modeKey, stepIndex, task) {
+    const steps = TA_MODES[modeKey].steps;
+    const time = steps[stepIndex].clock;
+    const span = TA_TIMELINE[modeKey][task.id];
+    if (time >= span.end) return { key: "done", label: "已完成" };
+    if (time >= span.start) return { key: "run", label: "执行中" };
+    if (modeKey === "central") return { key: "plan", label: "已排期" };
+    const ready = task.deps.every((dep) => {
+      const depSpan = TA_TIMELINE[modeKey][dep];
+      return time >= depSpan.end;
+    });
+    return { key: "wait", label: ready ? "待分配" : "等待依赖" };
+  }
+
+  function taRenderAxis() {
+    const axis = taById("ta-axis");
+    axis.textContent = "";
+    [0, 3, 6, 9, 12, 15].forEach((tick) => {
+      const mark = document.createElement("span");
+      mark.className = "ta-axis-tick";
+      mark.style.left = (tick / TA_MAX_TIME) * 100 + "%";
+      mark.textContent = "+" + tick + "s";
+      axis.append(mark);
+    });
+  }
+
+  function taRenderLanes() {
+    const host = taById("ta-lanes");
+    host.textContent = "";
+    const timeline = TA_TIMELINE[taState.mode];
+    const clock = TA_MODES[taState.mode].steps[taState.step].clock;
+    TA_WORKERS.forEach((worker) => {
+      const lane = document.createElement("div");
+      lane.className = "ta-lane";
+      const label = document.createElement("div");
+      label.className = "ta-lane-label";
+      const name = document.createElement("b");
+      name.textContent = worker.name;
+      const code = document.createElement("span");
+      code.textContent = worker.id + " · " + TA_TASKS.filter((task) => task.worker === worker.id).length + " 个任务";
+      label.append(name, code);
+      const track = document.createElement("div");
+      track.className = "ta-track";
+      TA_TASKS.filter((task) => task.worker === worker.id).forEach((task) => {
+        const span = timeline[task.id];
+        const status = taTaskStatus(taState.mode, taState.step, task);
+        if (taState.mode === "dynamic" && clock < span.start) return;
+        const bar = document.createElement("div");
+        bar.className = "ta-bar " + status.key;
+        bar.style.left = (span.start / TA_MAX_TIME) * 100 + "%";
+        bar.style.width = ((span.end - span.start) / TA_MAX_TIME) * 100 + "%";
+        bar.textContent = task.id + " · " + span.start + "–" + span.end + "s";
+        bar.title = `${task.id} ${task.name} · ${TA_NAMES[task.worker]} · ${status.label}`;
+        track.append(bar);
+      });
+      lane.append(label, track);
+      host.append(lane);
+    });
+  }
+
+  function taRenderTasks() {
+    const list = taById("ta-tasks");
+    list.textContent = "";
+    TA_TASKS.forEach((task) => {
+      const status = taTaskStatus(taState.mode, taState.step, task);
+      if (taState.mode === "dynamic" && status.key === "wait" && taState.step === 0 && task.id !== "T1") return;
+      const item = document.createElement("li");
+      item.className = "ta-task" + (status.key === "run" ? " is-now" : "");
+      const id = document.createElement("span");
+      id.className = "ta-task-id";
+      id.textContent = task.id;
+      const main = document.createElement("div");
+      main.className = "ta-task-main";
+      const name = document.createElement("b");
+      name.textContent = task.name;
+      const deps = document.createElement("span");
+      const unassigned = taState.mode === "dynamic" && taState.step < 5 && TA_MODES.dynamic.steps[taState.step].clock < TA_TIMELINE.dynamic[task.id].start;
+      const workerText = unassigned ? "未分配" : TA_NAMES[task.worker];
+      deps.textContent = (task.deps.length ? "依赖 " + task.deps.join(" + ") : "无依赖") + " · " + workerText;
+      main.append(name, deps);
+      const badge = document.createElement("span");
+      badge.className = "ta-badge " + status.key;
+      badge.textContent = status.label;
+      item.append(id, main, badge);
+      list.append(item);
+    });
+    if (taState.mode === "dynamic" && taState.step === 0) {
+      const note = document.createElement("li");
+      note.className = "ta-task";
+      note.textContent = "T2–T5 尚未分配：动态分配不提前展示未来的选择结果。";
+      list.append(note);
+    }
+  }
+
+  function taRenderDecision() {
+    const step = TA_MODES[taState.mode].steps[taState.step];
+    const host = taById("ta-decision");
+    host.textContent = "";
+    const head = document.createElement("div");
+    head.className = "ta-decision-head";
+    const label = document.createElement("b");
+    label.textContent = step.decision.kind === "score" ? "分配决策 · " + step.decision.task : "协调决策";
+    const note = document.createElement("span");
+    note.textContent = step.decision.note || "";
+    head.append(label);
+    host.append(head);
+
+    if (step.decision.kind === "score") {
+      const table = document.createElement("table");
+      table.className = "ta-scores";
+      const thead = document.createElement("thead");
+      const hr = document.createElement("tr");
+      ["候选", "总分", "选中"].forEach((text) => {
+        const th = document.createElement("th");
+        th.scope = "col";
+        th.textContent = text;
+        hr.append(th);
+      });
+      thead.append(hr);
+      table.append(thead);
+      const tbody = document.createElement("tbody");
+      step.decision.rows.forEach(([name, score, chosen]) => {
+        const tr = document.createElement("tr");
+        if (chosen) tr.className = "chosen";
+        const tdName = document.createElement("td");
+        tdName.textContent = name;
+        const tdScore = document.createElement("td");
+        tdScore.className = "num";
+        tdScore.textContent = score.toFixed(2);
+        const tdChosen = document.createElement("td");
+        tdChosen.textContent = chosen ? "是" : "否";
+        tr.append(tdName, tdScore, tdChosen);
+        tbody.append(tr);
+      });
+      table.append(tbody);
+      host.append(table);
+      const formula = document.createElement("p");
+      formula.className = "ta-formula";
+      formula.textContent = step.decision.formula;
+      host.append(formula);
+    } else {
+      const noteBody = document.createElement("p");
+      noteBody.className = "ta-formula";
+      noteBody.textContent = step.decision.note;
+      host.append(noteBody);
+    }
+  }
+
+  function taRenderLog() {
+    const host = taById("ta-log");
+    host.textContent = "";
+    const steps = TA_MODES[taState.mode].steps;
+    steps.slice(0, taState.step + 1).forEach((step, index) => {
+      const item = document.createElement("li");
+      if (index === taState.step) item.className = "is-now";
+      const time = document.createElement("b");
+      time.textContent = "+" + step.clock + "s";
+      const text = document.createElement("span");
+      text.textContent = step.log;
+      item.append(time, text);
+      host.append(item);
+    });
+  }
+
+  function taRender() {
+    const mode = TA_MODES[taState.mode];
+    const step = mode.steps[taState.step];
+    taRenderAxis();
+    taRenderLanes();
+    taRenderTasks();
+    taRenderDecision();
+    taRenderLog();
+
+    const running = TA_TASKS.filter((task) => taTaskStatus(taState.mode, taState.step, task).key === "run").length;
+    const done = TA_TASKS.filter((task) => taTaskStatus(taState.mode, taState.step, task).key === "done").length;
+    taById("ta-clock").textContent = "+" + step.clock + "s";
+    taById("ta-running").textContent = String(running);
+    taById("ta-done").textContent = done + " / 5";
+    taById("ta-figure").textContent = `图 1 · ${mode.label} · 第 ${taState.step + 1} / 6 步`;
+    taById("ta-caption-title").textContent = step.title;
+    taById("ta-desc").textContent = step.desc;
+    taById("ta-boundary").textContent = "";
+    const boundaryLabel = document.createElement("b");
+    boundaryLabel.textContent = "角色边界：";
+    taById("ta-boundary").append(boundaryLabel, document.createTextNode(step.boundary));
+
+    document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+      if (Number(button.dataset.step) === taState.step) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    document.querySelectorAll("#explainer [data-mode]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.mode === taState.mode));
+    });
+    taById("ta-prev").disabled = taState.step === 0;
+    taById("ta-next").disabled = taState.step === 5;
+    taById("ta-state-summary").textContent = `${mode.label} · 第 ${taState.step + 1} / 6 步 · 没有连接 Agent`;
+  }
+
+  function taAnnounce(prefix) {
+    const mode = TA_MODES[taState.mode];
+    const step = mode.steps[taState.step];
+    taById("ta-announcement").textContent = `${prefix}${mode.label}，第 ${taState.step + 1} 步，共 6 步。${step.title}`;
+  }
+
+  document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+    button.addEventListener("click", () => {
+      taState.step = Number(button.dataset.step);
+      taRender();
+      taAnnounce("");
+    });
+  });
+  document.querySelectorAll("#explainer [data-mode]").forEach((button) => {
+    button.addEventListener("click", () => {
+      taState.mode = button.dataset.mode;
+      taState.step = 0;
+      taRender();
+      taAnnounce("");
+    });
+  });
+  taById("ta-prev").addEventListener("click", () => {
+    taState.step = Math.max(0, taState.step - 1);
+    taRender();
+    taAnnounce("");
+  });
+  taById("ta-next").addEventListener("click", () => {
+    taState.step = Math.min(5, taState.step + 1);
+    taRender();
+    taAnnounce("");
+  });
+  taById("ta-reset").addEventListener("click", () => {
+    taState.mode = "central";
+    taState.step = 0;
+    taRender();
+    taAnnounce("已重置。");
+  });
+  taRender();
+</script>
+</body>
+</html>

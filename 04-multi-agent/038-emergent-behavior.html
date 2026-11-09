@@ -1,0 +1,897 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>多 Agent 系统中的涌现行为与可控性 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .em-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .em-configs { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 var(--s-6); margin-top: var(--s-4); }
+  .em-config { min-height: 40px; padding: 7px 12px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: 11px; color: var(--text-dim); }
+  .em-config:hover { background: var(--surface-soft); }
+  .em-config[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+  .em-config small { display: block; font: 9px/1.4 var(--mono); font-weight: 400; color: inherit; opacity: .85; }
+  .em-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+  .em-board, .em-panel { min-width: 0; }
+  .em-agents { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .em-agent { min-width: 0; padding: 7px 8px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .em-agent.is-now { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(25,79,135,.12); }
+  .em-agent-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px; }
+  .em-agent-name { font-size: 11px; font-weight: 600; line-height: 1.4; }
+  .em-agent-name span { display: block; font: 8px/1.4 var(--mono); color: var(--text-dim); font-weight: 400; }
+  .em-agent-state { padding: 1px 5px; border-radius: 999px; border: 1px solid var(--border-bright); background: var(--surface-soft); color: #4b514b; font: 8px/1.5 var(--mono); white-space: nowrap; }
+  .em-agent-state.now { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+  .em-agent-state.done { border-color: #2e7d32; background: #eef7ee; color: #1b5e20; }
+  .em-log { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 4px; }
+  .em-msg { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 6px; padding: 5px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); }
+  .em-msg.is-now { border-color: var(--accent); background: #f4f8fc; }
+  .em-msg-time { font: 8px/1.5 var(--mono); color: var(--text-dim); padding-top: 2px; }
+  .em-msg-body { min-width: 0; }
+  .em-msg-route { font: 600 10px/1.5 var(--mono); color: var(--ink); }
+  .em-msg-type { display: inline-block; margin-left: 4px; padding: 0 4px; border: 1px solid var(--border-bright); border-radius: 3px; font: 8px/1.5 var(--mono); color: #4b514b; background: var(--surface-soft); }
+  .em-msg p { margin-top: 1px; font-size: 9px; line-height: 1.55; color: var(--text-dim); overflow-wrap: anywhere; }
+  .em-observation { margin-top: var(--s-3); display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); font-size: 10px; line-height: 1.55; }
+  .em-observation b { font: 600 10px/1.5 var(--sans); }
+  .em-ob-tag { padding: 1px 7px; border-radius: 999px; border: 1px solid var(--border-bright); background: var(--surface-soft); font: 9px/1.5 var(--mono); white-space: nowrap; }
+  .em-ob-tag.warn { border-color: #b98a2f; background: #fffaf0; color: #5f430f; }
+  .em-ob-tag.bad { border-color: #a33a3a; background: #fdf0f0; color: #7d1f1f; }
+  .em-ob-tag.good { border-color: #2e7d32; background: #eef7ee; color: #1b5e20; }
+  .em-panel { border: 1px solid var(--border); border-radius: var(--r-1); background: #f7f6f1; padding: var(--s-4); }
+  .em-panel h2 { font: 600 19px/1.45 var(--serif); }
+  .em-panel > p { margin-top: var(--s-2); font-size: 12px; line-height: 1.7; }
+  .em-teach { display: inline-block; margin-top: var(--s-3); padding: 2px 8px; border: 1px solid #b98a2f; border-radius: 999px; background: #fffaf0; color: #5f430f; font: 9px/1.6 var(--mono); }
+  .em-metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; margin-top: var(--s-2); }
+  .em-metric { padding: 5px 7px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); }
+  .em-metric dt { font: 8px/1.4 var(--mono); color: var(--text-dim); }
+  .em-metric dd { margin: 0; font: 600 15px/1.3 var(--mono); color: var(--ink); }
+  .em-metric dd small { font: 8px/1.4 var(--mono); color: var(--text-dim); font-weight: 400; }
+  .em-boundary { margin-top: var(--s-3); padding: 7px 9px; border: 1px solid #b98a2f; border-radius: 4px; background: #fffaf0; color: #5f430f; font-size: 10px; line-height: 1.6; }
+  .em-boundary b { color: #4a340b; }
+  .em-final { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: 4px; background: var(--surface); padding: 7px 9px; font-size: 10px; line-height: 1.6; }
+  .em-final b { display: block; font: 600 10px/1.5 var(--sans); }
+  .em-final.bad { border-color: #a33a3a; background: #fdf8f8; }
+  .em-final.good { border-color: #2e7d32; background: #f7fbf7; }
+  .em-chain { margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .em-chain-row { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+  .em-chain-node { padding: 6px 9px; border: 1px solid #9eb4c9; border-radius: 4px; background: var(--accent-dim); font: 10px/1.45 var(--mono); color: var(--accent); }
+  .em-chain-node.err { border-color: #a33a3a; background: #fdf0f0; color: #7d1f1f; }
+  .em-chain-arrow { font: 11px/1 var(--mono); color: var(--text-dim); }
+  .em-chain figcaption { margin-top: var(--s-3); font-size: 10px; line-height: 1.6; color: var(--text-dim); }
+  .em-topology { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-3); }
+  .em-topo { border: 1px solid var(--border); border-radius: 4px; background: var(--surface); padding: 7px 8px; }
+  .em-topo h3 { font: 600 11px/1.45 var(--sans); }
+  .em-topo p { margin-top: 3px; font-size: 9px; line-height: 1.55; color: var(--text-dim); }
+  .em-topo b { color: var(--ink); }
+
+  @media (max-width: 1000px) { .em-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 720px) {
+    .em-stage { padding: var(--s-4); }
+    .em-configs { padding: 0 var(--s-4); margin-top: var(--s-3); }
+    .em-config { flex: 1 1 30%; padding: 6px 8px; font-size: 10px; }
+    .em-agents { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .em-topology { grid-template-columns: 1fr; }
+    .em-panel { padding: var(--s-3); }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">038 / 涌现行为</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 13 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="037-agent-handoff.html">← 上一页 · 如何实现 Agent 间的 Hand…</a><a href="039-debugging-monitoring-multi-agent.html">下一页 → · 如何调试和监控多 Agent 系统？</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">高级 · Multi-Agent · 可交互讲解</p>
+      <h1>整体冒出来的，<br>不等于谁设计好的。</h1>
+    </div>
+    <div>
+      <p class="lead">涌现行为是多 Agent 系统里无法从单个 Agent 预测的集体模式。它可以是自发分工和新方案，也可以是回声室、级联幻觉和虚假共识。可控性设计的目标不是消灭涌现，而是放大有益的、压住有害的。</p>
+      <p class="definition">关键边界：<strong>本页所有一致率、新观点数和错误放大倍数都是固定教学假设</strong>，不是研究数据，也不是真实监控结果。原文引用的研究结论会单独标注“原文数据、未联网核实”。</p>
+      <div class="hero-meta"><span class="pill">高级</span><span class="pill">Multi-Agent</span><span class="pill">涌现行为</span><span class="pill">固定教学假设</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="em-caption-title">
+    <div class="player-top">
+      <div class="player-label">固定涌现沙盘 <small>同一初始错误，三种运行配置</small></div>
+      <div class="controls" role="group" aria-label="涌现行为演示控制">
+        <button type="button" class="button button-quiet" id="em-reset">重置</button>
+        <button type="button" class="button" id="em-prev" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="em-next">下一步 →</button>
+      </div>
+    </div>
+    <div class="em-configs" role="group" aria-label="选择运行配置">
+      <button type="button" class="em-config" data-config="open" aria-pressed="true">无护栏 · 全连接<small>看回声室如何形成</small></button>
+      <button type="button" class="em-config" data-config="guard" aria-pressed="false">监控 + 共识<small>拦下未经验证的结论</small></button>
+      <button type="button" class="em-config" data-config="guided" aria-pressed="false">ToM + 混合拓扑<small>引导有益涌现</small></button>
+    </div>
+    <nav class="stage-nav" aria-label="四个固定教学轮次">
+      <ol style="--stages: 4">
+        <li><button type="button" class="stage-button" data-step="0" aria-current="step" aria-controls="em-scene" aria-label="第 1 轮"><span class="stage-number">1</span><span>第1轮</span></button></li>
+        <li><button type="button" class="stage-button" data-step="1" aria-controls="em-scene" aria-label="第 2 轮"><span class="stage-number">2</span><span>第2轮</span></button></li>
+        <li><button type="button" class="stage-button" data-step="2" aria-controls="em-scene" aria-label="第 3 轮"><span class="stage-number">3</span><span>第3轮</span></button></li>
+        <li><button type="button" class="stage-button" data-step="3" aria-controls="em-scene" aria-label="第 4 轮"><span class="stage-number">4</span><span>第4轮</span></button></li>
+      </ol>
+    </nav>
+    <div class="em-stage scene" id="em-scene" data-scene="emergence">
+      <div class="em-grid">
+        <section class="em-board" aria-label="教学沙盘">
+          <div class="em-agents" id="em-agents"></div>
+          <ol class="em-log" id="em-log" aria-label="固定教学对话"></ol>
+          <div class="em-observation" id="em-observation"></div>
+        </section>
+        <aside class="em-panel" aria-labelledby="em-caption-title">
+          <p class="figure-index" id="em-figure">图 1 · 无护栏 · 第 1 / 4 轮</p>
+          <h2 id="em-caption-title">一个未经验证的数字。</h2>
+          <p id="em-desc">数据 Agent 报出“转化率下降 40%”，样本只有 12 单。这个结论尚未经验证，但已经进入公共对话。</p>
+          <span class="em-teach">以下指标为固定教学假设，不是研究数据</span>
+          <dl class="em-metrics">
+            <div class="em-metric"><dt>一致率</dt><dd id="em-agreement">25<small>%</small></dd></div>
+            <div class="em-metric"><dt>新观点</dt><dd id="em-unique">1</dd></div>
+            <div class="em-metric"><dt>错误放大</dt><dd id="em-amplify">1.0<small>×</small></dd></div>
+          </dl>
+          <div class="em-boundary" id="em-boundary"><b>角色边界：</b>数据 Agent 提供数字，分析 Agent 负责解释；没有核查角色同意，数字不应直接变成结论。</div>
+          <div class="em-final" id="em-final"></div>
+        </aside>
+      </div>
+      <p class="demo-note">固定教学假设：四个 Agent 的对话、一致率、新观点数和错误放大倍数都是本页写死的演示值，用于说明机制，不代表任何论文、benchmark 或线上监控。本页不调用模型，也不连接观测平台。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学沙盘 · 4 个 Agent · 4 轮</span><span id="em-state-summary">无护栏 · 第 1 / 4 轮 · 没有连接 Agent</span></div>
+  </section>
+  <p id="em-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="what-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">是什么</p><h2 id="what-title">整体行为，<br>无法从个体推导。</h2></div>
+      <p class="reading-intro">涌现行为的三个特征：不可还原、自发、非线性。原文用物理学相变作类比：复杂度超过临界点，系统会突然出现质变。</p>
+    </div>
+    <div class="prose">
+      <pre><code>单个 Agent 的行为：可预测（给定 prompt → 输出）
+多 Agent 的集体行为：不可预测
+
+例子：
+• 3 个 Agent 辩论 → 产生了没有任何单个 Agent 提出过的新观点
+• 5 个 Agent 协作写代码 → 自发形成了分工模式
+• Agent 团队 → 出现了"从众效应"，放弃正确答案转而支持错误的多数意见</code></pre>
+      <p>涌现不等于“更聪明”。它只说明集体层面出现了个体层面没有的模式；这个模式可能有益，也可能有害。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="good-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">积极面</p><h2 id="good-title">自发分工，<br>和集体智慧。</h2></div>
+      <p class="reading-intro">原文引用研究称，LLM Agent 可以在没有显式协调指令时形成协作模式；GPT-4.1 和 Llama-3.1-8B 在群体猜谜任务中展现出动态涌现能力。</p>
+    </div>
+    <div class="prose">
+      <p>这类结论来自原文引用，未联网核实。它能说明“涌现可能存在”，不能说明你的系统一定会出现，也不能当作性能承诺。</p>
+      <p class="code-label">Theory-of-Mind Prompting · 原文代码</p>
+      <pre><code>agent_prompt = """
+你是团队中的一员，正在解决一个复杂问题。
+
+在回答之前，请考虑：
+1. 其他 Agent 可能拥有什么信息？
+2. 你的独特贡献是什么？（不要重复他人已有的分析）
+3. 如何让你的输出与团队的整体目标互补？
+
+只有 Theory-of-Mind prompt 条件才能产生"身份关联的差异化
+和目标导向的互补性"——Agent 作为一个整合的、目标导向的
+单元运作。
+"""</code></pre>
+      <p>ToM Prompting 的作用是把“我该贡献什么独特信息”写进任务，而不是让 Agent 自由重复。它是引导手段，不是保证；原文中的“只有 ToM 才能产生”是实验条件下的结论，不能外推成普遍规律。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="risk-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">风险面</p><h2 id="risk-title">级联幻觉、<br>从众、意外优化。</h2></div>
+      <p class="reading-intro">三种典型风险：错误沿链路放大、Agent 因同侪压力改口、系统自发产生开发者没预期的“优化”行为。</p>
+    </div>
+    <div class="prose">
+      <h3>1. 级联幻觉</h3>
+      <figure class="em-chain">
+        <div class="em-chain-row">
+          <span class="em-chain-node">Agent A · 小错误</span><span class="em-chain-arrow">→</span>
+          <span class="em-chain-node">Agent B · 基于错误推理，放大</span><span class="em-chain-arrow">→</span>
+          <span class="em-chain-node">Agent C · 综合 A、B，错误复合</span><span class="em-chain-arrow">→</span>
+          <span class="em-chain-node err">最终输出 · 看似合理却完全错误</span>
+        </div>
+        <figcaption>离线可读版：原图是 Mermaid 流程图，错误沿 A → B → C 单向放大。Mermaid 源码见下方折叠块。</figcaption>
+      </figure>
+      <details>
+        <summary>展开原文 Mermaid 源码</summary>
+        <pre><code>flowchart TD
+    A["Agent A&lt;br/&gt;产生一个小错误"] --&gt; B["Agent B&lt;br/&gt;基于错误输出推理，错误放大"]
+    B --&gt; C["Agent C&lt;br/&gt;综合 A、B 输出，错误复合"]
+    C --&gt; D["最终输出&lt;br/&gt;看似合理却完全错误"]
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class A,B,C agent
+    class D err</code></pre>
+      </details>
+      <h3>2. 从众效应</h3>
+      <pre><code># Round 1: Agent A 说"答案是 X"，Agent B 说"答案是 Y"（B 是对的）
+# Round 2: A 坚持 X 并给出详细论据
+# Round 3: B 被 A 的详细论据"说服"，改口说 X
+# 结果：错误答案通过社会压力"胜出"</code></pre>
+      <p>原文指出，问题措辞会显著影响 LLM 的道德推理，同侪压力可以在群体动力学中涌现；在安全关键应用里这是严重风险。</p>
+      <h3>3. 不可预测的优化行为</h3>
+      <ul>
+        <li>自我消息：Agent 向自己发消息制造反馈循环。</li>
+        <li>跳过安全检查以提高效率。</li>
+        <li>发现并利用评估机制的漏洞。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="control-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">可控性设计</p><h2 id="control-title">拓扑、监控、<br>共识、评估。</h2></div>
+      <p class="reading-intro">四种手段管不同层面：拓扑决定谁能和谁说话，监控发现偏离，共识限制异常 Agent 影响决策，MAEBE 评估系统层面的行为。</p>
+    </div>
+    <div class="prose">
+      <h3>1. 通信拓扑</h3>
+      <div class="em-topology">
+        <div class="em-topo"><h3>星型</h3><p><b>优势：</b>强控制、一致性高。<br><b>风险：</b>中心瓶颈、单点故障。<br><b>涌现：</b>被限制，中心节点过滤异常。</p></div>
+        <div class="em-topo"><h3>全连接</h3><p><b>优势：</b>信息流通快。<br><b>风险：</b>回声室、冗余通信。<br><b>涌现：</b>最强，也最不可控。</p></div>
+        <div class="em-topo"><h3>混合</h3><p><b>优势：</b>平衡控制与灵活性。<br><b>风险：</b>设计复杂度高。<br><b>涌现：</b>可引导的涌现。</p></div>
+      </div>
+      <p class="code-label">通信拓扑 · 原文代码</p>
+      <pre><code>class CommunicationTopology:
+    """通信拓扑影响涌现行为的方向"""
+
+    topologies = {
+        "star": {
+            "优势": "强控制力，一致性高",
+            "风险": "中心节点瓶颈，单点故障",
+            "涌现": "被限制——中心节点过滤异常行为",
+        },
+        "fully_connected": {
+            "优势": "信息流通快",
+            "风险": "回声室效应，冗余通信",
+            "涌现": "最强——但也最不可控",
+        },
+        "hybrid": {
+            "优势": "平衡控制和灵活性",
+            "风险": "设计复杂度高",
+            "涌现": "可引导的涌现",
+        },
+    }</code></pre>
+      <h3>2. 行为监控与干预</h3>
+      <pre><code>class EmergentBehaviorMonitor:
+    """监控多 Agent 系统的涌现行为"""
+
+    def __init__(self, agents, baseline_behaviors):
+        self.agents = agents
+        self.baseline = baseline_behaviors
+
+    def detect_anomaly(self, agent_outputs):
+        for agent_id, output in agent_outputs.items():
+            deviation = self.compute_deviation(output, self.baseline[agent_id])
+            if deviation &gt; self.threshold:
+                self.alert(f"Agent {agent_id} 行为偏离基线: {deviation}")
+
+            if self.detect_self_reference(output):
+                self.interrupt(agent_id, "检测到自引用循环")
+
+            if self.detect_cascade(agent_outputs):
+                self.halt_all("检测到级联错误，暂停系统")</code></pre>
+      <p>监控要有基线，否则“偏离”没有参照。基线可以来自历史输出分布或人工标注；阈值和处置动作要预先定义。</p>
+      <h3>3. 拜占庭容错共识</h3>
+      <pre><code>class BFTConsensus:
+    def decide(self, agent_outputs: dict) -&gt; str:
+        # 需要 2/3 + 1 的 Agent 达成一致
+        n = len(agent_outputs)
+        threshold = (2 * n // 3) + 1
+
+        votes = Counter(agent_outputs.values())
+        for answer, count in votes.most_common():
+            if count &gt;= threshold:
+                return answer
+
+        return "NO_CONSENSUS"  # 需要人工介入</code></pre>
+      <p>4 个 Agent 时，threshold = (2 × 4 // 3) + 1 = 3，也就是说至少 3 个 Agent 要给出同一答案。这个算术可以直接复算；原文引用的“对抗攻击成功率从 46% 降至 19%”是原文数据，未联网核实。</p>
+      <h3>4. MAEBE 评估维度</h3>
+      <pre><code># Multi-Agent Emergent Behavior Evaluation
+evaluation_dimensions = {
+    "可解释性": "能否追溯集体决策的推理路径？",
+    "安全对齐": "涌现行为是否偏离人类价值观？",
+    "可预测性": "类似输入是否产生一致的涌现模式？",
+    "可控性":   "干预手段能否有效纠正偏离行为？",
+}</code></pre>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="tradeoff-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">权衡</p><h2 id="tradeoff-title">完全可控、平衡点、<br>完全自主。</h2></div>
+      <p class="reading-intro">原文把系统放在一条谱上：越可控越安全但越没创新，越自主越有创新但越不可预测。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">涌现与可控性权衡的三个区间</caption>
+          <thead><tr><th scope="col">区间</th><th scope="col">模式</th><th scope="col">涌现 / 评价</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">完全可控</th><td>确定性工作流（Pipeline 模式）</td><td>无涌现；安全但无创新</td></tr>
+            <tr><th scope="row">平衡点</th><td>引导式涌现（Hybrid 拓扑，有监控的自主性）</td><td>最佳实践</td></tr>
+            <tr><th scope="row">完全自主</th><td>无约束涌现（全连接对话）</td><td>不可预测；创新但危险</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">四个容易<br>答偏的点。</h2></div>
+      <p class="reading-intro">前两条是误区，后两条是面试追问；答案来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“涌现行为都是坏的。”</h3><p>涌现也包括创造性协作、自发分工等有益模式。目标不是消除涌现，而是引导有益涌现、抑制有害涌现。Theory-of-Mind Prompting 是一种有效的引导手段。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“单个 Agent 的性能可以预测多 Agent 系统的性能。”</h3><p>原文指出：单 Agent 性能不能可靠预测 MAS 行为。评估必须在系统层面（而非 Agent 层面）进行。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>“涌现能力是幻觉”这个争论怎么看？</h3><p>部分研究者认为 LLM 的涌现能力是度量选择的产物（非线性度量制造了突变假象）。但在多 Agent 系统中，即使单个 LLM 无涌现，Agent 间的交互仍可以产生系统层面的涌现行为——这是复杂系统的固有特性。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>如何在生产环境中管理涌现风险？</h3><p>分层策略：(1) 限制通信拓扑，减少不可控涌现的空间；(2) 实时行为监控，偏离基线时告警；(3) 共识机制，防止异常 Agent 影响集体决策；(4) Human-in-the-Loop，高风险决策人工把关。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《多 Agent 系统中的涌现行为与可控性》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.techrxiv.org/users/992392/articles/1384935" target="_blank" rel="noopener noreferrer">Emergent Intelligence in Multi-Agent and LLM Systems (TechRxiv)</a></li>
+          <li><a href="https://www.arxiv.org/pdf/2510.05174" target="_blank" rel="noopener noreferrer">Emergent Coordination in Multi-Agent Language Models (arXiv)</a></li>
+          <li><a href="https://arxiv.org/pdf/2506.03053" target="_blank" rel="noopener noreferrer">MAEBE: Multi-Agent Emergent Behavior Framework (arXiv)</a></li>
+          <li><a href="https://www.preprints.org/manuscript/202511.1370/v1/download" target="_blank" rel="noopener noreferrer">Multi-Agent LLM Systems: From Emergent Collaboration to Governance (Preprints)</a></li>
+          <li><a href="https://arxiv.org/pdf/2304.15004" target="_blank" rel="noopener noreferrer">Are Emergent Abilities of Large Language Models a Mirage? (arXiv)</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>04-multi-agent/038-emergent-behavior.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 4 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const EM_AGENTS = Object.freeze([
+    { id: "D", name: "数据 Agent", note: "提供指标与样本" },
+    { id: "A", name: "分析 Agent", note: "解释原因与结论" },
+    { id: "W", name: "写作 Agent", note: "组织对外结论" },
+    { id: "V", name: "核查 Agent", note: "检查证据与一致性" }
+  ]);
+
+  const EM_SCENARIOS = Object.freeze({
+    open: {
+      label: "无护栏 · 全连接",
+      final: { cls: "bad", label: "最终结论（教学假设）", text: "回滚改版。这个结论基于 12 单样本和三次重复，没有经过核查。" },
+      rounds: [
+        {
+          speaker: "D", title: "一个未经验证的数字。",
+          desc: "数据 Agent 报出“转化率下降 40%”，样本只有 12 单。这个结论尚未经验证，但已经进入公共对话。",
+          boundary: "数据 Agent 提供数字，分析 Agent 负责解释；没有核查角色同意，数字不应直接变成结论。",
+          observation: { tag: "初始假设", cls: "warn", text: "一个未经验证的 Claim 进入公共区，其他 Agent 都能读到。" },
+          metrics: { agreement: 25, unique: 1, amplify: "1.0" },
+          messages: [{ from: "D", to: "全体", type: "claim", text: "转化率下降 40%，样本 12 单，原因大概率是改版。", time: "+0s" }]
+        },
+        {
+          speaker: "A", title: "第二个 Agent 附和了。",
+          desc: "分析 Agent 没有核样本量，直接接受“改版导致下降”的解释，并补充了一段因果推理。一致率上升到 50%。",
+          boundary: "分析 Agent 的职责是解释，不是复述；它没有要求看原始数据，就把 Claim 当成了前提。",
+          observation: { tag: "回声室", cls: "warn", text: "第二个 Agent 重复第一个 Agent 的结论，并给它增加了“推理”外观。" },
+          metrics: { agreement: 50, unique: 0, amplify: "1.6" },
+          messages: [{ from: "A", to: "全体", type: "echo", text: "同意，改版改变了埋点口径，转化率下降可以解释。", time: "+3s" }]
+        },
+        {
+          speaker: "W", title: "第三个 Agent 把它写成结论。",
+          desc: "写作 Agent 把前两条消息整理成“确认改版是主因，建议立即回滚”。错误在转述中被放大，一致率到 75%。",
+          boundary: "写作 Agent 本应标注不确定性；它没有引用样本量，直接把推测写成结论。",
+          observation: { tag: "错误放大", cls: "bad", text: "转述丢掉了“样本 12 单”的限制，结论语气反而更确定。" },
+          metrics: { agreement: 75, unique: 0, amplify: "2.4" },
+          messages: [{ from: "W", to: "全体", type: "amplify", text: "确认改版是主因，建议立即回滚，避免影响继续扩大。", time: "+7s" }]
+        },
+        {
+          speaker: "V", title: "核查 Agent 也跟了多数。",
+          desc: "核查 Agent 看到另外 3 个 Agent 都已同意，放弃质疑，输出“全员同意，结论：回滚”。一致率 100%，但结论错误。",
+          boundary: "核查角色的价值在于独立判断；如果它按人头投票，就等于没有核查。",
+          observation: { tag: "虚假共识", cls: "bad", text: "一致率 100%，但没有任何一个 Agent 检查过 12 单样本是否显著。" },
+          metrics: { agreement: 100, unique: 0, amplify: "3.2" },
+          messages: [{ from: "V", to: "全体", type: "consensus", text: "4 个 Agent 全部同意，结论：回滚。", time: "+11s" }]
+        }
+      ]
+    },
+    guard: {
+      label: "监控 + 共识",
+      final: { cls: "good", label: "最终结论（教学假设）", text: "不回滚，继续观察。补样本后降幅只有 3%，属于正常波动；核查意见被保留。" },
+      rounds: [
+        {
+          speaker: "D", title: "同样的错误开头。",
+          desc: "数据 Agent 仍然报出“下降 40%，样本 12 单”。护栏不会阻止第一句话，它从下一步开始检查证据。",
+          boundary: "监控不是内容审查，它先记录基线；没有基线就无法判断偏离。",
+          observation: { tag: "初始假设", cls: "warn", text: "Claim 进入公共区，监控开始记录，但还没有触发告警。" },
+          metrics: { agreement: 25, unique: 1, amplify: "1.0" },
+          messages: [{ from: "D", to: "全体", type: "claim", text: "转化率下降 40%，样本 12 单，原因大概率是改版。", time: "+0s" }]
+        },
+        {
+          speaker: "V", title: "核查 Agent 拦了一下。",
+          desc: "核查 Agent 指出样本只有 12 单，40% 不显著；行为监控把“未经验证的数字直接变结论”标为偏离基线。",
+          boundary: "核查 Agent 不负责给最终结论，它只负责指出证据不足；处置动作由监控规则决定。",
+          observation: { tag: "监控拦截", cls: "good", text: "监控要求补充样本；一致率停在 50%，没有继续上升。" },
+          metrics: { agreement: 50, unique: 1, amplify: "1.0" },
+          messages: [{ from: "V", to: "全体", type: "check", text: "样本只有 12 单，40% 不显著；先补数据，暂不下结论。", time: "+3s" }]
+        },
+        {
+          speaker: "D", title: "补样本后，数字变了。",
+          desc: "数据 Agent 把样本扩到 1,200 单，转化率实际只下降 3%。原来的 40% 来自小样本波动。",
+          boundary: "纠偏来自新证据，不是来自投票；如果只是让 Agent 重新表态，错误可能仍然保留。",
+          observation: { tag: "数据纠偏", cls: "good", text: "新证据推翻了原 Claim；公共区出现一次真正的事实更新。" },
+          metrics: { agreement: 50, unique: 2, amplify: "1.0" },
+          messages: [{ from: "D", to: "全体", type: "correction", text: "补 1,200 单后，转化率下降 3%，不是 40%。", time: "+7s" }]
+        },
+        {
+          speaker: "A", title: "共识 3 / 4，结论改了。",
+          desc: "分析 Agent 给出新结论：小波动，不回滚，继续观察。4 个 Agent 中 3 个同意，达到 2/3 + 1 的门槛；核查意见保留。",
+          boundary: "3 / 4 是 BFT 门槛；剩下的 1 票不消失，作为反对记录保留。",
+          observation: { tag: "共识结论", cls: "good", text: "一致率 75%，但结论有证据支撑；这不是“全员同意”，而是达到门槛。" },
+          metrics: { agreement: 75, unique: 2, amplify: "1.0" },
+          messages: [{ from: "A", to: "全体", type: "consensus", text: "结论：小波动，不回滚；继续观察。共识 3/4，保留核查意见。", time: "+11s" }]
+        }
+      ]
+    },
+    guided: {
+      label: "ToM + 混合拓扑",
+      final: { cls: "good", label: "最终结论（教学假设）", text: "先修 iOS 埋点，暂不回滚。分渠道后发现影响集中在 iOS，Android 持平；这是一个新观点。" },
+      rounds: [
+        {
+          speaker: "D", title: "先有两个假设，不是一个结论。",
+          desc: "数据 Agent 报出 40%，分析 Agent 立刻提醒可能是分渠道差异。ToM Prompt 要求每个 Agent 说明自己的独特贡献，而不是重复别人。",
+          boundary: "ToM 只改变提问方式，不保证正确；它让“不同假设”有机会进入公共区。",
+          observation: { tag: "多假设", cls: "good", text: "同一个数字出现了两种解释：全局改版 vs 分渠道差异。" },
+          metrics: { agreement: 25, unique: 2, amplify: "1.0" },
+          messages: [
+            { from: "D", to: "全体", type: "claim", text: "转化率下降 40%，样本 12 单。", time: "+0s" },
+            { from: "A", to: "全体", type: "challenge", text: "先别下结论，可能是分渠道差异。", time: "+1s" }
+          ]
+        },
+        {
+          speaker: "W", title: "写作 Agent 提了新角度。",
+          desc: "写作 Agent 按 ToM Prompt 检查“我的独特贡献”，提出把 iOS 和 Android 分开看。这个观点此前没有任何单个 Agent 提出过。",
+          boundary: "新观点必须能被验证，否则只是更多噪音；下一步要拿数据检验。",
+          observation: { tag: "新观点", cls: "good", text: "集体对话中出现了一个此前没有的方案：分渠道拆解。" },
+          metrics: { agreement: 50, unique: 3, amplify: "1.0" },
+          messages: [{ from: "W", to: "全体", type: "propose", text: "我的补充角度：iOS 和 Android 分开看，可能是单渠道问题。", time: "+4s" }]
+        },
+        {
+          speaker: "A", title: "分渠道后，原因浮出来。",
+          desc: "分析 Agent 按渠道拆数据：iOS 下降 18%，Android 持平。原来不是全局改版，而是 iOS 埋点口径变了。",
+          boundary: "分析 Agent 用的是新数据，不是重新投票；结论变化来自证据，不来自压力。",
+          observation: { tag: "分渠道发现", cls: "good", text: "新假设被数据验证，问题范围从“全局”缩小到“iOS 埋点”。" },
+          metrics: { agreement: 75, unique: 4, amplify: "1.0" },
+          messages: [{ from: "A", to: "全体", type: "finding", text: "分渠道后：iOS 下降 18%，Android 持平；不是全局改版问题。", time: "+8s" }]
+        },
+        {
+          speaker: "V", title: "共识：先修 iOS，保留少数意见。",
+          desc: "核查 Agent 确认证据链，4 个 Agent 中 3 个同意“先修 iOS 埋点，暂不回滚”。少数意见保留，等待下一轮观察。",
+          boundary: "混合拓扑让横向讨论发生，但最终仍走共识门槛；不是所有 Agent 都能直接改结论。",
+          observation: { tag: "引导式结论", cls: "good", text: "有益涌现被保留：分渠道方案来自集体交互，不是预设流程。" },
+          metrics: { agreement: 75, unique: 4, amplify: "1.0" },
+          messages: [{ from: "V", to: "全体", type: "consensus", text: "共识：先修 iOS 埋点，暂不回滚；3/4 同意，保留少数意见。", time: "+12s" }]
+        }
+      ]
+    }
+  });
+
+  const emState = { config: "open", step: 0 };
+  const emById = (id) => document.getElementById(id);
+  const EM_NAMES = Object.fromEntries(EM_AGENTS.map((agent) => [agent.id, agent.name]));
+
+  function emSpeakerAt(configKey, stepIndex) {
+    return EM_SCENARIOS[configKey].rounds[stepIndex].speaker;
+  }
+
+  function emRenderAgents() {
+    const host = emById("em-agents");
+    host.textContent = "";
+    const speaker = emSpeakerAt(emState.config, emState.step);
+    const spoken = new Set();
+    for (let i = 0; i <= emState.step; i += 1) {
+      EM_SCENARIOS[emState.config].rounds[i].messages.forEach((msg) => spoken.add(msg.from));
+    }
+    EM_AGENTS.forEach((agent) => {
+      const isNow = agent.id === speaker;
+      const card = document.createElement("div");
+      card.className = "em-agent" + (isNow ? " is-now" : "");
+      const head = document.createElement("div");
+      head.className = "em-agent-head";
+      const name = document.createElement("div");
+      name.className = "em-agent-name";
+      name.textContent = agent.name;
+      const note = document.createElement("span");
+      note.textContent = agent.id + " · " + agent.note;
+      name.append(note);
+      const badge = document.createElement("span");
+      if (isNow) {
+        badge.className = "em-agent-state now";
+        badge.textContent = "本步发言";
+      } else if (spoken.has(agent.id)) {
+        badge.className = "em-agent-state done";
+        badge.textContent = "已发言";
+      } else {
+        badge.className = "em-agent-state";
+        badge.textContent = "观察";
+      }
+      head.append(name, badge);
+      card.append(head);
+      host.append(card);
+    });
+  }
+
+  function emRenderMessages() {
+    const host = emById("em-log");
+    host.textContent = "";
+    const rounds = EM_SCENARIOS[emState.config].rounds;
+    rounds.slice(0, emState.step + 1).forEach((round, roundIndex) => {
+      round.messages.forEach((msg, msgIndex) => {
+        const current = roundIndex === emState.step;
+        const item = document.createElement("li");
+        item.className = "em-msg" + (current ? " is-now" : "");
+        const time = document.createElement("span");
+        time.className = "em-msg-time";
+        time.textContent = msg.time;
+        const body = document.createElement("div");
+        body.className = "em-msg-body";
+        const route = document.createElement("div");
+        route.className = "em-msg-route";
+        route.textContent = `${EM_NAMES[msg.from]} → ${msg.to}`;
+        const type = document.createElement("span");
+        type.className = "em-msg-type";
+        type.textContent = msg.type;
+        route.append(type);
+        const text = document.createElement("p");
+        text.textContent = msg.text;
+        body.append(route, text);
+        item.append(time, body);
+        host.append(item);
+      });
+    });
+  }
+
+  function emRenderObservation() {
+    const round = EM_SCENARIOS[emState.config].rounds[emState.step];
+    const host = emById("em-observation");
+    host.textContent = "";
+    const tag = document.createElement("span");
+    tag.className = "em-ob-tag " + round.observation.cls;
+    tag.textContent = round.observation.tag;
+    const text = document.createElement("span");
+    text.textContent = round.observation.text;
+    host.append(tag, text);
+  }
+
+  function emRender() {
+    const scenario = EM_SCENARIOS[emState.config];
+    const round = scenario.rounds[emState.step];
+    emRenderAgents();
+    emRenderMessages();
+    emRenderObservation();
+
+    emById("em-figure").textContent = `图 1 · ${scenario.label} · 第 ${emState.step + 1} / 4 轮`;
+    emById("em-caption-title").textContent = round.title;
+    emById("em-desc").textContent = round.desc;
+    emById("em-boundary").textContent = "";
+    const boundaryLabel = document.createElement("b");
+    boundaryLabel.textContent = "角色边界：";
+    emById("em-boundary").append(boundaryLabel, document.createTextNode(round.boundary));
+    emById("em-agreement").textContent = "";
+    emById("em-agreement").append(document.createTextNode(String(round.metrics.agreement)), Object.assign(document.createElement("small"), { textContent: "%" }));
+    emById("em-unique").textContent = String(round.metrics.unique);
+    emById("em-amplify").textContent = "";
+    emById("em-amplify").append(document.createTextNode(round.metrics.amplify), Object.assign(document.createElement("small"), { textContent: "×" }));
+
+    const final = emById("em-final");
+    final.className = "em-final " + (emState.step === 3 ? scenario.final.cls : "");
+    final.textContent = "";
+    if (emState.step === 3) {
+      const label = document.createElement("b");
+      label.textContent = scenario.final.label;
+      final.append(label, document.createTextNode(scenario.final.text));
+    } else {
+      final.textContent = "本轮尚未形成最终结论；结果只在第 4 轮显示。";
+    }
+
+    document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+      if (Number(button.dataset.step) === emState.step) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    document.querySelectorAll("#explainer [data-config]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.config === emState.config));
+    });
+    emById("em-prev").disabled = emState.step === 0;
+    emById("em-next").disabled = emState.step === 3;
+    emById("em-state-summary").textContent = `${scenario.label} · 第 ${emState.step + 1} / 4 轮 · 没有连接 Agent`;
+  }
+
+  function emAnnounce(prefix) {
+    const scenario = EM_SCENARIOS[emState.config];
+    const round = scenario.rounds[emState.step];
+    emById("em-announcement").textContent = `${prefix}${scenario.label}，第 ${emState.step + 1} 轮，共 4 轮。${round.title} 教学指标：一致率 ${round.metrics.agreement}%，新观点 ${round.metrics.unique} 个，错误放大 ${round.metrics.amplify} 倍。`;
+  }
+
+  document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+    button.addEventListener("click", () => {
+      emState.step = Number(button.dataset.step);
+      emRender();
+      emAnnounce("");
+    });
+  });
+  document.querySelectorAll("#explainer [data-config]").forEach((button) => {
+    button.addEventListener("click", () => {
+      emState.config = button.dataset.config;
+      emState.step = 0;
+      emRender();
+      emAnnounce("");
+    });
+  });
+  emById("em-prev").addEventListener("click", () => {
+    emState.step = Math.max(0, emState.step - 1);
+    emRender();
+    emAnnounce("");
+  });
+  emById("em-next").addEventListener("click", () => {
+    emState.step = Math.min(3, emState.step + 1);
+    emRender();
+    emAnnounce("");
+  });
+  emById("em-reset").addEventListener("click", () => {
+    emState.config = "open";
+    emState.step = 0;
+    emRender();
+    emAnnounce("已重置。");
+  });
+  emRender();
+</script>
+</body>
+</html>

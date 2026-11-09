@@ -1,0 +1,1049 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Agent 系统的延迟优化：Streaming、缓存、批处理 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .lat-stage { padding-top: var(--s-2); }
+  .lat-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: var(--s-6); align-items: start; }
+  .lat-main { min-width: 0; }
+  .lat-side { min-width: 0; border-left: 1px solid var(--border); padding-left: var(--s-5); }
+  .lat-side h2 { font: 600 24px/1.4 var(--serif); margin: 2px 0 var(--s-2); }
+  .lat-side > p { color: var(--text-dim); font-size: var(--t-small); }
+  .lat-facts { display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; margin: var(--s-4) 0 0; font-size: 12px; }
+  .lat-facts dt { color: var(--text-dim); }
+  .lat-facts dd { margin: 0; font-family: var(--mono); font-size: 11px; text-align: right; }
+  .lat-note { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px dashed var(--border); color: var(--text-dim); font-size: 11px; line-height: 1.7; }
+  .lat-kicker { font: 10px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .08em; text-transform: uppercase; }
+  .lat-h3 { font: 600 21px/1.4 var(--serif); margin: 3px 0 var(--s-2); }
+  .lat-lede { font-size: 13px; color: var(--text-dim); max-width: 58em; }
+  .lat-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: var(--s-3); }
+  .lat-big { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 9px 11px; min-width: 0; }
+  .lat-big span { display: block; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .lat-big b { display: block; margin-top: 2px; font: 600 21px/1.3 var(--mono); color: var(--accent); }
+  .lat-big small { display: block; margin-top: 2px; font-size: 10px; line-height: 1.5; color: var(--text-dim); }
+  .lat-big.perceived b { color: #7a4a00; }
+  .lat-waterfall { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px 11px; }
+  .lat-wf-head { display: flex; justify-content: space-between; gap: 8px; font: 9px/1.6 var(--mono); color: var(--text-dim); margin-bottom: 5px; }
+  .lat-bar-row { display: grid; grid-template-columns: 104px minmax(0, 1fr) 60px; gap: 7px; align-items: center; padding: 3px 0; }
+  .lat-bar-label { font: 9px/1.4 var(--mono); color: var(--text-dim); }
+  .lat-bar-track { height: 12px; background: var(--surface-soft); border-radius: 999px; overflow: hidden; }
+  .lat-bar { height: 100%; width: var(--w, 0%); min-width: 3px; border-radius: 999px; background: #c3c8c1; }
+  .lat-bar-ms { font: 9px/1.4 var(--mono); color: var(--text-dim); text-align: right; white-space: nowrap; }
+  .lat-bar-row[data-kind="prompt"] .lat-bar { background: #8aa8c4; }
+  .lat-bar-row[data-kind="first"] .lat-bar { background: #194f87; }
+  .lat-bar-row[data-kind="gen"] .lat-bar { background: #6b9a69; }
+  .lat-bar-row[data-kind="tool"] .lat-bar { background: #c58a2a; }
+  .lat-bar-row[data-kind="cache"] .lat-bar { background: #6b21a8; }
+  .lat-bar-row[data-kind="net"] .lat-bar, .lat-bar-row[data-kind="out"] .lat-bar { background: #a8ada6; }
+  .lat-bar-row.parallel .lat-bar { background: repeating-linear-gradient(90deg, #c58a2a 0 6px, #d9a85a 6px 12px); }
+  .lat-marker { margin-top: 6px; padding-top: 6px; border-top: 1px dashed var(--border); font: 9px/1.6 var(--mono); color: var(--text-dim); }
+  .lat-callout { margin-top: var(--s-3); border: 1px solid #9eb4c9; background: var(--accent-dim); border-radius: var(--r-1); padding: 9px 11px; font-size: 11.5px; line-height: 1.7; }
+  .lat-callout b { color: var(--accent); }
+  .lat-callout.warn { border-color: #e4c98f; background: #fdf9ef; }
+  .lat-callout.warn b { color: #7a4a00; }
+  .lat-throughput { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px 11px; }
+  .lat-tp-row { display: grid; grid-template-columns: 108px minmax(0, 1fr) 64px; gap: 7px; align-items: center; padding: 4px 0; }
+  .lat-tp-label { font: 9px/1.4 var(--mono); color: var(--text-dim); }
+  .lat-tp-track { height: 14px; background: var(--surface-soft); border-radius: 999px; overflow: hidden; }
+  .lat-tp-bar { height: 100%; width: var(--w, 0%); min-width: 3px; border-radius: 999px; background: #8aa8c4; }
+  .lat-tp-row.hot .lat-tp-bar { background: var(--accent); }
+  .lat-tp-value { font: 9px/1.4 var(--mono); color: var(--text-dim); text-align: right; white-space: nowrap; }
+  .lat-compare { min-width: 760px; }
+  .lat-compare td:first-child { min-width: 120px; }
+  .lat-sse { min-width: 760px; }
+  .lat-sse td:first-child { min-width: 100px; }
+  .lat-scene { min-width: 620px; }
+  .lat-scene td:first-child { min-width: 130px; }
+  .lat-layers { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: var(--s-3); }
+  .lat-layer { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px 11px; min-width: 0; }
+  .lat-layer h3 { margin: 0; font-size: 12px; line-height: 1.5; }
+  .lat-layer .num { display: block; margin-top: 2px; font: 600 14px/1.3 var(--mono); color: var(--accent); }
+  .lat-layer p { margin-top: 4px; font-size: 10px; line-height: 1.65; color: var(--text-dim); }
+  .lat-layer:nth-child(1) { border-top: 3px solid #194f87; }
+  .lat-layer:nth-child(2) { border-top: 3px solid #2e7d32; }
+  .lat-layer:nth-child(3) { border-top: 3px solid #b07d20; }
+  .lat-layer:nth-child(4) { border-top: 3px solid #6b21a8; }
+  .lat-flow { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px 11px; }
+  .lat-flow-row { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; font-size: 10.5px; }
+  .lat-flow-row + .lat-flow-row { margin-top: 6px; }
+  .lat-node { border: 1px solid var(--border-bright); border-radius: 4px; padding: 3px 7px; background: var(--surface-soft); white-space: nowrap; }
+  .lat-node.dark { background: var(--accent); border-color: var(--accent); color: white; }
+  .lat-node.hot { border-color: #b07d20; background: #fdf3df; color: #7a4a00; }
+  .lat-node.cache { border-color: #d3bce8; background: #f3eafb; color: #5b2a86; }
+  .lat-arrow { color: var(--text-dim); font-family: var(--mono); }
+  .lat-branch { margin-top: 6px; display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .lat-branch-col { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: 7px 8px; font-size: 10px; line-height: 1.6; }
+  .lat-branch-col b { display: block; font-size: 10.5px; }
+  .lat-branch-col span { display: block; color: var(--text-dim); }
+  .lat-batch { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: var(--s-3); }
+  .lat-batch-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px 11px; min-width: 0; }
+  .lat-batch-card h3 { margin: 0 0 3px; font-size: 12px; line-height: 1.5; }
+  .lat-batch-card p { font-size: 10px; line-height: 1.65; color: var(--text-dim); }
+  .lat-batch-card p + p { margin-top: 3px; }
+  .lat-batch-card b { color: var(--ink); }
+  .lat-batch-card .hit { color: #7a4a00; }
+  .lat-events { display: flex; flex-wrap: wrap; gap: 4px; margin-top: var(--s-2); }
+  .lat-event { display: inline-flex; align-items: center; min-height: 19px; padding: 1px 6px; border: 1px solid #b9cbdd; border-radius: 4px; background: #eaf1f8; color: #194f87; font: 9px/1.4 var(--mono); }
+  .lat-reconnect { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-top: var(--s-3); }
+  .lat-reconnect > div { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px 12px; }
+  .lat-reconnect h3 { margin: 0 0 4px; font-size: 12px; line-height: 1.5; }
+  .lat-reconnect ul { margin: 0; padding-left: 1.1em; }
+  .lat-reconnect li { font-size: 10px; line-height: 1.7; color: var(--text-dim); margin-block: 2px; }
+  .lat-reconnect li b { color: var(--ink); }
+  .lat-code-note { margin-top: var(--s-2); font-size: 10px; color: var(--text-dim); }
+  .lat-extra { margin: var(--s-3) 0 0; padding-left: 1.2em; }
+  .lat-extra li { font-size: 11.5px; line-height: 1.75; margin-block: 4px; }
+  .lat-extra li b { color: var(--ink); }
+  @media (max-width: 960px) {
+    .lat-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+    .lat-side { border-left: 0; border-top: 1px solid var(--border); padding-left: 0; padding-top: var(--s-4); }
+    .lat-batch { grid-template-columns: 1fr; }
+    .lat-reconnect { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .lat-summary { grid-template-columns: 1fr 1fr; }
+    .lat-bar-row { grid-template-columns: 86px minmax(0, 1fr) 50px; }
+    .lat-tp-row { grid-template-columns: 86px minmax(0, 1fr) 50px; }
+    .lat-layers { grid-template-columns: 1fr; }
+    .lat-branch { grid-template-columns: 1fr; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">090 / 延迟优化</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 13 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="089-model-routing.html">← 上一页 · 模型路由（Model Routing…</a><a href="091-prompt-drift-management.html">下一页 → · Prompt Drift 管理</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Production &amp; Deployment · 可交互讲解</p>
+      <h1>先让用户看到第一个字，<br>再谈总延迟。</h1>
+    </div>
+    <div>
+      <p class="lead">Agent 多步工作流经常超过 15 秒，而用户在 3 秒后就开始流失（原文引 Nielsen Norman Group）。延迟优化分两条线：Streaming 降低“感知延迟”，缓存、并行、批处理降低“真实延迟”。原文称多层缓存可实现 27–73% 的延迟降低，APC 平均减少 27.28% 延迟和 50.31% 成本。</p>
+      <p class="definition">关键边界：本页的请求、耗时、缓存命中率和吞吐量都是<strong>固定教学数据</strong>，不冒充真实压测。27–73%、23×、27.28% 等数字按原文标注，未联网核实。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Production &amp; Deployment</span><span class="pill">延迟</span><span class="pill">固定教学瀑布</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="lat-caption-title">
+    <div class="player-top">
+      <div class="player-label">延迟瀑布演练台 <small>一个固定请求 · 五种优化视角</small></div>
+      <div class="controls" role="group" aria-label="演练控制">
+        <button type="button" class="button button-quiet" id="lat-reset">重置</button>
+        <button type="button" class="button" id="lat-prev" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="lat-next">下一步 →</button>
+      </div>
+    </div>
+    <div class="stage-nav">
+      <ol style="--stages: 5">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>基线</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>Streaming</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>缓存</button></li>
+        <li><button type="button" class="stage-button" data-stage="3"><span class="stage-number">4</span>并行</button></li>
+        <li><button type="button" class="stage-button" data-stage="4"><span class="stage-number">5</span>批处理</button></li>
+      </ol>
+    </div>
+    <div class="scene-host">
+      <div class="lat-stage scene" id="lat-scene" data-scene="latency">
+        <div class="lat-grid">
+          <section class="lat-main" aria-label="延迟瀑布与优化">
+            <section class="lat-panel" data-panel="0">
+              <p class="lat-kicker">基线 · 串行执行</p>
+              <h3 class="lat-h3">先量清楚，慢在哪。</h3>
+              <p class="lat-lede">固定请求：查订单、查物流、查优惠券，再生成回复。三个工具在基线里串行执行，各 1000ms。</p>
+              <div class="lat-summary">
+                <div class="lat-big"><span>总延迟</span><b>7800 ms</b><small>从请求到完整回答</small></div>
+                <div class="lat-big perceived"><span>首字（TTFT）</span><b>750 ms</b><small>网络 + Prompt 处理 + 首 Token</small></div>
+              </div>
+              <div class="lat-waterfall" aria-label="固定请求的串行延迟瀑布"></div>
+              <div class="lat-callout warn"><b>和原文的 5800ms 区分：</b>原文的典型分解是单工具 1000ms、总计约 5800ms；本页固定请求有三个独立工具，串行合计 7800ms。两者都落在原文说的 5–15 秒区间，但数字口径不同。</div>
+            </section>
+
+            <section class="lat-panel" data-panel="1" hidden>
+              <p class="lat-kicker">优化 1 · Streaming</p>
+              <h3 class="lat-h3">总延迟不变，等待感先降。</h3>
+              <p class="lat-lede">Streaming 把 Token 逐个推给用户。固定请求的总延迟仍是 7800ms，但用户在 750ms 看到第一个字，不用盯着空白等 7.8 秒。</p>
+              <div class="lat-summary">
+                <div class="lat-big"><span>总延迟</span><b>7800 ms</b><small>没有变化</small></div>
+                <div class="lat-big perceived"><span>感知延迟</span><b>750 ms</b><small>首字可见，不必等完整回答</small></div>
+              </div>
+              <div class="lat-waterfall" aria-label="Streaming 下的固定请求延迟瀑布"></div>
+              <div class="lat-callout"><b>关键指标：</b>TTFT（Time to First Token）是用户看到第一个字的时间。原文给的目标是 TTFT &lt; 500ms；本页固定请求是 750ms，高于目标，说明还有优化空间。Streaming 不改变总 Token 生成时间，只改变用户何时开始看到输出。</div>
+            </section>
+
+            <section class="lat-panel" data-panel="2" hidden>
+              <p class="lat-kicker">优化 2 · 多层缓存</p>
+              <h3 class="lat-h3">缓存命中，直接跳过推理。</h3>
+              <p class="lat-lede">固定结果：语义缓存命中，相似度 0.97，超过 0.95 阈值；直接返回结果，耗时 5ms。不是所有请求都能命中。</p>
+              <div class="lat-summary">
+                <div class="lat-big"><span>总延迟</span><b>5 ms</b><small>固定命中结果</small></div>
+                <div class="lat-big perceived"><span>首字 / 返回</span><b>5 ms</b><small>毫秒级返回缓存</small></div>
+              </div>
+              <div class="lat-waterfall" aria-label="语义缓存命中时的固定请求延迟瀑布"></div>
+              <div class="lat-callout warn"><b>固定教学命中：</b>5ms 是缓存命中时的固定演示结果，不代表整体平均延迟。原文说语义缓存“命中时毫秒级返回（vs 秒级 LLM 调用）”，并提醒相似度阈值设太低会返回不准确的缓存。</div>
+            </section>
+
+            <section class="lat-panel" data-panel="3" hidden>
+              <p class="lat-kicker">优化 3 · 并行工具</p>
+              <h3 class="lat-h3">独立工具，别排队。</h3>
+              <p class="lat-lede">三个工具互不依赖，可以同时执行。固定示例：工具段从 3000ms 降到 1000ms，总延迟从 7800ms 降到 5800ms。</p>
+              <div class="lat-summary">
+                <div class="lat-big"><span>总延迟</span><b>5800 ms</b><small>比基线少 2000ms</small></div>
+                <div class="lat-big perceived"><span>首字（TTFT）</span><b>750 ms</b><small>首字时间不变</small></div>
+              </div>
+              <div class="lat-waterfall" aria-label="并行工具调用时的固定请求延迟瀑布"></div>
+              <div class="lat-callout"><b>前提：</b>工具之间没有数据依赖。有依赖的调用仍要串行；并行化要先识别依赖图，不能把所有工具一把并发。原文给的效果示例是“3 个独立工具调用从 3s 降到 1s”。</div>
+            </section>
+
+            <section class="lat-panel" data-panel="4" hidden>
+              <p class="lat-kicker">优化 4 · 批处理</p>
+              <h3 class="lat-h3">吞吐上去了，单请求未必更快。</h3>
+              <p class="lat-lede">Continuous Batching 动态添加/移除请求，提高 GPU 利用率。固定请求的单次延迟仍是 5800ms，但吞吐量按原文示例可提升约 23 倍。</p>
+              <div class="lat-summary">
+                <div class="lat-big"><span>单请求总延迟</span><b>5800 ms</b><small>基本不变</small></div>
+                <div class="lat-big perceived"><span>吞吐量</span><b>23×</b><small>原文示例，非本页实测</small></div>
+              </div>
+              <div class="lat-waterfall" aria-label="批处理视角下的固定请求延迟瀑布"></div>
+              <div class="lat-throughput" aria-label="静态批处理与连续批处理的吞吐量对比">
+                <div class="lat-tp-row"><span class="lat-tp-label">Static</span><div class="lat-tp-track"><div class="lat-tp-bar" style="--w:4.3%"></div></div><span class="lat-tp-value">1×</span></div>
+                <div class="lat-tp-row hot"><span class="lat-tp-label">Continuous</span><div class="lat-tp-track"><div class="lat-tp-bar" style="--w:100%"></div></div><span class="lat-tp-value">23×</span></div>
+              </div>
+              <div class="lat-callout warn"><b>23× 的口径：</b>原文注明该数字来源于 vLLM 早期论文，实际提升取决于负载模式；本页只是固定教学对比，不是本页压测结果。批处理优化吞吐，不等于优化单个用户的等待时间。</div>
+            </section>
+          </section>
+
+          <aside class="lat-side" aria-labelledby="lat-caption-title">
+            <p class="figure-index" id="lat-figure">图 1 · 基线瀑布</p>
+            <h2 id="lat-caption-title">延迟分两种：<br>真实的，和感觉到的。</h2>
+            <p id="lat-desc">基线先把每一段拆开：网络、Prompt、首 Token、生成、工具、第二轮推理、输出。先知道慢在哪，再选优化手段。</p>
+            <dl class="lat-facts">
+              <dt>固定请求</dt><dd>查订单 + 物流 + 优惠券</dd>
+              <dt>总延迟</dt><dd id="lat-fact-total">7800 ms</dd>
+              <dt>TTFT</dt><dd id="lat-fact-ttft">750 ms</dd>
+              <dt>感知延迟</dt><dd id="lat-fact-perceived">7800 ms</dd>
+              <dt>吞吐量</dt><dd id="lat-fact-tp">1×</dd>
+              <dt>缓存</dt><dd id="lat-fact-cache">未命中</dd>
+              <dt>当前步骤</dt><dd id="lat-fact-step">1 / 5</dd>
+            </dl>
+            <div class="lat-note">固定教学数据：请求、各段耗时、TTFT、吞吐量和缓存命中都是写死的，不连接模型、缓存或压测工具。27–73%、23×、27.28%、50.31% 等数字按原文时点引用，未联网核实，不代表本页实测。</div>
+          </aside>
+        </div>
+      </div>
+      <p class="demo-note">演练台说明：固定请求只作教学示例。页面不调用模型、不连接缓存、不发起网络请求；“语义缓存命中”和“23× 吞吐”都是固定教学结果，不是真实压测数据。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学瀑布 · 5 种视角 · 不连接真实系统</span><span id="lat-summary">基线 · 7800 ms · 第 1 / 5 步</span></div>
+  </section>
+  <p id="lat-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="breakdown-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">延迟构成</p><h2 id="breakdown-title">先拆开，<br>再谈优化。</h2></div>
+      <p class="reading-intro">原文给了一次 Agent 请求的典型拆分：总计约 5800ms，其中两轮 LLM 推理占大头，工具调用 1000ms。优化目标分两条：减少真实延迟，减少感知延迟。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data lat-compare">
+          <thead><tr><th>环节</th><th>原文典型耗时</th><th>优化方向</th></tr></thead>
+          <tbody>
+            <tr><td><strong>网络延迟</strong></td><td class="num">~50ms</td><td>边缘接入、连接复用</td></tr>
+            <tr><td><strong>Prompt 处理</strong></td><td class="num">~200ms</td><td>Prompt Cache 复用静态前缀</td></tr>
+            <tr><td><strong>LLM 首 Token</strong></td><td class="num">~500ms</td><td>模型路由、更快的模型</td></tr>
+            <tr><td><strong>LLM 生成</strong></td><td class="num">~2000ms</td><td>Streaming（降感知）、KV Cache</td></tr>
+            <tr><td><strong>工具调用</strong></td><td class="num">~1000ms</td><td>工具缓存、并行化、异步化</td></tr>
+            <tr><td><strong>第二轮 LLM 推理</strong></td><td class="num">~2000ms</td><td>规划缓存、减少轮次、早停</td></tr>
+            <tr><td><strong>输出处理</strong></td><td class="num">~50ms</td><td>批渲染、减少后处理</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <p class="callout-label">两个目标</p>
+        <p>减少真实延迟：缓存、模型路由、并行化、批处理。减少感知延迟：Streaming，让用户立即看到输出开始。原文提醒：用户在 3 秒后开始流失（Nielsen Norman Group 研究，按原文引用），而多步 Agent 经常超过 15 秒。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="streaming-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">Streaming</p><h2 id="streaming-title">先给第一个字，<br>别让人干等。</h2></div>
+      <p class="reading-intro">Streaming 用 SSE 把 Token 逐个推给客户端。总生成时间不变，但 TTFT 变成用户真正感知到的等待。原文给的目标是 TTFT &lt; 500ms。</p>
+    </div>
+    <div class="prose">
+      <pre><code>@app.post("/chat")
+async def chat_stream(request: ChatRequest):
+    """SSE 流式响应"""
+
+    async def generate():
+        async for event in agent.stream(request.message):
+            if event.type == "thinking":
+                yield f"data: {json.dumps({'type': 'thinking', 'content': event.text})}\n\n"
+            elif event.type == "token":
+                yield f"data: {json.dumps({'type': 'token', 'content': event.text})}\n\n"
+            elif event.type == "tool_call":
+                yield f"data: {json.dumps({'type': 'tool', 'name': event.tool_name, 'status': 'calling'})}\n\n"
+            elif event.type == "done":
+                yield f"data: {json.dumps({'type': 'done'})}\n\n"
+
+    return StreamingResponse(
+        generate(),
+        media_type="text/event-stream",
+    )</code></pre>
+      <p>关键指标是 TTFT（Time to First Token）：用户看到第一个字的时间。原文目标 TTFT &lt; 500ms；整体延迟可能不变，但用户体验显著改善。上面代码只作阅读展示，本页不执行，也不启动任何服务。</p>
+      <div class="callout">
+        <p class="callout-label">常见踩坑</p>
+        <p>SSE 被 NGINX 缓冲，加 <code>X-Accel-Buffering: no</code>；原生 <code>EventSource</code> 只支持 GET，可用 <code>@microsoft/fetch-event-source</code>；Token 逐个渲染会导致页面卡顿，按 30–60ms 批量更新一次。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="sse-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">SSE vs WebSocket</p><h2 id="sse-title">单向用 SSE，<br>双向才上 WebSocket。</h2></div>
+      <p class="reading-intro">LLM 生成文本本质是“逐 token 单向输出”，SSE 的单向特性刚好匹配。需要双向音频、协作编辑或二进制流时，才用 WebSocket。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data lat-sse">
+          <thead><tr><th>维度</th><th>SSE</th><th>WebSocket</th></tr></thead>
+          <tbody>
+            <tr><td><strong>通信方向</strong></td><td>单向（服务器 → 客户端）</td><td>双向（客户端 ↔ 服务器）</td></tr>
+            <tr><td><strong>协议基础</strong></td><td>HTTP（<code>text/event-stream</code>）</td><td>TCP 升级协议</td></tr>
+            <tr><td><strong>自动重连</strong></td><td>原生支持</td><td>需自行实现</td></tr>
+            <tr><td><strong>断点续传</strong></td><td><code>Last-Event-ID</code> 原生支持</td><td>需自定义</td></tr>
+            <tr><td><strong>消息格式</strong></td><td>文本</td><td>文本 + 二进制</td></tr>
+            <tr><td><strong>实现复杂度</strong></td><td>低</td><td>中高（连接管理、心跳）</td></tr>
+            <tr><td><strong>代理/防火墙</strong></td><td>天然兼容</td><td>可能被拦截</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-wrap">
+        <table class="data lat-scene">
+          <thead><tr><th>场景</th><th>推荐</th><th>理由</th></tr></thead>
+          <tbody>
+            <tr><td>ChatGPT 式聊天</td><td>SSE</td><td>单向输出，简单可靠</td></tr>
+            <tr><td>代码生成</td><td>SSE</td><td>逐 token 流式，无需双向</td></tr>
+            <tr><td>语音对话</td><td>WebSocket</td><td>双向音频 + 控制信令</td></tr>
+            <tr><td>实时代码协作</td><td>WebSocket</td><td>双向同步编辑</td></tr>
+            <tr><td>Agent 工具执行进度</td><td>WebSocket</td><td>实时双向反馈</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文还解释了 MCP 的选择：MCP 传输层用 <strong>Streamable HTTP</strong>（HTTP POST + 可选 SSE 流式响应），而不是 WebSocket。原因是 MCP 通信以请求-响应为主，不需要全双工；HTTP+SSE 更简单、更容易穿透企业防火墙。原文提到社区已有讨论考虑增加 WebSocket 传输支持。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="reconnect-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">断线重连</p><h2 id="reconnect-title">协议层重连不够，<br>事件要能补发。</h2></div>
+      <p class="reading-intro">SSE 的 <code>Last-Event-ID</code> 只解决协议层重连。服务端不留事件、连接一断 run 就停，重连也接不上。恢复需要两个前提：事件有稳定序号，run 不依赖连接存活。</p>
+    </div>
+    <div class="prose">
+      <p>每个事件带 <code>run_id</code>、单调递增的 <code>seq</code> 和时间戳。SSE 的 <code>id</code> 字段携带 <code>seq</code>；服务端按它补发。原文固定的事件类型：</p>
+      <div class="lat-events">
+        <span class="lat-event">run.started</span><span class="lat-event">text.delta</span><span class="lat-event">tool_call.started</span><span class="lat-event">args.delta</span><span class="lat-event">tool_call.ended</span><span class="lat-event">tool.result</span><span class="lat-event">run.finished</span><span class="lat-event">run.error</span>
+      </div>
+      <div class="lat-reconnect">
+        <div>
+          <h3>run 与连接解耦</h3>
+          <ul>
+            <li>LLM 调用和工具执行在服务端后台跑，连接只是订阅者。</li>
+            <li>断网、刷新不影响 run 继续；重连是接着收，不是重新做。</li>
+            <li>断线不能重跑：重跑再付一次 token 成本，还会重复副作用，比如邮件发两次。</li>
+          </ul>
+        </div>
+        <div>
+          <h3>事件缓冲与兜底</h3>
+          <ul>
+            <li>每个 run 的事件按 <code>run_id</code> 写入 Redis Stream 或带持久化的环形缓冲。</li>
+            <li>客户端带 <code>run_id</code>、<code>last_seq</code> 重连，服务端补发 <code>seq &gt; last_seq</code> 的事件；先订阅再补发，避免中间丢事件。</li>
+            <li>缓冲过期时返回 run 状态快照（当前步骤、已生成文本、工具状态），从快照 <code>seq</code> 往后推；宁可丢中间过程，也不能卡死。</li>
+            <li>客户端按 <code>seq</code> 丢弃重复或更旧的事件，渲染保持幂等。</li>
+          </ul>
+        </div>
+      </div>
+      <h3>工具执行中重连</h3>
+      <p>前端只显示工具状态，不重放中间输出。重连后查状态：<code>running</code> 继续等，<code>done</code> 补结果。工具长输出同样按 <code>seq</code> 进缓冲。</p>
+      <h3>三个坑</h3>
+      <ul class="lat-extra">
+        <li><b>args.delta 是 JSON 片段：</b>前端自己拼会在半个 JSON 上解析失败，后端拼完整再推结构化事件。</li>
+        <li><b>长连接会被中间设备掐断：</b>每 30 秒发一次注释心跳（原文称经验值）。</li>
+        <li><b>同一 run 必须由一处分配 seq：</b>否则多实例序号乱；用 sticky 路由固定实例，或收敛到统一事件服务。</li>
+      </ul>
+      <details>
+        <summary>展开原文的事件缓冲与 SSE 端点代码节选</summary>
+        <pre><code>@dataclass
+class RunEvent:
+    run_id: str
+    seq: int
+    type: str
+    data: dict
+    ts: float = field(default_factory=time.time)
+
+    def to_sse(self) -&gt; str:
+        payload = json.dumps(
+            {"type": self.type, "data": self.data, "ts": self.ts},
+            ensure_ascii=False,
+        )
+        return f"id: {self.seq}\nevent: {self.type}\ndata: {payload}\n\n"
+
+class RunEventBuffer:
+    """单 run 的事件缓冲：分配 seq、按 seq 补发、订阅新事件"""
+
+    async def append(self, run_id: str, type_: str, data: dict) -&gt; RunEvent:
+        self._seq[run_id] += 1
+        event = RunEvent(run_id, self._seq[run_id], type_, data)
+        self._events[run_id].append(event)
+        for q in list(self._subs[run_id]):
+            q.put_nowait(event)
+        return event
+
+    def replay(self, run_id: str, last_seq: int) -&gt; list[RunEvent] | None:
+        """补发 seq &gt; last_seq 的事件；缓冲不连续时返回 None"""
+        buf = self._events.get(run_id)
+        if not buf or buf[0].seq &gt; last_seq + 1:
+            return None
+        return [e for e in buf if e.seq &gt; last_seq]
+
+@app.get("/runs/{run_id}/events")
+async def stream_run_events(run_id: str, last_event_id: str | None = Header(None, alias="Last-Event-ID")):
+    last_seq = int(last_event_id or 0)
+    q = buffer.subscribe(run_id)        # 先订阅，再补发
+    async def gen():
+        try:
+            history = buffer.replay(run_id, last_seq)
+            if history is None:
+                state, snap_seq = await run_store.load(run_id)
+                snap = buffer.snapshot(run_id, state, snap_seq)
+                yield snap.to_sse()
+                if state.get("status") in ("finished", "failed"):
+                    return
+                sent = snap.seq
+            else:
+                for event in history:
+                    yield event.to_sse()
+                    if event.type in {"run.finished", "run.error"}:
+                        return
+                sent = history[-1].seq if history else last_seq
+            while True:
+                try:
+                    event = await asyncio.wait_for(q.get(), timeout=30)
+                except asyncio.TimeoutError:
+                    yield ": keep-alive\n\n"
+                    continue
+                if event.seq &gt; sent:
+                    yield event.to_sse()
+                    sent = event.seq
+                if event.type in {"run.finished", "run.error"}:
+                    return
+        finally:
+            buffer.unsubscribe(run_id, q)
+    return StreamingResponse(gen(), media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})</code></pre>
+        <p class="lat-code-note">以上为原文节选，只作阅读展示，本页不执行；生产版应把内存缓冲换成 Redis Stream + TTL。</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="cache-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">多层缓存</p><h2 id="cache-title">从语义缓存，<br>到规划缓存。</h2></div>
+      <p class="reading-intro">原文把缓存分四层：KV Cache、Prompt Cache、Semantic Cache、Agentic Plan Cache。查询逐层兜底：语义缓存毫秒级，规划缓存跳过规划，都 miss 才落到 LLM。</p>
+    </div>
+    <div class="prose">
+      <div class="lat-layers">
+        <div class="lat-layer">
+          <h3>Layer 1 · KV Cache</h3>
+          <span class="num">2–5×</span>
+          <p>推理层，框架内置；缓存 attention 的 Key-Value 矩阵，避免重复计算。长文本生成时原文称速度提升 2–5x。注意占用 GPU 显存，需要合理的驱逐策略。</p>
+        </div>
+        <div class="lat-layer">
+          <h3>Layer 2 · Prompt Cache</h3>
+          <span class="num">最高 ~85%</span>
+          <p>提供商层；缓存静态 Prompt 前缀的处理结果。原文称延迟最高可降低约 85%，成本降低 90%（Anthropic），具体取决于命中率和复用程度。静态内容放 Prompt 开头。</p>
+        </div>
+        <div class="lat-layer">
+          <h3>Layer 3 · Semantic Cache</h3>
+          <span class="num">毫秒级</span>
+          <p>应用层；对语义相似的查询返回缓存结果，Redis + 向量相似度搜索。适合 FAQ、重复查询、热门问题。相似度阈值太低会返回不准确的缓存。</p>
+        </div>
+        <div class="lat-layer">
+          <h3>Layer 4 · Agentic Plan Cache</h3>
+          <span class="num">-27.28%</span>
+          <p>Agent 专用（NeurIPS 2025）；缓存规划模板，新任务复用。原文称平均减少 27.28% 延迟和 50.31% 成本。传统缓存不适合 Agent，因为输出依赖环境；APC 缓存结构化规划而非具体输出。</p>
+        </div>
+      </div>
+      <div class="lat-flow" role="img" aria-label="多层缓存查询流程：查询先查语义缓存，命中则毫秒级返回；未命中查规划模板，命中则复用规划执行；仍未命中才走 LLM 推理，并使用 KV Cache 和 Prompt Cache">
+        <div class="lat-flow-row"><span class="lat-node dark">查询</span><span class="lat-arrow">→</span><span class="lat-node cache">语义缓存命中？相似度 &gt; 0.95</span></div>
+        <div class="lat-branch">
+          <div class="lat-branch-col"><b>是</b><span>毫秒级返回结果</span></div>
+          <div class="lat-branch-col"><b>否</b><span>查规划模板命中？</span></div>
+        </div>
+        <div class="lat-flow-row"><span class="lat-node hot">规划模板命中</span><span class="lat-arrow">→</span><span class="lat-node">复用规划执行 · 跳过规划阶段</span><span class="lat-arrow">→</span><span class="lat-node">返回结果</span></div>
+        <div class="lat-flow-row"><span class="lat-node">都未命中</span><span class="lat-arrow">→</span><span class="lat-node dark">LLM 推理</span><span class="lat-arrow">+</span><span class="lat-node">KV Cache</span><span class="lat-arrow">+</span><span class="lat-node">Prompt Cache</span></div>
+      </div>
+      <details>
+        <summary>展开原文的多层缓存 Mermaid 源码</summary>
+        <pre><code>flowchart TD
+    A["查询"] --&gt; B{"语义缓存命中?&lt;br/&gt;相似度 &gt; 0.95"}
+    B -- "是" --&gt; R["返回结果&lt;br/&gt;毫秒级"]
+    B -- "否" --&gt; C{"规划模板命中?"}
+    C -- "是" --&gt; D["复用规划执行&lt;br/&gt;跳过规划阶段"]
+    C -- "否" --&gt; E["LLM 推理&lt;br/&gt;KV Cache + Prompt Cache 内置"]
+    D --&gt; R
+    E --&gt; R
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    class A,D,E,R proc
+    class B,C decision</code></pre>
+        <p class="lat-code-note">Mermaid 源码按原文保留；页面不加载 Mermaid，阅读以上方 CSS 流程图为离线版本。</p>
+      </details>
+      <div class="callout">
+        <p class="callout-label">原文数字</p>
+        <p>原文称多层缓存策略可实现 27–73% 的延迟降低；Agentic Plan Caching（APC，NeurIPS 2025）平均减少 27.28% 延迟和 50.31% 成本。Prompt Cache 延迟最高降低约 85%、成本降低 90%（Anthropic）。这些数字按原文时点引用，未联网核实，也不代表本页固定请求的实测结果。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="batch-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">批处理</p><h2 id="batch-title">静态、连续、<br>还是 Batch API。</h2></div>
+      <p class="reading-intro">批处理的目标是提高 GPU 利用率。原文对比三种策略：Static Batching、Continuous Batching、Batch API。它们适合的负载不同。</p>
+    </div>
+    <div class="prose">
+      <div class="lat-batch">
+        <div class="lat-batch-card">
+          <h3>Static Batching</h3>
+          <p><b>原理：</b>收集固定数量的请求后一起处理。</p>
+          <p><b>优势：</b>实现简单。</p>
+          <p class="hit"><b>劣势：</b>等待时间长，短请求被长请求拖慢。</p>
+        </div>
+        <div class="lat-batch-card">
+          <h3>Continuous Batching</h3>
+          <p><b>原理：</b>动态添加/移除请求，不等待批次填满；完成的请求立即释放资源，新请求立即注入计算流。</p>
+          <p><b>优势：</b>吞吐量最高可提升约 23 倍（原文注明来自 vLLM 早期论文，实际取决于负载模式），延迟更低。</p>
+          <p><b>实现：</b>vLLM、TGI、Triton Inference Server。</p>
+        </div>
+        <div class="lat-batch-card">
+          <h3>Batch API</h3>
+          <p><b>原理：</b>非实时任务提交批量请求。</p>
+          <p><b>优势：</b>OpenAI Batch API 50% 折扣（原文示例）。</p>
+          <p><b>适用：</b>评估、数据处理、报告生成。</p>
+          <p class="hit"><b>延迟：</b>24 小时内完成（非实时）。</p>
+        </div>
+      </div>
+      <p>原文的适用建议：实时交互用 Continuous Batching（vLLM）；离线任务用 Batch API；评估管道用 Batch API + 并行化。批处理提升的是吞吐，不是单个用户的等待时间；两者不要混为一谈。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="parallel-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">并行化</p><h2 id="parallel-title">独立调用同时跑，<br>有依赖的还得等。</h2></div>
+      <p class="reading-intro">原文给了两种并行：独立工具调用并行执行；推测性执行，在 Agent 思考时预先执行最可能的下一步。两者都能压缩真实延迟，但都有前提。</p>
+    </div>
+    <div class="prose">
+      <pre><code>async def parallel_tool_calls(self, tools_to_call):
+    """独立工具调用并行执行"""
+    independent = self.find_independent(tools_to_call)
+    dependent = self.find_dependent(tools_to_call)
+
+    results = await asyncio.gather(*[
+        self.call_tool(tool) for tool in independent
+    ])
+
+    for tool in dependent:
+        result = await self.call_tool(tool)
+        results.append(result)
+
+    return results
+    # 效果：3 个独立工具调用从 3s 降到 1s</code></pre>
+      <p>推测性执行则是在 Agent 思考时，预先执行最可能的工具调用：先预测 likely tools，再 prefetch；如果预测正确，工具结果已经准备好。原文没有给命中率数字，只给了思路。</p>
+      <div class="callout warn">
+        <p class="callout-label">边界</p>
+        <p>并行化要先识别依赖图；有依赖的工具不能并发。推测性执行可能浪费算力和成本，也可能触发不必要的副作用，所以只适合可安全预取、无副作用的工具。原文没有承诺每个系统都能把 3s 降到 1s。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">Streaming 不降总延迟，<br>缓存也不是越久越好。</h2></div>
+      <p class="reading-intro">原文列了 2 条误区和 8 条追问，其中 3 条是生产场景排障。高频点：感知延迟 vs 真实延迟、缓存 TTL、P99 飙升、长尾工具、长上下文、SSE 选型与重连。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“Streaming 能减少总延迟。”</h3><p>Streaming 不减少总延迟（总 Token 生成时间不变），它减少的是“感知延迟”——用户几百毫秒就看到第一个字开始输出，心理等待感大大降低。真正减少总延迟需要缓存、模型路由和并行化。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“缓存会导致回答过时。”</h3><p>设置合理的 TTL 和缓存失效策略即可。FAQ 类缓存可以设 24 小时，实时数据相关的查询不应缓存。语义缓存的相似度阈值也需要调优——太低会返回不相关的缓存结果。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>如何衡量延迟优化的效果？</h3><p>四个关键指标：(1) TTFT（Time to First Token，感知延迟）；(2) P50/P95/P99 延迟（不同百分位的总延迟）；(3) 吞吐量（QPS，每秒处理的请求数）；(4) 缓存命中率（命中率越高，平均延迟越低）。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>Agent 多步执行的延迟如何优化？</h3><p>(1) 规划缓存（APC）跳过规划阶段；(2) 并行工具调用（独立工具同时执行）；(3) 推测性执行（预取可能的工具结果）；(4) 分步 Streaming（每步结果实时推送）；(5) 早停（发现足够信息就提前结束）。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">场景 1</p>
+      <div><h3>P99 从 2 秒突然飙升到 12 秒，如何快速定位根因？</h3><p>定位路径：(1) 检查 Trace，找出延迟增加发生在哪个环节（LLM 调用、工具执行、网络传输）；(2) 检查模型提供商状态，是否有服务降级或限流；(3) 检查缓存命中率是否下降，缓存失效可能导致大量请求走 LLM；(4) 检查工具服务延迟。快速止损：启用模型降级到更快模型、增加 KV Cache 容量、临时降低并发限制。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">场景 2</p>
+      <div><h3>一个工具每次调用要 3 秒，整体延迟怎么优化？</h3><p>(1) 分析该工具是否可以优化或换用更快的替代方案；(2) 实施工具结果缓存，如果相同参数频繁调用；(3) 并行化，如果工作流中有其他独立工具，让它们并行执行；(4) 异步化，让工具在后台执行，先返回部分结果；(5) 预计算，如果可以预测用户可能需要的数据，提前加载到缓存。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">场景 3</p>
+      <div><h3>长上下文让延迟从 2 秒涨到 8 秒以上，怎么优化？</h3><p>(1) 检查是否真的需要完整上下文，用 RAG 检索替代全文；(2) 优化 Prompt 结构，静态内容使用 Prompt Cache；(3) 使用支持长上下文的模型和框架；(4) 分块处理，将长任务拆分为多个短任务；(5) 考虑模型降级，对长上下文场景，专门的长上下文模型可能更经济。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 3</p>
+      <div><h3>SSE 和 WebSocket 在 AI 应用中如何选型？</h3><p>核心看通信方向：LLM 流式输出是单向的（服务器→客户端），用 SSE 就够了，且更简单、原生支持重连。需要双向通信（语音对话、协作编辑）或二进制传输（音频/视频流）时才用 WebSocket。原文称 ChatGPT、Claude 等都使用 SSE。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 4</p>
+      <div><h3>MCP 为什么用 SSE 而不用 WebSocket？</h3><p>MCP 通信模型是 JSON-RPC 请求-响应式，不需要全双工。HTTP+SSE 更简单、更容易部署、更容易穿透企业防火墙。原文提到社区已有讨论考虑增加 WebSocket 传输支持。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 5</p>
+      <div><h3>SSE 原生支持断线重连，为什么还要自己做事件缓冲？</h3><p>原生支持的只是协议层：浏览器会自动重连，并把最后收到的 <code>id</code> 通过 <code>Last-Event-ID</code> 带上。服务端要认这个 id、保留对应事件、按序补发，重连才有内容可接。如果 run 随连接结束、事件不落缓冲，重连只能重新开始或拿到空白流。重连也不等于重跑：LLM 和工具在服务端继续执行，客户端只是重新订阅。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《Agent 系统的延迟优化：Streaming、缓存、批处理》。耗时、倍率、缓存数字按原文时点引用，本页未联网核实，也不冒充真实压测。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://arxiv.org/abs/2506.14852" target="_blank" rel="noopener noreferrer">Agentic Plan Caching: Test-Time Memory for Fast and Cost-Efficient LLM Agents (NeurIPS 2025)</a></li>
+          <li><a href="https://aws.amazon.com/blogs/database/optimize-llm-response-costs-and-latency-with-effective-caching/" target="_blank" rel="noopener noreferrer">Optimize LLM Response Costs and Latency with Effective Caching (AWS)</a></li>
+          <li><a href="https://redis.io/blog/llm-token-optimization-speed-up-apps/" target="_blank" rel="noopener noreferrer">LLM Token Optimization: Cut Costs &amp; Latency in 2026 (Redis)</a></li>
+          <li><a href="https://www.tribe.ai/applied-ai/reducing-latency-and-cost-at-scale-llm-performance" target="_blank" rel="noopener noreferrer">Reducing Latency and Cost at Scale: How Leading Enterprises Optimize LLM Performance (Tribe AI)</a></li>
+          <li><a href="https://www.getmaxim.ai/articles/5-ways-to-optimize-costs-and-latency-in-llm-powered-applications/" target="_blank" rel="noopener noreferrer">5 Ways to Optimize Costs and Latency in LLM-Powered Applications (Maxim AI)</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。延伸阅读：<a href="089-model-routing.html">089 模型路由</a>、<a href="086-llmops-and-deployment.html">086 LLMOps 与部署</a>、<a href="091-prompt-drift-management.html">091 Prompt Drift 管理</a>。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>10-production-and-deployment/090-latency-optimization.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 6 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const LAT_SERIAL_SPANS = [
+    { name: "网络", ms: 50, kind: "net" },
+    { name: "Prompt 处理", ms: 200, kind: "prompt" },
+    { name: "首 Token", ms: 500, kind: "first" },
+    { name: "LLM 生成", ms: 2000, kind: "gen" },
+    { name: "工具 A", ms: 1000, kind: "tool" },
+    { name: "工具 B", ms: 1000, kind: "tool" },
+    { name: "工具 C", ms: 1000, kind: "tool" },
+    { name: "第二轮 LLM", ms: 2000, kind: "gen" },
+    { name: "输出处理", ms: 50, kind: "out" }
+  ];
+
+  const LAT_PARALLEL_SPANS = [
+    { name: "网络", ms: 50, kind: "net" },
+    { name: "Prompt 处理", ms: 200, kind: "prompt" },
+    { name: "首 Token", ms: 500, kind: "first" },
+    { name: "LLM 生成", ms: 2000, kind: "gen" },
+    { name: "工具 A/B/C 并行", ms: 1000, kind: "tool", parallel: true },
+    { name: "第二轮 LLM", ms: 2000, kind: "gen" },
+    { name: "输出处理", ms: 50, kind: "out" }
+  ];
+
+  const LAT_CACHE_SPANS = [
+    { name: "语义缓存命中", ms: 5, kind: "cache" }
+  ];
+
+  const LAT_MODES = [
+    {
+      label: "基线",
+      figure: "图 1 · 基线瀑布",
+      title: "延迟分两种：<br>真实的，和感觉到的。",
+      desc: "基线先把每一段拆开：网络、Prompt、首 Token、生成、工具、第二轮推理、输出。先知道慢在哪，再选优化手段。",
+      total: "7800 ms",
+      ttft: "750 ms",
+      perceived: "7800 ms",
+      tp: "1×",
+      cache: "未命中",
+      spans: LAT_SERIAL_SPANS,
+      max: 2000,
+      marker: "首 Token 在 750ms 出现；完整回答在 7800ms 结束。",
+      summary: "基线 · 7800 ms · 第 1 / 5 步"
+    },
+    {
+      label: "Streaming",
+      figure: "图 2 · Streaming",
+      title: "总延迟不变，<br>等待感先降。",
+      desc: "总延迟仍是 7800ms，但用户在 750ms 看到第一个字。Streaming 不改变生成时间，只改变用户何时开始看到输出。",
+      total: "7800 ms",
+      ttft: "750 ms",
+      perceived: "750 ms",
+      tp: "1×",
+      cache: "未命中",
+      spans: LAT_SERIAL_SPANS,
+      max: 2000,
+      marker: "首 Token 在 750ms 出现，用户开始看到输出；完整回答仍在 7800ms 结束。",
+      summary: "Streaming · 7800 ms · 第 2 / 5 步"
+    },
+    {
+      label: "缓存",
+      figure: "图 3 · 缓存命中",
+      title: "缓存命中，<br>直接跳过推理。",
+      desc: "固定结果：语义缓存命中，相似度 0.97，超过 0.95 阈值；直接返回结果，耗时 5ms。",
+      total: "5 ms",
+      ttft: "5 ms",
+      perceived: "5 ms",
+      tp: "1×",
+      cache: "命中（固定）",
+      spans: LAT_CACHE_SPANS,
+      max: 5,
+      marker: "缓存命中，5ms 直接返回；没有 LLM 推理，也没有首 Token。",
+      summary: "缓存命中 · 5 ms · 第 3 / 5 步"
+    },
+    {
+      label: "并行",
+      figure: "图 4 · 并行工具",
+      title: "独立工具，<br>别排队。",
+      desc: "三个工具互不依赖，可以同时执行。工具段从 3000ms 降到 1000ms，总延迟从 7800ms 降到 5800ms。",
+      total: "5800 ms",
+      ttft: "750 ms",
+      perceived: "5800 ms",
+      tp: "1×",
+      cache: "未命中",
+      spans: LAT_PARALLEL_SPANS,
+      max: 2000,
+      marker: "首 Token 在 750ms 出现；三个工具并行后，完整回答在 5800ms 结束。",
+      summary: "并行工具 · 5800 ms · 第 4 / 5 步"
+    },
+    {
+      label: "批处理",
+      figure: "图 5 · 批处理",
+      title: "吞吐上去了，<br>单请求未必更快。",
+      desc: "Continuous Batching 提高 GPU 利用率；固定请求单次延迟仍是 5800ms，吞吐量按原文示例约 23×。",
+      total: "5800 ms",
+      ttft: "750 ms",
+      perceived: "5800 ms",
+      tp: "23×",
+      cache: "未命中",
+      spans: LAT_PARALLEL_SPANS,
+      max: 2000,
+      marker: "单请求仍在 750ms 出现首 Token、5800ms 结束；吞吐量提升体现在同时处理的请求数。",
+      summary: "批处理 · 5800 ms · 23× · 第 5 / 5 步"
+    }
+  ];
+
+  const latButtons = Array.from(document.querySelectorAll(".stage-button"));
+  const latPanels = Array.from(document.querySelectorAll(".lat-panel"));
+  const latPrev = document.getElementById("lat-prev");
+  const latNext = document.getElementById("lat-next");
+  const latReset = document.getElementById("lat-reset");
+  const latFigure = document.getElementById("lat-figure");
+  const latDesc = document.getElementById("lat-desc");
+  const latFactTotal = document.getElementById("lat-fact-total");
+  const latFactTtft = document.getElementById("lat-fact-ttft");
+  const latFactPerceived = document.getElementById("lat-fact-perceived");
+  const latFactTp = document.getElementById("lat-fact-tp");
+  const latFactCache = document.getElementById("lat-fact-cache");
+  const latFactStep = document.getElementById("lat-fact-step");
+  const latSummary = document.getElementById("lat-summary");
+  const latAnnouncement = document.getElementById("lat-announcement");
+  let latIndex = 0;
+
+  function latRenderWaterfall(container, mode) {
+    container.innerHTML = '<div class="lat-wf-head"><span>固定请求 · 延迟瀑布</span><span>总计 ' + mode.total + '</span></div>' +
+      mode.spans.map((span) => {
+        const width = Math.max((span.ms / mode.max) * 100, 1.2);
+        return '<div class="lat-bar-row' + (span.parallel ? " parallel" : "") + '" data-kind="' + span.kind + '">' +
+          '<span class="lat-bar-label">' + span.name + '</span>' +
+          '<div class="lat-bar-track"><div class="lat-bar" style="--w:' + width + '%"></div></div>' +
+          '<span class="lat-bar-ms">' + span.ms + ' ms</span></div>';
+      }).join("") +
+      '<div class="lat-marker">' + mode.marker + '</div>';
+  }
+
+  function latRender(next, announce) {
+    latIndex = next;
+    latPanels.forEach((panel, i) => {
+      panel.hidden = i !== next;
+    });
+    latButtons.forEach((button, i) => {
+      if (i === next) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    const mode = LAT_MODES[next];
+    latFigure.textContent = mode.figure;
+    latDesc.textContent = mode.desc;
+    latFactTotal.textContent = mode.total;
+    latFactTtft.textContent = mode.ttft;
+    latFactPerceived.textContent = mode.perceived;
+    latFactTp.textContent = mode.tp;
+    latFactCache.textContent = mode.cache;
+    latFactStep.textContent = (next + 1) + " / 5";
+    latSummary.textContent = mode.summary;
+    const container = latPanels[next].querySelector(".lat-waterfall");
+    if (container) latRenderWaterfall(container, mode);
+    latPrev.disabled = next === 0;
+    latNext.disabled = next === LAT_MODES.length - 1;
+    latNext.textContent = next === LAT_MODES.length - 1 ? "已到批处理" : "下一步 →";
+    if (announce) {
+      latAnnouncement.textContent = "第 " + (next + 1) + " 步：" + mode.label + "。总延迟 " + mode.total + "，TTFT " + mode.ttft + "。";
+    }
+  }
+
+  latButtons.forEach((button) => {
+    button.addEventListener("click", () => latRender(Number(button.dataset.stage), true));
+  });
+  latPrev.addEventListener("click", () => {
+    if (latIndex > 0) latRender(latIndex - 1, true);
+  });
+  latNext.addEventListener("click", () => {
+    if (latIndex < LAT_MODES.length - 1) latRender(latIndex + 1, true);
+  });
+  latReset.addEventListener("click", () => {
+    latRender(0, false);
+    latAnnouncement.textContent = "已重置到基线：总延迟 7800ms，TTFT 750ms。";
+  });
+
+  latRender(0, false);
+</script>
+</body>
+</html>

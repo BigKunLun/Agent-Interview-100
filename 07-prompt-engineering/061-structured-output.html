@@ -1,0 +1,881 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>结构化输出（Structured Output）：如何让 LLM 返回 JSON/XML？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  /* 061 结构化输出 */
+  .so-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .so-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: var(--s-4); align-items: start; }
+  .so-card { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .so-card h2 { font-size: 16px; line-height: 1.5; font-weight: 600; }
+  .so-card .figure-index { margin-bottom: 3px; }
+  .so-card pre { overflow: auto; }
+  .so-note { margin-top: var(--s-3); font-size: 11px; line-height: 1.6; color: var(--text-dim); }
+  .so-sample-head { display: flex; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; align-items: center; }
+  .so-badge { display: inline-flex; align-items: center; min-height: 26px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--border-bright); font: 600 11px/1.5 var(--mono); white-space: nowrap; }
+  .so-badge.ok { color: #1b5e20; background: #f1f8f1; border-color: #9bc59b; }
+  .so-badge.bad { color: #8b1a1a; background: #fff3f3; border-color: #d99b9b; }
+  .so-sample-desc { margin-top: var(--s-2); font-size: 12px; line-height: 1.6; color: var(--text-dim); }
+  .so-summary { margin-top: var(--s-3); font: 11px/1.5 var(--mono); color: var(--text-dim); }
+  .so-checks { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 5px; }
+  .so-check { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 7px; align-items: start; border: 1px solid var(--border); border-radius: 5px; background: var(--surface-soft); padding: 6px 8px; }
+  .so-check.ok { border-color: #cfe3cf; background: #f6faf6; }
+  .so-check.bad { border-color: #e3b5b5; background: #fff6f6; }
+  .so-check-icon { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: 50%; font: 700 10px/1 var(--mono); color: white; background: #2e7d32; margin-top: 1px; }
+  .so-check.bad .so-check-icon { background: #b71c1c; }
+  .so-check-path { display: block; font: 10px/1.4 var(--mono); color: var(--ink); overflow-wrap: anywhere; }
+  .so-check-rule { display: block; font: 9px/1.4 var(--mono); color: var(--text-dim); }
+  .so-check-msg { display: block; font-size: 11px; line-height: 1.45; color: var(--text-dim); margin-top: 1px; }
+  .so-result { margin-top: var(--s-3); border-radius: 5px; padding: 9px 11px; font-size: 12px; line-height: 1.55; }
+  .so-result.ok { background: #f1f8f1; border: 1px solid #9bc59b; color: #1b5e20; }
+  .so-result.bad { background: #fff3f3; border: 1px solid #d99b9b; color: #8b1a1a; }
+  .so-caption { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border); }
+  .so-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; }
+  .so-caption p:not(.figure-index):not(.so-action) { margin-top: var(--s-2); font-size: var(--t-small); color: var(--text-dim); max-width: 62em; }
+  .so-action { display: inline-block; margin-top: var(--s-3); padding: 4px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font: 11px/1.6 var(--mono); color: var(--accent); background: var(--accent-dim); }
+  .so-rules { margin-top: var(--s-3); }
+  .so-rules ul { margin: var(--s-2) 0 0; padding-left: 1.2em; font-size: 11px; color: var(--text-dim); }
+  .so-rules li { margin-block: 3px; }
+  @media (max-width: 900px) {
+    .so-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .so-stage { padding: var(--s-4); }
+    .so-caption h2 { font-size: 22px; }
+    .so-card { padding: var(--s-3); }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">061 / 结构化输出</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 6 / 10 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="../06-planning-and-reasoning/049-cot-and-tot.html">← 上一页 · 推理策略详解</a><a href="../08-evaluation/069-evaluation-methodology.html">下一页 → · 评估方法论</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">基础 · Prompt Engineering · 可交互讲解</p>
+      <h1>让模型说<br>机器能读的话。</h1>
+    </div>
+    <div>
+      <p class="lead">结构化输出让 LLM 返回 JSON、XML 等机器可解析格式，是 Agent 系统和数据管道的基础能力。四种主流方法从“只在 Prompt 里要求格式”到“解码层强制约束”，保证强度依次提高。</p>
+      <p class="definition">关键边界：<strong>格式合法不等于 Schema 合规</strong>。JSON Mode 只保证语法；要保证字段、类型和必填项，需要 Schema 约束、Function Calling 或 Structured Outputs。</p>
+      <div class="hero-meta"><span class="pill">基础</span><span class="pill">Prompt Engineering</span><span class="pill">JSON Schema</span><span class="pill">固定校验样例</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="so-caption-title">
+    <div class="player-top">
+      <div class="player-label">固定 Schema 校验器 <small>四个写死的样例，逐条跑规则</small></div>
+      <div class="controls" role="group" aria-label="Schema 校验演示控制">
+        <button type="button" class="button button-quiet" id="so-reset">重置</button>
+        <button type="button" class="button" id="so-prev" disabled>上一条</button>
+        <button type="button" class="button button-primary" id="so-next">下一条 →</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="四个固定校验样例">
+      <ol style="--stages: 4">
+        <li><button type="button" class="stage-button" data-sample="0" aria-current="step" aria-controls="so-scene" aria-label="样例 1：合法"><span class="stage-number">1</span><span>合法</span></button></li>
+        <li><button type="button" class="stage-button" data-sample="1" aria-controls="so-scene" aria-label="样例 2：缺字段"><span class="stage-number">2</span><span>缺字段</span></button></li>
+        <li><button type="button" class="stage-button" data-sample="2" aria-controls="so-scene" aria-label="样例 3：类型错误"><span class="stage-number">3</span><span>类型错误</span></button></li>
+        <li><button type="button" class="stage-button" data-sample="3" aria-controls="so-scene" aria-label="样例 4：越界与多余字段"><span class="stage-number">4</span><span>越界/多余</span></button></li>
+      </ol>
+    </nav>
+    <div class="so-stage scene" id="so-scene" data-scene="schema">
+      <div class="so-grid">
+        <section class="so-card" aria-labelledby="schema-title">
+          <p class="figure-index">固定教学 Schema</p>
+          <h2 id="schema-title">Person 提取结果</h2>
+          <pre><code>{
+  "type": "object",
+  "required": [
+    "name",
+    "age",
+    "email"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "age": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 150
+    },
+    "email": { "type": "string" },
+    "skills": {
+      "type": "array",
+      "items": { "type": "string" }
+    }
+  }
+}</code></pre>
+          <p class="so-note">本页校验器只实现这份 Schema 的规则：必填、类型、范围、数组元素和多余字段。它不是通用 JSON Schema 引擎，也不联网。</p>
+          <details class="so-rules">
+            <summary>查看本页执行的五类规则</summary>
+            <ul>
+              <li>根节点必须是 JSON 对象。</li>
+              <li><code>name</code>、<code>age</code>、<code>email</code> 必填。</li>
+              <li><code>name</code> 是非空字符串；<code>age</code> 是 0–150 的整数；<code>email</code> 是字符串。</li>
+              <li><code>skills</code> 可选；出现时必须是字符串数组。</li>
+              <li><code>additionalProperties: false</code>：出现 Schema 未声明的字段即失败。</li>
+            </ul>
+            <p class="source-footnote">注意：这里的 <code>email</code> 只校验类型，不校验邮箱格式；格式校验属于 Pydantic 的语义验证层，见下方“生产环境最佳实践”。</p>
+          </details>
+        </section>
+
+        <section class="so-card" aria-labelledby="sample-title">
+          <div class="so-sample-head">
+            <div><p class="figure-index" id="so-position">样例 1 / 4</p><h2 id="sample-title">合法样例</h2></div>
+            <span class="so-badge ok" id="so-badge">合法</span>
+          </div>
+          <p class="so-sample-desc" id="so-desc">name、age、email 必填字段齐全；age 是 0–150 的整数；skills 是字符串数组；没有多余字段。</p>
+          <pre><code id="so-json">{
+  "name": "张三",
+  "age": 28,
+  "email": "zhangsan@example.com",
+  "skills": ["Python", "SQL"]
+}</code></pre>
+          <p class="so-summary" id="so-summary">13 项检查 · 通过 13 · 失败 0</p>
+          <ul class="so-checks" id="so-checks"></ul>
+          <div class="so-result ok" id="so-result">合法：13 项检查全部通过。</div>
+        </section>
+      </div>
+      <div class="so-caption">
+        <p class="figure-index" id="so-caption-index">图 1 · 第 1 / 4 个样例</p>
+        <h2 id="so-caption-title">合法样例：四个字段都通过。</h2>
+        <p id="so-caption-desc">这份样例满足全部必填、类型、范围和多余字段规则，可以进入下游处理。真实系统还应再做业务语义校验。</p>
+        <p class="so-action" id="so-action">全部规则通过 · 可进入下游处理</p>
+      </div>
+      <p class="demo-note">固定教学数据：四个样例、Schema 和预期结果都是写死的；校验由本页脚本按固定规则执行，不调用模型或在线校验服务。样例中的姓名、邮箱均为虚构。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 校验结果由页面脚本实时计算</span><span id="so-state-summary">样例 1 / 4 · 没有连接模型</span></div>
+  </section>
+  <p id="so-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="methods-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四种方法</p><h2 id="methods-title">从“请输出 JSON”<br>到解码层强制。</h2></div>
+      <p class="reading-intro">方法越往下，格式保证越强，接入成本也越高。生产环境常用 Function Calling 或 Structured Outputs 处理格式，再用 Pydantic 验证语义。</p>
+    </div>
+    <div class="prose">
+      <h3>方法 1：Prompt 指令（最简单）</h3>
+      <p>在 Prompt 里描述期望格式，并加一句“只输出 JSON”。它最简单，但不保证合规：模型可能添加 markdown 标记、解释文字，或生成语法错误的 JSON。</p>
+      <p class="code-label">Prompt 指令 · 原文代码</p>
+      <pre><code>prompt = """
+从以下文本中提取实体信息，以 JSON 格式输出。
+
+文本：张三是 ABC 公司的技术总监，他在北京工作了 5 年。
+
+输出格式：
+{
+    "name": "人名",
+    "company": "公司名",
+    "title": "职位",
+    "location": "工作地点",
+    "years": 数字
+}
+
+请只输出 JSON，不要添加任何其他文本。
+"""
+
+# 问题：
+# - LLM 可能添加 "```json" 标记或解释文字
+# - 可能输出不合法的 JSON（缺少引号、多余逗号）
+# - 需要后处理和错误处理</code></pre>
+
+      <h3>方法 2：JSON Mode（API 级别）</h3>
+      <p>API 级别强制输出合法 JSON。它保证语法正确，但不保证 Schema 匹配：可能返回 <code>{"person": "张三"}</code> 而不是 <code>{"name": "张三"}</code>。</p>
+      <p class="code-label">OpenAI JSON Mode · 原文代码</p>
+      <pre><code>from openai import OpenAI
+client = OpenAI()
+
+response = client.chat.completions.create(
+    model="gpt-4o",
+    response_format={"type": "json_object"},  # 强制 JSON 输出
+    messages=[
+        {"role": "system", "content": "你是一个数据提取助手。始终以 JSON 格式回答。"},
+        {"role": "user", "content": "提取：张三是 ABC 公司的技术总监"}
+    ]
+)
+
+# 保证输出是合法的 JSON
+data = json.loads(response.choices[0].message.content)
+
+# 注意：JSON Mode 保证语法合法，但不保证 Schema 匹配
+# 可能返回 {"person": "张三"} 而不是 {"name": "张三"}</code></pre>
+
+      <h3>方法 3：Function Calling / Structured Outputs</h3>
+      <p>用 Pydantic 定义 Schema，让模型按函数参数或响应格式填写。Function Calling 最适合 Agent 工具调用；Structured Outputs 直接把结果解析成 Pydantic 实例。</p>
+      <p class="code-label">Pydantic Schema 与 OpenAI Structured Outputs · 原文代码</p>
+      <pre><code>from pydantic import BaseModel
+
+# 用 Pydantic 定义 Schema（推荐方式）
+class PersonInfo(BaseModel):
+    name: str
+    company: str
+    title: str
+    location: str
+    years: int
+
+# OpenAI Structured Outputs（openai-python&gt;=1.92，parse 已 GA）
+response = client.chat.completions.parse(
+    model="gpt-4o",
+    response_format=PersonInfo,  # 直接传 Pydantic 模型
+    messages=[
+        {"role": "user", "content": "提取：张三是 ABC 公司的技术总监，在北京工作了5年"}
+    ]
+)
+
+person = response.choices[0].message.parsed
+# person.name == "张三"
+# person.company == "ABC"
+# person.years == 5
+# 类型安全，100% Schema 合规
+
+# 注：2024-08 由 client.beta.chat.completions.parse 提升为 GA（openai-python 1.92+）
+#     旧路径 client.beta.* 仍可用，但新代码推荐 client.chat.completions.parse
+
+# OpenAI Responses API（新项目首选，2025-03 发布）
+# 把 Chat Completions + Assistants 合并为一个新 endpoint
+response = client.responses.parse(
+    model="gpt-4o",
+    text_format=PersonInfo,
+    input=[{"role": "user", "content": "提取：张三是 ABC 公司的技术总监"}]
+)
+person = response.output_parsed</code></pre>
+
+      <p class="code-label">Anthropic 原生 Structured Outputs 与兜底 Tool Use · 原文代码</p>
+      <pre><code># Anthropic 原生 Structured Outputs（公开 Beta，2025-11-14 发布）
+# 需要 anthropic-beta header，底层是 constrained decoding，100% Schema 合规
+response = anthropic_client.messages.parse(
+    model="claude-sonnet-4-5",
+    max_tokens=1024,
+    response_format=PersonInfo,           # 直接传 Pydantic 模型
+    extra_headers={
+        "anthropic-beta": "structured-outputs-2025-11-13"
+    },
+    messages=[
+        {"role": "user", "content": "提取：张三是 ABC 公司的技术总监"}
+    ]
+)
+person = response.parsed                  # 直接拿到 Pydantic 实例
+
+# 兜底方案：Anthropic Tool Use（在原生 SO Beta 之前的事实标准，仍适用于无 Beta 权限场景）
+response = anthropic_client.messages.create(
+    model="claude-sonnet-4-5",
+    tools=[{
+        "name": "extract_person",
+        "description": "提取人物信息",
+        "input_schema": PersonInfo.model_json_schema()
+    }],
+    tool_choice={"type": "tool", "name": "extract_person"},
+    messages=[{"role": "user", "content": "提取：张三是 ABC 公司的技术总监"}]
+)</code></pre>
+      <p>原文把 Anthropic 原生 Structured Outputs 列为 2026 面试的核心新原语：它把“保证 Schema 合规”从应用层后处理移到了模型 API 层。</p>
+
+      <h3>方法 4：Constrained Decoding（底层约束）</h3>
+      <p>在 token 采样层面约束输出，只允许合法的下一个 token，因此可以 100% 保证格式和 Schema 合规。常见实现有 Outlines、Guidance 等；代价是实现复杂，通常用于本地模型或推理服务。</p>
+      <p class="code-label">Outlines · 原文代码</p>
+      <pre><code># 新版 API（outlines &gt;= 1.0）：from_transformers / from_vllm 等装载器
+import outlines
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+base = AutoModelForCausalLM.from_pretrained("Qwen/Qwen3-7B-Instruct")
+tok  = AutoTokenizer.from_pretrained("Qwen/Qwen3-7B-Instruct")
+model = outlines.from_transformers(base, tok)
+
+# 用 Pydantic / JSON Schema 约束生成
+class Person(BaseModel):
+    name: str
+    age: int
+    skills: list[str]
+
+result = model("提取信息：张三,25岁,会Python和Java", Person)
+# 100% 保证输出符合 Schema
+# 原理：在每步 token 采样时，只允许合法的下一个 token
+# 注：旧版 outlines.generate.json + Llama-3 8B 已被 from_transformers 替代</code></pre>
+
+      <h3>XML 形式：另一种可解析格式</h3>
+      <p>原文主要以 JSON 为例。XML 同样属于结构化输出，只是 Schema 表示和解析器不同；下面只是格式示意，不代表某种模型的默认输出。</p>
+      <pre><code>&lt;person&gt;
+  &lt;name&gt;张三&lt;/name&gt;
+  &lt;company&gt;ABC&lt;/company&gt;
+  &lt;title&gt;技术总监&lt;/title&gt;
+  &lt;location&gt;北京&lt;/location&gt;
+  &lt;years&gt;5&lt;/years&gt;
+&lt;/person&gt;</code></pre>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="compare-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">方法对比</p><h2 id="compare-title">格式保证和<br>Schema 保证是两件事。</h2></div>
+      <p class="reading-intro">选择方法时先问两个问题：输出一定是合法 JSON 吗？字段和类型一定符合 Schema 吗？</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">五种结构化输出方法在格式保证、Schema 保证、实现难度和适用场景上的对比</caption>
+          <thead><tr><th scope="col">方法</th><th scope="col">格式保证</th><th scope="col">Schema 保证</th><th scope="col">实现难度</th><th scope="col">适用场景</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Prompt 指令</th><td>不保证</td><td>不保证</td><td>最简单</td><td>原型验证</td></tr>
+            <tr><th scope="row">JSON Mode</th><td>保证</td><td>不保证</td><td>简单</td><td>简单场景</td></tr>
+            <tr><th scope="row">Function Calling</th><td>保证</td><td>保证</td><td>中等</td><td>Agent</td></tr>
+            <tr><th scope="row">Structured Outputs</th><td>保证</td><td>保证</td><td>中等</td><td>生产环境</td></tr>
+            <tr><th scope="row">Constrained Decode</th><td>保证</td><td>保证</td><td>复杂</td><td>本地模型</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>最容易混淆的是 JSON Mode：它解决了“能不能解析”，没有解决“字段对不对”。生产环境推荐 <strong>Function Calling + Pydantic 验证</strong>：Function Calling 处理格式，Pydantic 验证语义。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="practice-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">生产环境最佳实践</p><h2 id="practice-title">格式之外，<br>还要验证语义。</h2></div>
+      <p class="reading-intro">Pydantic 的 Field 和 validator 可以做双重保障：既约束类型和范围，也检查业务规则；验证失败时把错误反馈给模型重试。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">Pydantic 双重保障与重试 · 原文代码</p>
+      <pre><code>from pydantic import BaseModel, Field, field_validator
+
+class ExtractedData(BaseModel):
+    """用 Pydantic 做双重保障：格式 + 语义验证"""
+    name: str = Field(..., min_length=1, description="人名")
+    age: int = Field(..., ge=0, le=150, description="年龄")
+    email: str | None = Field(None, description="邮箱")
+
+    @field_validator("email")
+    @classmethod
+    def validate_email(cls, v):
+        if v and "@" not in v:
+            raise ValueError("邮箱格式不正确")
+        return v
+
+async def extract_with_retry(text: str, max_retries=3) -&gt; ExtractedData:
+    """带重试的结构化输出提取（openai-python&gt;=1.92，parse 已 GA）"""
+    for attempt in range(max_retries):
+        try:
+            response = await client.chat.completions.parse(
+                model="gpt-4o",
+                response_format=ExtractedData,
+                messages=[{"role": "user", "content": f"提取信息：{text}"}]
+            )
+            return response.choices[0].message.parsed
+        except ValidationError as e:
+            if attempt == max_retries - 1:
+                raise
+            # 将验证错误反馈给模型重试
+            continue</code></pre>
+      <p>原文示例只展示验证失败后的重试路径；网络错误、超时和模型拒答不在这一段代码里。生产实现要把这些异常分开处理，避免把可重试错误和不可重试错误混在一起。</p>
+      <p>Schema 设计也要清晰：字段名用语义化命名，<code>description</code> 写清楚每个字段的含义，帮助 LLM 理解期望。嵌套模型、列表、可选字段和枚举都可以用 Pydantic 表达。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="agent-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">Agent 系统中的结构化输出</p><h2 id="agent-title">工具调用就是<br>最典型的结构化输出。</h2></div>
+      <p class="reading-intro">Agent 的工具定义就是一份参数 Schema；LLM 输出结构化参数，框架解析后直接调用对应函数。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">工具定义与模型输出 · 原文代码</p>
+      <pre><code>tools = [
+    {
+        "name": "search_web",
+        "description": "搜索网页信息",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "搜索关键词"},
+                "max_results": {"type": "integer", "default": 5}
+            },
+            "required": ["query"]
+        }
+    }
+]
+
+# LLM 输出结构化的工具调用参数
+# {"name": "search_web", "arguments": {"query": "Python 最佳实践", "max_results": 3}}
+# Agent 框架解析后直接调用对应函数</code></pre>
+      <p>这里的 <code>parameters</code> 和上面的 Pydantic Schema 是同一个角色：告诉模型哪些字段必须有、每个字段是什么类型。区别是工具调用的结果还要由你的应用代码真正执行。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">四个容易<br>被追问的点。</h2></div>
+      <p class="reading-intro">前两条是误区，后两条是面试追问；答案都来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“在 Prompt 里说‘输出 JSON’就够了。”</h3><p>Prompt 指令无法保证输出是合法 JSON。LLM 可能添加 markdown 标记、额外解释、或生成语法错误的 JSON。生产环境必须用 JSON Mode 或 Function Calling。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“JSON Mode 能保证字段完整。”</h3><p>JSON Mode 只保证输出是合法 JSON，不保证包含你需要的字段。需要用 Structured Outputs（传入 JSON Schema 或 Pydantic 模型）来保证 Schema 合规。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>Structured Output 会影响模型的生成质量吗？</h3><p>会有轻微影响。格式约束限制了模型的自由度，在某些创意任务上可能降低质量。但对于数据提取、工具调用等结构化任务，约束反而提升了准确率。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>如何处理嵌套和复杂的输出结构？</h3><p>Pydantic 支持嵌套模型、列表、可选字段、枚举等复杂结构。关键是 Schema 设计要清晰——字段名用语义化命名，description 写清楚每个字段的含义，帮助 LLM 理解期望。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《结构化输出（Structured Output）：如何让 LLM 返回 JSON/XML？》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的八条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://developers.openai.com/api/docs/guides/structured-outputs/" target="_blank" rel="noopener noreferrer">Structured Model Outputs · OpenAI API Docs</a></li>
+          <li><a href="https://www.anthropic.com/news/structured-outputs" target="_blank" rel="noopener noreferrer">Introducing Structured Outputs · Anthropic, 2025-11-14</a></li>
+          <li><a href="https://docs.anthropic.com/en/docs/build-with-claude/structured-outputs" target="_blank" rel="noopener noreferrer">Anthropic API: Structured Outputs Beta Reference</a></li>
+          <li><a href="https://platform.openai.com/docs/api-reference/responses" target="_blank" rel="noopener noreferrer">OpenAI Responses API Reference</a></li>
+          <li><a href="https://agenta.ai/blog/the-guide-to-structured-outputs-and-function-calling-with-llms" target="_blank" rel="noopener noreferrer">The Guide to Structured Outputs and Function Calling with LLMs · Agenta</a></li>
+          <li><a href="https://boundaryml.com/blog/schema-aligned-parsing" target="_blank" rel="noopener noreferrer">Prompting vs JSON Mode vs Function Calling vs Constrained Decoding · BoundaryML</a></li>
+          <li><a href="https://www.decodingai.com/p/llm-structured-outputs-the-only-way" target="_blank" rel="noopener noreferrer">LLM Structured Outputs: The Silent Hero of Production AI · DecodingAI</a></li>
+          <li><a href="https://www.leewayhertz.com/structured-outputs-in-llms/" target="_blank" rel="noopener noreferrer">Structured Outputs in LLMs: Definition, Techniques, Applications · LeewayHertz</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>07-prompt-engineering/061-structured-output.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 2 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const SO_SCHEMA = Object.freeze({
+    type: "object",
+    required: ["name", "age", "email"],
+    additionalProperties: false,
+    properties: {
+      name: { type: "string", minLength: 1 },
+      age: { type: "integer", minimum: 0, maximum: 150 },
+      email: { type: "string" },
+      skills: { type: "array", items: { type: "string" } }
+    }
+  });
+
+  const SO_SAMPLES = Object.freeze([
+    {
+      label: "合法",
+      title: "合法样例：四个字段都通过。",
+      desc: "name、age、email 必填字段齐全；age 是 0–150 的整数；skills 是字符串数组；没有多余字段。",
+      caption: "这份样例满足全部必填、类型、范围和多余字段规则，可以进入下游处理。真实系统还应再做业务语义校验。",
+      action: "全部规则通过 · 可进入下游处理",
+      data: { name: "张三", age: 28, email: "zhangsan@example.com", skills: ["Python", "SQL"] }
+    },
+    {
+      label: "缺字段",
+      title: "缺字段：email 没有返回。",
+      desc: "JSON 语法合法，name 和 age 也存在；但 required 列表里的 email 缺失。JSON Mode 可能产出这种结果，所以还需要 Schema 校验。",
+      caption: "这就是 JSON Mode 和 Structured Outputs 的差别：前者只保证能解析，后者才会检查 required。",
+      action: "失败 1 项 · 缺少必填字段 email",
+      data: { name: "李四", age: 31, skills: ["Java"] }
+    },
+    {
+      label: "类型错误",
+      title: "类型错误：age 返回了字符串。",
+      desc: "JSON 本身能解析，但 age 的值是“二十八”而不是整数。类型检查失败后，不再对 age 做范围检查。",
+      caption: "语法合法不代表类型正确；Pydantic 或 Schema 校验会把这类问题挡在下游之前。",
+      action: "失败 1 项 · age 类型不符",
+      data: { name: "王五", age: "二十八", email: "wangwu@example.com" }
+    },
+    {
+      label: "越界/多余",
+      title: "越界与多余字段：三项规则同时失败。",
+      desc: "name 为空字符串，age 超过 150，且多了一个 Schema 不允许的 nickname 字段。email 类型本身通过。",
+      caption: "一个样例可以同时触发多条规则；校验结果要逐条列出，而不是只返回一个“失败”。",
+      action: "失败 3 项 · minLength、maximum、additionalProperties",
+      data: { name: "", age: 200, email: "zhaoliu@example.com", nickname: "小赵" }
+    }
+  ]);
+
+  const soState = { index: 0 };
+  const byId = (id) => document.getElementById(id);
+
+  function typeName(value) {
+    if (value === null) return "null";
+    if (Array.isArray(value)) return "array";
+    if (Number.isInteger(value)) return "integer";
+    if (typeof value === "number") return "number";
+    return typeof value;
+  }
+
+  function matchesType(value, type) {
+    if (type === "integer") return Number.isInteger(value);
+    if (type === "number") return typeof value === "number" && Number.isFinite(value);
+    if (type === "array") return Array.isArray(value);
+    if (type === "object") return value !== null && typeof value === "object" && !Array.isArray(value);
+    if (type === "string") return typeof value === "string";
+    return false;
+  }
+
+  function validateSample(data) {
+    const checks = [];
+    const add = (path, rule, ok, message) => checks.push({ path, rule, ok, message });
+    const rootOk = data !== null && typeof data === "object" && !Array.isArray(data);
+    add("$", "type: object", rootOk, rootOk ? "根节点是 JSON 对象" : `期望 object，实际 ${typeName(data)}`);
+    if (!rootOk) return checks;
+
+    SO_SCHEMA.required.forEach((key) => {
+      const present = Object.prototype.hasOwnProperty.call(data, key);
+      add(`$.${key}`, "required", present, present ? "字段存在" : `缺少必填字段 ${key}`);
+    });
+
+    Object.entries(SO_SCHEMA.properties).forEach(([key, rule]) => {
+      if (!Object.prototype.hasOwnProperty.call(data, key)) return;
+      const value = data[key];
+      const typeOk = matchesType(value, rule.type);
+      add(`$.${key}`, `type: ${rule.type}`, typeOk, typeOk ? `类型正确（${typeName(value)}）` : `期望 ${rule.type}，实际 ${typeName(value)}`);
+      if (!typeOk) return;
+      if (rule.minLength !== undefined) {
+        const ok = value.length >= rule.minLength;
+        add(`$.${key}`, `minLength: ${rule.minLength}`, ok, ok ? `长度 ${value.length}，不小于 ${rule.minLength}` : `长度 ${value.length}，小于 ${rule.minLength}`);
+      }
+      if (rule.minimum !== undefined) {
+        const ok = value >= rule.minimum;
+        add(`$.${key}`, `minimum: ${rule.minimum}`, ok, ok ? `${value} ≥ ${rule.minimum}` : `${value} 小于 ${rule.minimum}`);
+      }
+      if (rule.maximum !== undefined) {
+        const ok = value <= rule.maximum;
+        add(`$.${key}`, `maximum: ${rule.maximum}`, ok, ok ? `${value} ≤ ${rule.maximum}` : `${value} 大于 ${rule.maximum}`);
+      }
+      if (rule.items) {
+        value.forEach((item, index) => {
+          const ok = matchesType(item, rule.items.type);
+          add(`$.${key}[${index}]`, `items: ${rule.items.type}`, ok, ok ? `元素 ${index} 类型正确（${typeName(item)}）` : `元素 ${index} 期望 ${rule.items.type}，实际 ${typeName(item)}`);
+        });
+      }
+    });
+
+    Object.keys(data).forEach((key) => {
+      if (!Object.prototype.hasOwnProperty.call(SO_SCHEMA.properties, key)) {
+        add(`$.${key}`, "additionalProperties: false", false, `Schema 不允许字段 ${key}`);
+      }
+    });
+
+    return checks;
+  }
+
+  function renderSo(announce = true) {
+    const sample = SO_SAMPLES[soState.index];
+    const checks = validateSample(sample.data);
+    const failures = checks.filter((check) => !check.ok);
+    const passCount = checks.length - failures.length;
+
+    byId("so-position").textContent = `样例 ${soState.index + 1} / ${SO_SAMPLES.length}`;
+    byId("sample-title").textContent = sample.label + "样例";
+    byId("so-desc").textContent = sample.desc;
+    byId("so-json").textContent = JSON.stringify(sample.data, null, 2);
+    byId("so-summary").textContent = `${checks.length} 项检查 · 通过 ${passCount} · 失败 ${failures.length}`;
+
+    const badge = byId("so-badge");
+    badge.textContent = failures.length ? "不合法" : "合法";
+    badge.className = "so-badge " + (failures.length ? "bad" : "ok");
+
+    const list = byId("so-checks");
+    list.textContent = "";
+    checks.forEach((check) => {
+      const item = document.createElement("li");
+      item.className = "so-check " + (check.ok ? "ok" : "bad");
+      const icon = document.createElement("span");
+      icon.className = "so-check-icon";
+      icon.setAttribute("aria-hidden", "true");
+      icon.textContent = check.ok ? "✓" : "✕";
+      const body = document.createElement("div");
+      const path = document.createElement("span");
+      path.className = "so-check-path";
+      path.textContent = check.path;
+      const rule = document.createElement("span");
+      rule.className = "so-check-rule";
+      rule.textContent = check.rule;
+      const message = document.createElement("span");
+      message.className = "so-check-msg";
+      message.textContent = (check.ok ? "通过：" : "失败：") + check.message;
+      body.append(path, rule, message);
+      item.append(icon, body);
+      list.append(item);
+    });
+
+    const result = byId("so-result");
+    result.className = "so-result " + (failures.length ? "bad" : "ok");
+    result.textContent = failures.length
+      ? `不合法：${failures.length} 项检查失败。`
+      : `合法：${checks.length} 项检查全部通过。`;
+
+    byId("so-caption-index").textContent = `图 1 · 第 ${soState.index + 1} / ${SO_SAMPLES.length} 个样例`;
+    byId("so-caption-title").textContent = sample.title;
+    byId("so-caption-desc").textContent = sample.caption;
+    byId("so-action").textContent = sample.action;
+    byId("so-state-summary").textContent = `样例 ${soState.index + 1} / ${SO_SAMPLES.length} · 没有连接模型`;
+
+    document.querySelectorAll("#explainer [data-sample]").forEach((button) => {
+      if (Number(button.dataset.sample) === soState.index) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    byId("so-prev").disabled = soState.index === 0;
+    byId("so-next").disabled = soState.index === SO_SAMPLES.length - 1;
+
+    if (announce) {
+      byId("so-announcement").textContent = `样例 ${soState.index + 1}，共 ${SO_SAMPLES.length} 个。${sample.title}${checks.length} 项检查，通过 ${passCount} 项，失败 ${failures.length} 项。`;
+    }
+  }
+
+  function setSoSample(index, announce = true) {
+    soState.index = Math.max(0, Math.min(SO_SAMPLES.length - 1, index));
+    renderSo(announce);
+  }
+
+  document.querySelectorAll("#explainer [data-sample]").forEach((button) => {
+    button.addEventListener("click", () => setSoSample(Number(button.dataset.sample)));
+  });
+  byId("so-prev").addEventListener("click", () => setSoSample(soState.index - 1));
+  byId("so-next").addEventListener("click", () => setSoSample(soState.index + 1));
+  byId("so-reset").addEventListener("click", () => {
+    setSoSample(0);
+    byId("so-announcement").textContent = "已重置，回到样例 1。";
+  });
+  renderSo(false);
+</script>
+</body>
+</html>

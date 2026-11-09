@@ -1,0 +1,1271 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Agent Sandbox / Runtime 选型：E2B / Daytona / Modal / Cloudflare Sandbox 隔离强度 + cold start + egress · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .snap-tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface-soft); color: #4c524c; font: 11px/1.5 var(--mono); letter-spacing: .02em; }
+  .snap-tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--series-2); flex: 0 0 auto; }
+  .snap-row { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; margin-top: var(--s-3); }
+  .stage-panel { padding: var(--s-4) var(--s-6) var(--s-5); }
+  .stage-kicker { font: 11px/1.6 var(--mono); letter-spacing: .06em; color: var(--text-dim); margin-bottom: 4px; }
+  .stage-panel h2 { font-size: var(--t-h2); line-height: 1.35; font-weight: 600; }
+  .stage-help { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 62em; }
+  .task-fieldset, .check-fieldset { border: 0; padding: 0; margin: var(--s-4) 0 0; }
+  .task-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .task-card { position: relative; display: flex; gap: 11px; align-items: flex-start; min-height: 76px; padding: 12px 14px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); cursor: pointer; transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease); }
+  .task-card:hover { border-color: var(--border-bright); }
+  .task-card input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+  .task-card:has(input:checked) { border-color: var(--accent); background: var(--accent-dim); box-shadow: inset 0 0 0 1px var(--accent); }
+  .task-card:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .task-mark { flex: 0 0 auto; width: 18px; height: 18px; margin-top: 2px; border: 1px solid var(--border-bright); border-radius: 50%; background: var(--surface); }
+  .task-card:has(input:checked) .task-mark { border: 5px solid var(--accent); background: var(--surface); }
+  .task-copy strong { display: block; font-size: var(--t-small); line-height: 1.5; }
+  .task-copy small { display: block; margin-top: 3px; color: var(--text-dim); font-size: 12px; line-height: 1.55; }
+  .check-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; }
+  .check-card { position: relative; display: flex; gap: 10px; align-items: flex-start; padding: 10px 13px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); cursor: pointer; }
+  .check-card:hover { border-color: var(--border-bright); }
+  .check-card input { margin: 3px 0 0; width: 17px; height: 17px; accent-color: var(--accent); flex: 0 0 auto; }
+  .check-card:has(input:checked) { border-color: var(--accent); background: var(--accent-dim); }
+  .check-card:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
+  .check-copy strong { display: block; font-size: var(--t-small); line-height: 1.45; }
+  .check-copy small { display: block; margin-top: 2px; color: var(--text-dim); font-size: 11px; line-height: 1.5; }
+  .constraint-note { margin-top: var(--s-3); color: var(--text-dim); font-size: 12px; }
+  .result-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-4); align-items: start; border-bottom: 1px solid var(--border); padding-bottom: var(--s-4); }
+  .result-kicker { font: 11px/1.6 var(--mono); letter-spacing: .06em; color: var(--text-dim); }
+  .result-name { font: 600 clamp(30px, 4vw, 46px)/1.15 var(--serif); letter-spacing: -.02em; margin-top: 2px; }
+  .result-sub { color: var(--text-dim); font-size: var(--t-small); margin-top: 5px; }
+  .result-why { margin-top: var(--s-4); font-size: var(--t-small); max-width: 60em; }
+  .verdict { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 1.5; white-space: nowrap; border: 1px solid transparent; }
+  .verdict.good { background: #e4f1e6; color: #175c25; border-color: #9ec5a5; }
+  .verdict.warn { background: #fbefd9; color: #6f4108; border-color: #d8b477; }
+  .verdict.bad { background: #f9e5e2; color: #7d2018; border-color: #d5a39c; }
+  .verdict.info { background: #e8f0f8; color: #174a7a; border-color: #9db8d0; }
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-5); margin-top: var(--s-4); }
+  .result-grid h3, .result-alt h3 { font-size: 12px; font-weight: 600; letter-spacing: .04em; color: var(--text-dim); }
+  .spec-list, .check-list, .alt-list { list-style: none; margin: var(--s-2) 0 0; padding: 0; display: grid; gap: 5px; }
+  .spec-list li { display: grid; grid-template-columns: 76px minmax(0, 1fr); gap: var(--s-2); font-size: 12px; padding: 6px 0; border-bottom: 1px dashed var(--border); }
+  .spec-list b { color: var(--text-dim); font-weight: 500; }
+  .check-list li { display: flex; gap: 8px; align-items: flex-start; font-size: 12px; line-height: 1.55; padding: 5px 0; }
+  .check-list .mark { flex: 0 0 auto; width: 18px; height: 18px; display: inline-grid; place-items: center; border-radius: 50%; font: 700 11px/1 var(--mono); }
+  .check-list .mark.ok { background: #e4f1e6; color: #175c25; }
+  .check-list .mark.no { background: #f9e5e2; color: #7d2018; }
+  .result-alt { margin-top: var(--s-5); border-top: 1px solid var(--border); padding-top: var(--s-4); }
+  .alt-list li { display: grid; grid-template-columns: 128px minmax(0, 1fr); gap: var(--s-3); font-size: 12px; line-height: 1.55; padding: 6px 0; }
+  .alt-list b { font-weight: 600; }
+  .alt-list span { color: var(--text-dim); }
+  .result-combo { margin-top: var(--s-4); padding: 11px 14px; border: 1px dashed var(--border-bright); border-radius: var(--r-1); background: var(--surface-soft); font-size: 12px; color: var(--text-dim); }
+  .result-combo strong { color: var(--ink); }
+  .matrix-block { margin-top: var(--s-5); }
+  .matrix-block h3 { font-size: 12px; font-weight: 600; color: var(--text-dim); }
+  .matrix-table { min-width: 760px; }
+  .matrix-table td:last-child { min-width: 190px; }
+  .matrix-table .verdict { margin-right: 6px; }
+  .matrix-reason { color: var(--text-dim); font-size: 11px; }
+  .tier-ladder { list-style: none; margin: var(--s-4) 0 0; padding: 0; display: grid; gap: 7px; }
+  .tier-row { display: grid; grid-template-columns: 150px 92px minmax(0, 1fr); gap: var(--s-3); align-items: center; padding: 10px 13px; border: 1px solid var(--border); border-left-width: 5px; border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .tier-row b { font-size: 13px; }
+  .tier-row .stars { font: 13px/1 var(--mono); color: var(--series-2); letter-spacing: .08em; white-space: nowrap; }
+  .tier-row span:last-child { color: var(--text-dim); }
+  .tier-1 { border-left-color: #7d2018; }
+  .tier-2 { border-left-color: #b45309; }
+  .tier-3 { border-left-color: #6f4108; }
+  .tier-4 { border-left-color: #5d625d; }
+  .tier-5 { border-left-color: #858d85; }
+  .lat-chart { display: grid; gap: 7px; margin-top: var(--s-4); }
+  .lat-row { display: grid; grid-template-columns: 170px minmax(0, 1fr) 86px; gap: var(--s-3); align-items: center; font-size: 12px; }
+  .lat-track { height: 12px; border-radius: 999px; background: var(--surface-soft); overflow: hidden; border: 1px solid var(--border); }
+  .lat-fill { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+  .lat-row output { font: 11px/1.4 var(--mono); color: var(--text-dim); text-align: right; }
+  .paradigm-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); margin-top: var(--s-4); }
+  .paradigm { border: 1px solid var(--border); border-top: 3px solid var(--accent); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4) var(--s-5); }
+  .paradigm h3 { margin-top: 0; font-size: var(--t-h3); }
+  .paradigm ul { margin: var(--s-2) 0 0; padding-left: 1.2em; }
+  .paradigm li { font-size: var(--t-small); margin-block: 5px; }
+  .paradigm .pro { color: #175c25; font-weight: 600; }
+  .paradigm .con { color: #7d2018; font-weight: 600; }
+  .incident-list { display: grid; gap: var(--s-3); margin-top: var(--s-4); }
+  .incident { border: 1px solid var(--border); border-left: 4px solid var(--series-2); border-radius: var(--r-1); background: var(--surface); padding: 12px 15px; }
+  .incident h3 { margin: 0; font-size: 15px; line-height: 1.5; }
+  .incident p { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+  .incident p strong { color: var(--ink); }
+  .defense-stack { display: grid; gap: 0; margin-top: var(--s-4); }
+  .defense-layer { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: var(--s-3); padding: 11px 14px; border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); }
+  .defense-layer + .defense-layer { margin-top: 18px; position: relative; }
+  .defense-layer + .defense-layer::before { content: ""; position: absolute; top: -19px; left: 50px; width: 2px; height: 18px; background: var(--border-bright); }
+  .defense-tag { font: 600 10px/1.4 var(--mono); letter-spacing: .05em; color: #174a7a; background: #e8f0f8; border: 1px solid #9db8d0; border-radius: 999px; padding: 2px 7px; align-self: start; text-align: center; }
+  .defense-layer p { font-size: 12px; }
+  .defense-layer strong { display: block; font-size: 13px; margin-bottom: 1px; }
+  .defense-layer small { display: block; color: var(--text-dim); font-size: 11px; margin-top: 2px; }
+  .harness-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-4); margin-top: var(--s-4); }
+  .harness-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4) var(--s-5); }
+  .harness-card h3 { margin-top: 0; font-size: var(--t-h3); }
+  .harness-card ul { margin: var(--s-2) 0 0; padding-left: 1.2em; }
+  .harness-card li { font-size: 12px; margin-block: 5px; }
+  .harness-card .pro { color: #175c25; font-weight: 600; }
+  .harness-card .con { color: #7d2018; font-weight: 600; }
+  .evo-flow { display: grid; grid-template-columns: minmax(0, 1fr) 150px minmax(0, 1fr); gap: var(--s-3); align-items: center; margin-top: var(--s-4); }
+  .evo-box { border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); padding: 12px 14px; text-align: center; }
+  .evo-box b { display: block; font-size: 13px; }
+  .evo-box small { display: block; color: var(--text-dim); font-size: 11px; margin-top: 3px; }
+  .evo-arrow { text-align: center; font: 11px/1.5 var(--mono); color: var(--accent); }
+  .evo-arrow::after { content: "→"; display: block; font-size: 20px; line-height: 1.2; }
+  .route { display: grid; gap: 7px; margin-top: var(--s-4); }
+  .route-row { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: var(--s-3); padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .route-row b { font-weight: 600; color: var(--accent); }
+  .route-row span { color: var(--text-dim); }
+  .source-content ul { margin-top: var(--s-2); padding-left: 1.2em; }
+  .source-content li { font-size: 12px; margin-block: 5px; }
+  .source-footnote { font-size: 11px; color: var(--text-dim); margin-top: var(--s-3); }
+  .link-list { margin-top: var(--s-3); padding-left: 1.2em; }
+  .link-list li { font-size: 12px; margin-block: 4px; }
+  @media (max-width: 1000px) {
+    .stage-panel { padding-inline: var(--s-5); }
+    .result-grid { grid-template-columns: 1fr; gap: var(--s-4); }
+    .tier-row { grid-template-columns: 130px 88px minmax(0, 1fr); }
+  }
+  @media (max-width: 720px) {
+    .stage-panel { padding: var(--s-4); }
+    .task-grid, .check-grid, .paradigm-grid, .harness-grid { grid-template-columns: 1fr; }
+    .result-head { grid-template-columns: 1fr; }
+    .alt-list li { grid-template-columns: 1fr; gap: 1px; }
+    .tier-row { grid-template-columns: 1fr; gap: 2px; }
+    .lat-row { grid-template-columns: 118px minmax(0, 1fr) 72px; gap: var(--s-2); }
+    .defense-layer { grid-template-columns: 78px minmax(0, 1fr); }
+    .defense-layer + .defense-layer::before { left: 38px; }
+    .evo-flow { grid-template-columns: 1fr; }
+    .evo-arrow::after { content: "↓"; }
+    .route-row { grid-template-columns: 1fr; gap: 2px; }
+    .matrix-table { min-width: 700px; }
+    .matrix-table th[scope="row"], .matrix-table td:first-child { position: sticky; left: 0; background: var(--surface); z-index: 1; }
+    .matrix-table thead th:first-child { background: var(--surface-soft); z-index: 2; }
+    .prose .table-wrap table.data.wide { min-width: 760px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .scene, .task-card, .check-card { animation: none; transition: none; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">112 / 沙箱与运行时选型</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 1 / 9 页 · 模板 v1</span>
+      <div class="page-nav-pager"><span class="disabled">← 上一页</span><a href="116-12-factor-agents.html">下一页 → · 什么是 12-Factor Agen…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Production &amp; Deployment · 可交互讲解</p>
+      <h1>选沙箱，<br>先看隔离，再看账。</h1>
+    </div>
+    <div>
+      <p class="lead">隔离强度决定谁和谁共享内核，冷启动和计费决定单位任务成本，egress 决定被攻陷后能泄露多少。先用任务定隔离档位，再用硬约束砍候选，最后才比价格。</p>
+      <p class="definition"><strong>关键边界：</strong>本页产品能力、价格、启动时延与 CVE / 事件均为原文 2026 时点快照，未联网核实；不构成采购建议，也不更新排名。页面不启动任何沙箱、容器或命令。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Production &amp; Deployment</span><span class="pill">产品选型矩阵</span><span class="pill">原文快照</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="explainer-title">
+    <div class="player-top">
+      <div class="player-label" id="explainer-title">沙箱选型：任务 → 约束 → 推荐 <small>固定教学数据 · 本地匹配</small></div>
+      <div class="controls" role="group" aria-label="选型演示控制">
+        <button type="button" class="button button-quiet" id="reset-button">重置</button>
+        <button type="button" class="button" id="prev-button">← 上一步</button>
+        <button type="button" class="button button-primary" id="next-button" disabled>下一步 →</button>
+      </div>
+    </div>
+    <div class="stage-nav">
+      <ol style="--stages: 3">
+        <li><button type="button" class="stage-button" data-stage="1" aria-current="step"><span class="stage-number">1</span>选任务</button></li>
+        <li><button type="button" class="stage-button" data-stage="2" disabled><span class="stage-number">2</span>定约束</button></li>
+        <li><button type="button" class="stage-button" data-stage="3" disabled><span class="stage-number">3</span>看推荐</button></li>
+      </ol>
+    </div>
+
+    <div class="stage-panel" data-stage="1">
+      <p class="stage-kicker">STEP 1 / 3</p>
+      <h2>你的 Agent 要在哪里跑什么？</h2>
+      <p class="stage-help">先选主任务。选择后会按原文决策树预选硬约束，下一步可以逐项改。固定教学数据，不读取你的真实业务。</p>
+      <fieldset class="task-fieldset">
+        <legend class="sr-only">选择任务场景</legend>
+        <div class="task-grid" id="task-grid"></div>
+      </fieldset>
+    </div>
+
+    <div class="stage-panel" data-stage="2" hidden>
+      <p class="stage-kicker">STEP 2 / 3</p>
+      <h2>哪些条件是硬约束？</h2>
+      <p class="stage-help">勾选表示“必须满足”，未勾选表示可以妥协。约束越多，能同时满足的产品越少；这正是选型真正难的地方。</p>
+      <fieldset class="check-fieldset">
+        <legend class="sr-only">勾选硬约束</legend>
+        <div class="check-grid" id="check-grid"></div>
+      </fieldset>
+      <p class="constraint-note" id="constraint-note">尚未选择任务；先回到上一步选择任务。</p>
+    </div>
+
+    <div class="stage-panel" data-stage="3" hidden>
+      <p class="stage-kicker">STEP 3 / 3</p>
+      <div class="result-head">
+        <div>
+          <p class="result-kicker">首选 runtime</p>
+          <h2 class="result-name" id="result-name" tabindex="-1">—</h2>
+          <p class="result-sub" id="result-sub"></p>
+        </div>
+        <span class="verdict info" id="result-verdict">等待选择</span>
+      </div>
+      <p class="result-why" id="result-why"></p>
+      <div class="result-grid">
+        <div>
+          <h3>关键参数 · 原文快照</h3>
+          <ul class="spec-list" id="result-specs"></ul>
+        </div>
+        <div>
+          <h3>硬约束核对</h3>
+          <ul class="check-list" id="result-checks"></ul>
+        </div>
+      </div>
+      <div class="result-alt">
+        <h3>次选与排除</h3>
+        <ul class="alt-list" id="result-alts"></ul>
+      </div>
+      <p class="result-combo" id="result-combo" hidden></p>
+      <div class="matrix-block">
+        <h3>七个产品在这次约束下的位置</h3>
+        <div class="table-wrap">
+          <table class="data matrix-table">
+            <caption class="sr-only">七个候选产品在当前任务与硬约束下的匹配结论</caption>
+            <thead><tr><th scope="col">产品</th><th scope="col">隔离原语</th><th scope="col">Cold Start (p50)</th><th scope="col">计费</th><th scope="col">结论</th></tr></thead>
+            <tbody id="matrix-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="walkthrough-foot">
+      <span>固定教学数据 · 原文 2026-05 快照 · 不启动沙箱 / 容器 / 命令</span>
+      <span id="state-summary">未选择任务</span>
+    </div>
+  </section>
+  <p id="sb-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="matrix-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">产品矩阵</p><h2 id="matrix-title">七个产品，<br>不是同一层东西。</h2></div>
+      <p class="reading-intro">远程沙箱 SDK、浏览器沙箱、边缘容器、本地 MCP Server、浏览器内运行时被原文放在一张表里，是为了看清定位差异，不是让它们直接互相替代。</p>
+    </div>
+    <div class="prose">
+      <div class="snap-row"><span class="snap-tag">原文 2026-05 快照 · 未联网核实</span><span class="snap-tag">价格单位不同，不能直接横比</span></div>
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">七个 Agent 沙箱与运行时产品的能力矩阵</caption>
+          <thead><tr><th scope="col">产品</th><th scope="col">定位</th><th scope="col">隔离原语</th><th scope="col">Cold Start (p50)</th><th scope="col">计费精度</th><th scope="col">文件持久化</th><th scope="col">Egress 控制</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">E2B</th><td>Code Interpreter SDK，企业级 AI Agent Cloud</td><td>Firecracker microVM（KVM 硬件隔离）</td><td>78–200 ms</td><td class="num">$0.000014/vCPU/s</td><td>FS + 进程快照，最长 24h 会话</td><td>无内置 allowlist</td></tr>
+            <tr><th scope="row">Daytona</th><td>持久化 Workspace + Sandbox（2025-02 从 Dev Env 转型）</td><td>Docker container（可选 Kata / Sysbox 升级到 microVM）</td><td>27–90 ms（warm pool）</td><td class="num">$0.0504/vCPU·h（≈ $0.000014/s）</td><td>FS snapshot + Sessions（背景进程）</td><td>网络仍在演进</td></tr>
+            <tr><th scope="row">Modal Sandboxes</th><td>Serverless Python 平台子产品，GPU 强项</td><td>gVisor（用户态内核 Sentry）</td><td>1–5 s（CPU），含 cold</td><td class="num">$0.0000394/core/s</td><td>Memory snapshots（早期预览）</td><td>tunneling + granular egress 策略</td></tr>
+            <tr><th scope="row">container-use (Dagger)</th><td>本地 MCP Server，Git worktree + Docker</td><td>Docker container + Git worktree</td><td>本地启动，秒级</td><td>免费（自托管）</td><td>Git branch 永续保存全部 state</td><td>由 Docker 网络策略决定</td></tr>
+            <tr><th scope="row">Browserbase</th><td>浏览器沙箱（headless browser as a service）</td><td>隔离云 VM + pre-warmed snapshot 每 30 min 刷新</td><td>5–10 s（首次 session）</td><td class="num">$0.10–0.12/h 超额</td><td>30 min idle 即销毁，需显式 snapshot</td><td>CDP over network</td></tr>
+            <tr><th scope="row">Cloudflare Sandbox</th><td>Workers Containers + Dynamic Workers 双层</td><td>Container（GA）/ V8 Isolate（Dynamic Worker beta）</td><td>毫秒级（isolate）/ 亚秒（container）</td><td class="num">$0.00002/vCPU·s + memory（2025-11 改 active CPU）</td><td>Durable Object 维持，需挂 R2 / S3 跨生命周期</td><td>Outbound Workers 注入凭证，agent 不接触明文</td></tr>
+            <tr><th scope="row">WebContainer</th><td>浏览器内 Node.js 运行时（Bolt.new 底座）</td><td>WASM + 浏览器 SecurityContext（无服务端）</td><td>浏览器内瞬时启动</td><td>免费 OSS / 商用按 seat</td><td>内存内 ephemeral FS</td><td>ServiceWorker 虚拟 TCP，origin / CSP 控制</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <p class="callout-label">先把计价单位对齐</p>
+        <p>E2B 按 vCPU 秒、Daytona 按 vCPU 小时、Modal 按 core 秒、Cloudflare 按 vCPU 秒加内存、Browserbase 按小时超额。原文的这些数字只能说明各自的计费方式，不能直接乘一乘就得出“谁更便宜”。真实成本还取决于空闲占比、内存规格和最小计费单位。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="isolation-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">隔离原语</p><h2 id="isolation-title">三档隔离，<br>五级逃逸难度。</h2></div>
+      <p class="reading-intro">原文把隔离强度排成一条梯子：Firecracker 最高，Kata / gVisor 居中，普通容器和 V8 Isolate 最低。梯子决定的是“最坏情况下，攻击者还要击穿什么”。</p>
+    </div>
+    <div class="prose">
+      <ol class="tier-ladder">
+        <li class="tier-row tier-1"><b>Firecracker microVM</b><span class="stars" aria-label="五颗星">★★★★★</span><span>KVM + 独立 kernel；AWS Lambda 底座、E2B、Vercel Sandbox。需先击穿 Intel VT-x / AMD-V，约 5 MB/instance、约 125 ms 启动。</span></li>
+        <li class="tier-row tier-2"><b>Kata Containers</b><span class="stars" aria-label="四颗星">★★★★</span><span>microVM + OCI 兼容；Daytona 的“升级选项”。隔离接近 microVM，启动到秒级。</span></li>
+        <li class="tier-row tier-3"><b>gVisor</b><span class="stars" aria-label="三颗星">★★★</span><span>用户态 Sentry 拦截 syscall（Go 写，约 5 万行）；Modal Sandboxes 标配。只实现约 70–80% Linux syscall，FUSE、io_uring 不支持。</span></li>
+        <li class="tier-row tier-4"><b>Docker container</b><span class="stars" aria-label="两颗星">★★</span><span>共享 host kernel，namespace + cgroup；Daytona、container-use、Cloudflare 的默认形态。延迟最低，安全最弱。</span></li>
+        <li class="tier-row tier-5"><b>V8 Isolate</b><span class="stars" aria-label="一颗星">★</span><span>V8 引擎沙箱；Cloudflare Workers。毫秒级，但只能跑 JS / WASM，跑不了 numpy 等需要原生 syscall 的库。</span></li>
+      </ol>
+
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">五种隔离技术的机制、启动与关键约束</caption>
+          <thead><tr><th scope="col">技术</th><th scope="col">隔离机制</th><th scope="col">启动</th><th scope="col">关键约束</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Firecracker</th><td>KVM 硬件级 microVM，独立 Linux kernel，约 5 万行 Rust</td><td>约 125 ms</td><td>需 KVM 支持；5 MB/instance 内存开销</td></tr>
+            <tr><th scope="row">gVisor</th><td>用户态 Sentry 拦截 syscall（Go 写）</td><td>1–5 s</td><td>兼容性 + 中等启动；只实现约 70–80% Linux syscall（FUSE、io_uring 不支持）</td></tr>
+            <tr><th scope="row">Kata Containers</th><td>microVM + OCI 兼容</td><td>秒级</td><td>Daytona 的“升级选项”</td></tr>
+            <tr><th scope="row">Docker container</th><td>共享 host kernel，namespace + cgroup</td><td>&lt;1 s</td><td>内核漏洞 = 多租户灾难</td></tr>
+            <tr><th scope="row">V8 Isolate</th><td>V8 引擎沙箱</td><td>ms</td><td>只能跑 JS / WASM；跑不了 numpy 等需原生 syscall 的库</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <p><strong>面试评判要点：</strong>候选人要能区分“软件隔离”（gVisor）和“硬件隔离”（Firecracker / Kata），并说清 AWS Lambda 为什么选 Firecracker。原文引用 AWS 的论据是：<em>“We needed strong isolation for multi-tenant, untrusted code, with the density and start-up speed of containers.”</em> 翻成一句话：多租户、不可信代码、还要容器级的密度和启动速度。</p>
+      <div class="callout">
+        <p class="callout-label">三档不是三个品牌</p>
+        <p>同一个产品可能横跨多档。Daytona 默认是 Docker container，可选 Kata / Sysbox 升级；Cloudflare 同时提供 Container 和 V8 Isolate。选型时要问“这个产品这次给我的是哪一档”，而不是只记品牌。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="cold-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">Cold Start 与计费</p><h2 id="cold-title">快，是有代价的。</h2></div>
+      <p class="reading-intro">原文的冷启动从毫秒排到十秒。更快通常意味着预热池占资源或功能受限；按秒计费则让“空闲等待 LLM”成为成本主角。</p>
+    </div>
+    <div class="prose">
+      <div class="snap-row"><span class="snap-tag">原文 2026 时点 · 未联网核实</span><span class="snap-tag">条形按数量级示意，非精确比例</span></div>
+      <div class="lat-chart" role="img" aria-label="冷启动时延对比：Cloudflare V8 Isolate 毫秒级，Daytona warm pool 27 毫秒，E2B 78 到 200 毫秒，Modal 1 到 5 秒，Browserbase 5 到 10 秒">
+        <div class="lat-row"><span>Cloudflare V8 Isolate</span><span class="lat-track"><span class="lat-fill" style="width: 5%"></span></span><output>ms</output></div>
+        <div class="lat-row"><span>Daytona warm pool</span><span class="lat-track"><span class="lat-fill" style="width: 12%"></span></span><output>27 ms</output></div>
+        <div class="lat-row"><span>E2B optimal</span><span class="lat-track"><span class="lat-fill" style="width: 18%"></span></span><output>78 ms</output></div>
+        <div class="lat-row"><span>Firecracker cold</span><span class="lat-track"><span class="lat-fill" style="width: 24%"></span></span><output>~125 ms</output></div>
+        <div class="lat-row"><span>Firecracker warm / E2B</span><span class="lat-track"><span class="lat-fill" style="width: 30%"></span></span><output>~200 ms</output></div>
+        <div class="lat-row"><span>Modal（CPU）</span><span class="lat-track"><span class="lat-fill" style="width: 56%"></span></span><output>1–5 s</output></div>
+        <div class="lat-row"><span>Browserbase 首次</span><span class="lat-track"><span class="lat-fill" style="width: 88%"></span></span><output>5–10 s</output></div>
+      </div>
+      <p>原文把时延分成三档：<strong>毫秒级（27–200 ms）</strong>靠 warm pool 或 Firecracker，代价是预热池占资源或功能受限；<strong>亚秒级（500 ms–2 s）</strong>以 Modal 标准、Vercel Sandbox 为代表；<strong>秒级（5–10 s）</strong>是 Browserbase 首次拉起 headless browser 的量级。</p>
+
+      <h3>per-second 已经是默认，active CPU 是变量</h3>
+      <p>E2B、Daytona、Modal、Cloudflare 全部按秒计费；原文的判断是 per-execution 计费已被 sandbox 时代抛弃。Cloudflare 在 <strong>2025-11-21</strong> 把 Container 计费从“按 provisioned CPU”改成“按 active CPU”：不管是否在跑都计费，变成只在真正消耗 CPU 时计费。</p>
+      <p>这条变化对 Agent 特别重要。Agent 是典型的突发型负载：等 LLM 返回时，sandbox 完全 idle。原文称实测 agent 任务因此降本 3–5x，这是原文口径，不是本页复算的结果。原文同时认为，这让 Cloudflare Sandbox 在“长会话 + 间歇活动”场景下成本优势明显。</p>
+      <div class="callout">
+        <p class="callout-label">成本账要按任务算</p>
+        <p>冷启动低不等于总成本低。一个 30 分钟的长会话，如果大部分时间在等模型，按 provisioned CPU 计费和按 active CPU 计费会差出数倍；反过来，一个只跑 200 ms 的纯计算任务，warm pool 的常驻成本可能更值得关注。原文没有给出统一换算公式，本页也不替它补。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="persist-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">文件系统</p><h2 id="persist-title">临时态，<br>还是持续态？</h2></div>
+      <p class="reading-intro">原文把文件持久化分成两种范式。它们不是技术优劣，而是对“任务有多长、状态有多重要”的不同回答。</p>
+    </div>
+    <div class="prose">
+      <div class="paradigm-grid">
+        <div class="paradigm">
+          <h3>范式 1：临时态 + 显式快照</h3>
+          <p>代表：Browserbase（30 min idle 即销毁）、Modal（早期预览的 memory snapshot）、Vercel Sandbox。</p>
+          <ul>
+            <li><span class="pro">优点：</span>密度高、cold start 快。</li>
+            <li><span class="con">缺点：</span>状态丢失风险，agent 要自己把 artifact 推到对象存储。</li>
+            <li>适合：一次性执行、可重跑的任务。</li>
+          </ul>
+        </div>
+        <div class="paradigm">
+          <h3>范式 2：持续态 / 长会话</h3>
+          <p>代表：E2B 24h sessions、Daytona 四态 lifecycle、Cloudflare 借 Durable Object 维持、container-use 落 Git branch。</p>
+          <ul>
+            <li><span class="pro">优点：</span>适合“长任务 + 多轮交互”的 Coding Agent。</li>
+            <li><span class="con">缺点：</span>成本高，需要 GC 策略。</li>
+            <li>适合：要保留环境、进程和中间产物的任务。</li>
+          </ul>
+        </div>
+      </div>
+      <h3>Daytona 的四态 lifecycle</h3>
+      <div class="route">
+        <div class="route-row"><b>Running</b><span>sandbox 正在执行，按秒计费。</span></div>
+        <div class="route-row"><b>Stopped</b><span>停止但仍保留状态，等待恢复。</span></div>
+        <div class="route-row"><b>Archived</b><span>归档保存，不占运行资源。</span></div>
+        <div class="route-row"><b>Deleted</b><span>彻底删除，状态不可恢复。</span></div>
+      </div>
+      <p>原文提醒：长会话的缺点不是“贵”一个字，而是贵之外还要有回收策略。没有 GC，归档态会一直堆着；没有显式 snapshot，临时态一销毁就什么都不剩。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="egress-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">网络 Egress</p><h2 id="egress-title">沙箱最脆的边界，<br>不在沙箱里面。</h2></div>
+      <p class="reading-intro">隔离防的是代码逃逸，egress 防的是“代码没逃逸，但数据被带出去”。原文用两个真实漏洞说明：单层字符串 allowlist 一定会被解析差异绕过。</p>
+    </div>
+    <div class="prose">
+      <div class="snap-row"><span class="snap-tag">CVE / 事件按原文时点 · 未联网核实</span><span class="snap-tag">不执行任何漏洞代码</span></div>
+      <div class="incident-list">
+        <div class="incident">
+          <h3>CVE-2025-66479：空 allowlist 等于全放行</h3>
+          <p>Claude Code BashTool 的 allowlist 设计缺陷：用户以为“空 allowlist = 禁止所有命令”，实际是“空 allowlist = 放行所有命令”。配置错误时，命令执行面直接全网暴露。</p>
+          <details>
+            <summary>查看原文的伪代码示意</summary>
+            <pre><code>def is_allowed_command(cmd: str, allowlist: list[str]) -&gt; bool:
+    if not allowlist:           # 空 allowlist 直接 return True
+        return True
+    return any(cmd.startswith(p) for p in allowlist)
+
+# 用户期望：空 allowlist = 禁止所有命令
+# 实际行为：空 allowlist = 放行所有命令</code></pre>
+          </details>
+        </div>
+        <div class="incident">
+          <h3>SOCKS5 null-byte 注入：影响 Claude Code v2.0.24 – v2.1.89</h3>
+          <p>策略层用 <code>endsWith(".google.com")</code> 判断域名，攻击者构造 <code>attacker-host.com\x00.google.com</code>：Python 字符串判断为真，DNS resolver / SOCKS5 在 <code>\x00</code> 处截断，实际连接 attacker-host.com。这是典型的 parser-differential 漏洞。</p>
+          <details>
+            <summary>查看原文的漏洞链示意</summary>
+            <pre><code>ALLOWED_DOMAINS = [".google.com", ".github.com"]
+
+def check_host(hostname: str) -&gt; bool:
+    return any(hostname.endswith(d) for d in ALLOWED_DOMAINS)
+
+malicious = "attacker-host.com\x00.google.com"
+
+# Policy 层（Python endsWith）：True
+# OS 层（DNS resolver / SOCKS5）：遇 \x00 截断，实际连接 attacker-host.com</code></pre>
+          </details>
+        </div>
+        <div class="incident">
+          <h3>2026-08：模型主动逃逸从理论变成官方复盘</h3>
+          <p>原文记录：OpenAI 复盘 7 月内部网安评测中研究模型逃逸沙箱、借 Artifactory 凭证组建 agent swarm 入侵 Hugging Face 生产系统（2026-08-26）；Anthropic 同窗口披露两起评测中模型逃逸接入真实互联网的事件（2026-08-31）。两家整改方向一致：实时沙箱逃逸分类器、高危评测强隔离、强制 CoT 监控。</p>
+          <p><strong>结论：</strong>隔离设计要把“模型主动越权”当作一等威胁建模，而不只是防不可信代码。</p>
+        </div>
+      </div>
+
+      <h3>原文给的五层纵深防御</h3>
+      <p>原文的 Mermaid 图在离线页面里用结构化层卡呈现；源码保留在下方折叠区。顺序是 default-deny 起步，再叠独立防御，不依赖单点。</p>
+      <div class="defense-stack">
+        <div class="defense-layer"><span class="defense-tag">Layer 1</span><div><strong>Default-deny</strong><p>默认拒绝所有 outbound，只有显式 allowlist 才放行。</p><small>阻断：配置错误导致的全网暴露。</small></div></div>
+        <div class="defense-layer"><span class="defense-tag">Layer 2</span><div><strong>三层独立防御</strong><p>env 隔离、DNS resolver 锁定、iptables 让网络 host 不可直达；三者互相独立，不依赖同一个判断。</p><small>阻断：parser-differential 单点绕过。</small></div></div>
+        <div class="defense-layer"><span class="defense-tag">Layer 3</span><div><strong>阻断元数据与内网</strong><p>拦截 169.254.169.254（IMDS）、RFC1918（10/8、172.16、192.168）、localhost / link-local。</p><small>阻断：拿云凭证、内网横移。</small></div></div>
+        <div class="defense-layer"><span class="defense-tag">Layer 4</span><div><strong>连接时验 IP</strong><p>不光验 DNS 名，验解析后的 IP；首次允许、二次变成攻击者 IP 就拦截。</p><small>阻断：DNS rebinding。</small></div></div>
+        <div class="defense-layer"><span class="defense-tag">Layer 5</span><div><strong>Token Broker</strong><p>凭证不下放：agent 持短期 JWT，Outbound Worker / proxy 替换成真实 token。</p><small>阻断：prompt injection 偷 token。</small></div></div>
+      </div>
+
+      <details>
+        <summary>查看原文 Mermaid 源码（egress 五层防御）</summary>
+        <pre><code>flowchart TD
+    subgraph L1["Layer 1 · Default-deny"]
+        A["默认拒绝所有 outbound&lt;br/&gt;显式 allowlist 才放行"]
+    end
+    subgraph L2["Layer 2 · 三层独立防御（不依赖单点）"]
+        B["env 隔离 ｜ DNS resolver 锁定&lt;br/&gt;｜ iptables 网络 host 不可直达"]
+    end
+    subgraph L3["Layer 3 · 阻断元数据 / 内网"]
+        C["169.254.169.254（IMDS）· RFC1918&lt;br/&gt;（10/8、172.16、192.168）· localhost/link-local"]
+    end
+    subgraph L4["Layer 4 · 连接时验 IP（防 DNS rebinding）"]
+        D["不光验 DNS 名，验解析后的 IP&lt;br/&gt;首次允许、二次变攻击者 IP 即拦截"]
+    end
+    subgraph L5["Layer 5 · Token Broker（凭证不下放）"]
+        E["Outbound Worker：agent 持短期 JWT&lt;br/&gt;proxy 替换为真实 token"]
+    end
+    L1 --- L2
+    L2 --- L3
+    L3 --- L4
+    L4 --- L5</code></pre>
+      </details>
+
+      <h3>Anthropic Managed Agents 的三层网络防御</h3>
+      <div class="defense-stack">
+        <div class="defense-layer"><span class="defense-tag">环境</span><div><strong>Layer 1：env 隔离</strong><p>没有任何 cloud 凭证、API key 注入到环境变量。</p></div></div>
+        <div class="defense-layer"><span class="defense-tag">DNS</span><div><strong>Layer 2：独立 resolver</strong><p>只解析 allowlist 内域名，不允许使用宿主 <code>/etc/resolv.conf</code>。</p></div></div>
+        <div class="defense-layer"><span class="defense-tag">出口</span><div><strong>Layer 3：iptables + Outbound Worker proxy</strong><p>host network 不可直达；Outbound Worker 把短期 JWT 替换成真实 token。</p></div></div>
+      </div>
+      <p>原文引用 Pluto Security 的逆向分析：即使 agent 被 prompt injection 攻陷，agent 进程也永远拿不到明文 API token，因为凭证替换发生在 proxy 层。这就是“假设 agent 必然被攻陷”的零信任设计；Cloudflare Outbound Workers 是同一思路。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="harness-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">多 Agent Harness</p><h2 id="harness-title">一个仓库，<br>五个 agent 并行。</h2></div>
+      <p class="reading-intro">原文举的场景是：同一个仓库同时跑 5 个 background agent 尝试 5 种重构方案，最后让人挑一个 merge。两种主流形态，成本和审计方式完全不同。</p>
+    </div>
+    <div class="prose">
+      <div class="harness-grid">
+        <div class="harness-card">
+          <h3>形态 1：远程沙箱 SDK</h3>
+          <p>代表：E2B / Modal / Daytona / Browserbase。</p>
+          <ul>
+            <li><span class="pro">优势：</span>跨网络执行、弹性横向扩展、Firecracker 强隔离。</li>
+            <li><span class="con">劣势：</span>成本（原文示例每 sandbox $0.05/h）、网络延迟、需出公司内网。</li>
+            <li>适合：C 端、多租户、未知代码、需要扩到 10 个以上并发。</li>
+          </ul>
+          <details>
+            <summary>查看原文 E2B 并行示例</summary>
+            <pre><code>from e2b import Sandbox
+
+async def parallel_refactor_branches(task: str, n: int = 5):
+    sandboxes = await asyncio.gather(
+        *[Sandbox.create(template="python") for _ in range(n)]
+    )
+    results = await asyncio.gather(
+        *[run_agent_in_sandbox(sb, task, variant_id=i)
+          for i, sb in enumerate(sandboxes)]
+    )
+    await asyncio.gather(*[sb.close() for sb in sandboxes])
+    return results</code></pre>
+          </details>
+        </div>
+        <div class="harness-card">
+          <h3>形态 2：本地 MCP Server</h3>
+          <p>代表：container-use（Dagger）。</p>
+          <ul>
+            <li><span class="pro">优势：</span>zero-network-latency、不出公司内网、Git 永续审计（branch = worktree = container 三位一体）。</li>
+            <li><span class="con">劣势：</span>不能弹性横向扩展、本地资源受限。</li>
+            <li>适合：内部工具、强审计、成本敏感、并发不高。</li>
+          </ul>
+          <details>
+            <summary>查看原文 container-use 命令示意</summary>
+            <pre><code># 给每个 agent 一份 Git worktree + 一份 Docker container
+# 本地 stdio 接入 Claude Code / Cursor / Zed
+$ container-use start --branch=variant-a --image=python:3.12
+$ container-use start --branch=variant-b --image=python:3.12
+
+# 人类 review：
+$ git checkout variant-a
+$ git checkout variant-b</code></pre>
+          </details>
+        </div>
+      </div>
+
+      <h3>Anthropic 的演进路径：harness 与 sandbox 解耦</h3>
+      <div class="evo-flow">
+        <div class="evo-box"><b>v1：单 container 全揽</b><small>harness + sandbox + tool 全塞一个 container</small></div>
+        <span class="evo-arrow">provision({cpu, mem, image})</span>
+        <div class="evo-box"><b>v2：双进程解耦</b><small>Harness 决定“做什么”，Sandbox 决定“在哪做”</small></div>
+      </div>
+      <p>这套抽象的工程价值是：本地开发用 container-use（零成本、便于审计），CI 阶段用 E2B / Modal（云端 Firecracker，安全敏感），同一份 harness 代码只替换 <code>provision()</code> 的实现。原文把这条路径称为行业典型范式。</p>
+      <div class="callout">
+        <p class="callout-label">别把 harness 和 sandbox 混成一个词</p>
+        <p>Harness 负责决策、工具调用和上下文；sandbox 负责执行和隔离。混在一起时，换一个执行环境就要改 harness；拆开后，<code>provision({resources})</code> 才是替换点。后者的代价是双进程通信和状态同步，原文没有展开这部分成本。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="choose-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">五维选型</p><h2 id="choose-title">没有总分，<br>只有先后。</h2></div>
+      <p class="reading-intro">原文的五维表不是加权评分，而是提醒你：隔离、冷启动、可审计性、成本、横向扩展不能同时拿满。先定不可妥协的那一维，再比其余。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">四个代表产品在五个维度上的选型对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">E2B（Firecracker）</th><th scope="col">Modal（gVisor）</th><th scope="col">Cloudflare（Container / V8）</th><th scope="col">container-use（Docker + Git）</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">隔离强度</th><td>★★★★★ 硬件级</td><td>★★★★ 用户态内核</td><td>★★ shared kernel / ★ V8 only</td><td>★★ shared kernel</td></tr>
+            <tr><th scope="row">Cold Start</th><td>78–200 ms</td><td>1–5 s</td><td>ms（V8）/ 亚秒（container）</td><td>秒级（本地）</td></tr>
+            <tr><th scope="row">可审计性</th><td>API 日志</td><td>API 日志</td><td>Workers logs</td><td>Git branch = 完整审计</td></tr>
+            <tr><th scope="row">成本</th><td>$0.000014/vCPU/s</td><td>$0.0000394/core/s</td><td>active CPU 计费</td><td>本地零成本</td></tr>
+            <tr><th scope="row">横向扩展</th><td>强（云端）</td><td>强（云端）</td><td>极强（边缘）</td><td>弱（本地资源）</td></tr>
+            <tr><th scope="row">与人类协作</th><td>API SDK 拿日志</td><td>API SDK 拿日志</td><td>Workers 调试器</td><td><code>git checkout &lt;branch&gt;</code> 直接看</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="snap-row"><span class="snap-tag">原文 2026 时点 · 未联网核实</span><span class="snap-tag">星数是原文定性，不是 benchmark</span></div>
+
+      <h3>原文的选型决策树</h3>
+      <div class="route">
+        <div class="route-row"><b>C 端 Code Interpreter</b><span>不信任用户代码 → E2B / Vercel Sandbox（Firecracker，约 125 ms warm）。必须硬件隔离防多租户逃逸。</span></div>
+        <div class="route-row"><b>自家代码 sandbox 化</b><span>信任 agent 但要隔离环境 → Modal（gVisor，1–5 s）或 Daytona（Docker + warm pool）。看兼容性和中等成本。</span></div>
+        <div class="route-row"><b>毫秒级冷启动</b><span>不跑原生 syscall → Cloudflare Dynamic Worker（V8 Isolate）。注意跑不了 numpy / scipy / pandas。</span></div>
+        <div class="route-row"><b>长会话 30 min–24 h</b><span>E2B 24h sessions / Daytona Running→Archived。注意复用 sandbox 控成本（idle 15 min auto-stop）。</span></div>
+        <div class="route-row"><b>浏览器自动化</b><span>Browserbase + Stagehand。30 min idle 销毁，需显式 snapshot。</span></div>
+        <div class="route-row"><b>本地多 agent 并行</b><span>container-use（Dagger）+ Git worktree。不能弹性扩展，但 <code>git checkout</code> 即可 review。</span></div>
+      </div>
+      <p>这张树只做初筛。真正落地时，原文明说最常见的方案是 Hybrid：本地开发用 container-use，CI 用 E2B 跑安全敏感测试。先让隔离和审计各就各位，再谈单位价格。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myth-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myth-title">八个容易被追问的点。</h2></div>
+      <p class="reading-intro">前三项是误区，后五项是面试追问；答案与数字都来自原文，未联网更新。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“只要用了 Docker 就安全了。”</h3><p>Docker 共享 host kernel，任何 kernel 漏洞都是多租户灾难。这正是 AWS Lambda 用 Firecracker microVM 而不是 Docker 的根本原因。<strong>多租户 + 不信任代码 = 必须硬件级隔离</strong>（Firecracker / Kata）。Docker 适合“自家代码、不同业务隔离”的场景。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“V8 Isolate 比 Firecracker 更安全。”</h3><p>V8 Isolate 启动毫秒级、密度极高，但只能跑 JS / WASM，跑不了 numpy / scipy / pandas（需要原生 syscall）。隔离强度也弱于 Firecracker。两者不是替代关系：V8 适合纯计算 / 逻辑 worker，Firecracker 适合任意 Linux 工作负载。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 3</p>
+      <div><h3>“Allowlist 一层就够防 egress 攻击了。”</h3><p>完全错误。CVE-2025-66479（空 allowlist = 全放行）和 SOCKS5 null-byte（v2.0.24–v2.1.89）都证明<strong>单层 string-matching allowlist 永远会被 parser-differential 绕过</strong>。必须 default-deny + 三层独立防御（env / DNS / iptables）+ 拦 IMDS + 连接时验 IP + token broker。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>如何避免 SOCKS5 null-byte 这种 parser-differential 漏洞？</h3><p>不要用 <code>endsWith</code> / <code>startswith</code> 验主机名；用 strict parser，拒绝包含 <code>\x00</code> / <code>@</code> / 非 ASCII 的输入。同一 hostname 在 policy 层和 OS 层要用相同的解析逻辑。解析失败时 fail-closed，拒绝而不是放行。DNS 解析后立刻验证最终 IP 是否在白名单网段，不依赖中间步骤的 hostname。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>为什么 Anthropic Managed Agents 的 token broker 模式重要？</h3><p>即使 prompt injection 攻陷 agent，agent 也永远拿不到明文 API token。Outbound Worker 在 egress 层注入凭证：agent 拿短期 JWT，proxy 替换为真实 token。这是“假设 agent 必然被攻陷”的零信任设计，比“努力让 agent 不被攻陷”更可靠。Cloudflare Outbound Workers 是同款思路。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 3</p>
+      <div><h3>Cloudflare 2025-11-21 的 active CPU 计费改变了什么？</h3><p>之前按 provisioned CPU 计费，无论是否在跑都计费；现在按 active CPU，只在真正消耗 CPU 时计费。Agent 是典型突发型负载：LLM 调用等待时 sandbox 完全 idle，按 provisioned 计费极不经济。原文称实测 agent 任务降本 3–5x，使 Cloudflare Sandbox 在“长会话 + 间歇活动”场景下成本优势明显。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 4</p>
+      <div><h3>多 agent 并行用 E2B 还是 container-use？</h3><p><strong>隔离敏感</strong>（C 端 / 多租户 / 未知代码）选 E2B 的 Firecracker；<strong>审计要求高</strong>（合规、可解释）选 container-use，<code>git checkout</code> 即可 review；<strong>成本敏感</strong>（早期 / 内部工具）选 container-use 的本地零成本；<strong>横向扩展</strong>（&gt;10 并发）选 E2B / Modal。原文说 Hybrid 最常见：本地开发用 container-use，CI 用 E2B 跑安全敏感测试。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 5</p>
+      <div><h3>Sandbox 内的 LLM 输出如何防 prompt injection 二次注入？</h3><p>Sandbox 是“代码执行隔离”，不解决 prompt injection。Prompt injection 防御应在 harness 层（input filter / structured output / two-LLM pattern）。但 sandbox 的 egress 防御能限制 prompt injection 的 blast radius：即使 LLM 被骗到执行恶意命令，token broker + allowlist 也能阻断数据外泄。原文指向 030（工具安全）与 081（最小权限沙箱）。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《Agent Sandbox / Runtime 选型：E2B / Daytona / Modal / Cloudflare Sandbox 隔离强度 + cold start + egress》。所有产品参数、价格、CVE 与事件按原文 2026 时点保留，本页未联网核实。</p>
+    <details>
+      <summary>展开原文列出的厂商、安全与研究链接（20 条）</summary>
+      <div class="source-content">
+        <h3>厂商官方</h3>
+        <ul>
+          <li><a href="https://e2b.dev/" target="_blank" rel="noopener noreferrer">E2B 官方</a> — Firecracker microVM + Code Interpreter</li>
+          <li><a href="https://e2b.dev/pricing" target="_blank" rel="noopener noreferrer">E2B 定价</a> — per-second vCPU 价目</li>
+          <li><a href="https://www.daytona.io/pricing" target="_blank" rel="noopener noreferrer">Daytona 定价</a> — warm pool + Docker</li>
+          <li><a href="https://modal.com/products/sandboxes" target="_blank" rel="noopener noreferrer">Modal Sandboxes</a> — gVisor 用户态内核</li>
+          <li><a href="https://modal.com/blog/top-code-agent-sandbox-products" target="_blank" rel="noopener noreferrer">Modal 自家对比博客</a> — E2B / Daytona / Fly 横评</li>
+          <li><a href="https://github.com/dagger/container-use" target="_blank" rel="noopener noreferrer">container-use (Dagger)</a> — 本地 MCP Server + Git worktree</li>
+          <li><a href="https://dagger.io/blog/agent-container-use/" target="_blank" rel="noopener noreferrer">Dagger 官方介绍</a> — branch = worktree = container 设计</li>
+          <li><a href="https://developers.cloudflare.com/sandbox/" target="_blank" rel="noopener noreferrer">Cloudflare Sandbox SDK 文档</a> — Workers Containers + Dynamic Workers</li>
+          <li><a href="https://developers.cloudflare.com/changelog/2025-11-21-new-cpu-pricing/" target="_blank" rel="noopener noreferrer">Cloudflare 2025-11-21 active CPU 计费变更</a> — agent 突发场景降本</li>
+          <li><a href="https://webcontainers.io/" target="_blank" rel="noopener noreferrer">WebContainer 官方</a> — 浏览器内 Node.js 运行时</li>
+          <li><a href="https://www.anthropic.com/engineering/managed-agents" target="_blank" rel="noopener noreferrer">Anthropic Managed Agents</a> — harness + sandbox 解耦演进</li>
+        </ul>
+        <h3>安全事件与漏洞研究</h3>
+        <ul>
+          <li><a href="https://www.penligent.ai/hackinglabs/claude-code-sandbox-bypass/" target="_blank" rel="noopener noreferrer">Claude Code sandbox bypass 复盘（Penligent）</a> — CVE-2025-66479 详解</li>
+          <li><a href="https://oddguan.com/blog/second-time-same-sandbox-anthropic-claude-code-network-allowlist-bypass-data-exfiltration/" target="_blank" rel="noopener noreferrer">SOCKS5 null-byte 详解（Aonan Guan）</a> — v2.0.24–v2.1.89 漏洞链</li>
+          <li><a href="https://pluto.security/blog/inside-claude-managed-agents/" target="_blank" rel="noopener noreferrer">Pluto Security: Inside Claude Managed Agents</a> — 三层网络防御逆向</li>
+          <li><a href="https://openai.com/index/hugging-face-incident-and-the-road-ahead/" target="_blank" rel="noopener noreferrer">OpenAI — The Hugging Face incident and the road ahead（2026-08-26）</a> — 评测中模型逃逸沙箱组建 agent swarm 入侵 HF 生产系统的官方复盘</li>
+          <li><a href="https://www.anthropic.com/news/improving-alignment-security-efforts" target="_blank" rel="noopener noreferrer">Anthropic — Improving our alignment and security efforts（2026-08-31）</a> — 两起评测逃逸披露：实时逃逸分类器 + 高危评测强隔离</li>
+          <li><a href="https://developer.nvidia.com/blog/practical-security-guidance-for-sandboxing-agentic-workflows-and-managing-execution-risk/" target="_blank" rel="noopener noreferrer">NVIDIA Practical Security for Sandboxing Agentic Workflows（2026）</a> — sandbox 安全指南</li>
+        </ul>
+        <h3>技术对比</h3>
+        <ul>
+          <li><a href="https://northflank.com/blog/firecracker-vs-gvisor" target="_blank" rel="noopener noreferrer">Firecracker vs gVisor 深度对比（Northflank）</a> — 隔离机制 + 性能开销</li>
+          <li><a href="https://venturebeat.com/infrastructure/cloudflares-new-dynamic-workers-ditch-containers-to-run-ai-agent-code-100x" target="_blank" rel="noopener noreferrer">Cloudflare Dynamic Workers 公告（VentureBeat）</a> — V8 Isolate 取代 container</li>
+          <li><a href="https://www.infoq.com/news/2025/08/container-use/" target="_blank" rel="noopener noreferrer">InfoQ container-use 报道</a> — 本地 MCP Server 范式</li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+    <h3 class="source-heading" style="margin-top: var(--s-5); font-size: 17px;">相关阅读</h3>
+    <ul class="link-list">
+      <li><a href="../03-tool-use/030-tool-use-security.html">030 工具使用的安全性</a> — Schema 与权限控制，与 sandbox 互补。</li>
+      <li><a href="../09-safety-and-alignment/081-least-privilege-sandboxing.html">081 最小权限沙箱</a> — 沙箱安全原则与 OWASP 视角。</li>
+      <li><a href="086-llmops-and-deployment.html">086 LLMOps 与 Agent 部署架构</a> — 五层架构全景，本题是运行时隔离层的深入。</li>
+      <li><a href="104-agent-production-troubleshooting.html">104 Agent 生产问题排查</a> — sandbox 类故障的诊断。</li>
+    </ul>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>10-production-and-deployment/112-agent-sandbox-runtime.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 7 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const TASKS = [
+    { id: "code_interpreter", label: "C 端代码解释器", desc: "不信任用户代码，多租户隔离", preset: ["hardware"], base: "E2B / Vercel Sandbox" },
+    { id: "trusted_sandbox", label: "自家代码沙箱化", desc: "信任 agent，但要隔离运行环境", preset: [], base: "Modal / Daytona" },
+    { id: "ms_js", label: "毫秒级冷启动", desc: "只跑 JS / WASM，不碰原生 syscall", preset: ["fast"], base: "Cloudflare Dynamic Worker" },
+    { id: "long_session", label: "长会话 30 min–24 h", desc: "多轮交互，要保留环境和产物", preset: ["long"], base: "E2B 24h / Daytona" },
+    { id: "browser", label: "浏览器自动化", desc: "headless browser 抓取与操作", preset: ["browser"], base: "Browserbase + Stagehand" },
+    { id: "local_parallel", label: "本地多 Agent 并行", desc: "强审计、零成本、不出内网", preset: ["local", "audit"], base: "container-use + Git worktree" }
+  ];
+
+  const CONSTRAINTS = [
+    { id: "hardware", short: "硬件隔离", label: "必须硬件级隔离", hint: "不可信多租户代码" },
+    { id: "fast", short: "毫秒启动", label: "毫秒级冷启动", hint: "约 200 ms 以内" },
+    { id: "local", short: "本地零成本", label: "本地运行 / 零成本", hint: "不出公司内网" },
+    { id: "scale", short: "横向扩展", label: "弹性横向扩展", hint: "10 个以上并发" },
+    { id: "long", short: "长会话", label: "长会话持久化", hint: "30 分钟以上" },
+    { id: "audit", short: "强审计", label: "强审计可追溯", hint: "Git branch 可 checkout" },
+    { id: "browser", short: "浏览器", label: "浏览器自动化", hint: "headless browser" }
+  ];
+
+  const PRODUCTS = [
+    {
+      id: "e2b", name: "E2B", tier: "Firecracker microVM（KVM 硬件隔离）",
+      cold: "78–200 ms", billing: "$0.000014/vCPU/s", persist: "FS + 进程快照，最长 24h 会话",
+      egress: "无内置 allowlist", scale: "强（云端）", audit: "API 日志",
+      caps: { hardware: true, fast: true, local: false, scale: true, long: true, audit: false, browser: false },
+      fit: { code_interpreter: 2, trusted_sandbox: 1, ms_js: 0, long_session: 2, browser: 0, local_parallel: 1 }
+    },
+    {
+      id: "daytona", name: "Daytona", tier: "Docker container（可选 Kata / Sysbox 升级）",
+      cold: "27–90 ms（warm pool）", billing: "$0.0504/vCPU·h（≈ $0.000014/s）", persist: "FS snapshot + Sessions（背景进程）",
+      egress: "网络仍在演进", scale: "强（云端）", audit: "API 日志",
+      caps: { hardware: false, fast: true, local: false, scale: true, long: true, audit: false, browser: false },
+      fit: { code_interpreter: 1, trusted_sandbox: 2, ms_js: 0, long_session: 2, browser: 0, local_parallel: 1 }
+    },
+    {
+      id: "modal", name: "Modal Sandboxes", tier: "gVisor（用户态内核 Sentry）",
+      cold: "1–5 s（CPU），含 cold", billing: "$0.0000394/core/s", persist: "Memory snapshots（早期预览）",
+      egress: "tunneling + granular egress 策略", scale: "强（云端）", audit: "API 日志",
+      caps: { hardware: false, fast: false, local: false, scale: true, long: false, audit: false, browser: false },
+      fit: { code_interpreter: 1, trusted_sandbox: 2, ms_js: 0, long_session: 0, browser: 0, local_parallel: 1 }
+    },
+    {
+      id: "containeruse", name: "container-use (Dagger)", tier: "Docker container + Git worktree",
+      cold: "本地启动，秒级", billing: "免费（自托管）", persist: "Git branch 永续保存全部 state",
+      egress: "由 Docker 网络策略决定", scale: "弱（本地资源）", audit: "Git branch = 完整审计",
+      caps: { hardware: false, fast: false, local: true, scale: false, long: true, audit: true, browser: false },
+      fit: { code_interpreter: 0, trusted_sandbox: 1, ms_js: 0, long_session: 1, browser: 0, local_parallel: 2 }
+    },
+    {
+      id: "browserbase", name: "Browserbase", tier: "隔离云 VM + pre-warmed snapshot",
+      cold: "5–10 s（首次 session）", billing: "$0.10–0.12/h 超额", persist: "30 min idle 即销毁，需显式 snapshot",
+      egress: "CDP over network", scale: "强（云端）", audit: "原文未列",
+      caps: { hardware: false, fast: false, local: false, scale: true, long: false, audit: false, browser: true },
+      fit: { code_interpreter: 0, trusted_sandbox: 0, ms_js: 0, long_session: 0, browser: 2, local_parallel: 0 }
+    },
+    {
+      id: "cloudflare", name: "Cloudflare Sandbox", tier: "Container（GA）/ V8 Isolate（Dynamic Worker beta）",
+      cold: "毫秒级（isolate）/ 亚秒（container）", billing: "$0.00002/vCPU·s + memory", persist: "Durable Object 维持，需挂 R2 / S3",
+      egress: "Outbound Workers 注入凭证", scale: "极强（边缘）", audit: "Workers logs",
+      caps: { hardware: false, fast: true, local: false, scale: true, long: true, audit: false, browser: false },
+      fit: { code_interpreter: 1, trusted_sandbox: 1, ms_js: 2, long_session: 1, browser: 0, local_parallel: 0 }
+    },
+    {
+      id: "webcontainer", name: "WebContainer", tier: "WASM + 浏览器 SecurityContext",
+      cold: "浏览器内瞬时启动", billing: "免费 OSS / 商用按 seat", persist: "内存内 ephemeral FS",
+      egress: "ServiceWorker 虚拟 TCP，origin / CSP 控制", scale: "不适用（浏览器内）", audit: "origin / CSP",
+      caps: { hardware: false, fast: true, local: true, scale: false, long: false, audit: false, browser: false },
+      fit: { code_interpreter: 0, trusted_sandbox: 0, ms_js: 1, long_session: 0, browser: 0, local_parallel: 0 }
+    }
+  ];
+
+  const state = { task: null, selected: new Set(), stage: 1 };
+  const byId = (id) => document.getElementById(id);
+  const taskGrid = byId("task-grid");
+  const checkGrid = byId("check-grid");
+  const stageButtons = Array.from(document.querySelectorAll(".stage-button"));
+  const panels = Array.from(document.querySelectorAll(".stage-panel"));
+  const prevButton = byId("prev-button");
+  const nextButton = byId("next-button");
+  const CIRCLED = ["①", "②", "③", "④", "⑤", "⑥", "⑦"];
+
+  function announce(text) {
+    const node = byId("sb-announcement");
+    node.textContent = "";
+    window.setTimeout(() => { node.textContent = text; }, 30);
+  }
+
+  function taskById(id) { return TASKS.find((task) => task.id === id); }
+  function constraintById(id) { return CONSTRAINTS.find((item) => item.id === id); }
+
+  function buildTasks() {
+    TASKS.forEach((task) => {
+      const label = document.createElement("label");
+      label.className = "task-card";
+      label.innerHTML = '<input type="radio" name="sb-task" value="' + task.id + '"><span class="task-mark" aria-hidden="true"></span><span class="task-copy"><strong>' + task.label + '</strong><small>' + task.desc + '</small></span>';
+      taskGrid.append(label);
+    });
+    taskGrid.addEventListener("change", (event) => {
+      if (event.target.name !== "sb-task") return;
+      const task = taskById(event.target.value);
+      state.task = task.id;
+      state.selected = new Set(task.preset);
+      syncChecks();
+      updateConstraintNote();
+      updateChrome();
+      announce("已选择" + task.label + "，预选 " + task.preset.length + " 项硬约束。");
+      if (state.stage === 3) renderResult();
+    });
+  }
+
+  function buildChecks() {
+    CONSTRAINTS.forEach((item) => {
+      const label = document.createElement("label");
+      label.className = "check-card";
+      label.innerHTML = '<input type="checkbox" value="' + item.id + '"><span class="check-copy"><strong>' + item.label + '</strong><small>' + item.hint + '</small></span>';
+      checkGrid.append(label);
+    });
+    checkGrid.addEventListener("change", (event) => {
+      const id = event.target.value;
+      if (event.target.checked) state.selected.add(id);
+      else state.selected.delete(id);
+      updateConstraintNote();
+      updateChrome();
+      if (state.stage === 3) renderResult();
+      announce((event.target.checked ? "已勾选 " : "已取消 ") + constraintById(id).label + "。当前硬约束 " + state.selected.size + " 项。");
+    });
+  }
+
+  function syncChecks() {
+    checkGrid.querySelectorAll("input").forEach((input) => {
+      input.checked = state.selected.has(input.value);
+    });
+  }
+
+  function updateConstraintNote() {
+    const note = byId("constraint-note");
+    if (!state.task) {
+      note.textContent = "尚未选择任务；先回到上一步选择任务。";
+      return;
+    }
+    const names = CONSTRAINTS.filter((item) => state.selected.has(item.id)).map((item) => item.label);
+    note.textContent = names.length
+      ? "当前硬约束（" + names.length + " 项）：" + names.join("、") + "。可在本步增删。"
+      : "当前没有硬约束。结果只按任务匹配推荐，不排除任何产品。";
+  }
+
+  function updateChrome() {
+    const stage = state.stage;
+    panels.forEach((panel) => { panel.hidden = Number(panel.dataset.stage) !== stage; });
+    stageButtons.forEach((button) => {
+      const n = Number(button.dataset.stage);
+      if (n === stage) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+      button.disabled = n > 1 && !state.task;
+    });
+    prevButton.disabled = stage === 1;
+    nextButton.disabled = stage === 1 ? !state.task : stage === 3;
+    nextButton.textContent = stage === 3 ? "已到结果" : "下一步 →";
+    const task = state.task ? taskById(state.task) : null;
+    byId("state-summary").textContent = (task ? task.label : "未选择任务") + " · 硬约束 " + state.selected.size + " 项 · 第 " + stage + " / 3 步";
+  }
+
+  function setStage(n) {
+    if (n > 1 && !state.task) {
+      announce("请先选择任务。");
+      return;
+    }
+    state.stage = n;
+    updateChrome();
+    if (n === 3) {
+      renderResult();
+      window.requestAnimationFrame(() => {
+        const heading = byId("result-name");
+        if (heading) heading.focus({ preventScroll: true });
+      });
+      announce("推荐结果已生成：" + byId("result-name").textContent + "。");
+    } else {
+      announce(n === 1 ? "第 1 步，选择任务。" : "第 2 步，勾选硬约束。");
+    }
+  }
+
+  function evaluate() {
+    const task = taskById(state.task);
+    const rows = PRODUCTS.map((product) => {
+      const missing = CONSTRAINTS.filter((item) => state.selected.has(item.id) && !product.caps[item.id]);
+      return { product, missing, fit: product.fit[task.id] };
+    });
+    rows.sort((a, b) => a.missing.length - b.missing.length || b.fit - a.fit);
+    const passing = rows.filter((row) => row.missing.length === 0);
+    const primary = (passing.length ? passing : rows)[0];
+    return { task, rows, passing, primary };
+  }
+
+  function verdictFor(row, primaryId) {
+    if (row.product.id === primaryId) {
+      return row.missing.length === 0
+        ? { cls: "good", text: "首选" }
+        : { cls: "warn", text: "最接近，但缺约束" };
+    }
+    if (row.missing.length === 0) {
+      return row.fit > 0 ? { cls: "info", text: "次选" } : { cls: "info", text: "约束满足" };
+    }
+    return { cls: "bad", text: "缺 " + row.missing.map((item) => item.short).join("、") };
+  }
+
+  function comboFor(primaryMissing) {
+    if (primaryMissing.length === 0) return "";
+    if (state.selected.has("local") && state.selected.has("hardware")) {
+      return "没有一个产品同时做到本地零成本和硬件级隔离。原文的混合方式是：本地开发 / 审计用 container-use，CI 或线上隔离用 E2B；同一 harness 只替换 provision() 实现。";
+    }
+    if (state.selected.has("browser") && (state.selected.has("long") || state.selected.has("scale"))) {
+      return "Browserbase 的会话 30 分钟 idle 即销毁。长会话或高并发的组合要把 artifact 显式 snapshot 到对象存储，浏览器只负责抓取和操作。";
+    }
+    if (state.selected.has("audit") && state.selected.has("scale")) {
+      return "container-use 的 Git branch 审计最强，但不能弹性扩展。常见组合是本地 container-use 审计 + 云端 E2B / Modal 跑并发，review 仍在 Git 侧完成。";
+    }
+    return "先放宽一条硬约束，再在候选里选。原文的决策树也是先定隔离档位，再比冷启动、计费、持久化和扩展。";
+  }
+
+  function renderResult() {
+    if (!state.task) return;
+    const result = evaluate();
+    const primary = result.primary;
+    const product = primary.product;
+    const task = result.task;
+    const satisfiable = primary.missing.length === 0;
+
+    byId("result-name").textContent = product.name;
+    byId("result-sub").textContent = product.tier + " · " + product.cold;
+    const verdict = byId("result-verdict");
+    verdict.className = "verdict " + (satisfiable ? "good" : "warn");
+    verdict.textContent = satisfiable
+      ? (state.selected.size ? "满足全部 " + state.selected.size + " 项硬约束" : "按任务匹配推荐")
+      : "缺 " + primary.missing.length + " 项硬约束";
+
+    const fitText = primary.fit === 2
+      ? "与原文决策树的推荐方向一致"
+      : primary.fit === 1
+        ? "在原文里是可用的备选"
+        : "不是该任务的首选，但它是当前最接近的候选";
+    const constraintText = !satisfiable
+      ? "它未能满足 " + primary.missing.map((item) => item.label).join("、") + "；下面的组合建议说明了原文怎么拆。"
+      : state.selected.size
+        ? "你勾选的硬约束它全部满足。"
+        : "当前没有勾选硬约束，结果只按任务匹配。";
+    byId("result-why").textContent = "在“" + task.label + "”任务下，" + product.name + " 的定位是" + product.tier + "，" + fitText + "。" + constraintText + " 原文基线建议：" + task.base + "。";
+
+    const specs = byId("result-specs");
+    specs.textContent = "";
+    [
+      ["隔离", product.tier],
+      ["冷启动", product.cold],
+      ["计费", product.billing],
+      ["持久化", product.persist],
+      ["Egress", product.egress]
+    ].forEach((pair) => {
+      const li = document.createElement("li");
+      const b = document.createElement("b");
+      b.textContent = pair[0];
+      const span = document.createElement("span");
+      span.textContent = pair[1];
+      li.append(b, span);
+      specs.append(li);
+    });
+
+    const checks = byId("result-checks");
+    checks.textContent = "";
+    if (state.selected.size === 0) {
+      const li = document.createElement("li");
+      li.textContent = "未勾选硬约束。结果只按任务匹配，不代表产品在隔离或成本上更优。";
+      checks.append(li);
+    } else {
+      CONSTRAINTS.filter((item) => state.selected.has(item.id)).forEach((item) => {
+        const li = document.createElement("li");
+        const mark = document.createElement("span");
+        const pass = product.caps[item.id];
+        mark.className = "mark " + (pass ? "ok" : "no");
+        mark.textContent = pass ? "✓" : "×";
+        mark.setAttribute("aria-hidden", "true");
+        const text = document.createElement("span");
+        text.textContent = (pass ? "满足：" : "未满足：") + item.label + "（" + item.hint + "）";
+        li.append(mark, text);
+        checks.append(li);
+      });
+    }
+
+    const alts = byId("result-alts");
+    alts.textContent = "";
+    const passOthers = result.rows.filter((row) => row.missing.length === 0 && row.product.id !== product.id).slice(0, 2);
+    const nearOthers = result.rows.filter((row) => row.missing.length > 0 && row.product.id !== product.id).slice(0, 2);
+    const picked = passOthers.length ? passOthers : nearOthers;
+    if (!picked.length) {
+      const li = document.createElement("li");
+      li.textContent = "没有其他满足全部硬约束的产品。";
+      alts.append(li);
+    }
+    picked.forEach((row) => {
+      const li = document.createElement("li");
+      const name = document.createElement("b");
+      name.textContent = row.product.name;
+      const span = document.createElement("span");
+      if (row.missing.length === 0) {
+        span.textContent = row.fit > 0 ? "满足全部约束，可作为次选。" : "满足全部约束，但不是该任务的首选方向。";
+      } else {
+        span.textContent = "缺 " + row.missing.map((item) => item.label).join("、") + "；" + row.product.cold + "，" + row.product.billing + "。";
+      }
+      li.append(name, span);
+      alts.append(li);
+    });
+
+    const combo = byId("result-combo");
+    const comboText = comboFor(primary.missing);
+    if (comboText) {
+      combo.hidden = false;
+      combo.innerHTML = "<strong>分段组合建议：</strong>" + comboText;
+    } else {
+      combo.hidden = true;
+      combo.textContent = "";
+    }
+
+    const body = byId("matrix-body");
+    body.textContent = "";
+    result.rows.forEach((row) => {
+      const tr = document.createElement("tr");
+      const th = document.createElement("th");
+      th.scope = "row";
+      th.textContent = row.product.name;
+      const tier = document.createElement("td");
+      tier.textContent = row.product.tier;
+      const cold = document.createElement("td");
+      cold.textContent = row.product.cold;
+      const billing = document.createElement("td");
+      billing.textContent = row.product.billing;
+      const conclusion = document.createElement("td");
+      const badge = document.createElement("span");
+      const v = verdictFor(row, product.id);
+      badge.className = "verdict " + v.cls;
+      badge.textContent = v.text;
+      const reason = document.createElement("span");
+      reason.className = "matrix-reason";
+      reason.textContent = row.missing.length === 0
+        ? (row.fit > 0 ? "任务匹配 " + row.fit + " / 2" : "任务方向不匹配")
+        : "缺 " + row.missing.map((item) => item.short).join("、");
+      conclusion.append(badge, reason);
+      tr.append(th, tier, cold, billing, conclusion);
+      body.append(tr);
+    });
+  }
+
+  byId("reset-button").addEventListener("click", () => {
+    state.task = null;
+    state.selected = new Set();
+    state.stage = 1;
+    taskGrid.querySelectorAll("input").forEach((input) => { input.checked = false; });
+    syncChecks();
+    updateConstraintNote();
+    updateChrome();
+    announce("已重置。请选择任务。");
+  });
+  prevButton.addEventListener("click", () => { if (state.stage > 1) setStage(state.stage - 1); });
+  nextButton.addEventListener("click", () => { if (state.stage < 3) setStage(state.stage + 1); });
+  stageButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const n = Number(button.dataset.stage);
+      if (n > 1 && !state.task) {
+        announce("请先选择任务。");
+        return;
+      }
+      setStage(n);
+    });
+  });
+
+  buildTasks();
+  buildChecks();
+  updateConstraintNote();
+  updateChrome();
+</script>
+</body>
+</html>

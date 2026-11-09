@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>什么是 12-Factor Agents？如何用它评审生产级 Agent？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .snap-tag { display: inline-flex; align-items: center; gap: 6px; padding: 3px 9px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface-soft); color: #4c524c; font: 11px/1.5 var(--mono); letter-spacing: .02em; }
+  .snap-tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--series-2); flex: 0 0 auto; }
+  .snap-row { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; margin-top: var(--s-3); }
+  .stage-panel { padding: var(--s-4) var(--s-6) var(--s-5); }
+  .stage-kicker { font: 11px/1.6 var(--mono); letter-spacing: .06em; color: var(--text-dim); margin-bottom: 4px; }
+  .stage-panel h2 { font-size: var(--t-h2); line-height: 1.35; font-weight: 600; }
+  .stage-help { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 64em; }
+  .case-card { margin-top: var(--s-4); border: 1px solid var(--border); border-left: 4px solid var(--accent); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4) var(--s-5); }
+  .case-head { display: flex; flex-wrap: wrap; gap: var(--s-3); align-items: center; }
+  .case-head h3 { font-size: var(--t-h3); }
+  .case-tag { display: inline-flex; padding: 2px 8px; border: 1px solid #9db8d0; border-radius: 999px; background: #e8f0f8; color: #174a7a; font: 10px/1.6 var(--mono); letter-spacing: .04em; }
+  .case-card > p { font-size: var(--t-small); margin-top: var(--s-2); max-width: 64em; }
+  .fact-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: var(--s-3); }
+  .fact-grid div { border: 1px solid var(--border); border-radius: var(--r-1); padding: 8px 10px; background: var(--surface-soft); }
+  .fact-grid b { display: block; font-size: 11px; color: var(--text-dim); font-weight: 500; }
+  .fact-grid span { display: block; font-size: 12px; margin-top: 2px; }
+  .case-note { font-size: 11px !important; color: var(--text-dim); border-top: 1px dashed var(--border); padding-top: var(--s-2); }
+  .review-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: var(--s-5); margin-top: var(--s-4); align-items: start; }
+  .factor-list { display: grid; gap: 7px; }
+  .factor-row { display: grid; grid-template-columns: 42px minmax(0, 1fr) 104px; gap: 10px; align-items: start; padding: 9px 11px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .factor-num { font: 600 12px/1.6 var(--mono); color: var(--accent); padding-top: 1px; }
+  .factor-body strong { display: block; font-size: 13px; line-height: 1.45; }
+  .factor-body span { display: block; color: var(--text-dim); font-size: 11px; line-height: 1.5; margin-top: 2px; }
+  .factor-body small { display: block; margin-top: 5px; padding-top: 5px; border-top: 1px dashed var(--border); color: #4c524c; font-size: 11px; line-height: 1.55; }
+  .factor-body small b { color: var(--ink); font-weight: 600; }
+  .factor-select { width: 100%; min-height: 38px; padding: 5px 7px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); color: var(--ink); font-size: 12px; }
+  .factor-select.is-yes { background: #e4f1e6; color: #175c25; border-color: #9ec5a5; font-weight: 600; }
+  .factor-select.is-no { background: #f9e5e2; color: #7d2018; border-color: #d5a39c; font-weight: 600; }
+  .score-panel { position: sticky; top: 16px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface-soft); padding: var(--s-4); }
+  .score-panel .label { font: 11px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .score-value { font: 600 44px/1.1 var(--mono); margin-top: 2px; }
+  .score-value small { font-size: 14px; color: var(--text-dim); font-weight: 400; }
+  .score-band { display: inline-flex; margin-top: 4px; padding: 3px 10px; border: 1px solid #9db8d0; border-radius: 999px; background: #e8f0f8; color: #174a7a; font-size: 12px; font-weight: 600; }
+  .progress { height: 8px; margin-top: var(--s-4); border-radius: 999px; background: var(--border); overflow: hidden; }
+  .progress span { display: block; height: 100%; width: 0; border-radius: 999px; background: var(--accent); transition: width var(--fast) var(--ease); }
+  .progress-text { margin-top: 5px; font-size: 11px; color: var(--text-dim); }
+  .priority { margin-top: var(--s-4); border-top: 1px solid var(--border); padding-top: var(--s-3); }
+  .priority h3 { font-size: 12px; font-weight: 600; }
+  .priority ul { list-style: none; margin: var(--s-2) 0 0; padding: 0; display: grid; gap: 5px; }
+  .priority li { font-size: 11px; line-height: 1.55; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 5px; color: var(--text-dim); }
+  .priority li b { color: var(--accent); font: 600 11px/1.55 var(--mono); }
+  .priority li .state { color: var(--ink); font-weight: 600; }
+  .caveat { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px solid var(--border); font-size: 11px; color: var(--text-dim); line-height: 1.6; }
+  .result-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--s-4); align-items: start; border-bottom: 1px solid var(--border); padding-bottom: var(--s-4); }
+  .result-kicker { font: 11px/1.6 var(--mono); letter-spacing: .06em; color: var(--text-dim); }
+  .result-title { font: 600 clamp(28px, 4vw, 44px)/1.18 var(--serif); letter-spacing: -.02em; margin-top: 2px; }
+  .result-sub { color: var(--text-dim); font-size: var(--t-small); margin-top: 5px; }
+  .verdict { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 600; line-height: 1.5; white-space: nowrap; border: 1px solid transparent; }
+  .verdict.good { background: #e4f1e6; color: #175c25; border-color: #9ec5a5; }
+  .verdict.warn { background: #fbefd9; color: #6f4108; border-color: #d8b477; }
+  .verdict.bad { background: #f9e5e2; color: #7d2018; border-color: #d5a39c; }
+  .verdict.info { background: #e8f0f8; color: #174a7a; border-color: #9db8d0; }
+  .result-summary { margin-top: var(--s-4); font-size: var(--t-small); max-width: 64em; }
+  .result-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-5); margin-top: var(--s-4); }
+  .result-grid h3 { font-size: 12px; font-weight: 600; color: var(--text-dim); letter-spacing: .03em; }
+  .priority-result { list-style: none; margin: var(--s-2) 0 0; padding: 0; display: grid; gap: 6px; }
+  .priority-result li { padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; line-height: 1.55; }
+  .priority-result b { display: block; font-size: 12px; }
+  .priority-result span { color: var(--text-dim); }
+  .compare-summary { margin-top: var(--s-2); font-size: 12px; color: var(--text-dim); }
+  .compare-wrap { margin-top: var(--s-3); }
+  .compare-table { min-width: 560px; }
+  .compare-table td, .compare-table th { font-size: 12px; }
+  .cmp { display: inline-flex; padding: 2px 7px; border-radius: 999px; font-size: 10px; font-weight: 600; white-space: nowrap; border: 1px solid transparent; }
+  .cmp.ok { background: #e4f1e6; color: #175c25; border-color: #9ec5a5; }
+  .cmp.no { background: #f9e5e2; color: #7d2018; border-color: #d5a39c; }
+  .cmp.na { background: var(--surface-soft); color: #4c524c; border-color: var(--border-bright); }
+  .loop-diagram { position: relative; margin-top: var(--s-4); padding: 4px 0 4px 52px; }
+  .loop-rail { position: absolute; left: 18px; top: 22px; bottom: 42px; width: 2px; background: var(--accent); opacity: .55; }
+  .loop-rail::before { content: ""; position: absolute; top: -7px; left: -4px; border-left: 5px solid transparent; border-right: 5px solid transparent; border-bottom: 8px solid var(--accent); }
+  .loop-steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 7px; }
+  .loop-steps li { display: grid; grid-template-columns: 180px minmax(0, 1fr); gap: var(--s-3); align-items: baseline; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .loop-steps li.decision { border-left: 4px solid var(--series-2); }
+  .loop-steps b { font-size: 13px; }
+  .loop-steps span { color: var(--text-dim); font-size: 12px; }
+  .loop-back { margin-top: var(--s-2); margin-left: 0; font-size: 11px; color: var(--accent); font-family: var(--mono); }
+  .factor-table { min-width: 820px; }
+  .factor-table td:first-child { white-space: nowrap; font-family: var(--mono); font-size: 12px; }
+  .factor-table td:nth-child(2) { min-width: 220px; }
+  .factor-table td:nth-child(3) { min-width: 240px; }
+  .anti-table { min-width: 760px; }
+  .classic-table { min-width: 720px; }
+  .route { display: grid; gap: 7px; margin-top: var(--s-4); }
+  .route-row { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: var(--s-3); padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .route-row b { font-weight: 600; color: var(--accent); }
+  .route-row span { color: var(--text-dim); }
+  .source-content h3 { margin-top: var(--s-3); }
+  .source-content ul { margin-top: var(--s-2); padding-left: 1.2em; }
+  .source-content li { font-size: 12px; margin-block: 5px; }
+  .source-footnote { font-size: 11px; color: var(--text-dim); margin-top: var(--s-3); }
+  .link-list { margin-top: var(--s-3); padding-left: 1.2em; }
+  .link-list li { font-size: 12px; margin-block: 4px; }
+  @media (max-width: 1000px) {
+    .stage-panel { padding-inline: var(--s-5); }
+    .review-layout { grid-template-columns: 1fr; }
+    .score-panel { position: static; }
+    .result-grid { grid-template-columns: 1fr; gap: var(--s-4); }
+  }
+  @media (max-width: 720px) {
+    .stage-panel { padding: var(--s-4); }
+    .fact-grid { grid-template-columns: 1fr 1fr; }
+    .factor-row { grid-template-columns: 36px minmax(0, 1fr); }
+    .factor-select { grid-column: 1 / -1; }
+    .result-head { grid-template-columns: 1fr; }
+    .loop-diagram { padding-left: 38px; }
+    .loop-rail { left: 12px; }
+    .loop-steps li { grid-template-columns: 1fr; gap: 2px; }
+    .compare-table { min-width: 620px; table-layout: fixed; }
+    .compare-table th:first-child { width: 180px; }
+    .compare-wrap th[scope="row"], .compare-wrap td:first-child { position: sticky; left: 0; background: var(--surface); z-index: 1; }
+    .prose .table-wrap table.data.wide { min-width: 760px; }
+  }
+  @media (max-width: 460px) {
+    .fact-grid { grid-template-columns: 1fr; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .progress span { transition: none; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">116 / 12-Factor Agents</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 2 / 9 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="112-agent-sandbox-runtime.html">← 上一页 · Agent Sandbox / Ru…</a><a href="../11-frameworks/096-framework-overview.html">下一页 → · 主流 Agent 框架概览</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Production &amp; Deployment · 可交互讲解</p>
+      <h1>12 条原则，<br>一张生产体检表。</h1>
+    </div>
+    <div>
+      <p class="lead">12-Factor Agents 不教你造一个更自主的 Agent。它把生产级 Agent 拆成 12 条可独立采纳的原则：LLM 决定下一步，确定性代码执行，状态、控制流、错误和人工介入都收归自己。</p>
+      <p class="definition"><strong>核心论断：</strong>生产 Agent 不是“prompt + 一袋工具 + 死循环”，而是“LLM 决策为节点、确定性代码为边”的软件系统。项目由 Dex Horthy 于 2025 年提出，原文称 GitHub 约 2.4 万 star（原文时点，未联网核实）。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Production &amp; Deployment</span><span class="pill">12 条评审清单</span><span class="pill">固定教学案例</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="explainer-title">
+    <div class="player-top">
+      <div class="player-label" id="explainer-title">12 条评审：固定退款 Agent 案例 <small>固定教学数据 · 本地计算</small></div>
+      <div class="controls" role="group" aria-label="评审演示控制">
+        <button type="button" class="button button-quiet" id="reset-button">重置</button>
+        <button type="button" class="button" id="prev-button">← 上一步</button>
+        <button type="button" class="button button-primary" id="next-button">下一步 →</button>
+      </div>
+    </div>
+    <div class="stage-nav">
+      <ol style="--stages: 3">
+        <li><button type="button" class="stage-button" data-stage="1" aria-current="step"><span class="stage-number">1</span>看架构</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">2</span>逐条评</button></li>
+        <li><button type="button" class="stage-button" data-stage="3"><span class="stage-number">3</span>看结论</button></li>
+      </ol>
+    </div>
+
+    <div class="stage-panel" data-stage="1">
+      <p class="stage-kicker">STEP 1 / 3</p>
+      <h2>先看被评审的架构。</h2>
+      <p class="stage-help">下面是一个固定教学案例。你不需要读代码，只按列出的架构事实逐条判断“这一条原则有没有被满足”。</p>
+      <div class="case-card">
+        <div class="case-head"><span class="case-tag">固定教学案例</span><h3>订单退款 Agent</h3></div>
+        <p>单 Agent 负责查订单、判断退款、发起退款、通知用户、记账。技术栈设定为某 Agent 框架 + Pydantic + Redis + Postgres。它能跑通演示，但还没有经历生产故障。</p>
+        <div class="fact-grid">
+          <div><b>触发入口</b><span>Web 聊天框 + webhook</span></div>
+          <div><b>任务规模</b><span>平均 40 步 / 任务</span></div>
+          <div><b>上下文</b><span>每轮全量追加，不裁剪</span></div>
+          <div><b>状态存放</b><span>内存 / Redis / DB 三处</span></div>
+          <div><b>人工审批</b><span>整轮结束后看日志</span></div>
+          <div><b>长任务部署</b><span>while True sleep 轮询</span></div>
+        </div>
+        <p class="case-note">这些事实是本页为演示设定的固定教学数据，不读取任何真实仓库、日志或线上系统，也不代表对某个真实产品的评价。</p>
+      </div>
+    </div>
+
+    <div class="stage-panel" data-stage="2" hidden>
+      <p class="stage-kicker">STEP 2 / 3</p>
+      <h2>逐条给出你的判断。</h2>
+      <p class="stage-help">每条都附了案例事实。选“满足”或“不满足”；留“未评”会计入完成度，不会默认算缺失。分数只是自检，不是认证。</p>
+      <div class="review-layout">
+        <div class="factor-list" id="factor-list"></div>
+        <aside class="score-panel" aria-labelledby="score-label">
+          <p class="label" id="score-label">你判为满足</p>
+          <p class="score-value"><span id="score-value">0</span><small> / 12</small></p>
+          <span class="score-band" id="score-band">评审未开始</span>
+          <div class="progress" aria-hidden="true"><span id="progress-fill"></span></div>
+          <p class="progress-text" id="progress-text">已评审 0 / 12</p>
+          <div class="priority">
+            <h3>原文优先级最高的三条</h3>
+            <ul id="priority-list"></ul>
+          </div>
+          <p class="caveat">原文明确说 12 条可以独立采纳，是菜单不是教条。这个分数只统计“你判为满足”的条数，不等于生产认证。</p>
+        </aside>
+      </div>
+    </div>
+
+    <div class="stage-panel" data-stage="3" hidden>
+      <p class="stage-kicker">STEP 3 / 3</p>
+      <div class="result-head">
+        <div>
+          <p class="result-kicker">评审结果</p>
+          <h2 class="result-title" id="result-title" tabindex="-1">评审未完成</h2>
+          <p class="result-sub" id="result-sub">还有 12 条未评。</p>
+        </div>
+        <span class="verdict info" id="result-verdict">待评审</span>
+      </div>
+      <p class="result-summary" id="result-summary"></p>
+      <div class="result-grid">
+        <div>
+          <h3>高优先级缺口（F5 / F8 / F10）</h3>
+          <ul class="priority-result" id="priority-result"></ul>
+        </div>
+        <div>
+          <h3>与参考判断对照</h3>
+          <p class="compare-summary" id="compare-summary"></p>
+        </div>
+      </div>
+      <div class="table-wrap compare-wrap">
+        <table class="data compare-table">
+          <caption class="sr-only">12 条原则的你的判断与参考判断对照</caption>
+          <thead><tr><th scope="col">原则</th><th scope="col">你的判断</th><th scope="col">参考判断</th><th scope="col">是否一致</th></tr></thead>
+          <tbody id="compare-body"></tbody>
+        </table>
+      </div>
+      <p class="case-note">参考判断由本页固定案例事实推导，不是原文对某个真实系统的结论；固定教学数据。</p>
+    </div>
+
+    <div class="walkthrough-foot">
+      <span>固定教学数据 · 不读取真实仓库 · 不调用模型 / 工具</span>
+      <span id="state-summary">第 1 / 3 步 · 已评审 0 / 12</span>
+    </div>
+  </section>
+  <p id="tf-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="core-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">核心理念</p><h2 id="core-title">确定性外壳，<br>LLM 决策内核。</h2></div>
+      <p class="reading-intro">原文把 Agent 重新定义成一个稳定循环：LLM 决定下一步，代码执行这一步，结果回灌上下文。12 条原则都在加固这个循环的某一个面。</p>
+    </div>
+    <div class="prose">
+      <div class="snap-row"><span class="snap-tag">提出时间 2025 · 原文时点约 2.4 万 star · 未联网核实</span></div>
+      <div class="loop-diagram" role="img" aria-label="12-Factor Agents 的核心循环：上下文事件流交给 LLM 决定下一步；如果 intent 不是 done，确定性代码执行这一步并把结果回灌上下文，形成循环；如果是 done，返回最终答案">
+        <span class="loop-rail" aria-hidden="true"></span>
+        <ol class="loop-steps">
+          <li><b>① 上下文（事件流）</b><span>从初始事件起步，所有发生的事都追加进同一条 thread。</span></li>
+          <li><b>② LLM 决定下一步</b><span>输出结构化的 tool call，而不是自由文本。</span></li>
+          <li class="decision"><b>③ intent == done？</b><span>否 → 进入 ④；是 → 进入 ⑤。</span></li>
+          <li><b>④ 确定性代码执行这一步</b><span>执行结果追加回上下文，回到 ①，继续下一轮。</span></li>
+          <li><b>⑤ 返回最终答案</b><span>循环结束。</span></li>
+        </ol>
+      </div>
+      <p class="loop-back">↺ ④ → ① 是一条回路，不是单向串行</p>
+      <p>这个循环里只有三件事：<strong>LLM 决定下一步 → 代码执行 → 结果进上下文 → 重复</strong>。12 条原则中的每一条，都在加固其中一个面：让 prompt 可控（F2）、让上下文可管（F3）、让状态可恢复（F5 / F6 / F12）、让错误可自愈（F9）、让人工可介入（F7 / F8）。理解了这个循环，就理解了整套方法论的锚点。</p>
+      <details>
+        <summary>查看原文 Mermaid 源码（核心循环）</summary>
+        <pre><code>flowchart TD
+    A["上下文（事件流）&lt;br/&gt;初始事件起步"] --&gt; L["LLM 决定下一步&lt;br/&gt;输出结构化 tool call"]
+    L --&gt; Q{"intent == done?"}
+    Q -- "否" --&gt; X["确定性代码&lt;br/&gt;执行这一步"]
+    X -- "结果回灌上下文" --&gt; A
+    Q -- "是" --&gt; F["返回最终答案"]</code></pre>
+      </details>
+      <div class="callout">
+        <p class="callout-label">原文的问题起点</p>
+        <p>作者调研上百位 SaaS 创业者后发现一条高度一致的路径：抓一个框架快速冲到 70–80% 质量分，发现对面向客户的功能远远不够，想突破必须逆向工程框架的 prompt / 流程 / 状态，最终推倒重写。12-Factor Agents 的立论是：与其 all-in 某个框架，不如把核心能力拆成 12 条可独立采纳的原则，融进现有产品代码。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="factors-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">12 条原则</p><h2 id="factors-title">每一条，<br>都在补一个面。</h2></div>
+      <p class="reading-intro">下表先给全景：原则原名、一句话释义、它解决的反模式。随后展开工程含量最高的几条。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data factor-table">
+          <caption class="sr-only">12-Factor Agents 的 12 条原则全景</caption>
+          <thead><tr><th scope="col">#</th><th scope="col">原则（英文原名）</th><th scope="col">一句话释义</th><th scope="col">它解决的反模式</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">F1</th><td>Natural Language to Tool Calls</td><td>用 LLM 把自然语言意图转成结构化的“下一步动作”。</td><td>把决策逻辑硬编码进 if / else，丧失灵活性。</td></tr>
+            <tr><th scope="row">F2</th><td>Own Your Prompts</td><td>Prompt 是一等代码，版本化、可测试、可迭代，不外包给框架黑盒。</td><td>框架把 prompt 藏起来，出问题无法定位与调优。</td></tr>
+            <tr><th scope="row">F3</th><td>Own Your Context Window</td><td>显式管理每一轮进入上下文的内容，即 Context Engineering。</td><td>上下文无限膨胀，关键信息被淹没，Agent“失焦”。</td></tr>
+            <tr><th scope="row">F4</th><td>Tools Are Just Structured Outputs</td><td>工具调用 = LLM 的原生结构化输出（JSON / Pydantic），而非正则解析自由文本。</td><td>用正则 / 字符串匹配抽取 LLM 输出，脆弱且易错。</td></tr>
+            <tr><th scope="row">F5</th><td>Unify Execution State and Business State</td><td>把“执行态”（loop 进度）与“业务态”（业务结果）统一成一条事件流。</td><td>内存里有 loop 状态、数据库里有业务状态，重启即丢失或错乱。</td></tr>
+            <tr><th scope="row">F6</th><td>Launch / Pause / Resume with Simple APIs</td><td>Agent 像普通程序一样，能用简单 API 启动、暂停、恢复、停止。</td><td>长任务只能 while…sleep 阻塞挂起，进程挂了就从头再来。</td></tr>
+            <tr><th scope="row">F7</th><td>Contact Humans with Tool Calls</td><td>把“请求人工确认 / 澄清”也建模成一种工具调用（HITL as a tool）。</td><td>高风险操作只能“yolo 盲跑”或被迫降级为低风险只读任务。</td></tr>
+            <tr><th scope="row">F8</th><td>Own Your Control Flow</td><td>自己掌控循环的 break / continue：何时等审批、何时压缩上下文、何时熔断。</td><td>把控制流交给框架，无法在“工具选中”与“工具执行”之间插入审批。</td></tr>
+            <tr><th scope="row">F9</th><td>Compact Errors into Context Window</td><td>工具失败时把错误信息压缩后回灌上下文，让 LLM 自愈。</td><td>工具一报错整个 Agent 直接崩溃退出。</td></tr>
+            <tr><th scope="row">F10</th><td>Small, Focused Agents</td><td>单个 Agent 控制在 3–10（至多 20）步以内，做小做专。</td><td>一个巨型 Agent 试图扛 100 步任务，上下文爆炸、反复跑偏。</td></tr>
+            <tr><th scope="row">F11</th><td>Trigger from Anywhere</td><td>Agent 能从 webhook、cron、IM 消息、前端事件等任意入口触发。</td><td>Agent 只能从聊天框触发，无法嵌入业务流。</td></tr>
+            <tr><th scope="row">F12</th><td>Make Your Agent a Stateless Reducer</td><td>把 Agent 建模成无状态的 reducer（fold）：<code>state' = reduce(event, state)</code>。</td><td>状态散落在多处，无法重放、难以水平扩展与恢复。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>附录还有一条荣誉条目 <strong>Factor 13: Pre-fetch all the context you might need</strong>：在 LLM 决策前，由确定性代码先把上下文备齐，而不是让 LLM 边走边找。它不在 12 条正文里，但原文把它作为补充原则保留。</p>
+
+      <h3>F5：执行态和业务态必须是一条流</h3>
+      <p>这是 12 条里工程含量最高的一条。核心是：不要让“loop 当前进度”只活在内存变量里，而业务结果活在数据库里。两者一旦分离，进程崩溃就无法恢复。正确做法是把所有发生的事（用户消息、LLM 的 tool call、工具结果、人工审批）都作为<strong>事件</strong>追加到同一条 <code>thread</code> 里，状态就是事件的折叠结果。这样“恢复”等价于“重新 replay 这条事件流”。</p>
+
+      <h3>F7 + F8：审批点要能插在“选中”和“执行”之间</h3>
+      <p>原文反复强调，他对每个 Agent 框架的头号需求是：能在工具被“选中”和“被执行”之间插入一个暂停点，让人审核。没有这个粒度，你就只能在“只让 Agent 做只读研究”和“给它高危权限然后祈祷”之间二选一。F7 把人工请求建模成工具调用，F8 把控制流收回自己手里，两者是孪生兄弟。</p>
+
+      <h3>F12：把 Agent 写成纯函数</h3>
+      <p>听起来玄，本质是 <code>new_state = agent(events_so_far, new_event)</code>。任何一个时刻，只要把事件流喂进去，就能还原出与原运行完全一致的 Agent 状态。这让 Agent 天然可重放、可恢复、可水平扩展，也是“stateless reducer”这个名字直接借用前端 Redux / <code>Array.reduce</code> 范式的原因。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="anti-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">反模式对照</p><h2 id="anti-title">把 12 条反过来读，<br>就是翻车清单。</h2></div>
+      <p class="reading-intro">原文用一张表把常见翻车现场映射到对应原则。评审时先找现象，再定位原则，比从第一条背到最后一条更快。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data anti-table">
+          <caption class="sr-only">Agent 反模式与对应原则、后果的对照</caption>
+          <thead><tr><th scope="col">反模式（典型翻车现场）</th><th scope="col">对应原则</th><th scope="col">不遵守的后果</th></tr></thead>
+          <tbody>
+            <tr><td>框架 <code>Agent(role, goal, personality).run(task)</code> 黑盒，prompt 看不见</td><td>F2 Own Your Prompts</td><td>质量卡在 80%，想突破必须逆向框架，最终重写。</td></tr>
+            <tr><td>把 tool 描述和系统提示一股脑塞进去，从不裁剪</td><td>F3 Own Your Context</td><td>多轮后上下文膨胀，模型“Lost in the Middle”失焦。</td></tr>
+            <tr><td>让 LLM 输出一段自然语言，再用正则抠出 <code>action:xxx</code></td><td>F4 Structured Outputs</td><td>模型换个说法就解析失败，链路脆弱。</td></tr>
+            <tr><td>loop 状态只在内存，DB 只存最终结果</td><td>F5 Unify State</td><td>进程一崩，跑了 30 分钟的任务彻底丢失。</td></tr>
+            <tr><td>部署等长任务用 <code>while True: sleep(5)</code> 阻塞</td><td>F6 Pause / Resume</td><td>一个 Pod 重启 = 全部重来；无法横向扩展。</td></tr>
+            <tr><td>危险操作（删库、打款）要么盲跑要么干脆不开放</td><td>F7 + F8</td><td>要么出事故，要么 Agent 沦为只能查不能做的玩具。</td></tr>
+            <tr><td>工具抛异常直接冒泡终止整个 Agent</td><td>F9 Compact Errors</td><td>一次网络抖动就全盘失败，无自愈能力。</td></tr>
+            <tr><td>一个“超级 Agent”端到端做完百步业务</td><td>F10 Small Focused</td><td>上下文爆炸、反复跑偏、难以调试。</td></tr>
+            <tr><td>Agent 只能从一个 Web 聊天框唤起</td><td>F11 Trigger Anywhere</td><td>无法嵌入 cron、webhook、IM 等真实业务流。</td></tr>
+            <tr><td>状态散在内存 / Redis / DB 三处，互相不同步</td><td>F12 Stateless Reducer</td><td>无法重放、无法 debug“为什么这步这么决策”。</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="classic-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">与经典 12-Factor App</p><h2 id="classic-title">同一副骨架，<br>不同的战场。</h2></div>
+      <p class="reading-intro">12-Factor Agents 刻意沿用了“12 条”的形式与命名，但关注层完全不同：原版管“软件怎么上云”，新版管“带 LLM 的软件怎么上生产”。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data classic-table">
+          <caption class="sr-only">经典 12-Factor App 与 12-Factor Agents 的对应关系</caption>
+          <thead><tr><th scope="col">12-Factor App（2011，云原生运维）</th><th scope="col">12-Factor Agents（2025，Agent 应用设计）</th><th scope="col">呼应关系</th></tr></thead>
+          <tbody>
+            <tr><td>I. Codebase：一份代码库多次部署</td><td>F2 Own Your Prompts</td><td>prompt 也是 codebase，需要版本化。</td></tr>
+            <tr><td>III. Config：配置放环境变量，不进代码</td><td>F3 Own Your Context Window</td><td>上下文是“运行时配置”，需显式组装。</td></tr>
+            <tr><td>IV. Backing Services：把 DB / 缓存当可替换资源</td><td>F4 Tools as Structured Outputs</td><td>工具是可替换的外部服务，通过结构化输出对接。</td></tr>
+            <tr><td>VI. Processes：无状态进程，状态外置</td><td>F5 + F12 Unify State / Stateless Reducer</td><td>都强调状态不留在进程内存，可重建。</td></tr>
+            <tr><td>IX. Disposability：可快速启动、优雅退出</td><td>F6 Launch / Pause / Resume</td><td>都追求进程可被随意杀掉再恢复。</td></tr>
+            <tr><td>XI. Logs：日志作为事件流</td><td>F9 Compact Errors</td><td>都把“事件”作为一等公民灌进流。</td></tr>
+            <tr><td>XII. Admin Processes：一次性管理进程</td><td>F11 Trigger from Anywhere</td><td>都强调进程能从任意入口按需启动。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>差异同样关键：</strong>原版 12-Factor App 不关心业务逻辑长什么样，它假设你写的是普通确定性代码；12-Factor Agents 专门处理 LLM 引入的非确定性：如何约束 LLM 的输出（F4）、如何在它跑偏时纠错（F8 / F9）、如何在它“失忆”前缩小任务范围（F10）。两者是互补而非替代关系。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="review-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">评审方法</p><h2 id="review-title">六步，<br>把 12 条走一遍。</h2></div>
+      <p class="reading-intro">如果面试被问“你会怎么评审一个 Agent 架构”，12 条本身就是现成 checklist。原文给的顺序是先找循环，再依次审可控性、可恢复性、可介入性、鲁棒性和可触达性。</p>
+    </div>
+    <div class="prose">
+      <div class="route">
+        <div class="route-row"><b>① 先找“循环”</b><span>你的 Agent 是否有清晰的 LLM 决策 → 执行 → 回灌循环？没有 → 先补 F1（NL → Tool Call）。</span></div>
+        <div class="route-row"><b>② 审“可控性”</b><span>F2 Prompt / F3 Context / F4 Structured Output。逐条问：prompt 在哪？上下文谁在裁？输出有 schema 吗？</span></div>
+        <div class="route-row"><b>③ 审“可恢复性”</b><span>F5 统一状态 / F6 暂停恢复 / F12 无状态 reducer。kill -9 一次进程，能否从断点 resume？能否 replay？</span></div>
+        <div class="route-row"><b>④ 审“可介入性”</b><span>F7 人工即工具 / F8 自控控制流。工具“选中”和“执行”之间，能否插审批点？</span></div>
+        <div class="route-row"><b>⑤ 审“鲁棒性”</b><span>F9 错误压缩 / F10 小而专注。工具失败会自愈吗？单 Agent 步数是否 ≤ 20？</span></div>
+        <div class="route-row"><b>⑥ 审“可触达性”</b><span>F11 触发入口 / F13 预取上下文。能否从 webhook / cron / IM 触发？上下文是否预取？</span></div>
+      </div>
+
+      <h3>最小骨架：评审通过长什么样</h3>
+      <p>原文给了一段伪代码骨架，体现 F1 / F4 / F5 / F8 / F9 / F12 几条核心原则。它不负责运行，只用来对照：prompt 自己写、输出有 Pydantic schema、状态全在 <code>thread</code> 事件流里、审批落盘后暂停而非阻塞、错误压缩回灌并计数熔断、整个 thread 可重放。</p>
+      <details>
+        <summary>查看原文的最小骨架伪代码</summary>
+        <pre><code>from pydantic import BaseModel
+from typing import Literal, Union
+
+# ── F4: Tools as Structured Outputs ──
+class Done(BaseModel):
+    intent: Literal["done"]
+    final_answer: str
+
+class DeployBackend(BaseModel):
+    intent: Literal["deploy_backend"]
+    tag: str
+    env: Literal["staging", "production"]
+
+class RequestApproval(BaseModel):
+    intent: Literal["request_approval"]
+    reason: str
+    risky_action: str
+
+NextStep = Union[Done, DeployBackend, RequestApproval]
+
+# ── F5: 统一执行态与业务态为一条事件流 ──
+thread = {"events": [initial_event]}
+
+consecutive_errors = 0  # ── F9: 错误计数，防止无限自愈打转 ──
+
+while True:
+    # F1 + F2: LLM 把自然语言决策成结构化的「下一步」，prompt 是你自己的
+    next_step: NextStep = await determine_next_step(thread)
+    thread["events"].append({"type": next_step.intent, "data": next_step})
+
+    if isinstance(next_step, Done):
+        break  # 任务完成
+
+    # ── F8: 自己掌控控制流 ──
+    if isinstance(next_step, RequestApproval):
+        await db.save_thread(thread)          # F5/F6: 落盘后暂停
+        await notify_human(next_step)         # F7: 人工作为工具
+        break  # 等 webhook 回来再 resume，而不是阻塞 sleep
+
+    # ── F9: 错误压缩进上下文，触发自愈 ──
+    try:
+        result = await execute(next_step)
+        thread["events"].append({"type": "result", "data": result})
+        consecutive_errors = 0
+    except Exception as e:
+        consecutive_errors += 1
+        if consecutive_errors &gt;= 3:
+            thread["events"].append({"type": "escalate_to_human", "data": str(e)})
+            break  # 超过阈值，升级人工
+        thread["events"].append({"type": "error", "data": compact(e)})
+
+# ── F12: 整个 thread 可被重放 ──
+# 任何时候 new_state = replay(thread["events"])，Agent 即恢复到该状态</code></pre>
+      </details>
+      <p>读这段骨架时对着 12 条逐行标注：prompt 你自己写（F2）、输出有 Pydantic schema（F4）、状态全在 <code>thread</code> 事件流里（F5）、审批会落盘后暂停而非阻塞（F6 / F7 / F8）、错误会压缩回灌并计数熔断（F9）、整个 thread 可重放（F12）。这就是“评审通过”的样子。</p>
+      <div class="callout">
+        <p class="callout-label">评审不是集邮</p>
+        <p>原文说 12 条可以独立采纳：你可以只做 F9 错误压缩，而不做其他 11 条。正确用法是把它当 checklist，逐条自检“我有没有刻意思考过这一面”，而不是追求集齐 12 个徽章。本页的分数也只是这个自检的计数。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myth-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myth-title">五个容易被追问的点。</h2></div>
+      <p class="reading-intro">前两项是误区，后三项是面试追问；答案与数字都来自原文，未联网更新。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“12 条必须全部遵守，少一条就不算生产级。”</h3><p>这是最大的误读。作者明确说这些原则可以独立采纳，你可以只取其中一条（例如只做 F9 错误压缩）而不做其他 11 条。它的定位是<strong>菜单而非教条</strong>。正确理解是：把它当 checklist 逐条自检“我有没有刻意思考过这一面”，而不是追求集齐 12 个徽章。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“12-Factor Agents 是反框架的，用了 LangGraph 就违背它。”</h3><p>不准确。作者的态度是“框架能帮你拿到大多数原则，但一旦需要深度控制就会成为负担”。LangGraph 1.0 GA 后的 per-node 超时、checkpointing、interrupt-before 等特性，恰好对应 F6（暂停恢复）、F5（状态持久化）、F7 / F8（在节点执行前插入人工审批）。问题不是“能不能用框架”，而是“框架的黑盒你是否逆向得动”。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>12 条里优先级最高的是哪几条？</h3><p>如果只能选三条，原文给出的工程界共识倾向是 <strong>F5（统一状态）+ F8（自控控制流）+ F10（小而专注）</strong>。F5 决定 Agent 能不能从崩溃中恢复，F8 决定你能不能在关键步骤插审批和熔断，F10 决定上下文会不会爆炸。F1 / F4 是基础前提，F11 / F12 更多是规模化后的优化项。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>Factor 10 说 Agent 要小，LLM 变强后这条不就过时了？</h3><p>作者专门回答过：即使 LLM 能跑 100 步，保持小而专注依然是更优策略。原因是确定性代码比 LLM 决策便宜、可靠、可测试几个数量级。把能确定化的部分留在 DAG 里，只把真正需要灵活判断的环节交给 Agent，永远比“全塞给一个大 Agent”更经济。随着模型能力提升，单个 Agent 的 scope 可以慢慢长大，但“刻意控制规模”的工程纪律不会消失。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 3</p>
+      <div><h3>12-Factor Agents 和 MCP / A2A 是什么关系？</h3><p>正交且互补。MCP（Model Context Protocol）解决“Agent 怎么发现和调用工具”，对应 F4 中“工具作为结构化输出”的工具侧标准化；A2A 解决“Agent 之间怎么通信”，对应 F10 / F11 的多 Agent 编排与触发。12-Factor Agents 不规定你用哪种工具协议，但 F1 / F4 / F8 会约束你：无论用什么协议，工具调用必须是结构化的、控制流必须在你手里。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《什么是 12-Factor Agents？如何用它评审生产级 Agent？》。项目提出时间、star 数按原文时点保留，本页未联网核实；固定教学案例由本页设定，不代表真实系统。</p>
+    <details>
+      <summary>展开原文列出的 10 条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://github.com/humanlayer/12-factor-agents" target="_blank" rel="noopener noreferrer">12-Factor Agents 官方仓库（humanlayer/12-factor-agents）</a> — 12 条原则原文与配套图示，Apache 2.0 / CC BY-SA 4.0</li>
+          <li><a href="https://www.humanlayer.dev/blog/12-factor-agents" target="_blank" rel="noopener noreferrer">12 Factor Agents — HumanLayer 官方博客</a> — 作者 Dex Horthy 的原始阐述</li>
+          <li><a href="https://github.com/humanlayer/12-factor-agents#the-short-version-the-12-factors" target="_blank" rel="noopener noreferrer">The Short Version: The 12 Factors（README 目录）</a> — 12 条原则索引与逐条链接</li>
+          <li><a href="https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-08-own-your-control-flow.md" target="_blank" rel="noopener noreferrer">Factor 8: Own your control flow</a> — 控制流与“工具选中 ↔ 执行之间插审批”详解</li>
+          <li><a href="https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-10-small-focused-agents.md" target="_blank" rel="noopener noreferrer">Factor 10: Small, Focused Agents</a> — “LLM 变强后是否还需要小 Agent”的论证</li>
+          <li><a href="https://github.com/humanlayer/12-factor-agents/blob/main/content/factor-09-compact-errors.md" target="_blank" rel="noopener noreferrer">Factor 9: Compact Errors into Context Window</a> — 错误压缩与自愈、连续错误熔断的代码示例</li>
+          <li><a href="https://12factor.net/" target="_blank" rel="noopener noreferrer">12-Factor App（Heroku, 2011）</a> — 被 12-Factor Agents 致敬的经典方法论</li>
+          <li><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener noreferrer">Building Effective Agents — Anthropic</a> — 与 12-Factor Agents 精神一致的官方工程指南（Agent = loop）</li>
+          <li><a href="https://www.developersdigest.tech/blog/12-factor-agents-production-principles" target="_blank" rel="noopener noreferrer">12-Factor Agents: Production Principles for Reliable AI Agents — Developers Digest</a> — 第三方对 12 条的工程化解读与 star 数据引用</li>
+          <li><a href="https://news.ycombinator.com/item?id=43699271" target="_blank" rel="noopener noreferrer">12-Factor Agents: Patterns of reliable LLM applications — Hacker News 讨论</a> — 社区对方法论的正反讨论</li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+    <h3 class="source-heading" style="margin-top: var(--s-5); font-size: 17px;">相关阅读</h3>
+    <ul class="link-list">
+      <li><a href="../07-prompt-engineering/102-context-engineering.html">102 Context Engineering</a> — F3 Own Your Context Window 的生产原则版。</li>
+      <li><a href="../09-safety-and-alignment/080-human-in-the-loop.html">080 Human-in-the-Loop</a> — “人工即工具”与高风险操作审批卡点。</li>
+      <li><a href="../04-multi-agent/031-what-is-multi-agent.html">031 多 Agent 系统</a> — F10 小而专注的拆分方向。</li>
+      <li><a href="../04-multi-agent/036-multi-agent-frameworks.html">036 多 Agent 框架对比</a> — 各框架在原则遵循度上的差异。</li>
+      <li><a href="104-agent-production-troubleshooting.html">104 Agent 生产问题排查</a> — F8 / F9 的故障排查实践。</li>
+      <li><a href="../09-safety-and-alignment/079-guardrails-basics.html">079 Guardrails</a> — 控制流熔断与安全护栏。</li>
+      <li><a href="../01-agent-architecture/010-production-agent-system-design.html">010 生产级 Agent 系统设计</a> — 生产化落地的整体架构。</li>
+      <li><a href="../08-evaluation/074-traces-and-spans.html">074 Trace 和 Span</a> — F8 中 logging / tracing / metrics 的归属。</li>
+      <li><a href="../03-tool-use/027-model-context-protocol.html">027 Model Context Protocol</a> — 工具侧标准化与 F4 的交叉点。</li>
+    </ul>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>10-production-and-deployment/116-12-factor-agents.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 7 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const FACTORS = [
+    { id: 1, en: "Natural Language to Tool Calls", cn: "用 LLM 把自然语言意图转成结构化的下一步动作", evidence: "LLM 输出结构化 tool call，代码按 intent 分发。", ref: true },
+    { id: 2, en: "Own Your Prompts", cn: "Prompt 是一等代码，版本化、可测试、可迭代", evidence: "prompt 存在 repo 里，带版本号，可以 diff。", ref: true },
+    { id: 3, en: "Own Your Context Window", cn: "显式管理每一轮进入上下文的内容", evidence: "每轮把完整历史 + 全部工具描述塞进上下文，从不裁剪。", ref: false },
+    { id: 4, en: "Tools Are Just Structured Outputs", cn: "工具调用是 LLM 的原生结构化输出", evidence: "工具参数用 Pydantic 校验，没有正则抽文本。", ref: true },
+    { id: 5, en: "Unify Execution State and Business State", cn: "执行态与业务态统一成一条事件流", evidence: "loop 进度只在内存，DB 只存最终退款结果。", ref: false },
+    { id: 6, en: "Launch / Pause / Resume with Simple APIs", cn: "Agent 能像普通程序一样启动、暂停、恢复", evidence: "长任务用 while True sleep(5) 轮询；Pod 重启 = 全部重来。", ref: false },
+    { id: 7, en: "Contact Humans with Tool Calls", cn: "把请求人工确认 / 澄清建模成工具调用", evidence: "高风险退款要审批，但审批在整轮结束后看日志。", ref: false },
+    { id: 8, en: "Own Your Control Flow", cn: "自己掌控循环的 break / continue", evidence: "控制流在框架里；工具选中与执行之间无法插暂停。", ref: false },
+    { id: 9, en: "Compact Errors into Context Window", cn: "工具失败时压缩错误并回灌上下文", evidence: "工具异常直接冒泡，整个 Agent 终止。", ref: false },
+    { id: 10, en: "Small, Focused Agents", cn: "单 Agent 控制在 3–10（至多 20）步", evidence: "单 Agent 包办退款、风控、通知、对账，平均 40 步。", ref: false },
+    { id: 11, en: "Trigger from Anywhere", cn: "能从 webhook、cron、IM、前端事件触发", evidence: "支持 Web 聊天框和 webhook 两个入口。", ref: true },
+    { id: 12, en: "Make Your Agent a Stateless Reducer", cn: "把 Agent 建模成无状态 reducer", evidence: "状态散在内存、Redis、DB 三处，互不同步。", ref: false }
+  ];
+
+  const PRIORITY = [
+    { id: 5, why: "执行态与业务态分离，进程崩溃就无法恢复。" },
+    { id: 8, why: "控制流不在自己手里，审批插不进工具选中与执行之间。" },
+    { id: 10, why: "单 Agent 40 步包办全流程，上下文容易爆炸。" }
+  ];
+
+  const state = { ratings: new Map(), stage: 1 };
+  const byId = (id) => document.getElementById(id);
+  const factorList = byId("factor-list");
+  const stageButtons = Array.from(document.querySelectorAll(".stage-button"));
+  const panels = Array.from(document.querySelectorAll(".stage-panel"));
+
+  function announce(text) {
+    const node = byId("tf-announcement");
+    node.textContent = "";
+    window.setTimeout(() => { node.textContent = text; }, 30);
+  }
+
+  function ratedCount() { return FACTORS.filter((f) => state.ratings.has(f.id)).length; }
+  function yesCount() { return FACTORS.filter((f) => state.ratings.get(f.id) === true).length; }
+
+  function bandFor() {
+    const rated = ratedCount();
+    const yes = yesCount();
+    if (rated < 12) {
+      return {
+        name: "评审进行中",
+        cls: "info",
+        summary: "还有 " + (12 - rated) + " 条未评。先逐条补齐，再看生产化结论；未评不会默认算缺失。",
+        verdict: "已评审 " + rated + " / 12"
+      };
+    }
+    if (yes <= 3) {
+      return { name: "原型阶段", cls: "bad", summary: "循环可能能跑，但状态、控制流和错误恢复还没有工程化。先补 F5 / F8 / F10，再谈生产。", verdict: yes + " / 12 条满足" };
+    }
+    if (yes <= 7) {
+      return { name: "可演示，未生产化", cls: "warn", summary: "能演示，但崩溃恢复、审批插入、上下文治理至少有一块没兜住。按优先级补 F5 / F8 / F10，再逐条收口。", verdict: yes + " / 12 条满足" };
+    }
+    if (yes <= 11) {
+      return { name: "接近生产", cls: "info", summary: "大部分关键面已覆盖。逐条检查剩余缺口，尤其确认 F5 状态统一和 F8 控制流是否真的可 replay、可插审批。", verdict: yes + " / 12 条满足" };
+    }
+    return { name: "12 条全覆盖", cls: "good", summary: "12 条都已覆盖。原文的定位是菜单不是教条：覆盖不等于认证，仍要按业务风险验证每一条是否真的成立。", verdict: "12 / 12 条满足" };
+  }
+
+  function buildFactors() {
+    FACTORS.forEach((factor) => {
+      const row = document.createElement("div");
+      row.className = "factor-row";
+      const num = document.createElement("span");
+      num.className = "factor-num";
+      num.textContent = "F" + factor.id;
+      const body = document.createElement("div");
+      body.className = "factor-body";
+      const strong = document.createElement("strong");
+      strong.textContent = factor.en;
+      const cn = document.createElement("span");
+      cn.textContent = factor.cn;
+      const evidence = document.createElement("small");
+      evidence.innerHTML = "<b>案例事实：</b>" + factor.evidence;
+      body.append(strong, cn, evidence);
+      const select = document.createElement("select");
+      select.className = "factor-select";
+      select.setAttribute("aria-label", "F" + factor.id + " " + factor.en + " 的评审结论");
+      select.innerHTML = '<option value="">未评</option><option value="yes">满足</option><option value="no">不满足</option>';
+      select.addEventListener("change", () => {
+        if (select.value === "yes") state.ratings.set(factor.id, true);
+        else if (select.value === "no") state.ratings.set(factor.id, false);
+        else state.ratings.delete(factor.id);
+        select.classList.toggle("is-yes", select.value === "yes");
+        select.classList.toggle("is-no", select.value === "no");
+        updateScore();
+        announce("F" + factor.id + " " + (select.value === "yes" ? "判为满足" : select.value === "no" ? "判为不满足" : "已重置为未评") + "。已评审 " + ratedCount() + " / 12。");
+        if (state.stage === 3) renderResult();
+      });
+      row.append(num, body, select);
+      factorList.append(row);
+    });
+  }
+
+  function updateScore() {
+    const rated = ratedCount();
+    const yes = yesCount();
+    const band = bandFor();
+    byId("score-value").textContent = String(yes);
+    byId("score-band").textContent = band.name;
+    byId("progress-fill").style.width = (rated / 12 * 100) + "%";
+    byId("progress-text").textContent = "已评审 " + rated + " / 12 · 其中判为满足 " + yes + " 条";
+    const list = byId("priority-list");
+    list.textContent = "";
+    PRIORITY.forEach((item) => {
+      const li = document.createElement("li");
+      const b = document.createElement("b");
+      b.textContent = "F" + item.id;
+      const span = document.createElement("span");
+      let label = "未评";
+      if (state.ratings.has(item.id)) label = state.ratings.get(item.id) ? "你判为满足（可能高估）" : "已识别为缺口";
+      span.innerHTML = '<span class="state">' + label + '</span> · ' + item.why;
+      li.append(b, span);
+      list.append(li);
+    });
+    byId("state-summary").textContent = "第 " + state.stage + " / 3 步 · 已评审 " + rated + " / 12";
+  }
+
+  function comparison() {
+    let match = 0;
+    let over = 0;
+    let under = 0;
+    let unrated = 0;
+    FACTORS.forEach((factor) => {
+      if (!state.ratings.has(factor.id)) { unrated += 1; return; }
+      const mine = state.ratings.get(factor.id);
+      if (mine === factor.ref) match += 1;
+      else if (mine && !factor.ref) over += 1;
+      else under += 1;
+    });
+    return { match, over, under, unrated };
+  }
+
+  function renderResult() {
+    const rated = ratedCount();
+    const yes = yesCount();
+    const band = bandFor();
+    const cmp = comparison();
+
+    byId("result-title").textContent = band.name;
+    byId("result-sub").textContent = "已评审 " + rated + " / 12 条；其中你判为满足 " + yes + " 条。" + (rated < 12 ? "还有 " + (12 - rated) + " 条未评。" : "");
+    const verdict = byId("result-verdict");
+    verdict.className = "verdict " + band.cls;
+    verdict.textContent = band.verdict;
+    byId("result-summary").textContent = band.summary;
+
+    const priority = byId("priority-result");
+    priority.textContent = "";
+    PRIORITY.forEach((item) => {
+      const li = document.createElement("li");
+      const head = document.createElement("b");
+      head.textContent = "F" + item.id + " · " + FACTORS[item.id - 1].en;
+      const span = document.createElement("span");
+      if (!state.ratings.has(item.id)) {
+        span.textContent = "未评。参考判断：不满足。原因：" + item.why;
+      } else if (state.ratings.get(item.id) === false) {
+        span.textContent = "你已识别为缺口。原因：" + item.why;
+      } else {
+        span.textContent = "你判为满足，但参考判断是不满足。原因：" + item.why;
+      }
+      li.append(head, span);
+      priority.append(li);
+    });
+
+    byId("compare-summary").textContent = rated === 0
+      ? "还没有评分项。回到上一步逐条选择“满足 / 不满足”，再来对照。"
+      : "已评 " + rated + " 条：与参考判断一致 " + cmp.match + " 条，高估 " + cmp.over + " 条，低估 " + cmp.under + " 条，未评 " + cmp.unrated + " 条。";
+
+    const body = byId("compare-body");
+    body.textContent = "";
+    FACTORS.forEach((factor) => {
+      const tr = document.createElement("tr");
+      const th = document.createElement("th");
+      th.scope = "row";
+      th.textContent = "F" + factor.id + " " + factor.en;
+      const mine = document.createElement("td");
+      const mineTag = document.createElement("span");
+      if (!state.ratings.has(factor.id)) {
+        mineTag.className = "cmp na";
+        mineTag.textContent = "未评";
+      } else {
+        const pass = state.ratings.get(factor.id);
+        mineTag.className = "cmp " + (pass ? "ok" : "no");
+        mineTag.textContent = pass ? "满足" : "不满足";
+      }
+      mine.append(mineTag);
+      const ref = document.createElement("td");
+      const refTag = document.createElement("span");
+      refTag.className = "cmp " + (factor.ref ? "ok" : "no");
+      refTag.textContent = factor.ref ? "满足" : "不满足";
+      ref.append(refTag);
+      const same = document.createElement("td");
+      if (!state.ratings.has(factor.id)) {
+        same.textContent = "—";
+      } else {
+        same.textContent = state.ratings.get(factor.id) === factor.ref ? "一致" : "不一致";
+      }
+      tr.append(th, mine, ref, same);
+      body.append(tr);
+    });
+  }
+
+  function setStage(n) {
+    state.stage = n;
+    panels.forEach((panel) => { panel.hidden = Number(panel.dataset.stage) !== n; });
+    stageButtons.forEach((button) => {
+      if (Number(button.dataset.stage) === n) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    byId("prev-button").disabled = n === 1;
+    byId("next-button").disabled = n === 3;
+    byId("next-button").textContent = n === 3 ? "已到结论" : "下一步 →";
+    updateScore();
+    if (n === 3) {
+      renderResult();
+      window.requestAnimationFrame(() => {
+        const title = byId("result-title");
+        if (title) title.focus({ preventScroll: true });
+      });
+      announce("评审结论已生成：" + byId("result-title").textContent + "。");
+    } else {
+      announce(n === 1 ? "第 1 步，查看固定架构。" : "第 2 步，逐条评审 12 条原则。");
+    }
+  }
+
+  byId("reset-button").addEventListener("click", () => {
+    state.ratings.clear();
+    factorList.querySelectorAll("select").forEach((select) => {
+      select.value = "";
+      select.classList.remove("is-yes", "is-no");
+    });
+    setStage(1);
+    announce("已重置。评审记录已清空。");
+  });
+  byId("prev-button").addEventListener("click", () => { if (state.stage > 1) setStage(state.stage - 1); });
+  byId("next-button").addEventListener("click", () => { if (state.stage < 3) setStage(state.stage + 1); });
+  stageButtons.forEach((button) => {
+    button.addEventListener("click", () => { setStage(Number(button.dataset.stage)); });
+  });
+
+  buildFactors();
+  updateScore();
+</script>
+</body>
+</html>

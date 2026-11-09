@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>MCP（Model Context Protocol）是什么？它如何标准化工具集成？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .stage-button.is-done .stage-number { background: #e8f5e9; border-color: #a5cfa8; color: #1b5e20; }
+  .stage-button.is-done { color: var(--ink); }
+  .mc-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .mc-head { display: flex; justify-content: space-between; gap: var(--s-4); align-items: end; flex-wrap: wrap; }
+  .mc-head h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; }
+  .mc-head > p { font-size: var(--t-small); color: var(--text-dim); max-width: 37em; }
+  .mc-topology { display: grid; grid-template-columns: minmax(0, 1fr) 86px minmax(0, .8fr); gap: var(--s-3); align-items: center; margin-top: var(--s-4); padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .mc-host { border: 1px solid var(--border-bright); border-radius: var(--r-1); padding: 9px; background: var(--surface-soft); }
+  .mc-host-title { display: block; font: 10px/1.5 var(--mono); color: var(--text-dim); letter-spacing: .04em; margin-bottom: 6px; }
+  .mc-clients { display: grid; gap: 5px; }
+  .mc-node { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 7px 9px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); font-size: 11.5px; line-height: 1.5; }
+  .mc-node small { font: 9.5px/1.5 var(--mono); color: var(--text-dim); }
+  .mc-node.is-active { border-color: #a9c4de; background: #eef5fb; }
+  .mc-node-status { display: inline-flex; align-items: center; padding: 0 6px; border-radius: 4px; font: 9.5px/1.7 var(--mono); white-space: nowrap; }
+  .mc-node-status.live { color: #1b5e20; background: #e8f5e9; border: 1px solid #a5cfa8; }
+  .mc-node-status.idle { color: #5d625d; background: #f1f0eb; border: 1px dashed #b9beb4; }
+  .mc-node-status.ready { color: #0d3f6e; background: #e7f0f9; border: 1px solid #a9c4de; }
+  .mc-servers { display: grid; gap: 5px; }
+  .mc-link { text-align: center; font: 9.5px/1.5 var(--mono); color: var(--text-dim); }
+  .mc-link b { display: block; font-size: 17px; line-height: 1.3; color: var(--border-bright); }
+  .mc-link.is-live { color: #0d3f6e; }
+  .mc-link.is-live b { color: var(--accent); }
+  .mc-layout { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); gap: var(--s-4); margin-top: var(--s-4); align-items: start; }
+  .mc-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .mc-card h3 { font-size: 14px; line-height: 1.5; font-weight: 600; }
+  .mc-seq { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 6px; }
+  .mc-step { border: 1px solid var(--border); border-radius: 5px; background: var(--surface-soft); padding: 8px 9px; }
+  .mc-step.now { border-color: #a9c4de; background: #eef5fb; box-shadow: inset 3px 0 0 var(--accent); }
+  .mc-step.done { background: #f4f8f4; border-color: #cfe3cf; }
+  .mc-step.future { border-style: dashed; background: var(--surface); }
+  .mc-step-head { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+  .mc-step-num { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--border-bright); background: var(--surface); font: 10px/1 var(--mono); color: var(--text-dim); }
+  .mc-step.now .mc-step-num { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .mc-step.done .mc-step-num { background: #e8f5e9; border-color: #a5cfa8; color: #1b5e20; }
+  .mc-step-head b { font-size: 12px; line-height: 1.5; }
+  .mc-step-tag { margin-left: auto; display: inline-flex; padding: 0 6px; border-radius: 4px; font: 9.5px/1.7 var(--mono); }
+  .mc-step-tag.now { color: #0d3f6e; background: #e7f0f9; border: 1px solid #a9c4de; }
+  .mc-step-tag.done { color: #1b5e20; background: #e8f5e9; }
+  .mc-step-tag.future { color: #5d625d; background: #f1f0eb; border: 1px dashed #b9beb4; }
+  .mc-msg { display: grid; grid-template-columns: 58px 18px 58px minmax(0, 1fr); gap: 4px; align-items: baseline; margin-top: 5px; font-size: 10.5px; line-height: 1.55; }
+  .mc-msg-from, .mc-msg-to { font: 9.5px/1.5 var(--mono); color: var(--text-dim); }
+  .mc-msg-arrow { text-align: center; color: var(--accent); font: 12px/1 var(--mono); }
+  .mc-msg-text { overflow-wrap: anywhere; }
+  .mc-step-future { margin-top: 4px; font-size: 10.5px; color: var(--text-dim); }
+  .mc-panel { display: grid; gap: var(--s-3); }
+  .mc-kv { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 11.5px; }
+  .mc-kv:last-child { border-bottom: 0; }
+  .mc-kv span { color: var(--text-dim); }
+  .mc-kv strong { font: 600 11.5px/1.5 var(--mono); text-align: right; overflow-wrap: anywhere; }
+  .mc-status { display: inline-flex; align-items: center; padding: 1px 7px; border-radius: 4px; font: 10px/1.6 var(--mono); }
+  .mc-status.ok { color: #1b5e20; background: #e8f5e9; border: 1px solid #a5cfa8; }
+  .mc-status.wait { color: #5d625d; background: #f1f0eb; border: 1px dashed #b9beb4; }
+  .mc-status.blue { color: #0d3f6e; background: #e7f0f9; border: 1px solid #a9c4de; }
+  .mc-payload-label { font: 10px/1.6 var(--mono); color: var(--text-dim); }
+  .mc-payload { margin-top: 4px; background: #ebede7; border-radius: 5px; padding: 9px 10px; font-size: 10px; line-height: 1.65; overflow-x: auto; max-height: 210px; overflow-y: auto; }
+  .mc-tools { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .mc-tool { display: inline-flex; align-items: center; gap: 5px; padding: 2px 7px; border: 1px solid #a5cfa8; border-radius: 999px; background: #f4f8f4; color: #1b5e20; font: 10px/1.6 var(--mono); }
+  .mc-tool.is-new { border-color: #e0c98a; background: #fff8e1; color: #6b4a00; }
+  .mc-tool em { font-style: normal; font-size: 9px; padding: 0 4px; border-radius: 3px; background: #f0e0b0; color: #5a3d00; }
+  .mc-empty { font-size: 10.5px; color: var(--text-dim); margin-top: 6px; }
+  .mc-note { margin-top: var(--s-3); padding-top: 8px; border-top: 1px solid var(--border); font-size: 11px; line-height: 1.65; color: var(--text-dim); }
+  .mc-caption { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border); }
+  .mc-caption h2 { font-size: var(--t-h2); line-height: 1.4; }
+  .mc-caption p:not(.figure-index) { margin-top: 6px; font-size: var(--t-small); color: var(--text-dim); max-width: 66em; }
+  .mc-arch { display: grid; grid-template-columns: minmax(0, 1fr) 92px minmax(0, 1fr); gap: var(--s-2); align-items: center; margin-top: var(--s-4); padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .mc-arch-host { border: 1px solid var(--border-bright); border-radius: var(--r-1); padding: 9px; background: var(--surface-soft); }
+  .mc-arch-server { display: grid; gap: 5px; }
+  .mc-arch-node { padding: 7px 9px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); font-size: 11px; line-height: 1.5; }
+  .mc-arch-link { text-align: center; font: 9.5px/1.5 var(--mono); color: var(--text-dim); }
+  .mc-arch-link b { display: block; font-size: 15px; color: var(--border-bright); }
+  .mc-flow-note { margin-top: 6px; font-size: 10.5px; line-height: 1.6; color: var(--text-dim); }
+  .mc-code { font-size: 11px; }
+  .mc-mermaid { font-size: 10.5px; }
+  .mc-prod { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .mc-prod-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px 12px; }
+  .mc-prod-card h4 { margin: 0; font-size: 12.5px; line-height: 1.5; }
+  .mc-prod-card p { margin-top: 3px; font-size: 11px; line-height: 1.65; color: var(--text-dim); }
+  @media (max-width: 1000px) {
+    .mc-layout { grid-template-columns: 1fr; }
+    .mc-topology { grid-template-columns: 1fr; }
+    .mc-link b { display: inline; margin-inline: 6px; }
+  }
+  @media (max-width: 720px) {
+    .mc-stage { padding: var(--s-4); }
+    .mc-head h2 { font-size: 23px; }
+    .mc-msg { display: block; margin-left: 2px; padding-left: 7px; border-left: 1px solid var(--border); }
+    .mc-msg > span { display: inline; }
+    .mc-msg-from, .mc-msg-to, .mc-msg-arrow { margin-right: 3px; }
+    .mc-msg-text { display: block; margin-top: 1px; }
+    .mc-arch { grid-template-columns: 1fr; }
+    .mc-arch-link b { display: inline; margin-inline: 5px; }
+    .mc-prod { grid-template-columns: 1fr; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">027 / MCP 协议</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 3 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="026-tool-failure-handling.html">← 上一页 · 如何处理工具调用失败和超时？</a><a href="028-parallel-vs-sequential-tools.html">下一页 → · 并行工具调用 vs 顺序工具调用的设…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Tool Use · 可交互讲解</p>
+      <h1>工具接一次，<br>谁都能用。</h1>
+    </div>
+    <div>
+      <p class="lead">MCP 是标准化 AI 系统与外部工具、数据源集成的开放协议。过去每个应用接每个工具都要写定制代码，是 N×M 问题；有了 MCP，工具实现一次 MCP Server，任何支持 MCP 的应用都能用，变成 N+M。协议基于 JSON-RPC 2.0，核心角色是 Host、Client、Server，核心能力是 Tools、Resources、Prompts。</p>
+      <p class="definition">关键边界：<strong>MCP 标准化的是“连接和发现”，不是模型如何调用工具。</strong>工具调用最终仍由 Function Calling 机制完成。本页消息流为固定教学数据，不连接任何真实 MCP Server。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Tool Use</span><span class="pill">MCP / JSON-RPC</span><span class="pill">本地演示</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="demo-title">
+    <div class="player-top">
+      <div class="player-label">MCP 消息流演练台 <small>Host 内一个 Client 与一个 Server 的固定会话</small></div>
+      <div class="controls" role="group" aria-label="MCP 消息流控制">
+        <button type="button" class="button button-quiet" id="mc-reset">重置</button>
+        <button type="button" class="button" id="mc-prev" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="mc-next">下一步 →</button>
+      </div>
+    </div>
+
+    <nav class="stage-nav" aria-label="MCP 会话阶段">
+      <ol id="mc-stage-list" style="--stages: 6"></ol>
+    </nav>
+
+    <div class="mc-stage scene" data-scene="mcp-session">
+      <div class="mc-head">
+        <div>
+          <p class="figure-index">图 1 · 固定教学轨迹</p>
+          <h2 id="demo-title">从握手到动态发现，六步走完一次会话。</h2>
+        </div>
+        <p>Host 里有两个 Client，各自与一个 Server 保持 1:1 连接。本轨迹只使用 GitHub 这条连接，Postgres 始终空闲。</p>
+      </div>
+
+      <div class="mc-topology" aria-label="MCP 三层架构：Host 内含 Client 1 和 Client 2，Client 1 连接 GitHub Server，Client 2 连接 Postgres Server">
+        <div class="mc-host">
+          <span class="mc-host-title">HOST · Claude Desktop（固定示例）</span>
+          <div class="mc-clients">
+            <div class="mc-node" id="mc-client1"><span>Client 1 <small>→ GitHub</small></span><span class="mc-node-status idle" id="mc-client1-status">待选择</span></div>
+            <div class="mc-node" id="mc-client2"><span>Client 2 <small>→ Postgres</small></span><span class="mc-node-status idle">空闲</span></div>
+          </div>
+        </div>
+        <div class="mc-link" id="mc-link"><b aria-hidden="true">⇄</b><span id="mc-link-label">未建立连接</span></div>
+        <div class="mc-servers">
+          <div class="mc-node" id="mc-server1"><span>MCP Server <small>GitHub</small></span><span class="mc-node-status idle" id="mc-server1-status">未连接</span></div>
+          <div class="mc-node"><span>MCP Server <small>Postgres</small></span><span class="mc-node-status idle">空闲</span></div>
+        </div>
+      </div>
+
+      <div class="mc-layout">
+        <div class="mc-card">
+          <h3>消息序列</h3>
+          <ol class="mc-seq" id="mc-seq"></ol>
+        </div>
+        <div class="mc-panel">
+          <div class="mc-card">
+            <h3>会话状态</h3>
+            <div class="mc-kv"><span>握手</span><strong id="mc-handshake">未开始</strong></div>
+            <div class="mc-kv"><span>传输</span><strong>stdio · JSON-RPC 2.0</strong></div>
+            <div class="mc-kv"><span>已发现工具</span><strong id="mc-tool-count">0</strong></div>
+            <div class="mc-kv"><span>当前动作</span><strong id="mc-action">等待开始</strong></div>
+          </div>
+          <div class="mc-card">
+            <h3>当前消息载荷</h3>
+            <p class="mc-payload-label" id="mc-payload-label">固定教学数据</p>
+            <pre class="mc-payload"><code id="mc-payload"></code></pre>
+          </div>
+          <div class="mc-card">
+            <h3>Client 当前可见工具</h3>
+            <div class="mc-tools" id="mc-tools"></div>
+            <p class="mc-note" id="mc-tool-note">尚未执行 tools/list，工具列表为空。</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="mc-caption">
+        <p class="figure-index">图 2 · 工具是运行时发现的</p>
+        <h2>列表变了，Client 要重新拉一次。</h2>
+        <p>Server 发 <code>notifications/tools/list_changed</code> 只是告诉 Client “列表变了”，不会把新列表塞过来。Client 重新执行 <code>tools/list</code> 后才能看到新工具；不刷新，就继续用旧列表。</p>
+      </div>
+      <p class="demo-note">固定教学数据：Host、Client、Server、工具列表、消息载荷和时序都是写死的。页面只在本地渲染消息，不启动 MCP Server、不建立连接、不发 JSON-RPC 请求。示例协议版本、能力和工具名只用于讲解，不代表任何真实 Server 的实现。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 不连接真实 MCP Server</span><span id="mc-state-summary">第 1 / 6 步 · 未握手</span></div>
+  </section>
+  <p id="mc-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="problem-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">解决什么问题</p><h2 id="problem-title">从 N×M 条定制线，<br>到 N+M 个标准接口。</h2></div>
+      <p class="reading-intro">没有 MCP 时，每个 AI 应用与每个外部工具之间都要写一套定制集成。应用和工具越多，维护成本越接近乘积。</p>
+    </div>
+    <div class="prose">
+      <pre><code>没有 MCP（N×M 问题）：
+Claude Desktop ──定制代码──→ GitHub API
+Claude Desktop ──定制代码──→ Slack API
+Claude Desktop ──定制代码──→ 数据库
+Cursor         ──定制代码──→ GitHub API（又写一遍）
+Cursor         ──定制代码──→ Slack API（又写一遍）
+
+有了 MCP（N+M 方案）：
+Claude Desktop ─┐              ┌─→ GitHub MCP Server
+Cursor         ─┤── MCP 协议 ──┤─→ Slack MCP Server
+VS Code        ─┘              └─→ 数据库 MCP Server</code></pre>
+      <p>每个 AI 应用实现一次 MCP Client，每个工具实现一次 MCP Server。新增工具不需要修改任何应用，新增应用也不需要为已有工具重写连接器。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="arch-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三层架构</p><h2 id="arch-title">Host 管应用，<br>Client 管连接，Server 管能力。</h2></div>
+      <p class="reading-intro">三个角色职责分明。Host 是用户面对的应用，Client 在 Host 内运行并维护 1:1 连接，Server 把外部系统的能力翻译成 MCP 标准协议。</p>
+    </div>
+    <div class="prose">
+      <div class="mc-arch" role="img" aria-label="MCP 三层架构：Host 内含 Client 1 和 Client 2；Client 1 通过 JSON-RPC 2.0 连接 GitHub Server，Client 2 连接 Postgres Server">
+        <div class="mc-arch-host">
+          <span class="mc-host-title">Host · Claude Desktop / Cursor 等 AI 应用</span>
+          <div class="mc-clients">
+            <div class="mc-arch-node">Client 1</div>
+            <div class="mc-arch-node">Client 2</div>
+          </div>
+        </div>
+        <div class="mc-arch-link"><b aria-hidden="true">⇄</b>JSON-RPC 2.0</div>
+        <div class="mc-arch-server">
+          <div class="mc-arch-node">MCP Server · GitHub</div>
+          <div class="mc-arch-node">MCP Server · Postgres</div>
+        </div>
+        <p class="mc-flow-note">离线可读示意：Host 内嵌多个 Client，每个 Client 与一个 Server 一对一连接。原图是 Mermaid 流程图，源码见下方折叠块。</p>
+      </div>
+      <details>
+        <summary>查看原文 Mermaid 源码（需在支持 Mermaid 的编辑器中渲染）</summary>
+        <pre class="mc-mermaid"><code>flowchart TD
+    subgraph H["Host（宿主）：Claude Desktop / Cursor 等 AI 应用"]
+        C1["Client 1"]
+        C2["Client 2"]
+    end
+    S1["MCP Server&lt;br/&gt;(GitHub)"]
+    S2["MCP Server&lt;br/&gt;(Postgres)"]
+    C1 ---|"JSON-RPC 2.0"| S1
+    C2 ---|"JSON-RPC 2.0"| S2
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class C1,C2 proc
+    class S1,S2 neutral</code></pre>
+      </details>
+      <ul>
+        <li><strong>Host</strong>：AI 应用，例如 Claude Desktop、Cursor IDE，接收用户请求。</li>
+        <li><strong>Client</strong>：在 Host 内运行，把请求转换成 MCP 协议格式。每个 Client 与一个 Server 建立 1:1 连接。</li>
+        <li><strong>Server</strong>：暴露外部系统的能力，把原生接口翻译为 MCP 标准协议。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="capabilities-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三种核心能力</p><h2 id="capabilities-title">工具能执行，<br>资源能读，提示能复用。</h2></div>
+      <p class="reading-intro">Tools 是可执行函数，Resources 是只读数据，Prompts 是预定义工作流。三者解决的不是同一类问题。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文示例 · Tools</p>
+      <pre><code>{
+    "name": "create_issue",
+    "description": "在 GitHub 仓库中创建 Issue",
+    "inputSchema": {
+        "type": "object",
+        "properties": {
+            "repo": {"type": "string"},
+            "title": {"type": "string"},
+            "body": {"type": "string"}
+        },
+        "required": ["repo", "title"]
+    }
+}</code></pre>
+      <p>客户端通过 <code>tools/list</code> 发现工具，通过 <code>tools/call</code> 调用。返回的 <code>inputSchema</code> 让模型知道参数结构。</p>
+      <p class="code-label">原文示例 · Resources</p>
+      <pre><code>{
+    "uri": "file:///project/README.md",
+    "name": "项目 README",
+    "mimeType": "text/markdown"
+}</code></pre>
+      <p>Resources 类似 REST 的 GET，提供只读数据访问。URI 可以是 <code>file:///path/to/file</code>，也可以是 <code>postgres://db/table</code> 这类自定义 scheme。</p>
+      <p class="code-label">原文示例 · Prompts</p>
+      <pre><code>{
+    "name": "code_review",
+    "description": "对代码进行审查",
+    "arguments": [
+        {"name": "code", "required": true}
+    ]
+}</code></pre>
+      <p>Prompts 把特定任务的最佳实践封装成模板，由用户或 Host 选择，不由模型自动调用。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="protocol-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">通信协议</p><h2 id="protocol-title">一条 JSON-RPC，<br>两种传输。</h2></div>
+      <p class="reading-intro">消息格式统一为 JSON-RPC 2.0；传输分本地 stdio 和远程 Streamable HTTP。连接生命周期从 initialize 握手开始。</p>
+    </div>
+    <div class="prose">
+      <ul>
+        <li><strong>stdio</strong>：Host 启动本地 Server 进程，通过 stdin/stdout 通信，适合本地工具，零网络开销。</li>
+        <li><strong>Streamable HTTP</strong>：MCP 2025-03-26 规范引入，使用单一 HTTP 端点，按 HTTP method 区分请求、通知和 SSE 流，适合远程服务。</li>
+      </ul>
+      <p>原文特别说明：Streamable HTTP 取代了早期“独立 HTTP POST 加单独 SSE GET 端点”的传输设计。</p>
+      <p>连接生命周期是固定顺序：<code>initialize</code> 请求带协议版本和能力 → Server 返回支持的能力 → Client 发 <code>initialized</code> 通知 → <code>tools/list</code> 发现工具 → <code>tools/call</code> 调用。工具是运行时发现的，不是启动时写死的。</p>
+      <details>
+        <summary>查看原文 Mermaid 时序图源码（需在支持 Mermaid 的编辑器中渲染）</summary>
+        <pre class="mc-mermaid"><code>sequenceDiagram
+    participant C as MCP Client
+    participant S as MCP Server
+    C-&gt;&gt;S: initialize（协议版本 + 能力）
+    S--&gt;&gt;C: initialize 响应（返回支持的能力）
+    C-&gt;&gt;S: initialized 通知（确认初始化完成）
+    C-&gt;&gt;S: tools/list（发现可用工具）
+    S--&gt;&gt;C: 工具列表（含 inputSchema）
+    C-&gt;&gt;S: tools/call（调用工具）
+    S--&gt;&gt;C: 执行结果</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="discovery-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">动态工具发现</p><h2 id="discovery-title">列表变了，<br>发通知，不推列表。</h2></div>
+      <p class="reading-intro">Server 可以在运行时改变工具集。它只发变更通知，Client 收到后重新执行 tools/list，再更新 Agent 的可用工具。</p>
+    </div>
+    <div class="prose">
+      <pre><code># Server 端：工具列表变更时发送通知
+server.send_notification("notifications/tools/list_changed")
+
+# Client 端：收到通知后重新获取工具列表
+async def on_tools_changed():
+    updated_tools = await client.call("tools/list")
+    agent.update_available_tools(updated_tools)</code></pre>
+      <p>这让工具可以按用户认证状态、权限级别或会话阶段动态暴露。例如只读 Token 看不到 <code>delete_repo</code>，登录后才会出现写操作工具。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="compare-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">MCP vs Function Calling</p><h2 id="compare-title">一个标准化连接，<br>一个负责调用。</h2></div>
+      <p class="reading-intro">两者互补，不是替代。MCP 定义工具怎么被发现和连接，Function Calling 是模型发起调用的底层机制。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">Function Calling 与 MCP 的五个维度对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">Function Calling</th><th scope="col">MCP</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">定义方式</th><td>每次 API 调用传入工具定义</td><td>标准化协议，Server 独立定义</td></tr>
+            <tr><th scope="row">集成成本</th><td>每个工具 × 每个应用 = N×M</td><td>每个工具一次，每个应用一次 = N+M</td></tr>
+            <tr><th scope="row">工具发现</th><td>静态（开发时定义）</td><td>动态（运行时发现）</td></tr>
+            <tr><th scope="row">生态复用</th><td>无标准化，各自实现</td><td>社区共享 MCP Server</td></tr>
+            <tr><th scope="row">适用场景</th><td>少量工具（&lt;10）的简单应用</td><td>多工具、多应用的生态系统</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>MCP Server 暴露工具，LLM 仍然通过 Function Calling 选择并生成调用参数。把 MCP 说成“替代 Function Calling”，是把连接层和调用层混成了一层。</p>
+      <p class="code-label">原文示例 · Python SDK 创建 MCP Server</p>
+      <pre><code>from mcp.server import Server
+from mcp.types import Tool, TextContent
+
+server = Server("weather-server")
+
+@server.list_tools()
+async def list_tools():
+    return [
+        Tool(
+            name="get_weather",
+            description="获取指定城市的天气",
+            inputSchema={
+                "type": "object",
+                "properties": {"city": {"type": "string"}},
+                "required": ["city"]
+            }
+        )
+    ]
+
+@server.call_tool()
+async def call_tool(name: str, arguments: dict):
+    if name == "get_weather":
+        weather = await fetch_weather(arguments["city"])
+        return [TextContent(type="text", text=f"温度: {weather.temp}°C")]</code></pre>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="production-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">生产化</p><h2 id="production-title">协议能用，<br>不等于生产可用。</h2></div>
+      <p class="reading-intro">远程部署要解决认证、版本、沙箱和选型。原文的生态数字与平台状态标注为“原文版本、未联网核实”。</p>
+    </div>
+    <div class="prose">
+      <p>原文列出的生态信号：截至 2026 年初，PulseMCP 收录超过 5500 个 MCP Server；Stacklok《State of MCP 2026》称约 80% 的 Fortune 500 企业已参与 MCP 生态；官方 Roadmap 于 2026-03-05 更新，重点是认证增强、Elicitation 和 Registry。以上均为<strong>原文版本、未联网核实</strong>，不表示本页确认了这些数字的当前值。</p>
+      <div class="mc-prod">
+        <div class="mc-prod-card"><h4>部署：本地 stdio vs 远程 HTTP</h4><p>本地 stdio 零网络开销、无需认证，但版本碎片化、无集中管控；远程 Streamable HTTP 可集中管控、观测和弹性伸缩，代价是网络延迟与认证开销。生产更常见的是远程托管加 Gateway 统一路由。</p></div>
+        <div class="mc-prod-card"><h4>认证：OAuth 2.1</h4><p>远程 Server 作为 OAuth Resource Server。授权码流程强制 PKCE；支持 RFC 7591 动态客户端注册；Token 带 scope，决定能看到哪些工具；Token 绑定 Resource Indicator，防止跨 Server 重放。</p></div>
+        <div class="mc-prod-card"><h4>版本：三层要分清</h4><p>协议版本在 initialize 协商；能力声明看 Server 的 capabilities；工具 Schema 看 tools/list 的 inputSchema，这是最常见的破坏源。工具加版本后缀，旧工具保留过渡期，避免直接改已有参数结构。</p></div>
+        <div class="mc-prod-card"><h4>沙箱与治理</h4><p>每个 Server 跑独立沙箱，限制文件系统、网络出口和资源配额。Tool Poisoning 用签名验证和来源白名单；Confused Deputy 用最小权限和高危操作人工确认；数据外泄用出口白名单和审计日志。</p></div>
+      </div>
+      <p>原文的选型清单给了六个维度：来源可信度、权限范围、维护活跃度、Token 成本、传输安全、可观测性。红旗信号包括匿名仓库、全盘文件访问、超过 6 个月未更新、明文 HTTP 和黑盒运行。同时连接的 Server 数量建议控制在 2 到 3 个以内，超过后工具选择准确率会下降。</p>
+      <p>工具权限与网关的完整讨论见 <a href="024-tool-gateway-permissions.html">Tool Gateway 与工具权限管理（#024）</a>；MCP 场景下的攻击面与防御见 <a href="030-tool-use-security.html">工具使用安全（#030）</a>。权限最小化与沙箱执行见 <a href="../09-safety-and-alignment/081-least-privilege-sandboxing.html">权限最小化与沙箱执行（#081）</a>；Agent Sandbox / Runtime 选型见 <a href="../10-production-and-deployment/112-agent-sandbox-runtime.html">Agent Sandbox / Runtime 选型（#112）</a>。</p>
+      <p>原文还区分了 MCP 与 Claude Skills：MCP 是连接层，回答“能访问什么”；Skill 是程序性知识层，回答“怎么做”。Skill 采用渐进式披露，启动时只加载 name 和 description，相关时才加载完整指令，执行时才加载脚本；MCP 的工具 schema 在 initialize 时就进入上下文。两者正交，不能互相替代。</p>
+      <p>原文列出的 MCP 使用问题包括：Token 膨胀、中间结果占用上下文、工具超过 10 到 15 个后选择混乱、把 REST API 一比一包装成工具、调试困难和安全隐患。</p>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">原文 MCP Server 工具数量与 Token 消耗（原文版本，未联网核实）</caption>
+          <thead><tr><th scope="col">MCP Server</th><th scope="col" class="num">工具数量</th><th scope="col" class="num">Token 消耗</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Linear</th><td class="num">23</td><td class="num">~12,935</td></tr>
+            <tr><th scope="row">JetBrains</th><td class="num">20</td><td class="num">~12,252</td></tr>
+            <tr><th scope="row">Playwright</th><td class="num">21</td><td class="num">~9,804</td></tr>
+            <tr><th scope="row">GitHub</th><td class="num">15</td><td class="num">~8,500</td></tr>
+            <tr><th scope="row">总计（4 个 Server）</th><td class="num">~79</td><td class="num">~43,991</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>上表的 Server 工具数与 token 消耗均为<strong>原文版本、未联网核实</strong>，不应当作当前实测；原文称四个 Server 合计约占 Claude 200k context 的 22%。原文总计写 ~43,991，逐行相加为 ~43,491，差异按原文保留。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="pitfalls-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="pitfalls-title">八个问题，<br>先分清连接层和调用层。</h2></div>
+      <p class="reading-intro">前两个是误区，后六个是追问。回答时先给一句话结论，再补边界和代价。</p>
+    </div>
+    <div>
+      <div class="misconception">
+        <p class="misconception-label">误区 1</p>
+        <div><h3>“MCP 是 Anthropic 的私有协议。”</h3><p><strong>MCP 是完全开源的标准。</strong>由 Anthropic 主导，OpenAI、Google DeepMind、Microsoft 共同参与 MCP Steering Committee 治理，不绑定任何特定模型或平台。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">误区 2</p>
+        <div><h3>“MCP 替代了 Function Calling。”</h3><p><strong>两者互补而非替代。</strong>MCP 标准化工具的定义和发现方式，Function Calling 是 LLM 调用工具的底层机制。MCP Server 暴露工具，LLM 通过 Function Calling 调用它们。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 1</p>
+        <div><h3>MCP 的安全隐患是什么？</h3><p>Tool Poisoning（恶意 Server 注册伪装工具）、Prompt Injection 通过工具结果注入、凭证通过 MCP 通道泄露。防御包括 Server 签名验证、工具白名单和输出清洗。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 2</p>
+        <div><h3>MCP 如何处理认证？</h3><p>协议规范层不强制定义认证，早期由 Server 内部处理：Server 持有 API 密钥，Agent 不接触凭证。生产级远程实现普遍采用 OAuth 2.1，Token 的 scope 决定暴露哪些工具。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 3</p>
+        <div><h3>MCP 的 Token 膨胀问题如何解决？</h3><p>三种策略：最有效的是 Code Execution 模式，把工具暴露为代码 API；其次是渐进式披露，按任务只加载相关工具；最后是最小化 Schema，精简描述。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 4</p>
+        <div><h3>MCP 最大的安全风险是什么？</h3><p>Tool Poisoning：恶意 Server 注册看似有用、实际执行恶意操作的工具。防御是签名验证、工具白名单和沙箱隔离。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 5</p>
+        <div><h3>Skill 和 MCP 是什么关系？什么时候用哪个？</h3><p>MCP 是连接（what），Skill 是方法（how）。需要访问外部系统用 MCP；需要按特定方式完成任务用 Skill。两者协同：MCP 提供原始能力，Skill 提供标准操作流程。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 6</p>
+        <div><h3>Subagent 和 Skill 又有什么区别？</h3><p>Subagent 是独立 Agent 进程，有自己的上下文、工具和模型，主 Agent 通过任务委派调用；Skill 是注入主 Agent 的程序性指令，不开新进程，按需加载到当前上下文。一个是派新员工，一个是给当前员工看手册。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《MCP（Model Context Protocol）是什么？它如何标准化工具集成？》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的十条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://modelcontextprotocol.io/specification/2025-11-25" target="_blank" rel="noopener noreferrer">Model Context Protocol Specification</a></li>
+          <li><a href="https://www.ibm.com/think/topics/model-context-protocol" target="_blank" rel="noopener noreferrer">What is Model Context Protocol (MCP)? · IBM</a></li>
+          <li><a href="https://www.anthropic.com/news/model-context-protocol" target="_blank" rel="noopener noreferrer">Introducing the Model Context Protocol · Anthropic</a></li>
+          <li><a href="https://stytch.com/blog/model-context-protocol-introduction/" target="_blank" rel="noopener noreferrer">Model Context Protocol Introduction for Developers · Stytch</a></li>
+          <li><a href="https://www.itential.com/blog/company/itential-mcp/mcp-101-understanding-the-model-context-protocol/" target="_blank" rel="noopener noreferrer">MCP 101: Understanding the Model Context Protocol · Itential</a></li>
+          <li><a href="https://intuitionlabs.ai/articles/claude-skills-vs-mcp" target="_blank" rel="noopener noreferrer">Claude Skills vs. MCP: A Technical Comparison · IntuitionLabs</a></li>
+          <li><a href="https://subramanya.ai/2025/10/30/claude-skills-vs-mcp-a-tale-of-two-ai-customization-philosophies/" target="_blank" rel="noopener noreferrer">Claude Skills vs. MCP · Subramanya N</a></li>
+          <li><a href="https://claude.com/blog/skills-explained" target="_blank" rel="noopener noreferrer">Skills explained · Anthropic</a></li>
+          <li><a href="https://www.mcpjam.com/blog/claude-agent-skills" target="_blank" rel="noopener noreferrer">Progressive Disclosure Might Replace MCP · MCPJam</a></li>
+          <li><a href="https://github.com/anthropics/claude-agent-sdk-typescript/releases" target="_blank" rel="noopener noreferrer">Claude Agent SDK (TypeScript) Releases · GitHub</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>03-tool-use/027-model-context-protocol.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 4 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const MC_TOOLS_V1 = ["create_issue", "list_issues", "get_repo"];
+  const MC_TOOLS_V2 = ["create_issue", "list_issues", "get_repo", "close_issue"];
+
+  const MC_STEPS = [
+    {
+      nav: "请求",
+      title: "用户请求进入 Host",
+      lines: [["用户", "Host", "帮我给 agent-interview 仓库建一个 Issue：登录页文案错误。"]],
+      action: "Host 解析意图",
+      handshake: "未开始",
+      tools: [],
+      active: false,
+      payloadLabel: "Host 内部固定路由",
+      payload: '{\n  "intent": "create_issue",\n  "target": "github"\n}',
+      note: "Host 收到请求，准备选择一个已配置的 Client。"
+    },
+    {
+      nav: "握手",
+      title: "initialize 握手",
+      lines: [
+        ["Client", "Server", "initialize：protocolVersion 2025-11-25 + capabilities"],
+        ["Server", "Client", "initialize 响应：tools / resources / prompts"],
+        ["Client", "Server", "notifications/initialized"]
+      ],
+      action: "协商协议版本与能力",
+      handshake: "已初始化",
+      tools: [],
+      active: true,
+      payloadLabel: "initialize 请求",
+      payload: '{\n  "jsonrpc": "2.0",\n  "id": 1,\n  "method": "initialize",\n  "params": {\n    "protocolVersion": "2025-11-25",\n    "capabilities": {\n      "roots": {"listChanged": true}\n    }\n  }\n}',
+      note: "Server 在响应里声明 tools.listChanged=true，后续才能发变更通知。"
+    },
+    {
+      nav: "发现",
+      title: "tools/list 发现工具",
+      lines: [
+        ["Client", "Server", "tools/list"],
+        ["Server", "Client", "工具列表：create_issue / list_issues / get_repo"]
+      ],
+      action: "拉取工具列表",
+      handshake: "已初始化",
+      tools: MC_TOOLS_V1,
+      active: true,
+      payloadLabel: "tools/list 返回（节选）",
+      payload: '{\n  "tools": [\n    {"name": "create_issue", "description": "在仓库中创建 Issue"},\n    {"name": "list_issues", "description": "列出仓库 Issue"},\n    {"name": "get_repo", "description": "读取仓库信息"}\n  ]\n}',
+      note: "工具是运行时发现的。Client 把这份列表交给 Host，Host 再决定如何暴露给模型。"
+    },
+    {
+      nav: "调用",
+      title: "tools/call 调用工具",
+      lines: [
+        ["Client", "Server", "tools/call：create_issue {repo, title}"],
+        ["Server", "Client", "结果：Issue #42 已创建"]
+      ],
+      action: "调用 create_issue",
+      handshake: "已初始化",
+      tools: MC_TOOLS_V1,
+      active: true,
+      payloadLabel: "tools/call 请求",
+      payload: '{\n  "jsonrpc": "2.0",\n  "id": 2,\n  "method": "tools/call",\n  "params": {\n    "name": "create_issue",\n    "arguments": {\n      "repo": "agent-interview",\n      "title": "登录页文案错误"\n    }\n  }\n}',
+      note: "MCP 只负责传输调用和结果；真正执行发生在 Server 内部。"
+    },
+    {
+      nav: "变更",
+      title: "Server 通知工具列表变更",
+      lines: [["Server", "Client", "notifications/tools/list_changed"]],
+      action: "收到变更通知",
+      handshake: "已初始化",
+      tools: MC_TOOLS_V1,
+      active: true,
+      payloadLabel: "变更通知",
+      payload: '{\n  "jsonrpc": "2.0",\n  "method": "notifications/tools/list_changed"\n}',
+      note: "通知只说“列表变了”，不带新列表。Client 当前可见工具仍是旧的 3 个。"
+    },
+    {
+      nav: "重拉",
+      title: "重新拉取工具列表",
+      lines: [
+        ["Client", "Server", "tools/list"],
+        ["Server", "Client", "工具列表：新增 close_issue"]
+      ],
+      action: "刷新工具列表",
+      handshake: "已初始化",
+      tools: MC_TOOLS_V2,
+      active: true,
+      payloadLabel: "刷新后的 tools/list（节选）",
+      payload: '{\n  "tools": [\n    {"name": "create_issue"},\n    {"name": "list_issues"},\n    {"name": "get_repo"},\n    {"name": "close_issue"}\n  ]\n}',
+      note: "重新拉取后才能看到 close_issue。不刷新，Client 会继续用旧列表。"
+    }
+  ];
+
+  const MC_STATE = { step: 0 };
+  const mcById = (id) => document.getElementById(id);
+
+  function mcRenderStages() {
+    const list = mcById("mc-stage-list");
+    list.textContent = "";
+    MC_STEPS.forEach((step, index) => {
+      const li = document.createElement("li");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "stage-button" + (index < MC_STATE.step ? " is-done" : "");
+      if (index === MC_STATE.step) button.setAttribute("aria-current", "step");
+      button.setAttribute("aria-label", "第 " + (index + 1) + " 步：" + step.title);
+      const num = document.createElement("span");
+      num.className = "stage-number";
+      num.textContent = String(index + 1);
+      const label = document.createElement("span");
+      label.textContent = step.nav;
+      button.append(num, label);
+      button.addEventListener("click", () => {
+        MC_STATE.step = index;
+        mcRender();
+        mcAnnounce();
+      });
+      li.append(button);
+      list.append(li);
+    });
+  }
+
+  function mcRenderSeq() {
+    const list = mcById("mc-seq");
+    list.textContent = "";
+    MC_STEPS.forEach((step, index) => {
+      const li = document.createElement("li");
+      li.className = "mc-step " + (index < MC_STATE.step ? "done" : index === MC_STATE.step ? "now" : "future");
+      const head = document.createElement("div");
+      head.className = "mc-step-head";
+      const num = document.createElement("span");
+      num.className = "mc-step-num";
+      num.textContent = String(index + 1);
+      const title = document.createElement("b");
+      title.textContent = step.title;
+      const tag = document.createElement("span");
+      tag.className = "mc-step-tag " + (index < MC_STATE.step ? "done" : index === MC_STATE.step ? "now" : "future");
+      if (index < MC_STATE.step) {
+        tag.textContent = "已完成";
+      } else if (index === MC_STATE.step) {
+        tag.textContent = "当前";
+      } else {
+        tag.textContent = "未发生";
+      }
+      head.append(num, title, tag);
+      li.append(head);
+
+      if (index <= MC_STATE.step) {
+        step.lines.forEach(([from, to, text]) => {
+          const row = document.createElement("div");
+          row.className = "mc-msg";
+          const fromEl = document.createElement("span");
+          fromEl.className = "mc-msg-from";
+          fromEl.textContent = from;
+          const arrow = document.createElement("span");
+          arrow.className = "mc-msg-arrow";
+          arrow.setAttribute("aria-hidden", "true");
+          arrow.textContent = "→";
+          const toEl = document.createElement("span");
+          toEl.className = "mc-msg-to";
+          toEl.textContent = to;
+          const textEl = document.createElement("span");
+          textEl.className = "mc-msg-text";
+          textEl.textContent = text;
+          row.append(fromEl, arrow, toEl, textEl);
+          li.append(row);
+        });
+      } else {
+        const future = document.createElement("p");
+        future.className = "mc-step-future";
+        future.textContent = "尚未发生，继续点“下一步”。";
+        li.append(future);
+      }
+      list.append(li);
+    });
+  }
+
+  function mcRenderTopology() {
+    const step = MC_STEPS[MC_STATE.step];
+    const live = step.active;
+    mcById("mc-client1").classList.toggle("is-active", live);
+    mcById("mc-server1").classList.toggle("is-active", live);
+    const clientStatus = mcById("mc-client1-status");
+    clientStatus.className = "mc-node-status " + (live ? "live" : "ready");
+    clientStatus.textContent = live ? "已连接" : "待连接";
+    const serverStatus = mcById("mc-server1-status");
+    serverStatus.className = "mc-node-status " + (live ? "live" : "idle");
+    serverStatus.textContent = live ? "已连接" : "未连接";
+    mcById("mc-link").classList.toggle("is-live", live);
+    mcById("mc-link-label").textContent = live ? "JSON-RPC 2.0 · stdio" : "未建立连接";
+  }
+
+  function mcRenderPanel() {
+    const step = MC_STEPS[MC_STATE.step];
+    mcById("mc-handshake").textContent = step.handshake;
+    mcById("mc-tool-count").textContent = String(step.tools.length);
+    mcById("mc-action").textContent = step.action;
+    mcById("mc-payload-label").textContent = step.payloadLabel;
+    mcById("mc-payload").textContent = step.payload;
+
+    const tools = mcById("mc-tools");
+    tools.textContent = "";
+    if (!step.tools.length) {
+      const empty = document.createElement("span");
+      empty.className = "mc-empty";
+      empty.textContent = "（空）";
+      tools.append(empty);
+    } else {
+      step.tools.forEach((name) => {
+        const chip = document.createElement("span");
+        chip.className = "mc-tool" + (name === "close_issue" ? " is-new" : "");
+        chip.textContent = name;
+        if (name === "close_issue") {
+          const mark = document.createElement("em");
+          mark.textContent = "新增";
+          chip.append(mark);
+        }
+        tools.append(chip);
+      });
+    }
+    mcById("mc-tool-note").textContent = step.note;
+    mcById("mc-state-summary").textContent = "第 " + (MC_STATE.step + 1) + " / 6 步 · " + step.handshake + " · 工具 " + step.tools.length + " 个";
+    mcById("mc-prev").disabled = MC_STATE.step === 0;
+    mcById("mc-next").disabled = MC_STATE.step === MC_STEPS.length - 1;
+  }
+
+  function mcRender() {
+    mcRenderStages();
+    mcRenderSeq();
+    mcRenderTopology();
+    mcRenderPanel();
+  }
+
+  function mcAnnounce() {
+    const step = MC_STEPS[MC_STATE.step];
+    mcById("mc-announcement").textContent = "第 " + (MC_STATE.step + 1) + " 步：" + step.title + "。握手状态 " + step.handshake + "，已发现工具 " + step.tools.length + " 个。";
+  }
+
+  mcById("mc-prev").addEventListener("click", () => {
+    if (MC_STATE.step > 0) {
+      MC_STATE.step -= 1;
+      mcRender();
+      mcAnnounce();
+    }
+  });
+
+  mcById("mc-next").addEventListener("click", () => {
+    if (MC_STATE.step < MC_STEPS.length - 1) {
+      MC_STATE.step += 1;
+      mcRender();
+      mcAnnounce();
+    }
+  });
+
+  mcById("mc-reset").addEventListener("click", () => {
+    MC_STATE.step = 0;
+    mcRender();
+    mcAnnounce();
+  });
+
+  mcRender();
+</script>
+</body>
+</html>

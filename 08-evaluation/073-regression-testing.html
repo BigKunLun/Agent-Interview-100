@@ -1,0 +1,958 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>回归测试：如何检测 Agent 性能退化？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .rg-banner { display: flex; align-items: flex-start; gap: 9px; margin: var(--s-4) var(--s-6) 0; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .rg-banner::before { content: "教学"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .rg-banner strong { color: #4d3000; }
+  .rg-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .rg-neutral { background: #eef1ee; color: #3f463f; border-color: #c9cec9; }
+  .rg-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .rg-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .rg-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .rg-bad { background: #fbecec; color: #8a1f1f; border-color: #d9a3a3; }
+  .rg-overview { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 13px; border: 1px solid var(--border); border-left: 4px solid #194f87; border-radius: var(--r-1); background: var(--surface); font-size: 12px; line-height: 1.7; }
+  .rg-overview b { font: 600 10px/1.6 var(--mono); color: #194f87; letter-spacing: .06em; }
+  .rg-overview strong { font: 600 16px/1.4 var(--mono); }
+  .rg-groups { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; margin-top: var(--s-3); }
+  .rg-group { padding: 8px 9px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .rg-group b { display: block; font: 600 11px/1.5 var(--sans); }
+  .rg-group span { display: block; margin-top: 2px; font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .rg-group .rg-count { margin-top: 4px; font: 600 16px/1.2 var(--mono); color: #194f87; }
+  .rg-group.fail { border-color: #d9a3a3; background: #fbecec; }
+  .rg-group.fail .rg-count { color: #8a1f1f; }
+  .rg-metrics { margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); overflow: hidden; }
+  .rg-metrics-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 5px; padding: 9px 12px; border-bottom: 1px solid var(--border); background: var(--surface-soft); }
+  .rg-metrics-head b { font-size: 13px; }
+  .rg-metrics-head span { font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .rg-metric { display: grid; grid-template-columns: 130px 82px 82px 78px minmax(0, 1fr); gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .rg-metric:last-child { border-bottom: 0; }
+  .rg-metric-name { font-weight: 600; }
+  .rg-num { font: 11px/1.5 var(--mono); color: var(--text-dim); white-space: nowrap; }
+  .rg-delta { font: 600 11px/1.5 var(--mono); white-space: nowrap; }
+  .rg-delta.down { color: #8a1f1f; }
+  .rg-delta.up { color: #14532d; }
+  .rg-delta.flat { color: var(--text-dim); }
+  .rg-metric-note { color: var(--text-dim); font-size: 10px; line-height: 1.55; }
+  .rg-threshold { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: var(--s-3); }
+  .rg-threshold-label { font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .rg-tab { min-height: 40px; padding: 6px 14px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: 12px; color: var(--text-dim); }
+  .rg-tab:hover { border-color: #194f87; }
+  .rg-tab[aria-pressed="true"] { background: #194f87; border-color: #194f87; color: #fff; font-weight: 600; }
+  .rg-toggle { min-height: 40px; padding: 6px 12px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: 11px; color: var(--text-dim); }
+  .rg-toggle[aria-pressed="true"] { border-color: #8a1f1f; background: #fbecec; color: #8a1f1f; font-weight: 600; }
+  .rg-picked { margin-top: var(--s-3); padding: 8px 11px; border-left: 3px solid #194f87; background: #eaf1f8; font-size: 12px; line-height: 1.7; }
+  .rg-picked-bad { border-left-color: #8a1f1f; background: #fbecec; color: #6d1717; }
+  .rg-verdict-list { display: grid; gap: 6px; margin-top: var(--s-3); }
+  .rg-verdict-row { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 10px; border: 1px solid #9cc39e; border-radius: 4px; background: #eef7ee; font-size: 11px; line-height: 1.6; }
+  .rg-verdict-row .mark { font: 600 13px/1 var(--mono); color: #14532d; }
+  .rg-verdict-row.bad { border-color: #d9a3a3; background: #fbecec; }
+  .rg-verdict-row.bad .mark { color: #8a1f1f; }
+  .rg-verdict-row.warn { border-color: #d9b47a; background: #fdf3e3; }
+  .rg-verdict-row.warn .mark { color: #6b4300; }
+  .rg-decision { margin-top: var(--s-4); border: 1px solid #9cc39e; border-radius: var(--r-1); background: #eef7ee; overflow: hidden; }
+  .rg-decision.block { border-color: #d9a3a3; background: #fbecec; }
+  .rg-decision.warn { border-color: #d9b47a; background: #fdf3e3; }
+  .rg-decision-head { padding: 12px 14px; border-bottom: 1px solid rgba(32,36,33,.12); }
+  .rg-decision-head b { display: block; font: 600 20px/1.4 var(--serif); color: #14532d; }
+  .rg-decision.block .rg-decision-head b { color: #7d1f1f; }
+  .rg-decision.warn .rg-decision-head b { color: #5f430f; }
+  .rg-decision-head span { display: block; margin-top: 3px; font-size: 11px; color: var(--text-dim); }
+  .rg-decision-body { padding: 12px 14px; font-size: 12px; line-height: 1.75; }
+  .rg-decision-body ul { margin: 4px 0 0; padding-left: 1.2em; }
+  .rg-decision-body li { margin-block: 3px; }
+  .rg-decision-body strong { font-weight: 600; }
+  .rg-empty { padding: var(--s-4); border: 1px dashed var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .rg-fixed-note { display: inline-block; margin-top: var(--s-3); padding: 3px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  .rg-flow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: var(--s-4); padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .rg-flow-node { padding: 7px 9px; border: 1px solid #9eb4c9; border-radius: 5px; background: #eaf1f8; font: 600 10px/1.45 var(--mono); color: #194f87; }
+  .rg-flow-node.gate { border-color: #b98a2f; background: #fdf3e3; color: #6b4300; }
+  .rg-flow-node.stop { border-color: #d9a3a3; background: #fbecec; color: #8a1f1f; }
+  .rg-flow-node.go { border-color: #9cc39e; background: #e6f2e6; color: #14532d; }
+  .rg-flow-arrow { font: 11px/1 var(--mono); color: var(--text-dim); }
+  .rg-flow figcaption { flex-basis: 100%; margin-top: 4px; font-size: 11px; line-height: 1.65; color: var(--text-dim); }
+  .rg-table td:first-child { min-width: 7em; }
+  .rg-code-note { margin-top: var(--s-3); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  @media (max-width: 1000px) { .rg-groups { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  @media (max-width: 720px) {
+    .rg-banner { margin-inline: var(--s-4); }
+    .rg-groups { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .rg-metric { grid-template-columns: minmax(0, 1fr) 58px 58px 58px; gap: 6px; }
+    .rg-metric-note { grid-column: 1 / -1; }
+    .rg-verdict-row { grid-template-columns: 20px minmax(0, 1fr); }
+    .rg-verdict-row .rg-badge { grid-column: 1 / -1; justify-self: start; }
+    .rg-width-scroll { overflow-x: auto; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">073 / 回归测试</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 18 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="072-agent-benchmarks.html">← 上一页 · Agent Benchmark</a><a href="074-traces-and-spans.html">下一页 → · Trace 和 Span</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Evaluation · 可交互讲解</p>
+      <h1>改一个字，<br>也可能改坏链路。</h1>
+    </div>
+    <div>
+      <p class="lead">回归测试是在每次 Prompt 修改、模型升级、代码或数据变更后，自动跑一套固定用例，检查 Agent 是否退化。LLM 输出不确定，所以不能比“输出相等”，要比多次运行的统计指标、语义评分和趋势。</p>
+      <p class="definition"><strong>关键边界：</strong>回归集不是拿来把 Prompt 调到 100% 通过。要留 holdout、按 badcase 分层抽样、定期轮换；安全等高优先级用例必须全过。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Evaluation</span><span class="pill">CI 门禁</span><span class="pill">固定教学回归</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="rg-title">
+    <div class="player-top">
+      <div class="player-label">回归门禁面板 <small>套件结果 · 阈值判定 · 阻断或放行</small></div>
+      <div class="controls" role="group" aria-label="回归演示控制">
+        <button type="button" class="button button-quiet" id="rg-reset">重置</button>
+        <button type="button" class="button" id="rg-back" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="rg-next">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="回归测试阶段">
+      <ol style="--stages: 3">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>套件结果</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>阈值判定</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>处置</button></li>
+      </ol>
+    </nav>
+    <p class="rg-banner"><span><strong>本页是固定教学回归结果，不连接任何 CI 或评估平台。</strong>50 条用例、通过数、指标变化、阈值和 critical 状态都是预设的，用来演示“看结果 → 比阈值 → 阻断或放行”的过程，不代表任何真实部署。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="rg-index">阶段 1 / 3 · 固定教学回归</p>
+      <h2 id="rg-title">先看套件：47 / 50 通过，比基线少 2 个点</h2>
+      <p id="rg-subtitle">固定场景：Agent v2.3 候选版本。总体通过率 94%，基线 96%；另有三项指标变化和一项延迟上升。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="rg-scene"></div>
+      <p class="demo-note" id="rg-note">固定教学数据：50 条用例、通过数、指标变化均为本页预设，不运行真实 Agent，不读取任何 CI 结果。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学回归 · 0 次 CI 运行</span><span id="rg-summary">阶段 1 / 3 · 47 / 50 通过</span></div>
+  </section>
+  <p id="rg-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">为什么需要</p><h2 id="why-title">四类变更，<br>都能悄悄改坏行为。</h2></div>
+      <p class="reading-intro">Prompt、模型、工具或环境、数据，任何一类变化都可能让 Agent 退化。原文把“每次 Prompt 或模型变更都必须有回归测试保障”列为关键原则。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data rg-wide">
+          <caption class="sr-only">原文列出的四类退化来源</caption>
+          <thead><tr><th scope="col">变更类型</th><th scope="col">例子</th><th scope="col">后果</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Prompt 修改</th><td>改 System Prompt 一个词；添加新规则</td><td>安全护栏失效；新旧规则冲突，输出混乱</td></tr>
+            <tr><th scope="row">模型升级</th><td>供应商更新模型版本；GPT-4-0613 → GPT-4-turbo</td><td>行为微妙变化，某些任务准确率下降</td></tr>
+            <tr><th scope="row">工具 / 环境变更</th><td>API 返回格式变化；新增工具</td><td>Agent 解析失败；干扰原有工具选择策略</td></tr>
+            <tr><th scope="row">数据变更</th><td>RAG 索引更新；Few-shot 示例修改</td><td>检索结果变化；输出风格和质量变化</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="rg-fixed-note">变更类型与示例来自原文</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="framework-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">回归框架</p><h2 id="framework-title">变更进 CI，<br>基线对比，超阈值阻断。</h2></div>
+      <p class="reading-intro">原文的框架是：变更触发 CI，跑 Golden Dataset，和基线比较；退化超阈值就阻断合并，否则放行部署。</p>
+    </div>
+    <div class="prose">
+      <figure class="rg-flow" role="img" aria-label="回归测试流程：变更触发 CI，运行 Golden Dataset 回归，与基线对比，判断退化是否超阈值；是则阻断合并，否则放行部署">
+        <span class="rg-flow-node">变更：Prompt / 模型 / 代码 / RAG 索引</span><span class="rg-flow-arrow">→</span>
+        <span class="rg-flow-node">CI 触发</span><span class="rg-flow-arrow">→</span>
+        <span class="rg-flow-node">Golden Dataset 回归</span><span class="rg-flow-arrow">→</span>
+        <span class="rg-flow-node">与基线对比</span><span class="rg-flow-arrow">→</span>
+        <span class="rg-flow-node gate">退化超阈值？</span><span class="rg-flow-arrow">→ 是 →</span>
+        <span class="rg-flow-node stop">阻断合并</span>
+        <span class="rg-flow-arrow">；否 →</span>
+        <span class="rg-flow-node go">放行部署</span>
+        <figcaption>原文图意：Prompt 和代码一样过 CI；阈值是门禁，不是参考建议。</figcaption>
+      </figure>
+      <details>
+        <summary>查看原文 Mermaid 源码（回归流程）</summary>
+        <pre><code>flowchart TD
+    A["变更：Prompt / 模型 /&lt;br/&gt;代码 / RAG 索引"] --&gt; B["CI 触发"]
+    B --&gt; C["Golden Dataset 回归"]
+    C --&gt; D["与基线对比"]
+    D --&gt; Q{"退化超阈值？"}
+    Q -- "是" --&gt; E["阻断合并"]
+    Q -- "否" --&gt; F["放行部署"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class A,B,C,D,F proc
+    class Q decision
+    class E err</code></pre>
+      </details>
+      <details>
+        <summary>查看 LLMRegressionTester 的原文代码</summary>
+        <pre><code>class LLMRegressionTester:
+    """LLM/Agent 回归测试框架"""
+
+    def __init__(self, golden_dataset, metrics, threshold):
+        self.dataset = golden_dataset   # 标注好的测试集
+        self.metrics = metrics          # 评估指标
+        self.threshold = threshold      # 退化阈值
+
+    async def run_regression(self, current_version, baseline_version=None):
+        """运行回归测试，对比当前版本与基线"""
+
+        # 1. 在测试集上运行当前版本
+        current_results = []
+        for case in self.dataset:
+            output = await current_version.invoke(case.input)
+            scores = await self.evaluate(case, output)
+            current_results.append(scores)
+
+        # 2. 加载基线结果（或运行基线版本）
+        if baseline_version:
+            baseline_results = await self.run_baseline(baseline_version)
+        else:
+            baseline_results = self.load_baseline()
+
+        # 3. 对比
+        comparison = self.compare(current_results, baseline_results)
+
+        # 4. 判断是否退化
+        regressions = []
+        for metric_name, delta in comparison.items():
+            if delta &lt; -self.threshold[metric_name]:
+                regressions.append({
+                    "metric": metric_name,
+                    "baseline": baseline_results[metric_name],
+                    "current": current_results[metric_name],
+                    "delta": delta,
+                })
+
+        return {
+            "passed": len(regressions) == 0,
+            "regressions": regressions,
+            "details": comparison,
+        }</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="golden-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">Golden Dataset</p><h2 id="golden-title">黄金集是活的，<br>不是一次性题库。</h2></div>
+      <p class="reading-intro">原文建议最少 50 个用例覆盖核心场景，理想 200–500 个；按 50% 核心、20% 边界、15% 安全、10% 格式、5% 性能配置。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">原文建议的 Golden Dataset 覆盖比例</caption>
+          <thead><tr><th scope="col">类别</th><th scope="col">覆盖内容</th><th scope="col" class="num">占比</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">核心功能</th><td>Agent 的主要使用场景</td><td class="num">50%</td></tr>
+            <tr><th scope="row">边界情况</th><td>极端输入、特殊字符、长文本</td><td class="num">20%</td></tr>
+            <tr><th scope="row">安全测试</th><td>Prompt Injection、敏感话题</td><td class="num">15%</td></tr>
+            <tr><th scope="row">格式测试</th><td>输出格式一致性</td><td class="num">10%</td></tr>
+            <tr><th scope="row">性能基准</th><td>延迟和成本的基准用例</td><td class="num">5%</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>每个用例要标注优先级：critical / normal / low。原文明确说，高优先级用例（如安全相关）必须 100% 通过；优先级不是用来排“有空再修”的顺序。</p>
+      <div class="callout">
+        <p class="callout-label">数据集维护</p>
+        <p>从生产 bug 转成用例；定期审查和淘汰过时用例；随功能迭代补充新场景。Golden Dataset 应该是活的，随产品演进。</p>
+      </div>
+      <details>
+        <summary>查看 GoldenDataset 的原文代码</summary>
+        <pre><code>class GoldenDataset:
+    """维护回归测试的黄金数据集"""
+
+    def __init__(self):
+        self.cases = []
+
+    def add_case(self, input_text, expected_output=None,
+                 rubric=None, category=None, priority="normal"):
+        self.cases.append({
+            "input": input_text,
+            "expected_output": expected_output,
+            "rubric": rubric,             # LLM Judge 评分标准
+            "category": category,          # 分类（便于按类分析）
+            "priority": priority,          # critical/normal/low
+            "created_at": datetime.now(),
+        })</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="badcase-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">badcase 沉淀</p><h2 id="badcase-title">先归因，<br>再进回归集。</h2></div>
+      <p class="reading-intro">原文的原话是：badcase 要先归因，再沉淀成用例，否则越堆越假。归因顺序是从后往前，最后才怀疑模型能力。</p>
+    </div>
+    <div class="prose">
+      <h3>五步归因</h3>
+      <ol>
+        <li><strong>复现：</strong>固定当时的模型和 Prompt 版本，用 trace 里的输入重放。复现不了先查环境差异；不可复现的 case 先标记待观察。</li>
+        <li><strong>工具层：</strong>工具选对了吗？参数对吗？工具返回本身对吗？</li>
+        <li><strong>检索层：</strong>相关文档进 top-k 了吗？rerank 排对了吗？</li>
+        <li><strong>上下文层：</strong>该有的信息在吗？被压缩丢了吗？</li>
+        <li><strong>Prompt 层：</strong>指令有歧义吗？few-shot 有错误示范吗？最后才是模型能力。</li>
+      </ol>
+      <p><strong>消融实验：</strong>换更强模型重跑，变好了是模型问题；把人工构造的正确上下文直接喂进去重跑，变好了是前序链路问题。关键判据是：正确信息直接给模型，它能答对吗？能，问题在链路；不能，问题在模型或 Prompt。</p>
+      <p>确认的 badcase 记四样：输入、期望输出或判定标准、归因标签、来源 trace id。按归因分三个集：检索集、工具集（选择加参数）、端到端集。改哪层跑哪个集，反馈最快；端到端集兜底，防止层间交互被漏掉。</p>
+      <div class="callout">
+        <p class="callout-label">holdout 规则</p>
+        <p>回归集不能拿来把 Prompt 调到 100% 通过。留一部分 holdout 平时不看、不针对性修改；按 badcase 类型分层抽样，每类都留样本；每轮按种子轮换，避免 holdout 被间接拟合。失效用例定期清理或标记停用，不删历史。</p>
+      </div>
+      <details>
+        <summary>查看 BadCase 与 RegressionSuite 的原文代码</summary>
+        <pre><code>@dataclass
+class BadCase:
+    case_id: str
+    input: str
+    expected: Optional[str]     # 有标准答案就填
+    rubric: Optional[str]       # 没有标准答案就填判定标准
+    layer: Layer                # 归因标签
+    source_trace_id: str        # 来源 trace，可重放
+    split: str = "train"        # train / holdout
+    active: bool = True         # 失效用例标记停用，不删历史
+
+    def selectable(self) -&gt; bool:
+        return self.active and self.split == "train"
+
+
+class RegressionSuite:
+    """按归因分层组织回归集，holdout 平时不看"""
+
+    # 目录落地：tests/regression/{retrieval,tool,end_to_end}/
+    END_TO_END_LAYERS = {Layer.CONTEXT, Layer.PROMPT, Layer.MODEL}
+
+    def retrieval_suite(self) -&gt; list[BadCase]:
+        return self._trainable(Layer.RETRIEVAL)
+
+    def tool_suite(self) -&gt; list[BadCase]:
+        return self._trainable(Layer.TOOL)
+
+    def end_to_end_suite(self) -&gt; list[BadCase]:
+        # 上下文、prompt、模型的问题都落在端到端集
+        return [
+            c for c in self.cases
+            if c.selectable() and c.layer in self.END_TO_END_LAYERS
+        ]
+
+    def rotate_holdout(self, ratio: float = 0.2, seed: int = 0) -&gt; None:
+        """按归因类型分层抽样轮换 holdout，避免被反复拟合"""
+        rng = random.Random(seed)
+        active = [c for c in self.cases if c.active]
+        for case in active:
+            case.split = "train"
+
+        groups: dict[Layer, list[BadCase]] = {}
+        for case in active:
+            groups.setdefault(case.layer, []).append(case)
+
+        for group in groups.values():
+            quota = max(1, int(len(group) * ratio))
+            for case in rng.sample(group, min(quota, len(group))):
+                case.split = "holdout"</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="ci-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">CI/CD 与非确定性</p><h2 id="ci-title">多次运行，<br>比统计分布。</h2></div>
+      <p class="reading-intro">CI 里跑回归，Prompt 变更和代码变更一样触发。LLM 输出不确定，就用多次运行的均值、方差、通过率，必要时做统计检验。</p>
+    </div>
+    <div class="prose">
+      <h3>CI 触发条件</h3>
+      <p>原文的 GitHub Actions 示例监听三类路径：<code>prompts/**</code>、<code>config/model.yaml</code>、<code>src/agent/**</code>。跑完回归后，用 <code>check_regression.py</code> 对比 baseline / current，阈值示例是 0.05，即允许最多 5% 退化。</p>
+      <details>
+        <summary>查看原文的 GitHub Actions 配置</summary>
+        <pre><code># .github/workflows/llm-regression.yml
+name: LLM Regression Test
+
+on:
+  pull_request:
+    paths:
+      - 'prompts/**'        # Prompt 文件变更触发
+      - 'config/model.yaml'  # 模型配置变更触发
+      - 'src/agent/**'       # Agent 代码变更触发
+
+jobs:
+  regression-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run regression tests
+        run: python -m pytest tests/regression/ -v
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+      - name: Check quality threshold
+        run: |
+          python scripts/check_regression.py \\
+            --baseline results/baseline.json \\
+            --current results/current.json \\
+            --threshold 0.05  # 允许最多 5% 的退化</code></pre>
+      </details>
+      <h3>非确定性怎么处理</h3>
+      <ul>
+        <li>同一用例跑 5 次，统计均值、标准差、最小值、最大值和通过率。</li>
+        <li>用 LLM-as-Judge 评估语义质量，而不是精确匹配字符串。</li>
+        <li>比较两个版本的得分分布，用 Mann-Whitney U 检验，p &lt; 0.05 视为显著差异。</li>
+      </ul>
+      <details>
+        <summary>查看 NonDeterministicTester 的原文代码</summary>
+        <pre><code>class NonDeterministicTester:
+    """处理 LLM 输出的非确定性"""
+
+    async def robust_test(self, case, n_runs=5):
+        """多次运行取统计结果"""
+        scores = []
+        for _ in range(n_runs):
+            output = await self.agent.invoke(case.input)
+            score = await self.evaluate(case, output)
+            scores.append(score)
+
+        return {
+            "mean": np.mean(scores),
+            "std": np.std(scores),
+            "min": np.min(scores),
+            "max": np.max(scores),
+            "pass_rate": sum(1 for s in scores if s &gt;= case.threshold) / n_runs,
+        }
+
+    def compare_distributions(self, baseline_scores, current_scores):
+        """用统计检验比较两个版本的得分分布"""
+        from scipy.stats import mannwhitneyu
+
+        stat, p_value = mannwhitneyu(baseline_scores, current_scores)
+        return {
+            "significant_difference": p_value &lt; 0.05,
+            "p_value": p_value,
+            "baseline_mean": np.mean(baseline_scores),
+            "current_mean": np.mean(current_scores),
+        }</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">两个误区，<br>两个追问。</h2></div>
+      <p class="reading-intro">非确定性不是不做测试的理由；回归也不是大更新才做。规模和维护策略要按 Agent 复杂度定。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <div class="misconception-label">误区 01</div>
+        <div><h3>“LLM 输出不确定，没法做回归测试”</h3><p>非确定性不是不能测试的理由。用多次运行取统计指标（均值、方差、通过率），用 LLM-as-Judge 评估语义质量而非精确匹配，用统计检验判断是否显著退化。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 02</div>
+        <div><h3>“回归测试只需要在大更新时做”</h3><p>Prompt 的微小修改也可能导致显著行为变化。最佳实践是集成到 CI/CD，每次 Prompt 或配置变更都自动触发。初期投入大，长期省大量排错时间。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 03</div>
+        <div><h3>Golden Dataset 多大合适？</h3><p>取决于 Agent 复杂度。建议最少 50 个用例覆盖核心场景，理想 200–500 个。每个用例标注优先级，高优先级用例（如安全相关）必须 100% 通过。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 04</div>
+        <div><h3>如何维护 Golden Dataset 的时效性？</h3><p>从生产 bug 转成测试用例；定期审查和淘汰过时用例；随功能迭代补充新场景。Golden Dataset 应该是活的，随产品演进。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="sources-title">
+    <p class="eyebrow">参考资料</p>
+    <h2 class="source-heading" id="sources-title">原文引用与延伸阅读</h2>
+    <p class="source-summary">以下链接来自原文。只有主动点击外链才会离开本页；本页不加载任何外部资源。</p>
+    <details>
+      <summary>展开 5 条参考资料</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.braintrust.dev/articles/llm-evaluation-guide" rel="noreferrer noopener">LLM Evaluation: A Practical Guide (Braintrust)</a></li>
+          <li><a href="https://www.traceloop.com/blog/automated-prompt-regression-testing-with-llm-as-a-judge-and-ci-cd" rel="noreferrer noopener">Automated Prompt Regression Testing with LLM-as-a-Judge and CI/CD (Traceloop)</a></li>
+          <li><a href="https://medium.com/@mrhotfix/prompt-versioning-testing-and-ci-cd-why-your-llm-system-is-more-fragile-than-you-think-000441e57f61" rel="noreferrer noopener">Prompt Versioning, Testing, and CI/CD (Medium)</a></li>
+          <li><a href="https://arxiv.org/html/2507.19390v1" rel="noreferrer noopener">ReCatcher: Towards LLMs Regression Testing for Code Generation (arXiv)</a></li>
+          <li><a href="https://www.comet.com/site/blog/llm-testing/" rel="noreferrer noopener">LLM Testing: A Complete Guide (Comet)</a></li>
+        </ul>
+        <p class="source-footnote">工具名、配置示例和阈值均按原文呈现；本页未连接任何 CI 或评估平台。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>08-evaluation/073-regression-testing.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 5 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const GROUPS = Object.freeze([
+    { name: "核心功能", total: 25, pass: 23, share: "50%" },
+    { name: "边界情况", total: 10, pass: 9, share: "20%" },
+    { name: "安全测试", total: 8, pass: 8, share: "15%" },
+    { name: "格式测试", total: 5, pass: 5, share: "10%" },
+    { name: "性能基准", total: 2, pass: 2, share: "5%" }
+  ]);
+
+  const METRICS = Object.freeze([
+    { key: "code", name: "代码生成准确率", baseline: 72, current: 68, unit: "%", delta: -4, dir: "down", note: "质量指标；下降 4 个百分点" },
+    { key: "latency", name: "平均延迟", baseline: 2.1, current: 2.8, unit: "s", delta: 33.3, dir: "up", note: "性能指标；上升 33%，不是质量下降" },
+    { key: "quality", name: "对话质量评分", baseline: 4.2, current: 4.5, unit: "", delta: 7.1, dir: "up", note: "质量指标；上升 7%" },
+    { key: "tool", name: "工具选择准确率", baseline: 88, current: 91, unit: "%", delta: 3.4, dir: "up", note: "质量指标；上升 3 个百分点" }
+  ]);
+
+  const STAGES = Object.freeze([
+    {
+      nav: "套件结果",
+      title: "先看套件：47 / 50 通过，比基线少 2 个点",
+      subtitle: "固定场景：Agent v2.3 候选版本。总体通过率 94%，基线 96%；另有三项指标变化和一项延迟上升。",
+      note: "固定教学数据：50 条用例、通过数、指标变化均为本页预设，不运行真实 Agent，不读取任何 CI 结果。原文看板示例的建议是检查代码生成 Prompt 的变更；本页再用阈值判断是否阻断。",
+      summary: "阶段 1 / 3 · 47 / 50 通过"
+    },
+    {
+      nav: "阈值判定",
+      title: "阈值定在哪，决定这次是阻断还是放行",
+      subtitle: "质量指标下降超过阈值算退化。延迟上升单独看性能告警；安全 critical 用例失败则直接阻断。",
+      note: "固定教学判定：阈值 3% / 5% / 10% 和 critical 开关都是预设；不是任何团队的正式发布标准。",
+      summary: "阶段 2 / 3 · 等待选择阈值"
+    },
+    {
+      nav: "处置",
+      title: "门禁给结论，人负责定位",
+      subtitle: "阻断时先查对应变更；放行时也要记录告警。无论哪种结果，都只是这次候选版本的状态。",
+      note: "固定教学判定：阻断 / 放行 / 放行但告警均为本页按固定规则计算，不代表真实 CI 结论。",
+      summary: "阶段 3 / 3 · 查看处置"
+    }
+  ]);
+
+  const state = { stage: 0, threshold: 5, criticalFailed: false };
+  const byId = (id) => document.getElementById(id);
+
+  function totalPass() {
+    return GROUPS.reduce((sum, group) => sum + group.pass, 0);
+  }
+
+  function totalCases() {
+    return GROUPS.reduce((sum, group) => sum + group.total, 0);
+  }
+
+  function fmt(n) {
+    return Number.isInteger(n) ? n.toLocaleString("en-US") : n.toFixed(1);
+  }
+
+  function passRate(pass, total) {
+    return Math.round((pass / total) * 1000) / 10;
+  }
+
+  function groupCards() {
+    return GROUPS.map((group) => {
+      const failed = group.pass < group.total;
+      return `<div class="rg-group${failed ? " fail" : ""}">
+        <b>${group.name}</b><span>原文覆盖 ${group.share}</span>
+        <span class="rg-count">${group.pass} / ${group.total}</span>
+        <span>${failed ? "有失败" : "全过"}</span>
+      </div>`;
+    }).join("");
+  }
+
+  function metricRows() {
+    return METRICS.map((metric) => {
+      const sign = metric.delta > 0 ? "+" : "";
+      const unit = metric.unit === "s" ? "s" : (metric.unit === "%" ? "pp" : "");
+      const cls = metric.dir === "down" ? "down" : metric.dir === "up" ? "up" : "flat";
+      return `<div class="rg-metric">
+        <span class="rg-metric-name">${metric.name}</span>
+        <span class="rg-num">基线 ${fmt(metric.baseline)}${metric.unit}</span>
+        <span class="rg-num">当前 ${fmt(metric.current)}${metric.unit}</span>
+        <span class="rg-delta ${cls}">${sign}${fmt(metric.delta)}${unit}</span>
+        <span class="rg-metric-note">${metric.note}</span>
+      </div>`;
+    }).join("");
+  }
+
+  function resultScene() {
+    const pass = totalPass();
+    const total = totalCases();
+    return `
+      <div class="rg-overview"><span><b>候选版本</b> Agent v2.3 · 固定教学回归</span><span>通过率 <strong>${passRate(pass, total)}%</strong>（${pass} / ${total}）· 基线 <strong>96%</strong></span></div>
+      <div class="rg-groups">${groupCards()}</div>
+      <div class="rg-metrics">
+        <div class="rg-metrics-head"><b>关键指标变化</b><span>固定教学数据 · 未连接任何平台</span></div>
+        ${metricRows()}
+      </div>
+      <p class="rg-fixed-note">固定教学数据：50 条用例、47 条通过、四项指标均按原文看板示例整理</p>`;
+  }
+
+  function verdictRows() {
+    return METRICS.map((metric) => {
+      let status = "ok";
+      let label = "未超阈值";
+      let mark = "✓";
+      if (metric.key === "latency") {
+        status = "warn";
+        label = "性能告警";
+        mark = "!";
+      } else if (metric.delta < -state.threshold) {
+        status = "bad";
+        label = "退化，超阈值";
+        mark = "×";
+      }
+      return `<div class="rg-verdict-row ${status === "bad" ? "bad" : status === "warn" ? "warn" : ""}">
+        <span class="mark">${mark}</span>
+        <span><strong>${metric.name}</strong>：${metric.note}；当前阈值 ${state.threshold}%</span>
+        <span class="rg-badge ${status === "bad" ? "rg-bad" : status === "warn" ? "rg-warn" : "rg-ok"}">${label}</span>
+      </div>`;
+    }).join("");
+  }
+
+  function decision() {
+    const regressions = METRICS.filter((metric) => metric.key !== "latency" && metric.delta < -state.threshold);
+    const latencyWarn = METRICS.find((metric) => metric.key === "latency");
+    if (state.criticalFailed) {
+      return {
+        status: "block",
+        title: "阻断合并",
+        reason: "安全 critical 用例失败。按原文规则，高优先级用例必须 100% 通过，这一条不受总体通过率或阈值影响。",
+        actions: ["检查安全测试用例的输入、护栏和 Prompt 变更", "修复后重跑安全集，再跑完整回归", "不要用总体 94% 掩盖 critical 失败"]
+      };
+    }
+    if (regressions.length) {
+      return {
+        status: "block",
+        title: "阻断合并",
+        reason: `质量指标下降超过 ${state.threshold}% 阈值：${regressions.map((metric) => metric.name).join("、")}。`,
+        actions: ["先定位代码生成相关的 Prompt 变更", "用 trace 重放失败用例，按工具 → 检索 → 上下文 → Prompt 顺序归因", "修复后重跑同一套用例，确认不低于基线"]
+      };
+    }
+    if (latencyWarn && latencyWarn.delta > 20) {
+      return {
+        status: "warn",
+        title: "放行，但记录性能告警",
+        reason: `质量指标没有超过 ${state.threshold}% 阈值；但平均延迟从 ${fmt(latencyWarn.baseline)}s 升到 ${fmt(latencyWarn.current)}s，上升 ${fmt(latencyWarn.delta)}%。`,
+        actions: ["记录延迟告警，检查是否与模型或工具变更有关", "如果延迟继续上升，单独按性能 SLO 处理", "放行不代表没有风险，只是这次质量门禁通过"]
+      };
+    }
+    return {
+      status: "ok",
+      title: "放行部署",
+      reason: `质量指标没有超过 ${state.threshold}% 阈值，延迟也没有明显上升。`,
+      actions: ["记录本次回归结果作为新基线", "继续监控生产指标", "下一轮变更仍要重新跑完整套件"]
+    };
+  }
+
+  function thresholdScene() {
+    const status = decision();
+    return `
+      <div class="rg-threshold" role="group" aria-label="选择退化阈值">
+        <span class="rg-threshold-label">退化阈值</span>
+        ${[3, 5, 10].map((value) => `<button type="button" class="rg-tab" data-threshold="${value}" aria-pressed="${state.threshold === value}">${value}%</button>`).join("")}
+        <button type="button" class="rg-toggle" id="rg-critical" aria-pressed="${state.criticalFailed}">模拟安全 critical 失败</button>
+      </div>
+      <div class="rg-verdict-list">${verdictRows()}</div>
+      ${state.criticalFailed ? '<p class="rg-picked rg-picked-bad">模拟假设：安全 critical 集从 8 / 8 变为 7 / 8。这是第 2 步的额外假设，不改变第 1 步的固定 47 / 50 结果。</p>' : ""}
+      <p class="rg-picked ${status.status === "block" ? "rg-picked-bad" : ""}">按当前阈值和 critical 状态，这次会${status.status === "block" ? "阻断" : status.status === "warn" ? "放行但告警" : "放行"}。点“下一步”看处置建议。</p>
+      <p class="rg-fixed-note">固定教学判定：阈值 3% / 5% / 10% 和 critical 开关均为本页预设</p>`;
+  }
+
+  function decisionScene() {
+    const result = decision();
+    const cls = result.status === "block" ? "block" : result.status === "warn" ? "warn" : "";
+    return `
+      <div class="rg-decision ${cls}">
+        <div class="rg-decision-head"><b>${result.title}</b><span>固定教学判定 · 阈值 ${state.threshold}% · critical ${state.criticalFailed ? "失败" : "通过"}</span></div>
+        <div class="rg-decision-body">
+          <p>${result.reason}</p>
+          <ul>${result.actions.map((action) => `<li>${action}</li>`).join("")}</ul>
+        </div>
+      </div>
+      <p class="rg-fixed-note">固定教学数据：结论由本页预设规则计算，不连接 CI，不触发任何部署</p>`;
+  }
+
+  const SCENES = [resultScene, thresholdScene, decisionScene];
+
+  function bindSceneControls() {
+    document.querySelectorAll("[data-threshold]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.threshold = Number(button.dataset.threshold);
+        renderStage(1);
+        byId("rg-announcement").textContent = `已选择退化阈值 ${state.threshold}%`;
+      });
+    });
+    const critical = byId("rg-critical");
+    if (critical) {
+      critical.addEventListener("click", () => {
+        state.criticalFailed = !state.criticalFailed;
+        renderStage(1);
+        byId("rg-announcement").textContent = state.criticalFailed ? "已模拟安全 critical 用例失败" : "已恢复安全 critical 用例通过";
+      });
+    }
+  }
+
+  function renderStage(stage) {
+    state.stage = stage;
+    const meta = STAGES[stage];
+    byId("rg-scene").innerHTML = SCENES[stage]();
+    byId("rg-index").textContent = `阶段 ${stage + 1} / 3 · 固定教学回归`;
+    byId("rg-title").textContent = meta.title;
+    byId("rg-subtitle").textContent = meta.subtitle;
+    byId("rg-note").textContent = meta.note;
+    byId("rg-summary").textContent = meta.summary;
+    byId("rg-back").disabled = stage === 0;
+    byId("rg-next").disabled = stage === STAGES.length - 1;
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      const active = Number(button.dataset.stage) === stage;
+      if (active) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    bindSceneControls();
+    byId("rg-announcement").textContent = `${meta.title}。${meta.subtitle}`;
+  }
+
+  byId("rg-reset").addEventListener("click", () => {
+    state.threshold = 5;
+    state.criticalFailed = false;
+    renderStage(0);
+  });
+  byId("rg-back").addEventListener("click", () => renderStage(Math.max(0, state.stage - 1)));
+  byId("rg-next").addEventListener("click", () => renderStage(Math.min(STAGES.length - 1, state.stage + 1)));
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+
+  renderStage(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>System Prompt 设计的核心原则 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  /* 059 System Prompt */
+  .sp-toolbar { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 var(--s-6) var(--s-4); }
+  .sp-toggle { min-height: 40px; padding: 7px 11px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); color: var(--text-dim); font-size: 12px; display: inline-flex; align-items: center; gap: 6px; }
+  .sp-toggle::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: #9aa29a; flex: 0 0 auto; }
+  .sp-toggle[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-dim); color: var(--ink); }
+  .sp-toggle[aria-pressed="true"]::before { background: var(--accent); }
+  .sp-toggle:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+  .sp-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .sp-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+  .sp-caption > p:not(.figure-index) { margin-top: var(--s-2); font-size: var(--t-small); color: var(--text-dim); max-width: 66em; }
+  .sp-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: var(--s-4); margin-top: var(--s-4); align-items: start; }
+  .sp-preview { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); overflow: hidden; min-width: 0; }
+  .sp-preview-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-3); padding: 9px 12px; border-bottom: 1px solid var(--border); background: var(--surface-soft); }
+  .sp-preview-head b { font-size: 12px; }
+  .sp-preview-head span { font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .sp-preview pre { margin: 0; border-radius: 0; background: #ebede7; max-height: 540px; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; font-size: 11px; line-height: 1.7; padding: 12px 14px; }
+  .sp-check { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 12px 14px; min-width: 0; }
+  .sp-check-head { display: flex; justify-content: space-between; align-items: baseline; gap: var(--s-3); }
+  .sp-check-head b { font: 600 11px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .sp-count { font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .sp-list { list-style: none; margin: 8px 0 0; padding: 0; }
+  .sp-item { padding: 7px 0; border-bottom: 1px dashed var(--border); }
+  .sp-item:last-child { border-bottom: 0; }
+  .sp-item-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+  .sp-item-top b { font-size: 12px; line-height: 1.45; }
+  .sp-status { font: 9px/1.5 var(--mono); padding: 0 6px; border: 1px solid var(--border); border-radius: 999px; white-space: nowrap; }
+  .sp-item[data-on="true"] .sp-status { color: #1b5e20; background: #f1f8f1; border-color: #9aa89a; }
+  .sp-item[data-on="false"] .sp-status { color: #b71c1c; background: #fff3f3; border-color: #c62828; font-weight: 600; }
+  .sp-item p { margin-top: 3px; font-size: 10px; line-height: 1.55; color: var(--text-dim); }
+  .sp-verdict { margin-top: 9px; border-top: 1px solid var(--border); padding-top: 8px; font-size: 11px; line-height: 1.6; color: var(--text-dim); }
+  .sp-verdict b { color: var(--ink); }
+  .sp-code-label { font: 10px/1.5 var(--mono); color: var(--text-dim); margin-top: var(--s-3); }
+  .sp-struct { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-3); }
+  .sp-struct-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 8px 10px; min-width: 0; }
+  .sp-struct-card b { display: block; font-size: 12px; line-height: 1.45; }
+  .sp-struct-card span { display: block; margin-top: 2px; font-size: 10px; line-height: 1.5; color: var(--text-dim); }
+  .sp-anti td, .sp-anti th { vertical-align: top; }
+  @media (max-width: 900px) {
+    .sp-layout { grid-template-columns: 1fr; }
+    .sp-struct { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 720px) {
+    .sp-toolbar { padding-inline: var(--s-4); }
+    .sp-stage { padding: var(--s-4); }
+    .sp-caption h2 { font-size: 22px; }
+    .sp-toggle { font-size: 11px; padding: 7px 9px; }
+    .sp-preview pre { max-height: 420px; font-size: 10px; }
+    .sp-struct { grid-template-columns: 1fr; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">059 / System Prompt</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 7 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="../06-planning-and-reasoning/103-agentic-rl-grpo.html">← 上一页 · Agentic-RL 是什么？如何用…</a><a href="060-few-shot-vs-zero-shot.html">下一页 → · Few-Shot vs Zero-S…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">基础 · Prompt Engineering · 可交互讲解</p>
+      <h1>先写清身份，<br>再写清边界。</h1>
+    </div>
+    <div>
+      <p class="lead">System Prompt 是模型看到用户输入之前的指令框架：定义它是谁、能做什么、不能做什么、输出长什么样。原则不复杂，难的是每条都写具体。</p>
+      <p class="definition">关键实践：具体明确、指令前置（重要约束放开头，结尾再强调）、正向指令优于否定指令、用分层标记分隔段落；Agent 场景再补工具清单、使用规则和推理格式。原文建议核心指令控制在 500–1500 词，避免“指令淹没”。</p>
+      <div class="hero-meta"><span class="pill">基础</span><span class="pill">Prompt Engineering</span><span class="pill">System Prompt</span><span class="pill">固定示例</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="sp-title">
+    <div class="player-top">
+      <div class="player-label">System Prompt 组装台 <small>固定客服场景 · 五个开关</small></div>
+      <div class="controls" role="group" aria-label="System Prompt 演示控制">
+        <button type="button" class="button button-quiet" id="sp-reset">重置</button>
+        <button type="button" class="button button-primary" id="sp-recommend">推荐配置</button>
+        <button type="button" class="button button-quiet" id="sp-clear">全部关闭</button>
+      </div>
+    </div>
+    <div class="sp-toolbar" role="group" aria-label="设计原则开关">
+      <button type="button" class="sp-toggle" data-toggle="specific" aria-pressed="true">具体明确</button>
+      <button type="button" class="sp-toggle" data-toggle="front" aria-pressed="true">指令前置</button>
+      <button type="button" class="sp-toggle" data-toggle="positive" aria-pressed="true">正向指令</button>
+      <button type="button" class="sp-toggle" data-toggle="structured" aria-pressed="true">分层标记</button>
+      <button type="button" class="sp-toggle" data-toggle="agent" aria-pressed="true">Agent 专用设计</button>
+    </div>
+    <div class="sp-stage scene" id="sp-scene" data-scene="system-prompt">
+      <div class="sp-caption">
+        <p class="figure-index" id="sp-position">图 1 · 当前 5 / 5 项已应用</p>
+        <h2 id="sp-title">五项都打开时，提示词按角色、工具、规则、格式分段。</h2>
+        <p id="sp-desc">身份写清平台和职责；关键输出约束在开头和结尾各出现一次；规则用正向表述；段落用 XML 标签分隔；最后追加 Agent 工具清单、使用规则和 Thought/Action/Observation 格式。</p>
+      </div>
+
+      <div class="sp-layout">
+        <div class="sp-preview">
+          <div class="sp-preview-head"><b>System Prompt 预览</b><span>固定示例 · 不调用模型</span></div>
+          <pre id="sp-prompt" aria-live="polite"></pre>
+        </div>
+        <aside class="sp-check" aria-label="原则检查">
+          <div class="sp-check-head"><b>原则检查</b><span class="sp-count" id="sp-count">5 / 5</span></div>
+          <ul class="sp-list" id="sp-list"></ul>
+          <p class="sp-verdict" id="sp-verdict"></p>
+        </aside>
+      </div>
+
+      <p class="demo-note">固定教学数据（示例）：客服助手 Luna、平台 ShopX、规则和示例文本都为演示而设，不是真实生产 Prompt。开关只改变本页展示的固定文本，不调用模型，也不声称某种写法有量化提升。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定示例 · 开关组合由页面脚本拼装</span><span id="sp-state-summary">5 / 5 项已应用 · 没有连接模型</span></div>
+  </section>
+  <p id="sp-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="sp-struct-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">一 · 结构模板</p><h2 id="sp-struct-title">六个段落，<br>一件事一段。</h2></div>
+      <p class="reading-intro">原文给出的模板包含身份与能力、行为规范、限制与禁止、输出格式、示例。先有骨架，再往每段里填具体内容。</p>
+    </div>
+    <div class="prose">
+      <div class="sp-struct">
+        <div class="sp-struct-card"><b>身份与能力</b><span>你是谁、擅长什么、知识截止日期。</span></div>
+        <div class="sp-struct-card"><b>行为规范</b><span>语言、风格、格式、不确定时怎么办。</span></div>
+        <div class="sp-struct-card"><b>限制与禁止</b><span>越界行为是什么，越界时怎么回应。</span></div>
+        <div class="sp-struct-card"><b>输出格式</b><span>JSON / Markdown / 纯文本，结构是什么。</span></div>
+        <div class="sp-struct-card"><b>示例</b><span>输入输出各一条，消除歧义。</span></div>
+        <div class="sp-struct-card"><b>优先级</b><span>用户指令与系统规则冲突时听谁的。</span></div>
+      </div>
+      <p class="code-label">原文结构模板</p>
+      <pre><code># 你是 [角色名]
+
+## 身份与能力
+- 你是一个 [角色描述]
+- 你擅长 [核心能力列表]
+- 你的知识截止日期是 [日期]
+
+## 行为规范
+- 始终使用 [语言/风格]
+- 回答时遵循 [格式要求]
+- 遇到不确定的信息时 [如何处理]
+
+## 限制与禁止
+- 不要 [具体禁止行为]
+- 如果用户要求你做 [越界行为]，则 [如何回应]
+
+## 输出格式
+- 使用 [JSON/Markdown/纯文本]
+- 结构：[具体结构描述]
+
+## 示例
+输入：[示例输入]
+输出：[示例输出]</code></pre>
+      <p>模板本身不保证效果。真正起作用的是每一段里的具体程度，以及关键约束放在哪里。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="sp-principles-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">二 · 五条原则</p><h2 id="sp-principles-title">具体、前置、<br>正向、分层。</h2></div>
+      <p class="reading-intro">原文的五条原则分别解决歧义、遗忘、违抗、混乱和 Agent 特有问题。每条都配了对照写法。</p>
+    </div>
+    <div class="prose">
+      <h3>原则 1：具体明确，消除歧义</h3>
+      <p>“你是一个有帮助的助手，请提供好的回答”没有告诉模型任何可执行的信息。具体写法要说明角色、技术栈、回答长度、语言和术语习惯。</p>
+      <p class="code-label">原文对照：模糊与具体</p>
+      <pre><code># 模糊
+bad_prompt = "你是一个有帮助的助手。请提供好的回答。"
+
+# 具体
+good_prompt = """
+你是一个 Python 技术顾问，专注于后端开发和 API 设计。
+
+回答规范：
+1. 所有代码示例使用 Python 3.12+ 语法
+2. 优先推荐标准库方案，其次是主流第三方库
+3. 每个代码示例包含类型注解
+4. 回答长度控制在 300 字以内，除非用户要求详细解释
+5. 使用中文回答，技术术语保留英文
+"""</code></pre>
+
+      <h3>原则 2：指令前置（Primacy Effect）</h3>
+      <p>模型对 Prompt 开头和结尾的关注度最高，中间最容易被忽略。这和 Liu et al. 的 “Lost in the Middle” 是同一个现象的两面：开头注意力强是 Primacy，结尾注意力强是 Recency，中间最易被忽略。</p>
+      <p>工程做法叫“夹心饼干”：最重要的约束放最前面，结尾再重复一次；中间留给参考资料和示例，而不是硬指令。</p>
+      <p class="code-label">原文示例：开头和结尾重复关键约束</p>
+      <pre><code>system_prompt = """
+【最重要】你必须始终使用 JSON 格式输出。任何情况下都不要输出纯文本。
+
+你是一个数据提取 Agent，负责从用户提供的文本中提取结构化信息。
+
+输出格式：
+{
+    "entities": [...],
+    "relations": [...],
+    "confidence": 0.0-1.0
+}
+
+【再次强调】输出必须是合法的 JSON，不要添加任何 JSON 之外的文本。
+"""</code></pre>
+
+      <h3>原则 3：正向指令优于否定指令</h3>
+      <p>只列“不要做什么”，模型仍然不知道该做什么，而且更容易违反。把禁止项改写成可执行的正向动作，行为更稳定。</p>
+      <p class="code-label">原文对照：否定与正向</p>
+      <pre><code># 否定指令
+negative_instructions = """
+不要编造信息。
+不要讨论政治话题。
+不要使用脏话。
+不要给出医疗建议。
+"""
+
+# 正向指令
+positive_instructions = """
+只基于已知事实回答，不确定时明确说明。
+聚焦于技术讨论，将非技术话题引导回技术领域。
+使用专业、礼貌的语言。
+涉及健康问题时建议用户咨询专业医生。
+"""</code></pre>
+
+      <h3>原则 4：分层结构与标记分隔</h3>
+      <p>用 Markdown 标题、XML 标签或分隔符把角色、能力、规则、语气、输出格式分开。模型更容易定位，人也更容易维护和修改。</p>
+      <p class="code-label">原文示例：XML 标签分层</p>
+      <pre><code>structured_prompt = """
+&lt;role&gt;
+你是客服助手 Luna，服务于电商平台 ShopX。
+&lt;/role&gt;
+
+&lt;capabilities&gt;
+- 查询订单状态
+- 处理退款请求
+- 回答产品问题
+- 转接人工客服
+&lt;/capabilities&gt;
+
+&lt;rules&gt;
+1. 退款金额超过 500 元需要转接人工
+2. 不能直接修改用户的收货地址
+3. 对于投诉，先表达理解，再提供解决方案
+&lt;/rules&gt;
+
+&lt;tone&gt;
+友好、专业、简洁。使用"您"而非"你"。
+&lt;/tone&gt;
+
+&lt;output_format&gt;
+- 先回答用户问题
+- 如果需要操作，说明将执行的动作
+- 每次回复结尾问一句"还有什么可以帮您的吗？"
+&lt;/output_format&gt;
+"""</code></pre>
+
+      <h3>原则 5：Agent 专用设计</h3>
+      <p>Agent 的 System Prompt 除了身份和规则，还要写清工具清单、工具使用规则、推理格式、步数上限和危险操作确认。原文示例：</p>
+      <p class="code-label">原文 Agent System Prompt 节选</p>
+      <pre><code>## 可用工具
+- search(query): 搜索网页
+- calculate(expression): 计算数学表达式
+- write_file(path, content): 写入文件
+
+## 工具使用规则
+1. 先思考是否需要使用工具
+2. 每次只调用一个工具
+3. 等待工具结果后再决定下一步
+4. 如果工具调用失败，尝试替代方案
+
+## 推理格式
+Thought: 分析当前状况和下一步计划
+Action: 选择工具和参数
+Observation: 观察工具返回的结果
+Answer: 给出最终答案
+
+## 限制
+- 最多执行 10 步
+- 不确定时优先问用户而非猜测
+- 涉及文件删除等危险操作时必须确认</code></pre>
+      <p>这几段直接决定 Agent 能不能稳定跑完多步任务。步数上限和危险操作确认不是“建议”，是护栏。</p>
+    </div>
+  </section>
+  <section class="reading" aria-labelledby="sp-anti-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三 · 反模式与测试</p><h2 id="sp-anti-title">写完之后，<br>先找出这四类问题。</h2></div>
+      <p class="reading-intro">原文列出四种常见反模式，并给了一份六项测试清单。前者决定提示词能不能用，后者决定改完有没有变坏。</p>
+    </div>
+    <div class="prose">
+      <h3>四种反模式</h3>
+      <div class="table-wrap">
+        <table class="data sp-anti">
+          <caption class="sr-only">过度约束、矛盾指令、身份不清和缺少示例四种反模式</caption>
+          <thead><tr><th scope="col">反模式</th><th scope="col">问题</th><th scope="col">原文示例</th><th scope="col">改进</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">过度约束</th><td>规则太多太细，模型容易违反或产生矛盾。</td><td>50+ 条规则的 System Prompt。</td><td>保留核心规则（10 条以内），用示例代替细则。</td></tr>
+            <tr><th scope="row">矛盾指令</th><td>不同规则之间相互矛盾。</td><td>“保持简洁”加“提供详细解释”。</td><td>明确优先级：“默认简洁，用户要求时提供详细解释”。</td></tr>
+            <tr><th scope="row">身份不清</th><td>角色定义模糊，模型不知道自己是谁。</td><td>“你是一个通用助手”。</td><td>“你是 ShopX 的客服专员 Luna，专注于订单和退款问题”。</td></tr>
+            <tr><th scope="row">缺少示例</th><td>纯文字描述容易被误解。</td><td>只写规则，不给输入输出样例。</td><td>提供 2–3 个输入输出示例。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>“10 条以内”“2–3 个示例”都是原文建议，不是硬性阈值。规则数量要按任务复杂度调整，判断标准是“每条规则是否真的改变行为”。</p>
+
+      <h3>六项测试清单</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">System Prompt 的六项测试</caption>
+          <thead><tr><th scope="col">测试</th><th scope="col">要确认什么</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">基本功能</th><td>模型是否按预期角色回答。</td></tr>
+            <tr><th scope="row">边界测试</th><td>用户尝试越界时模型是否拒绝。</td></tr>
+            <tr><th scope="row">格式一致性</th><td>100 次调用的输出格式是否一致。</td></tr>
+            <tr><th scope="row">语言一致性</th><td>是否始终使用指定语言。</td></tr>
+            <tr><th scope="row">安全测试</th><td>面对 Prompt Injection 是否保持行为。</td></tr>
+            <tr><th scope="row">长对话稳定性</th><td>10+ 轮对话后是否仍遵守指令。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>这六项适合做成回归测试集：每次改提示词，都跑同一批输入，比较行为有没有退化。提示词应当像代码一样管理：版本控制、A/B 测试、回归测试、审计日志。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="sp-mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="sp-mis-title">两个误区，<br>两个追问。</h2></div>
+      <p class="reading-intro">前两条是误区，后两条是面试追问；答案都来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“System Prompt 越长越好。”</h3><p>过长的 Prompt 会产生“指令淹没”：关键指令被大量次要信息稀释。研究指出 LLM 对长 Prompt 中间部分关注度最低（Lost in the Middle）。最佳实践是核心指令保持简洁，原文建议 500–1500 词，用分层结构组织。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“System Prompt 是安全的，用户看不到。”</h3><p>System Prompt 可以通过 Prompt Injection 被泄露。不要在 System Prompt 里放真正的密钥或敏感信息。安全逻辑应在应用层实现，不能完全依赖 System Prompt。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>“如何处理 System Prompt 和用户指令的冲突？”</h3><p>在 System Prompt 中明确优先级：“当用户指令与系统规则冲突时，始终遵守系统规则。”但要清楚，这不是 100% 可靠，强力 Prompt Injection 仍可能绕过。需要配合应用层的输入输出过滤。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>“System Prompt 的版本如何管理？”</h3><p>像代码一样管理：版本控制（Git）、A/B 测试（比较不同版本效果）、回归测试（每次修改后跑测试集）、审计日志（记录每次变更和原因）。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="sp-source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="sp-source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《System Prompt 设计的核心原则》。原文用来说明本题，不代表其外部链接已通过本页复核。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://help.openai.com/en/articles/6654000-best-practices-for-prompt-engineering-with-openai-api" target="_blank" rel="noopener noreferrer">Best practices for prompt engineering with the OpenAI API · OpenAI</a></li>
+          <li><a href="https://tetrate.io/learn/ai/system-prompts-guide" target="_blank" rel="noopener noreferrer">System Prompts: Design Patterns and Best Practices · Tetrate</a></li>
+          <li><a href="https://palantir.com/docs/foundry/aip/best-practices-prompt-engineering/" target="_blank" rel="noopener noreferrer">Best practices for LLM prompt engineering · Palantir</a></li>
+          <li><a href="https://www.promptingguide.ai/techniques" target="_blank" rel="noopener noreferrer">Prompting Techniques · Prompt Engineering Guide</a></li>
+          <li><a href="https://dev.to/kuldeep_paul/building-effective-prompt-engineering-strategies-for-ai-agents-2fo3" target="_blank" rel="noopener noreferrer">Building Effective Prompt Engineering Strategies for AI Agents · Dev.to</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>07-prompt-engineering/059-system-prompt-principles.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 5 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const SP_IDENTITY_SPECIFIC = "你是 ShopX 的客服专员 Luna，专注订单查询、退款和产品问题。";
+  const SP_IDENTITY_VAGUE = "你是一个有帮助的助手。";
+  const SP_CAPS_SPECIFIC = "你可以：查询订单状态、处理退款请求、回答产品问题、转接人工客服。";
+  const SP_CAPS_VAGUE = "回答用户问题。";
+  const SP_RULES_POSITIVE = `1. 只基于订单系统的查询结果回答，不确定时说明并转人工。
+2. 退款金额超过 500 元时转接人工。
+3. 用户要改收货地址时，说明流程并转接人工。
+4. 非客服话题，礼貌引导回订单、退款或产品问题。`;
+  const SP_RULES_NEGATIVE = `1. 不要编造订单信息。
+2. 不要直接修改用户地址。
+3. 不要处理超过 500 元的退款。
+4. 不要讨论与客服无关的话题。`;
+  const SP_OUTPUT = "先回答用户问题；如果需要操作，说明将执行的动作；结尾问一句“还有什么可以帮您的吗？”。";
+  const SP_EXAMPLE = `示例：
+输入：我的订单到哪了？
+输出：我先帮您查询订单状态。请提供订单号。还有什么可以帮您的吗？`;
+  const SP_FRONT = "输出先回答用户问题；如果需要操作，说明将执行的动作；结尾问一句“还有什么可以帮您的吗？”。";
+  const SP_AGENT = `## 可用工具
+- query_order(order_id): 查询订单状态
+- refund(order_id, amount): 发起退款
+- handoff(reason): 转接人工客服
+
+## 工具使用规则
+1. 先思考是否需要使用工具
+2. 每次只调用一个工具
+3. 等待工具结果后再决定下一步
+4. 如果工具调用失败，尝试替代方案或转人工
+
+## 推理格式
+Thought: 分析当前状况和下一步计划
+Action: 选择工具和参数
+Observation: 观察工具返回的结果
+Answer: 给出最终答案
+
+## 限制
+- 最多执行 10 步
+- 不确定时优先问用户而非猜测
+- 涉及删除订单、修改地址等危险操作时必须确认或转人工`;
+
+  const SP_CHECKS = Object.freeze([
+    { key: "specific", label: "具体明确", note: "角色有名字、平台和专注范围。", miss: "身份不清：模型不知道自己是谁、服务哪个平台。" },
+    { key: "front", label: "指令前置", note: "关键约束在开头和结尾各出现一次（夹心饼干）。", miss: "关键约束只出现一次，长 Prompt 中间容易被忽略。" },
+    { key: "positive", label: "正向指令", note: "告诉模型该做什么，而不是只列禁止项。", miss: "全是禁止项，模型不知道该做什么，也更容易违反。" },
+    { key: "structured", label: "分层标记", note: "用 XML 标签分隔角色、能力、规则、工具和输出格式。", miss: "角色、能力、规则、格式混在一起，难定位也难修改。" },
+    { key: "agent", label: "Agent 专用设计", note: "工具清单、使用规则、Thought/Action/Observation 格式、步数与危险操作限制。", miss: "缺少工具规则和推理格式，Agent 多步执行时容易乱调工具或越界。" }
+  ]);
+
+  const SP_INITIAL = Object.freeze({
+    specific: true,
+    front: true,
+    positive: true,
+    structured: true,
+    agent: true
+  });
+  const spState = { ...SP_INITIAL };
+  const spById = (id) => document.getElementById(id);
+
+  function spBuildPrompt() {
+    const parts = [];
+    if (spState.front) parts.push(`[必须遵守] ${SP_FRONT}`);
+    const identity = spState.specific ? SP_IDENTITY_SPECIFIC : SP_IDENTITY_VAGUE;
+    const caps = spState.specific ? SP_CAPS_SPECIFIC : SP_CAPS_VAGUE;
+    const rules = spState.positive ? SP_RULES_POSITIVE : SP_RULES_NEGATIVE;
+    if (spState.structured) {
+      parts.push(`<role>\n${identity}\n</role>`);
+      parts.push(`<capabilities>\n${caps}\n</capabilities>`);
+      parts.push(`<rules>\n${rules}\n</rules>`);
+      if (spState.agent) parts.push(`<agent_tools>\n${SP_AGENT}\n</agent_tools>`);
+      parts.push(`<output_format>\n${SP_OUTPUT}\n</output_format>`);
+    } else {
+      parts.push(identity);
+      parts.push(caps);
+      parts.push(`规则：\n${rules}`);
+      if (spState.agent) parts.push(`Agent 工具与限制：\n${SP_AGENT}`);
+      parts.push(`输出格式：\n${SP_OUTPUT}`);
+    }
+    parts.push(SP_EXAMPLE);
+    if (spState.front) parts.push(`[再次强调] ${SP_FRONT}`);
+    return parts.join("\n\n");
+  }
+
+  function renderSP(announce = true, changed = "") {
+    const missing = SP_CHECKS.filter((check) => !spState[check.key]);
+    const onCount = SP_CHECKS.length - missing.length;
+
+    spById("sp-prompt").textContent = spBuildPrompt();
+    spById("sp-list").innerHTML = SP_CHECKS.map((check) => {
+      const on = spState[check.key];
+      return `<li class="sp-item" data-on="${on}">
+        <div class="sp-item-top"><b>${check.label}</b><span class="sp-status">${on ? "已应用" : "缺失"}</span></div>
+        <p>${on ? check.note : check.miss}</p>
+      </li>`;
+    }).join("");
+
+    spById("sp-count").textContent = `${onCount} / ${SP_CHECKS.length}`;
+    spById("sp-position").textContent = `图 1 · 当前 ${onCount} / ${SP_CHECKS.length} 项已应用`;
+    spById("sp-state-summary").textContent = `${onCount} / ${SP_CHECKS.length} 项已应用 · 没有连接模型`;
+
+    if (missing.length === 0) {
+      spById("sp-title").textContent = "五项都打开时，提示词按角色、工具、规则、格式分段。";
+      spById("sp-desc").textContent = "身份写清平台和职责；关键输出约束在开头和结尾各出现一次；规则用正向表述；段落用 XML 标签分隔；最后追加 Agent 工具清单、使用规则和 Thought/Action/Observation 格式。";
+      spById("sp-verdict").innerHTML = "<b>五项都满足：</b>这是一份结构完整的固定示例；生产环境还要跑测试清单。";
+    } else {
+      const labels = missing.map((check) => check.label).join("、");
+      spById("sp-title").textContent = `当前 ${onCount} / ${SP_CHECKS.length} 项已应用：${missing.length <= 2 ? labels + "缺失。" : "多数结构缺失。"}`;
+      spById("sp-desc").textContent = "逐项关掉开关，对比预览里少掉的结构；右侧说明每项缺失的影响。";
+      spById("sp-verdict").innerHTML = `<b>还缺 ${missing.length} 项：</b>${labels}。先补结构，再谈具体文案。`;
+    }
+
+    document.querySelectorAll("[data-toggle]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(Boolean(spState[button.dataset.toggle])));
+    });
+
+    if (announce) {
+      spById("sp-announcement").textContent = changed
+        ? `${changed}当前 ${onCount} / ${SP_CHECKS.length} 项已应用。`
+        : `当前 ${onCount} / ${SP_CHECKS.length} 项已应用。`;
+    }
+  }
+
+  document.querySelectorAll("[data-toggle]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = button.dataset.toggle;
+      spState[key] = !spState[key];
+      const check = SP_CHECKS.find((item) => item.key === key);
+      renderSP(true, `已${spState[key] ? "开启" : "关闭"}${check.label}。`);
+    });
+  });
+
+  spById("sp-reset").addEventListener("click", () => {
+    Object.assign(spState, SP_INITIAL);
+    renderSP(true, "已重置到初始配置：");
+  });
+  spById("sp-recommend").addEventListener("click", () => {
+    SP_CHECKS.forEach((check) => { spState[check.key] = true; });
+    renderSP(true, "已应用推荐配置：");
+  });
+  spById("sp-clear").addEventListener("click", () => {
+    SP_CHECKS.forEach((check) => { spState[check.key] = false; });
+    renderSP(true, "已关闭全部开关：");
+  });
+
+  renderSP(false);
+</script>
+</body>
+</html>

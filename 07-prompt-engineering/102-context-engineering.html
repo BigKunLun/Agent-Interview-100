@@ -1,0 +1,1011 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>什么是 Context Engineering？它与 Prompt Engineering 有何本质区别？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .cx-banner { display: flex; align-items: flex-start; gap: 9px; margin: var(--s-4) var(--s-6) 0; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .cx-banner::before { content: "教学"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .cx-banner strong { color: #4d3000; }
+  .cx-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .cx-neutral { background: #eef1ee; color: #3f463f; border-color: #c9cec9; }
+  .cx-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .cx-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .cx-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .cx-bad { background: #fbecec; color: #8a1f1f; border-color: #d9a3a3; }
+  .cx-task { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: var(--s-2); padding: 10px 13px; border: 1px solid var(--border); border-left: 4px solid #194f87; border-radius: var(--r-1); background: var(--surface); font-size: 12px; line-height: 1.7; }
+  .cx-task b { font: 600 10px/1.6 var(--mono); color: #194f87; letter-spacing: .06em; }
+  .cx-budget { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: var(--s-3); padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: #f7f6f1; font-size: 12px; }
+  .cx-budget strong { font: 600 13px/1.5 var(--mono); }
+  .cx-budget .cx-over { color: #8a1f1f; font-weight: 600; }
+  .cx-ok-text { color: #14532d; font-weight: 600; }
+  .cx-empty { color: var(--text-dim); }
+  .cx-meter { position: relative; height: 14px; margin-top: 8px; border: 1px solid var(--border-bright); border-radius: 3px; background: var(--surface); overflow: hidden; }
+  .cx-meter-fill { display: block; height: 100%; background: #9eb4c9; }
+  .cx-meter-fill.over { background: #c46a6a; }
+  .cx-meter-line { position: absolute; top: -2px; bottom: -2px; left: 100%; width: 2px; background: #202421; }
+  .cx-sources { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .cx-source { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .cx-source-head { padding: 8px 10px; border-bottom: 1px solid var(--border); background: var(--surface-soft); }
+  .cx-source-head b { display: block; font: 600 12px/1.5 var(--sans); }
+  .cx-source-head span { display: block; margin-top: 2px; font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .cx-source-body { padding: 7px; display: grid; gap: 6px; }
+  .cx-block { width: 100%; text-align: left; padding: 7px 8px; border: 1px solid var(--border); border-radius: 5px; background: var(--surface); min-height: 58px; }
+  .cx-block:hover { border-color: var(--border-bright); }
+  .cx-block[aria-pressed="true"] { border-color: #194f87; background: #f4f8fc; box-shadow: inset 0 0 0 1px #194f87; }
+  .cx-block[aria-pressed="false"] { background: #f1f0eb; border-style: dashed; }
+  .cx-block[aria-pressed="false"] .cx-block-top b { color: #3f463f; }
+  .cx-block-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 5px; }
+  .cx-block-top b { font: 600 11px/1.45 var(--sans); }
+  .cx-prio { flex: 0 0 auto; padding: 0 4px; border: 1px solid var(--border-bright); border-radius: 3px; font: 9px/1.6 var(--mono); color: var(--text-dim); background: var(--surface); }
+  .cx-block-meta { display: block; margin-top: 3px; font: 10px/1.55 var(--mono); color: var(--text-dim); }
+  .cx-block-meta .cx-anchor-tag { display: inline-block; margin-top: 2px; padding: 0 4px; border: 1px solid #9cc39e; border-radius: 3px; background: #e6f2e6; color: #14532d; font: 9px/1.6 var(--mono); }
+  .cx-select-note { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: var(--s-3); font-size: 11px; color: var(--text-dim); }
+  .cx-cap-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .cx-cap { padding: 9px 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .cx-cap b { display: block; font: 600 11px/1.5 var(--sans); }
+  .cx-cap span { display: block; margin-top: 2px; font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .cx-cap-track { height: 8px; margin-top: 6px; border: 1px solid var(--border-bright); border-radius: 2px; background: var(--surface-soft); overflow: hidden; }
+  .cx-cap-fill { display: block; height: 100%; background: #194f87; }
+  .cx-cap-fill.trunc { background: #b98a2f; }
+  .cx-assembly { margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); overflow: hidden; }
+  .cx-assembly-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 5px; padding: 9px 12px; border-bottom: 1px solid var(--border); background: var(--surface-soft); }
+  .cx-assembly-head b { font-size: 13px; }
+  .cx-assembly-head span { font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .cx-msg { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 8px; padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 11px; line-height: 1.65; }
+  .cx-msg:last-child { border-bottom: 0; }
+  .cx-role { font: 600 10px/1.7 var(--mono); color: #194f87; }
+  .cx-msg-body b { font-weight: 600; }
+  .cx-msg-body .cx-tokens { color: var(--text-dim); font-family: var(--mono); font-size: 10px; }
+  .cx-msg-body .cx-cut { color: #6b4300; font-family: var(--mono); font-size: 10px; }
+  .cx-total-row { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: 9px 12px; border-top: 1px solid var(--border); background: #f7f6f1; font-size: 12px; }
+  .cx-total-row strong { font: 600 13px/1.5 var(--mono); }
+  .cx-anchor-list { display: grid; gap: 6px; margin-top: var(--s-4); }
+  .cx-anchor { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 8px 10px; border: 1px solid #9cc39e; border-radius: var(--r-1); background: #eef7ee; font-size: 12px; line-height: 1.6; }
+  .cx-anchor .mark { font: 600 14px/1 var(--mono); color: #14532d; }
+  .cx-anchor.missing { border-color: #d9a3a3; background: #fbecec; }
+  .cx-anchor.missing .mark { color: #8a1f1f; }
+  .cx-anchor.cut { border-color: #d9b47a; background: #fdf3e3; }
+  .cx-anchor.cut .mark { color: #6b4300; }
+  .cx-anchor small { display: block; margin-top: 2px; color: var(--text-dim); font-size: 10px; }
+  .cx-anchor-score { margin-top: var(--s-3); padding: 9px 12px; border-left: 3px solid #194f87; background: #eaf1f8; font-size: 12px; line-height: 1.75; }
+  .cx-anchor-score.bad { border-left-color: #8a1f1f; background: #fbecec; color: #6d1717; }
+  .cx-callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+  .cx-callout p { font-size: var(--t-small); max-width: 52em; }
+  .cx-callout p + p { margin-top: var(--s-2); }
+  .cx-callout .cx-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+  .cx-flow { display: grid; gap: var(--s-3); margin-top: var(--s-4); padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .cx-flow-sources { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .cx-flow-node { padding: 8px 10px; border: 1px solid #9eb4c9; border-radius: 5px; background: #eaf1f8; text-align: center; font: 600 11px/1.5 var(--mono); color: #194f87; }
+  .cx-flow-node.store { border-color: #9cc39e; background: #e6f2e6; color: #14532d; }
+  .cx-flow-node.proc { border-color: #b98a2f; background: #fdf3e3; color: #6b4300; }
+  .cx-flow-arrow { text-align: center; font: 12px/1 var(--mono); color: var(--text-dim); }
+  .cx-flow figcaption { font-size: 11px; line-height: 1.65; color: var(--text-dim); }
+  .cx-flow-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--s-3); margin-top: var(--s-4); }
+  .cx-flow-3 > div { min-width: 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 11px; line-height: 1.65; }
+  .cx-flow-3 b { display: block; margin-bottom: 3px; font: 600 12px/1.5 var(--sans); }
+  .cx-flow-3 span { display: block; color: var(--text-dim); }
+  .cx-window { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--s-2); margin-top: var(--s-4); }
+  .cx-window > div { min-width: 0; padding: 9px 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .cx-window b { display: block; font: 600 12px/1.5 var(--sans); }
+  .cx-window span { display: block; margin-top: 2px; font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .cx-window .cx-pct { margin-top: 5px; font: 600 18px/1.2 var(--mono); color: #194f87; }
+  .cx-turn-table td:first-child { min-width: 6em; }
+  .cx-fixed-note { display: inline-block; margin-top: var(--s-3); padding: 3px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  .cx-wide { min-width: 720px; }
+  @media (max-width: 1000px) {
+    .cx-sources, .cx-cap-grid, .cx-window { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .cx-flow-sources { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 720px) {
+    .cx-banner { margin-inline: var(--s-4); }
+    .cx-sources, .cx-cap-grid, .cx-window, .cx-flow-3 { grid-template-columns: 1fr; }
+    .cx-msg { grid-template-columns: 58px minmax(0, 1fr); }
+    .cx-anchor { grid-template-columns: 20px minmax(0, 1fr); }
+    .cx-anchor .cx-badge { grid-column: 1 / -1; justify-self: start; }
+    .cx-width-scroll { overflow-x: auto; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">102 / Context 工程</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 15 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="068-cross-model-prompt-portability.html">← 上一页 · 跨模型 Prompt 迁移</a><a href="../08-evaluation/071-llm-as-judge.html">下一页 → · LLM-as-Judge</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">高级 · Prompt Engineering · 可交互讲解</p>
+      <h1>Prompt 只是入口，<br>上下文才是工程。</h1>
+    </div>
+    <div>
+      <p class="lead">Context Engineering 管的是“用什么信息去问”，而不只是“怎么问”。它把 System Prompt、工具结果、对话历史、外部知识四路来源，按当前任务的 token 预算挑出来、组装好、送进模型。</p>
+      <p class="definition"><strong>关键边界：</strong>上下文不是越多越好，而是信噪比越高越好。窗口是有限的“房地产”，每加入一段内容都要问：它对当前决策的边际贡献，抵得上它消耗的 token 吗？</p>
+      <div class="hero-meta"><span class="pill">高级</span><span class="pill">Prompt Engineering</span><span class="pill">四路来源</span><span class="pill">固定教学装配</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="cx-title">
+    <div class="player-top">
+      <div class="player-label">上下文装配台 <small>四路来源 · 预算上限 · 锚点审计 · 不调用模型</small></div>
+      <div class="controls" role="group" aria-label="上下文装配演示控制">
+        <button type="button" class="button button-quiet" id="cx-reset">重置</button>
+        <button type="button" class="button" id="cx-back" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="cx-next">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="上下文装配阶段">
+      <ol style="--stages: 3">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>候选池</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>按预算装配</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>锚点审计</button></li>
+      </ol>
+    </nav>
+    <p class="cx-banner"><span><strong>本页是固定教学装配，不调用任何模型。</strong>任务、九个上下文块、token 数、优先级和预算比例都是预设的，用来演示“选择 → 压缩 → 锚点检查”的过程，不代表真实业务数据。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="cx-index">阶段 1 / 3 · 固定教学装配</p>
+      <h2 id="cx-title">四路来源，先摆上桌</h2>
+      <p id="cx-subtitle">固定任务需要九个上下文块。全部选中是 91,000 tokens，而可用输入预算只有 80,000。先看清来源、体积和优先级。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="cx-scene"></div>
+      <p class="demo-note" id="cx-note">固定教学数据：任务、上下文块、token 数和优先级均为本页预设，不读取真实对话，不访问网络。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学装配 · 0 次模型调用</span><span id="cx-summary">阶段 1 / 3 · 候选 91,000 / 预算 80,000</span></div>
+  </section>
+  <p id="cx-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="shift-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">范式变化</p><h2 id="shift-title">从“怎么问”，<br>到“用什么信息问”。</h2></div>
+      <p class="reading-intro">Prompt Engineering 打磨一条指令的措辞；Context Engineering 设计整条上下文管道。原文把后者称为一次维度跃升。</p>
+    </div>
+    <div class="prose">
+      <p>原文的论断是：一个 LLM 调用的效果，70% 取决于喂给它的上下文质量，而非 Prompt 本身的遣词造句。这个比例是原文表述，本页没有复测，只用来强调关注点的转移。</p>
+      <figure class="cx-flow" role="img" aria-label="四路上下文来源 System Prompt、Tool Results、Conversation History、External Knowledge 汇入 Context Builder，再进入 LLM 调用">
+        <div class="cx-flow-sources">
+          <span class="cx-flow-node store">System Prompt</span>
+          <span class="cx-flow-node store">Tool Results</span>
+          <span class="cx-flow-node store">对话历史</span>
+          <span class="cx-flow-node store">External Knowledge</span>
+        </div>
+        <div class="cx-flow-arrow">↓ 按预算与优先级 ↓</div>
+        <div class="cx-flow-node proc">动态上下文组装器 Context Builder</div>
+        <div class="cx-flow-arrow">↓</div>
+        <div class="cx-flow-node">LLM 调用入口</div>
+        <figcaption>原文图意：四路来源不是简单拼接，而是经组装器按预算与优先级合流；Prompt Engineering 只覆盖其中 System Prompt 的写法。</figcaption>
+      </figure>
+      <p>两者的分工可以用原文的类比理解：Prompt Engineering 是写好一封邮件，Context Engineering 是管理整个项目的信息流。邮件写得再漂亮，如果附件拿错、历史记录缺失，结果仍然不对。</p>
+      <div class="table-wrap">
+        <table class="data cx-wide">
+          <caption class="sr-only">Prompt Engineering 与 Context Engineering 的原文对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">Prompt Engineering</th><th scope="col">Context Engineering</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">核心关注</th><td>单条指令的措辞与格式</td><td>整体上下文的选择与组装</td></tr>
+            <tr><th scope="row">优化对象</th><td>Prompt 模板</td><td>上下文管道（Context Pipeline）</td></tr>
+            <tr><th scope="row">技能要求</th><td>语言直觉 + 试错调优</td><td>系统设计 + 信息架构</td></tr>
+            <tr><th scope="row">适用场景</th><td>单轮问答、简单任务</td><td>Agentic 系统、复杂工作流</td></tr>
+            <tr><th scope="row">评估指标</th><td>输出质量</td><td>上下文信噪比 + 输出质量</td></tr>
+            <tr><th scope="row">可扩展性</th><td>低：人工逐条调优</td><td>高：程序化、可自动化</td></tr>
+            <tr><th scope="row">类比</th><td>写好一封邮件</td><td>管理整个项目的信息流</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <details>
+        <summary>查看原文 Mermaid 源码（范式升级）</summary>
+        <pre><code>flowchart TD
+    subgraph PE["Prompt Engineering —— 怎么问：措辞、格式化一条指令"]
+        PE1["System Prompt 写作技巧&lt;br/&gt;Few-shot 示例 / CoT、ReAct 格式"]
+    end
+    subgraph CE["Context Engineering —— 用什么信息问：构建决策上下文"]
+        SP["System Prompt"]
+        TR["Tool Results"]
+        HI["对话历史"]
+        EK["External Knowledge&lt;br/&gt;RAG / API"]
+        B["动态上下文组装器&lt;br/&gt;(Context Builder)"]
+        L["LLM 调用入口"]
+    end
+    PE -- "范式升级" --- CE
+    SP --&gt; B
+    TR --&gt; B
+    HI --&gt; B
+    EK --&gt; B
+    B --&gt; L
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    class PE1,B proc
+    class SP,TR,HI,EK store
+    class L agent</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="sources-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四大来源</p><h2 id="sources-title">每一路，<br>都有不同的脾气。</h2></div>
+      <p class="reading-intro">System Prompt 静态、每次携带；工具结果体积不可控；历史线性增长；外部知识相关性参差。四路要用不同的管理策略。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data cx-wide">
+          <caption class="sr-only">四类上下文来源的特征与管理策略</caption>
+          <thead><tr><th scope="col">来源</th><th scope="col">内容</th><th scope="col">特征</th><th scope="col">管理策略</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">System Prompt</th><td>角色定义、工具描述、输出格式、约束规则</td><td>静态、每次调用都携带</td><td>精简压缩，避免冗余</td></tr>
+            <tr><th scope="row">Tool Results</th><td>搜索结果、API 返回、代码执行输出</td><td>动态生成、体积不可控</td><td>截断 / 摘要 / 选择性保留</td></tr>
+            <tr><th scope="row">Conversation History</th><td>用户多轮对话、之前的 Agent 推理过程</td><td>线性增长、含大量噪声</td><td>滑动窗口 / 摘要压缩</td></tr>
+            <tr><th scope="row">External Knowledge</th><td>RAG 检索文档、知识库、用户画像</td><td>按需注入、相关性参差</td><td>相关性排序 + top-k 截断</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cx-fixed-note">来源、特征与策略来自原文，本页未联网核实</p>
+
+      <h3>窗口的“房地产”分配</h3>
+      <p>原文把 128K 窗口粗分为四块：System Prompt 约 10%，RAG / 知识库约 30%，对话历史与工具结果约 40%，输出空间约 20%。真正可用的输入预算，是扣掉输出预留之后的部分。</p>
+      <div class="cx-window">
+        <div><b>System Prompt</b><span>固定区域 · 角色 / 工具 / 格式</span><span class="cx-pct">~10%</span></div>
+        <div><b>RAG / 知识库</b><span>弹性区域 · 按查询动态检索</span><span class="cx-pct">~30%</span></div>
+        <div><b>对话历史</b><span>增长区域 · 多轮 + 工具结果</span><span class="cx-pct">~40%</span></div>
+        <div><b>输出空间</b><span>预留区域 · 生成 token</span><span class="cx-pct">~20%</span></div>
+      </div>
+      <p class="cx-fixed-note">比例来自原文示例；实际项目按模型窗口和任务调整</p>
+      <div class="cx-callout">
+        <p class="cx-label">原文的关键原则</p>
+        <p>上下文不是越多越好，而是信噪比越高越好。每加入一段上下文都要问：它对当前决策的边际贡献，大于它消耗的 token 成本吗？</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="builder-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">动态组装器</p><h2 id="builder-title">来源分组、<br>按优先级抢预算。</h2></div>
+      <p class="reading-intro">原文的 ContextBuilder 做四件事：按来源分组、组内按优先级降序、按来源预算上限挑选、把选中的块转成 messages。</p>
+    </div>
+    <div class="prose">
+      <h3>预算不是一个大池子，而是四个小池子</h3>
+      <p>原文给每类来源设了上限：System 12%、Knowledge 35%、History 35%、Tool Result 18%。先各自限额，再在组内按优先级挑选；装不下的块尝试截断，剩余不足 100 tokens 就放弃。</p>
+      <details>
+        <summary>查看 ContextBuilder 的原文代码（较长）</summary>
+        <pre><code>class ContextBuilder:
+    """动态上下文组装器——Context Engineering 的核心实现"""
+
+    def __init__(self, max_tokens: int = 128_000, reserve_output: float = 0.2):
+        self.max_tokens = max_tokens
+        # 为模型输出预留空间
+        self.available_tokens = int(max_tokens * (1 - reserve_output))
+        self.blocks: list[ContextBlock] = []
+
+        # 各来源的 token 预算上限（百分比）
+        self.budget = {
+            ContextSource.SYSTEM: 0.12,      # System Prompt 最多占 12%
+            ContextSource.KNOWLEDGE: 0.35,   # RAG 知识最多占 35%
+            ContextSource.HISTORY: 0.35,     # 对话历史最多占 35%
+            ContextSource.TOOL_RESULT: 0.18, # 工具结果最多占 18%
+        }
+
+    def add(self, source: ContextSource, content: str,
+            priority: int = 5, metadata: Optional[dict] = None) -&gt; "ContextBuilder":
+        """添加一个上下文块"""
+        token_count = self._estimate_tokens(content)
+        self.blocks.append(ContextBlock(
+            source=source,
+            content=content,
+            priority=priority,
+            token_count=token_count,
+            metadata=metadata or {},
+        ))
+        return self  # 链式调用
+
+    def build(self) -&gt; list[dict]:
+        """
+        核心方法：根据优先级和预算，组装最终上下文。
+        返回 OpenAI 兼容的 messages 格式。
+        """
+        # 第一步：按来源分组
+        grouped: dict[ContextSource, list[ContextBlock]] = {}
+        for block in self.blocks:
+            grouped.setdefault(block.source, []).append(block)
+
+        # 第二步：每组内按优先级降序排列
+        for source in grouped:
+            grouped[source].sort(key=lambda b: b.priority, reverse=True)
+
+        # 第三步：按预算分配，优先级高的先占位
+        selected: list[ContextBlock] = []
+        for source, blocks in grouped.items():
+            budget_tokens = int(self.available_tokens * self.budget.get(source, 0.1))
+            used = 0
+            for block in blocks:
+                if used + block.token_count &lt;= budget_tokens:
+                    selected.append(block)
+                    used += block.token_count
+                else:
+                    # 尝试截断以填满预算
+                    remaining = budget_tokens - used
+                    if remaining &gt; 100:  # 至少保留 100 token 才值得截断
+                        truncated = self._truncate(block.content, remaining)
+                        selected.append(ContextBlock(
+                            source=block.source,
+                            content=truncated,
+                            priority=block.priority,
+                            token_count=remaining,
+                        ))
+                    break
+
+        # 第四步：组装为 messages 格式
+        return self._to_messages(selected)</code></pre>
+      </details>
+      <div class="cx-callout">
+        <p class="cx-label">读代码时注意</p>
+        <p>原文示例的 <code>_to_messages</code> 只回填了 System、Knowledge、History 三类，<code>TOOL_RESULT</code> 参与了预算分配却没有写进 messages。这是示例代码的缺口，生产实现需要把工具结果按协议补回去，否则预算白花了。</p>
+      </div>
+
+      <h3>Agentic 场景：上下文会自己长大</h3>
+      <p>多轮 tool call 让上下文持续膨胀。原文给的固定轨迹是从 2.5K 一路涨到 127K，最后逼近 128K 窗口上限。</p>
+      <div class="table-wrap">
+        <table class="data cx-turn-table">
+          <caption class="sr-only">原文给出的 Agent 执行循环上下文膨胀示例</caption>
+          <thead><tr><th scope="col">轮次</th><th scope="col">System</th><th scope="col">History</th><th scope="col">Tool Results</th><th scope="col" class="num">合计</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Turn 1</th><td>2K</td><td>0.5K</td><td>—</td><td class="num">2.5K</td></tr>
+            <tr><th scope="row">Turn 3</th><td>2K</td><td>3K</td><td>5K</td><td class="num">10K</td></tr>
+            <tr><th scope="row">Turn 7</th><td>2K</td><td>12K</td><td>25K</td><td class="num">39K</td></tr>
+            <tr><th scope="row">Turn 12</th><td>2K</td><td>28K</td><td>60K</td><td class="num">90K ⚠️</td></tr>
+            <tr><th scope="row">Turn 15</th><td>2K</td><td>40K</td><td>85K</td><td class="num">127K 💥</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cx-fixed-note">原文示例数字；本页未按具体模型重算</p>
+      <p>常见应对有四种：滑动窗口、摘要压缩、工具结果裁剪、分层记忆。Multi-Agent 场景还会多一层信息路由：传太多浪费 token，传太少丢信息，需要决定哪些信息给哪个 Agent、以什么粒度给。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="anthropic-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">行业共识</p><h2 id="anthropic-title">窗口是工作台，<br>不是档案柜。</h2></div>
+      <p class="reading-intro">原文把 2026 年的 Context Engineering 描述为独立工程学科，并引用 Anthropic 官方指南：为上下文窗口填入“恰好够用”的信息。</p>
+    </div>
+    <div class="prose">
+      <div class="cx-flow-3" role="img" aria-label="上下文生命周期三步：写入上下文、管理上下文、跨会话持久化">
+        <div><b>① 写入 Write</b><span>检索 RAG、工具结果、系统提示进入窗口。</span></div>
+        <div><b>② 管理 Manage</b><span>压缩 / 摘要、裁剪 / 截断、滑动窗口。</span></div>
+        <div><b>③ 持久化 Persist</b><span>文件式记忆、写笔记到窗口外、下次会话读回。</span></div>
+      </div>
+      <p>三个关键认知升级：第一，上下文窗口不等于记忆，窗口是用完即清的工作台，长期信息要外化到文件、数据库或知识图谱；第二，Agentic Memory 让 Agent 定期把经验写成笔记，下次会话读回；第三，信息衰减是常态，早期工具结果会从“有用”变成“噪声”，要主动清理，而不是等窗口溢出。</p>
+      <p>这和 <a href="../05-memory-and-state/041-context-window-management.html">041 上下文窗口管理</a> 的压缩策略、<a href="../05-memory-and-state/043-persistent-memory.html">043 持久化记忆</a> 的外化存储是同一套思路的不同侧面。本页的装配台只覆盖“窗口内选择与压缩”，不重复 041 的策略对比。</p>
+      <details>
+        <summary>查看原文 Mermaid 源码（写入 → 管理 → 持久化）</summary>
+        <pre><code>flowchart TD
+    subgraph W["① 写入上下文（Write）"]
+        A1["检索 RAG"]
+        A2["工具结果"]
+        A3["系统提示"]
+    end
+    subgraph M["② 管理上下文（Manage）"]
+        B1["压缩 / 摘要"]
+        B2["裁剪 / 截断"]
+        B3["滑动窗口"]
+    end
+    subgraph P["③ 跨会话持久化（Agentic Memory）"]
+        C1["文件式记忆"]
+        C2["写笔记到窗口外"]
+        C3["下次会话读回"]
+    end
+    W --- M
+    M --- P
+    M --&gt; N["上下文窗口 ≠ 记忆&lt;br/&gt;它是「工作台」，不是「档案柜」"]
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class A1,A2,A3,C1,C2,C3 store
+    class B1,B2,B3 proc
+    class N neutral</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="cache-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">Prompt Caching</p><h2 id="cache-title">稳定前缀，<br>才配谈成本。</h2></div>
+      <p class="reading-intro">多轮 Agent 反复携带相同的 System Prompt、工具定义和知识前缀。Prompt Caching 缓存这些稳定前缀，命中时以更低价格读取。</p>
+    </div>
+    <div class="prose">
+      <h3>机制：前缀逐字节匹配</h3>
+      <p>Anthropic 的渲染顺序是 tools → system → messages，越靠前越稳定。缓存命中要求从开头到断点的每一个字节完全一致；任何一个字节改变，该断点之后的缓存全部失效。</p>
+      <div class="table-wrap">
+        <table class="data cx-wide">
+          <caption class="sr-only">原文对比 Anthropic 与 OpenAI 的 Prompt Caching 参数</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">Anthropic Prompt Caching</th><th scope="col">OpenAI Prompt Caching</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">触发方式</th><td>手动 <code>cache_control</code> 断点 / 顶层自动缓存</td><td>全自动，无需标记</td></tr>
+            <tr><th scope="row">最小缓存前缀</th><td>1024–4096 tokens，因模型而异</td><td>1024 tokens</td></tr>
+            <tr><th scope="row">命中读取折扣</th><td>约 90% off，读取价约 0.1×</td><td>约 50% off，读取价约 0.5×</td></tr>
+            <tr><th scope="row">写入溢价</th><td>5 分钟 TTL 1.25×；1 小时 TTL 2×</td><td>无额外写入溢价</td></tr>
+            <tr><th scope="row">TTL</th><td>5 分钟（默认）/ 1 小时（可选）</td><td>约 5–10 分钟，系统管理</td></tr>
+            <tr><th scope="row">断点上限</th><td>4 个 / 请求</td><td>不适用，自动管理</td></tr>
+            <tr><th scope="row">命中验证</th><td><code>usage.cache_read_input_tokens</code></td><td><code>usage.prompt_tokens_details.cached_tokens</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="cx-fixed-note">折扣、TTL、断点上限按原文“截至 2026.7 公开文档”的口径，原文版本、未联网核实；使用前以官方文档为准</p>
+
+      <h3>成本示例：30K 前缀，命中后约 0.19×</h3>
+      <p>原文的例子是 20K System Prompt + 10K 知识库前缀，共 30K 输入，其中约 28K 命中缓存。输入成本约为 <code>(28000×0.1 + 2000×1) / 30000 ≈ 0.19×</code>。5 分钟 TTL 下两次请求回本；1 小时 TTL 下至少三次请求回本。</p>
+      <p class="cx-fixed-note">差异标注：按公式实算 0.16，源文写 0.19；本页保留原文 0.19，不改写源文数字。</p>
+      <p>原文还提到，Agentic 场景同一会话内常有 10+ 轮调用，每轮都携带相同 System Prompt 和累积历史，缓存命中率通常可达 <strong>80%+</strong>；没有 Prompt Caching，多轮 Agent 的 token 成本会高到难以承受。</p>
+      <p class="cx-fixed-note">原文示例算术与命中率，不是本页实测；价格随厂商调整</p>
+
+      <h3>静默失效：不报错，只涨账单</h3>
+      <p>缓存失效不会抛异常，<code>cache_read_input_tokens</code> 会静默归零。原文列出五类常见根因：System Prompt 插入时间戳、<code>json.dumps</code> 未排序、工具列表动态增减、插入 uuid / 请求 ID、中途切换模型。</p>
+      <div class="cx-callout">
+        <p class="cx-label">工程实践</p>
+        <p>把动态内容（时间、用户 ID、会话状态）放到 messages 末尾，绝不插进 System Prompt；工具列表按 name 确定性排序；构建 Prompt 后用 <code>count_tokens</code> 比对前后两次请求，排查静默失效。</p>
+      </div>
+      <p>原文还给了一个进阶陷阱：单个断点最多回溯 20 个 content block 找前一次缓存。长 Agent 轮次若超过 20 个 block，下一个断点会静默 miss，需要每约 15 个 block 补一个中间断点。</p>
+      <details>
+        <summary>查看原文的 Anthropic 多轮断点代码</summary>
+        <pre><code># Anthropic: 冻结前缀 + 最新轮各放一个断点
+# 每次请求复用之前所有轮次的前缀缓存
+response = client.messages.create(
+    model="claude-sonnet-5",
+    max_tokens=4096,
+    system=[{
+        "type": "text",
+        "text": STABLE_SYSTEM_PROMPT,
+        "cache_control": {"type": "ephemeral"},   # 断点①：冻结前缀
+    }],
+    messages=[
+        # ... 历史对话（前缀已被断点①缓存）...
+        {"role": "user", "content": [
+            {"type": "text", "text": latest_tool_result},  # 累积历史
+        ]},
+        {"role": "user", "content": new_question},          # 易变，放最后
+    ],
+    extra_headers={"cache_control": "ephemeral"},  # 顶层自动在最新 block 放断点②
+)
+
+# 响应中验证命中：&gt;0 即命中
+print(f"缓存读取: {response.usage.cache_read_input_tokens} tokens")
+print(f"缓存写入: {response.usage.cache_creation_input_tokens} tokens")</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">两个误区，<br>两个追问。</h2></div>
+      <p class="reading-intro">最容易混的是“Context Engineering 等于写更好的 Prompt”；最容易错的是“窗口够大就不用管上下文”。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <div class="misconception-label">误区 01</div>
+        <div><h3>“Context Engineering 就是写更好的 Prompt”</h3><p>Prompt Engineering 是 Context Engineering 的子集。后者还管 Prompt 之外的信息：工具返回值怎么裁、对话历史怎么压、外部知识怎么检索与排序。原文的类比是：Prompt Engineering 写好一封邮件，Context Engineering 管理整个项目的信息流。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 02</div>
+        <div><h3>“上下文越多越好，反正模型支持 128K”</h3><p>LLM 存在 Lost in the Middle 现象：上下文过长时，模型对中间位置信息的注意力显著下降；无关上下文还会稀释关键信息。正确目标是高信噪比，不是高信息量。每段上下文都应对当前任务有明确的边际贡献。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 03</div>
+        <div><h3>如何衡量上下文质量？</h3><p>三个维度：相关性，上下文中每段信息与当前任务的相关度，可用 embedding 相似度量化；充分性，是否包含完成任务所需的全部关键信息，通过 ablation test 验证；效率，有效 token 占总 token 的比例。实践中常用 A/B 测试比较不同上下文策略对最终输出质量的影响。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 04</div>
+        <div><h3>Context Engineering 在 Multi-Agent 中如何应用？</h3><p>三重角色：上下文隔离，每个 Agent 只接收与职责相关的上下文；上下文传递，设计 Agent 之间的信息传递协议，决定传摘要还是原始数据；共享上下文管理，维护全局状态（如 Blackboard 模式），让多个 Agent 读写共享的结构化上下文，而不是互相透传完整历史。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="sources-title2">
+    <p class="eyebrow">参考资料</p>
+    <h2 class="source-heading" id="sources-title2">原文引用与延伸阅读</h2>
+    <p class="source-summary">以下链接来自原文。只有主动点击外链才会离开本页；本页不加载任何外部资源。</p>
+    <details>
+      <summary>展开 7 条参考资料</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.philschmid.de/context-engineering" rel="noreferrer noopener">Context Engineering for AI Agents — Lessons from Building Real Systems (Philipp Schmid)</a></li>
+          <li><a href="https://blog.langchain.dev/context-engineering/" rel="noreferrer noopener">Prompt Design != Context Engineering (Torantulino / LangChain Blog)</a></li>
+          <li><a href="https://arxiv.org/abs/2307.03172" rel="noreferrer noopener">Lost in the Middle: How Language Models Use Long Contexts (Nelson Liu et al., 2023)</a></li>
+          <li><a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" rel="noreferrer noopener">Effective Context Engineering for AI Agents (Anthropic 官方工程指南)</a></li>
+          <li><a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching" rel="noreferrer noopener">Prompt Caching (Anthropic 官方文档)</a></li>
+          <li><a href="https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering/overview" rel="noreferrer noopener">Building Effective Agents (Anthropic)</a></li>
+          <li><a href="https://x.com/karpathy/status/1937902205765607918" rel="noreferrer noopener">The Shift from Prompt Engineering to Context Engineering (Andrej Karpathy)</a></li>
+        </ul>
+        <p class="source-footnote">Prompt Caching 的折扣、TTL 与价格示例均按原文版本呈现，本页未联网核实。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>07-prompt-engineering/102-context-engineering.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 5 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const WINDOW = 100000;
+  const OUTPUT_RESERVE = 20000;
+  const AVAILABLE = WINDOW - OUTPUT_RESERVE;
+
+  const SOURCES = Object.freeze([
+    { key: "system", name: "System Prompt", share: 0.12 },
+    { key: "knowledge", name: "External Knowledge", share: 0.35 },
+    { key: "history", name: "Conversation History", share: 0.35 },
+    { key: "tool", name: "Tool Results", share: 0.18 }
+  ]);
+
+  const BLOCKS = Object.freeze([
+    { id: "s1", source: "system", name: "角色与输出格式", tokens: 2000, priority: 10, anchor: "输出格式" },
+    { id: "s2", source: "system", name: "工具定义", tokens: 6000, priority: 9, anchor: "" },
+    { id: "s3", source: "system", name: "冗余角色说明", tokens: 4000, priority: 3, anchor: "" },
+    { id: "k1", source: "knowledge", name: "Q3 财报摘要", tokens: 12000, priority: 8, anchor: "关键数据" },
+    { id: "k2", source: "knowledge", name: "行业研报全文", tokens: 20000, priority: 5, anchor: "" },
+    { id: "h1", source: "history", name: "用户需求与约束", tokens: 3000, priority: 10, anchor: "原始需求与约束" },
+    { id: "h2", source: "history", name: "前 8 轮讨论", tokens: 18000, priority: 6, anchor: "" },
+    { id: "t1", source: "tool", name: "SQL 查询结果", tokens: 10000, priority: 9, anchor: "" },
+    { id: "t2", source: "tool", name: "旧工具原始日志", tokens: 16000, priority: 4, anchor: "" }
+  ]);
+
+  const ANCHORS = Object.freeze([
+    { name: "原始需求与约束", detail: "分析 Q3 营收；只用 Q3 数据；输出 Markdown", block: "h1" },
+    { name: "输出格式", detail: "先结论，再给三项关键数字", block: "s1" },
+    { name: "关键数据", detail: "Q3 营收 5.2 亿，同比 +15%", block: "k1" },
+    { name: "任务标识", detail: "report-q3-2026", block: "s1" }
+  ]);
+
+  const STAGES = Object.freeze([
+    {
+      nav: "候选池",
+      title: "四路来源，先摆上桌",
+      subtitle: "固定任务需要九个上下文块。全部选中是 91,000 tokens，而可用输入预算只有 80,000。先看清来源、体积和优先级。",
+      note: "固定教学数据：任务、九个上下文块、token 数和优先级均为本页预设，不读取真实对话，不访问网络。",
+      summary: "阶段 1 / 3 · 候选 91,000 / 预算 80,000"
+    },
+    {
+      nav: "按预算装配",
+      title: "四路各自限额，组内按优先级抢位",
+      subtitle: "每类来源有自己的预算上限。装不下的块先按剩余额度截断，剩余不足 100 tokens 就放弃。",
+      note: "固定教学装配：预算比例来自原文（12% / 35% / 35% / 18%），按 100K 窗口缩放到整数便于复算；不是真实分词结果。",
+      summary: "阶段 2 / 3 · 按来源上限装配"
+    },
+    {
+      nav: "锚点审计",
+      title: "压缩可以丢内容，不能丢锚点",
+      subtitle: "原始需求、输出格式、关键数据和任务标识必须完整留在上下文里。取消候选块后，这里会显示锚点缺失。",
+      note: "固定教学检查：锚点清单是本页预设的工程检查项；原文的 ContextBuilder 没有实现锚点，检查逻辑补在演示里。",
+      summary: "阶段 3 / 3 · 锚点审计"
+    }
+  ]);
+
+  const state = { stage: 0, selected: new Set(BLOCKS.map((block) => block.id)) };
+  const byId = (id) => document.getElementById(id);
+  const fmt = (n) => n.toLocaleString("en-US");
+
+  function selectedBlocks() {
+    return BLOCKS.filter((block) => state.selected.has(block.id));
+  }
+
+  function capOf(sourceKey) {
+    const source = SOURCES.find((item) => item.key === sourceKey);
+    return Math.round(AVAILABLE * source.share);
+  }
+
+  function assembly() {
+    const result = { groups: [], total: 0 };
+    SOURCES.forEach((source) => {
+      const cap = capOf(source.key);
+      const blocks = selectedBlocks()
+        .filter((block) => block.source === source.key)
+        .sort((a, b) => b.priority - a.priority);
+      let used = 0;
+      const kept = [];
+      const cut = [];
+      const dropped = [];
+      blocks.forEach((block) => {
+        if (used + block.tokens <= cap) {
+          kept.push({ block, tokens: block.tokens, truncated: false });
+          used += block.tokens;
+        } else {
+          const remaining = cap - used;
+          if (remaining > 100) {
+            kept.push({ block, tokens: remaining, truncated: true });
+            cut.push({ block, tokens: remaining, original: block.tokens });
+            used += remaining;
+          } else {
+            dropped.push(block);
+          }
+        }
+      });
+      result.groups.push({ source, cap, used, kept, cut, dropped });
+      result.total += used;
+    });
+    return result;
+  }
+
+  function blockCard(block) {
+    const on = state.selected.has(block.id);
+    const anchor = block.anchor ? `<span class="cx-anchor-tag">锚点：${block.anchor}</span>` : "";
+    return `<button type="button" class="cx-block" data-block="${block.id}" aria-pressed="${on}">
+      <span class="cx-block-top"><b>${block.name}</b><span class="cx-prio">P${block.priority}</span></span>
+      <span class="cx-block-meta">${fmt(block.tokens)} tokens<br>${anchor}</span>
+    </button>`;
+  }
+
+  function sourceColumns() {
+    return SOURCES.map((source) => {
+      const blocks = BLOCKS.filter((block) => block.source === source.key);
+      const total = blocks.reduce((sum, block) => sum + block.tokens, 0);
+      return `<section class="cx-source" aria-label="${source.name}">
+        <div class="cx-source-head"><b>${source.name}</b><span>上限 ${fmt(capOf(source.key))} · 候选 ${fmt(total)}</span></div>
+        <div class="cx-source-body">${blocks.map(blockCard).join("")}</div>
+      </section>`;
+    }).join("");
+  }
+
+  function poolScene() {
+    const total = selectedBlocks().reduce((sum, block) => sum + block.tokens, 0);
+    const over = total - AVAILABLE;
+    const pct = Math.min(100, (total / AVAILABLE) * 100);
+    return `
+      <div class="cx-task"><span><b>固定任务</b>分析 Q3 营收并写一份 Markdown 报告，只用 Q3 数据。</span><span class="cx-badge cx-info">9 个候选块</span></div>
+      <div class="cx-budget"><span>可用输入预算 <strong>${fmt(AVAILABLE)}</strong> tokens（窗口 ${fmt(WINDOW)}，预留输出 ${fmt(OUTPUT_RESERVE)}）</span><span>已选 <strong>${fmt(total)}</strong> · ${over > 0 ? `<span class="cx-over">超出 ${fmt(over)}</span>` : `<span class="cx-ok-text">剩余 ${fmt(-over)}</span>`}</span></div>
+      <div class="cx-meter" role="img" aria-label="已选 ${fmt(total)} tokens，预算 ${fmt(AVAILABLE)} tokens"><span class="cx-meter-fill${over > 0 ? " over" : ""}" style="width:${pct}%"></span><span class="cx-meter-line"></span></div>
+      <div class="cx-sources">${sourceColumns()}</div>
+      <p class="cx-select-note">点击任意块可以把它移出候选池；锚点块带绿色标签。当前已选 ${state.selected.size} / 9 块。</p>
+      <p class="cx-fixed-note">固定教学数据：91,000 与 80,000 都是预设；真实 token 数要用模型分词器计算</p>`;
+  }
+
+  function assemblyScene() {
+    const result = assembly();
+    const caps = result.groups.map((group) => {
+      const pct = group.cap ? Math.min(100, (group.used / group.cap) * 100) : 0;
+      const cutCount = group.cut.length;
+      return `<div class="cx-cap">
+        <b>${group.source.name}</b>
+        <span>${fmt(group.used)} / ${fmt(group.cap)} tokens</span>
+        <span class="cx-cap-track"><span class="cx-cap-fill${cutCount ? " trunc" : ""}" style="width:${pct}%"></span></span>
+        <span>${cutCount ? `截断 ${cutCount} 块` : "无截断"}</span>
+      </div>`;
+    }).join("");
+    const msgs = result.groups.map((group) => {
+      if (!group.kept.length) {
+        return `<div class="cx-msg"><span class="cx-role">${group.source.key}</span><span class="cx-msg-body cx-empty">没有选中块</span></div>`;
+      }
+      const body = group.kept.map((item) => {
+        const cut = item.truncated ? ` <span class="cx-cut">截断 ${fmt(item.block.tokens)} → ${fmt(item.tokens)}</span>` : "";
+        return `<b>${item.block.name}</b> <span class="cx-tokens">${fmt(item.tokens)} tokens</span>${cut}`;
+      }).join("<br>");
+      return `<div class="cx-msg"><span class="cx-role">${group.source.key}</span><span class="cx-msg-body">${body}</span></div>`;
+    }).join("");
+    const remaining = AVAILABLE - result.total;
+    return `
+      <div class="cx-cap-grid">${caps}</div>
+      <div class="cx-assembly">
+        <div class="cx-assembly-head"><b>装配结果</b><span>按来源上限挑选，组内优先级从高到低</span></div>
+        ${msgs}
+        <div class="cx-total-row"><span>已装配 <strong>${fmt(result.total)}</strong> tokens</span><span>预算 ${fmt(AVAILABLE)} · 剩余 <strong>${fmt(remaining)}</strong></span></div>
+      </div>
+      <div class="cx-callout">
+        <p class="cx-label">为什么还剩 ${fmt(remaining)} 不用满</p>
+        <p>按来源上限装配后，System 组的第三块只拿到 1,600 的剩余额度，History 组本身只有 21,000；四组相加不到 80,000。原文的原则是信噪比优先，不为了填满预算而塞入低相关内容。</p>
+      </div>
+      <p class="cx-fixed-note">固定教学装配：各来源上限为本页按原文比例缩放后的整数；截断规则与原文一致</p>`;
+  }
+
+  function anchorScene() {
+    const result = assembly();
+    const keptMap = new Map();
+    result.groups.forEach((group) => group.kept.forEach((item) => keptMap.set(item.block.id, item)));
+    let pass = 0;
+    const rows = ANCHORS.map((anchor) => {
+      const block = BLOCKS.find((item) => item.id === anchor.block);
+      const kept = keptMap.get(anchor.block);
+      let status = "ok";
+      let label = "完整保留";
+      let mark = "✓";
+      if (!state.selected.has(anchor.block)) {
+        status = "missing";
+        label = "缺失";
+        mark = "×";
+      } else if (kept && kept.truncated) {
+        status = "cut";
+        label = "被截断";
+        mark = "!";
+      }
+      if (status === "ok") pass += 1;
+      return `<div class="cx-anchor ${status === "ok" ? "" : status === "missing" ? "missing" : "cut"}">
+        <span class="mark">${mark}</span>
+        <span><strong>${anchor.name}</strong>：${anchor.detail}<small>来源：${block.name}</small></span>
+        <span class="cx-badge ${status === "ok" ? "cx-ok" : status === "missing" ? "cx-bad" : "cx-warn"}">${label}</span>
+      </div>`;
+    }).join("");
+    const ok = pass === ANCHORS.length;
+    return `
+      <div class="cx-anchor-list">${rows}</div>
+      <div class="cx-anchor-score${ok ? "" : " bad"}">锚点检查：<strong>${pass} / ${ANCHORS.length}</strong> 完整保留。${ok ? "所有不可丢事实都在装配结果里。" : "有锚点缺失或被截断。压缩可以丢低优先级内容，但不能让这些事实消失；需要调整候选池或单独注入锚点块。"}</div>
+      <div class="cx-callout">
+        <p class="cx-label">工程规则</p>
+        <p>锚点不靠摘要器“记住”，而是作为结构化字段单独保存、单独注入。候选池阶段就要给锚点块高优先级；装配后再做一次审计，确认需求、约束、输出格式、关键数据和任务标识都还在。</p>
+      </div>
+      <p class="cx-fixed-note">固定教学检查：锚点四项为本页预设；取消第 1 阶段的块可以复现缺失状态</p>`;
+  }
+
+  const SCENES = [poolScene, assemblyScene, anchorScene];
+
+  function bindSceneControls() {
+    document.querySelectorAll("[data-block]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const id = button.dataset.block;
+        if (state.selected.has(id)) state.selected.delete(id);
+        else state.selected.add(id);
+        renderStage(0);
+        const block = BLOCKS.find((item) => item.id === id);
+        byId("cx-announcement").textContent = `${state.selected.has(id) ? "已加入" : "已移出"}候选池：${block.name}`;
+      });
+    });
+  }
+
+  function renderStage(stage) {
+    state.stage = stage;
+    const meta = STAGES[stage];
+    byId("cx-scene").innerHTML = SCENES[stage]();
+    byId("cx-index").textContent = `阶段 ${stage + 1} / 3 · 固定教学装配`;
+    byId("cx-title").textContent = meta.title;
+    byId("cx-subtitle").textContent = meta.subtitle;
+    byId("cx-note").textContent = meta.note;
+    byId("cx-summary").textContent = meta.summary;
+    byId("cx-back").disabled = stage === 0;
+    byId("cx-next").disabled = stage === STAGES.length - 1;
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      const active = Number(button.dataset.stage) === stage;
+      if (active) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    bindSceneControls();
+    byId("cx-announcement").textContent = `${meta.title}。${meta.subtitle}`;
+  }
+
+  byId("cx-reset").addEventListener("click", () => {
+    state.selected = new Set(BLOCKS.map((block) => block.id));
+    renderStage(0);
+  });
+  byId("cx-back").addEventListener("click", () => renderStage(Math.max(0, state.stage - 1)));
+  byId("cx-next").addEventListener("click", () => renderStage(Math.min(STAGES.length - 1, state.stage + 1)));
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+
+  renderStage(0);
+</script>
+</body>
+</html>

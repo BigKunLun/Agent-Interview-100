@@ -1,0 +1,1060 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Trace 和 Span：Agent 执行的可观测性 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .tr-banner { display: flex; align-items: flex-start; gap: 9px; margin: var(--s-4) var(--s-6) 0; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .tr-banner::before { content: "教学"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .tr-banner strong { color: #4d3000; }
+  .tr-badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .tr-neutral { background: #eef1ee; color: #3f463f; border-color: #c9cec9; }
+  .tr-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .tr-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .tr-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .tr-bad { background: #fbecec; color: #8a1f1f; border-color: #d9a3a3; }
+  .tr-topbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: var(--s-3); }
+  .tr-toggle { min-height: 40px; padding: 6px 12px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: 11px; color: var(--text-dim); }
+  .tr-toggle[aria-pressed="true"] { border-color: #8a1f1f; background: #fbecec; color: #8a1f1f; font-weight: 600; }
+  .tr-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .tr-metric { padding: 7px 9px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); }
+  .tr-metric b { display: block; font: 9px/1.5 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .tr-metric strong { display: block; margin-top: 2px; font: 600 15px/1.3 var(--mono); }
+  .tr-metric strong.bad { color: #8a1f1f; }
+  .tr-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: var(--s-4); align-items: start; }
+  .tr-panel { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3); }
+  .tr-panel-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 5px; margin-bottom: var(--s-2); }
+  .tr-panel-head b { font: 600 12px/1.5 var(--sans); }
+  .tr-panel-head span { font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .tr-tree { list-style: none; margin: 0; padding: 0; display: grid; gap: 3px; }
+  .tr-span { width: 100%; text-align: left; display: grid; grid-template-columns: minmax(0, 1fr) 58px 48px; gap: 6px; align-items: center; padding: 4px 6px; border: 1px solid transparent; border-radius: 4px; background: transparent; }
+  .tr-span:hover { background: var(--surface-soft); }
+  .tr-span[aria-pressed="true"] { border-color: #194f87; background: #eaf1f8; }
+  .tr-span.is-hot { border-color: #b98a2f; background: #fdf3e3; }
+  .tr-span[aria-pressed="true"].is-hot { border-color: #194f87; box-shadow: inset 0 0 0 1px #b98a2f; }
+  .tr-span-name { min-width: 0; font: 10px/1.5 var(--mono); overflow-wrap: anywhere; }
+  .tr-span-name .tr-indent { display: inline-block; }
+  .tr-status { display: inline-block; margin-right: 4px; padding: 0 4px; border: 1px solid #9cc39e; border-radius: 3px; background: #e6f2e6; color: #14532d; font: 9px/1.55 var(--mono); }
+  .tr-status.error { border-color: #d9a3a3; background: #fbecec; color: #8a1f1f; }
+  .tr-span-dur, .tr-span-tokens { font: 9px/1.5 var(--mono); color: var(--text-dim); text-align: right; white-space: nowrap; }
+  .tr-waterfall { display: grid; gap: 4px; }
+  .tr-wf-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 6px; align-items: center; }
+  .tr-wf-label { font: 9px/1.4 var(--mono); color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tr-wf-track { position: relative; height: 17px; border-left: 1px solid var(--border); background: repeating-linear-gradient(90deg, transparent 0 calc(25% - 1px), #ecebe4 calc(25% - 1px) 25%); border-radius: 2px; }
+  .tr-wf-bar { position: absolute; top: 2px; height: 13px; border: 1px solid #7d9dbb; border-radius: 2px; background: #dce9f5; color: #194f87; font: 7px/11px var(--mono); overflow: hidden; white-space: nowrap; padding-left: 2px; }
+  .tr-wf-bar.tool { border-color: #b98a2f; background: #fbeccd; color: #5f430f; }
+  .tr-wf-bar.error { border-color: #a33a3a; background: #f7dcdc; color: #7d1f1f; font-weight: 600; }
+  .tr-wf-bar.is-hot { outline: 2px solid #b98a2f; outline-offset: 1px; }
+  .tr-axis { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 6px; margin-top: 2px; }
+  .tr-axis-track { position: relative; height: 12px; font: 7px/1 var(--mono); color: var(--text-dim); }
+  .tr-axis-tick { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+  .tr-axis-tick:first-child { transform: none; }
+  .tr-axis-tick:last-child { transform: translateX(-100%); }
+  .tr-detail h3 { font: 600 18px/1.4 var(--serif); margin-top: 0; overflow-wrap: anywhere; }
+  .tr-detail > p { margin-top: var(--s-2); font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .tr-attrs { margin-top: var(--s-3); border-top: 1px solid var(--border); }
+  .tr-attr { display: grid; grid-template-columns: 150px minmax(0, 1fr); gap: 8px; padding: 5px 0; border-bottom: 1px solid var(--border); font-size: 10px; line-height: 1.6; }
+  .tr-attr dt { font: 9px/1.6 var(--mono); color: var(--text-dim); overflow-wrap: anywhere; }
+  .tr-attr dd { margin: 0; overflow-wrap: anywhere; }
+  .tr-events { margin-top: var(--s-3); }
+  .tr-events b { font: 600 10px/1.6 var(--mono); color: var(--text-dim); }
+  .tr-event { margin-top: 3px; padding: 5px 7px; border-left: 2px solid #d9a3a3; background: #fbecec; color: #6d1717; font: 10px/1.6 var(--mono); }
+  .tr-pick { display: flex; flex-wrap: wrap; gap: 4px; margin-top: var(--s-3); }
+  .tr-pick button { min-height: 34px; padding: 4px 8px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font: 9px/1.4 var(--mono); color: var(--text-dim); }
+  .tr-pick button[aria-pressed="true"] { border-color: #194f87; background: #eaf1f8; color: #194f87; font-weight: 600; }
+  .tr-metric-tabs { display: flex; flex-wrap: wrap; gap: 5px; }
+  .tr-metric-tab { min-height: 38px; padding: 5px 10px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: 11px; color: var(--text-dim); }
+  .tr-metric-tab:hover { border-color: #194f87; }
+  .tr-metric-tab[aria-pressed="true"] { background: #194f87; border-color: #194f87; color: #fff; font-weight: 600; }
+  .tr-def { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); overflow: hidden; }
+  .tr-def-head { padding: 8px 11px; border-bottom: 1px solid var(--border); background: var(--surface-soft); }
+  .tr-def-head b { font-size: 13px; }
+  .tr-def-head span { display: block; margin-top: 2px; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .tr-def-row { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 8px; padding: 6px 11px; border-bottom: 1px solid var(--border); font-size: 11px; line-height: 1.65; }
+  .tr-def-row:last-child { border-bottom: 0; }
+  .tr-def-row b { font: 9px/1.7 var(--mono); color: var(--text-dim); }
+  .tr-trace-calc { margin-top: var(--s-3); padding: 8px 11px; border-left: 3px solid #194f87; background: #eaf1f8; font-size: 11px; line-height: 1.75; }
+  .tr-fixed-note { display: inline-block; margin-top: var(--s-3); padding: 3px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  .tr-table td:first-child { min-width: 7em; }
+  .tr-wide { min-width: 720px; }
+  .tr-pillars { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .tr-pillar { min-width: 0; padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 11px; line-height: 1.7; }
+  .tr-pillar b { display: block; margin-bottom: 3px; font: 600 13px/1.5 var(--sans); }
+  .tr-pillar span { display: block; color: var(--text-dim); }
+  .tr-code-note { margin-top: var(--s-3); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  @media (max-width: 1000px) { .tr-grid { grid-template-columns: 1fr; } }
+  @media (max-width: 720px) {
+    .tr-banner { margin-inline: var(--s-4); }
+    .tr-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .tr-span { grid-template-columns: minmax(0, 1fr) 46px; }
+    .tr-span-tokens { display: none; }
+    .tr-wf-row, .tr-axis { grid-template-columns: 74px minmax(0, 1fr); }
+    .tr-pillars { grid-template-columns: 1fr; }
+    .tr-attr { grid-template-columns: 1fr; gap: 2px; }
+    .tr-def-row { grid-template-columns: 1fr; gap: 2px; }
+    .tr-width-scroll { overflow-x: auto; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">074 / Trace 与 Span</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 19 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="073-regression-testing.html">← 上一页 · 回归测试</a><a href="075-evaluation-tools-comparison.html">下一页 → · 评估工具对比</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Evaluation · 可交互讲解</p>
+      <h1>出了错，<br>先看它走过的路。</h1>
+    </div>
+    <div>
+      <p class="lead">Trace 是一次完整 Agent 执行，Span 是执行里的一个操作单元：一次 LLM 调用、一次工具调用、一次检索。父子 Span 组成树，树上的耗时、token、状态和属性，决定了你能不能回答“做了什么、花了多久、哪里出错”。</p>
+      <p class="definition"><strong>关键边界：</strong>指标名一样，口径不一样就没法比。每个指标都要写死分子、分母和数据来源；本页的耗时按原文示例，token 与成本为固定教学补值。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Evaluation</span><span class="pill">OTel GenAI</span><span class="pill">固定教学 trace</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="tr-title">
+    <div class="player-top">
+      <div class="player-label">Trace 解剖台 <small>Span 树 · 属性检查 · 指标口径</small></div>
+      <div class="controls" role="group" aria-label="Trace 演示控制">
+        <button type="button" class="button button-quiet" id="tr-reset">重置</button>
+        <button type="button" class="button" id="tr-back" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="tr-next">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="Trace 解剖阶段">
+      <ol style="--stages: 3">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>Trace 全貌</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>Span 属性</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>指标口径</button></li>
+      </ol>
+    </nav>
+    <p class="tr-banner"><span><strong>本页是固定教学 trace，不连接任何观测平台。</strong>一条 trace、五个 span、耗时、token、成本和错误状态都是预设的；耗时按原文 8.2s 示例，token 与成本为本页补的教学值。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="tr-index">阶段 1 / 3 · 固定教学 trace</p>
+      <h2 id="tr-title">一条 trace，就是一棵 span 树</h2>
+      <p id="tr-subtitle">固定任务“分析竞品 A 定价策略”。正常 trace 总耗时 8.2s；打开错误开关后，工具限流重试，总耗时变成 9.0s。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="tr-scene"></div>
+      <p class="demo-note" id="tr-note">固定教学数据：span、耗时、token、成本和状态均为本页预设，不读取真实日志，不发起网络请求。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学 trace · 5–6 个 span</span><span id="tr-summary">阶段 1 / 3 · 正常 trace · 8.2s</span></div>
+  </section>
+  <p id="tr-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="structure-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">结构</p><h2 id="structure-title">Trace 是因果链，<br>日志是事件点。</h2></div>
+      <p class="reading-intro">一次 Agent 执行是一条 Trace；每个 LLM 调用、工具调用、检索都是 Span。Span 有父子关系，父 Span 的耗时包含子 Span。</p>
+    </div>
+    <div class="prose">
+      <p>原文的示例是“分析竞品 A 定价策略”：总耗时 8.2s，下面四个 Span 分别是理解任务 1.2s、web_search 2.5s、分析结果 3.1s、生成报告 1.4s。四项相加正好 8.2s，说明这是串行执行；并发场景不能直接相加。</p>
+      <p>Trace 和日志的分工不同：日志是离散事件，告诉你“发生了什么”；Trace 是结构化因果链，告诉你“为什么发生”以及“事件之间是什么关系”。多步 Agent 里，没有 Trace 几乎无法定位问题。</p>
+      <details>
+        <summary>查看原文 Mermaid 源码（Span 树）</summary>
+        <pre><code>flowchart TD
+    T["Trace：一次 Agent 执行&lt;br/&gt;「分析竞品A定价策略」· 总耗时 8.2s"]
+    T --&gt; S1["Span：LLM 调用&lt;br/&gt;理解任务（1.2s）"]
+    T --&gt; S2["Span：工具调用&lt;br/&gt;web_search（2.5s）"]
+    T --&gt; S3["Span：LLM 调用&lt;br/&gt;分析结果（3.1s）"]
+    T --&gt; S4["Span：LLM 调用&lt;br/&gt;生成报告（1.4s）"]
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class T neutral
+    class S1,S3,S4 agent
+    class S2 proc</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="otel-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">OpenTelemetry</p><h2 id="otel-title">标准属性，<br>供应商无关。</h2></div>
+      <p class="reading-intro">OTel 是 LLM 可观测性的主流方向。原文明确：GenAI 语义约定截至 2026-05 仍是 Development 阶段，尚未 Stable。</p>
+    </div>
+    <div class="prose">
+      <p>OTel 的价值是供应商无关：同一套埋点可以发到 Jaeger、Datadog、Langfuse 等后端，换监控工具只改 exporter 配置，不改业务代码。代价是语义约定还在演进，API 名字可能在 GA 前微调，生产接入建议固定到具体语义版本。</p>
+      <div class="callout">
+        <p class="callout-label">原文的状态说明</p>
+        <p>OTel GenAI Special Interest Group 维护的 Semantic Conventions for Generative AI 截至 2026-05 仍处于 Development 阶段（尚未 Stable）。语言 SDK 的 GenAI instrumentation 也可能随规范调整。本页只按原文版本呈现，未联网核实。</p>
+      </div>
+      <h3>GenAI 语义约定里常见属性</h3>
+      <div class="table-wrap">
+        <table class="data tr-wide">
+          <caption class="sr-only">原文列出的 OTel GenAI 标准属性</caption>
+          <thead><tr><th scope="col">分组</th><th scope="col">属性</th><th scope="col">示例值</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">系统信息</th><td><code>gen_ai.system</code></td><td>openai / anthropic / google</td></tr>
+            <tr><th scope="row">模型</th><td><code>gen_ai.request.model</code></td><td>gpt-4o / claude-sonnet-4-5</td></tr>
+            <tr><th scope="row">请求参数</th><td><code>gen_ai.request.temperature</code>、<code>max_tokens</code>、<code>top_p</code></td><td>0.7 / 4096 / 1.0</td></tr>
+            <tr><th scope="row">使用统计</th><td><code>gen_ai.usage.input_tokens</code>、<code>gen_ai.usage.output_tokens</code></td><td>150 / 300</td></tr>
+            <tr><th scope="row">Agent</th><td><code>gen_ai.agent.name</code>、<code>gen_ai.agent.step</code></td><td>research-agent / planning</td></tr>
+            <tr><th scope="row">工具</th><td><code>gen_ai.tool.name</code>、<code>gen_ai.tool.call_id</code></td><td>web_search / call_abc123</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="tr-fixed-note">属性名与状态按原文 2026-05 口径，未联网核实；接入前以官方规范为准</p>
+      <details>
+        <summary>查看原文的 ObservableAgent 代码</summary>
+        <pre><code>from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+# 初始化 OTel
+provider = TracerProvider()
+provider.add_span_processor(
+    BatchSpanProcessor(OTLPSpanExporter(endpoint="http://collector:4318"))
+)
+trace.set_tracer_provider(provider)
+tracer = trace.get_tracer("agent-service")
+
+class ObservableAgent:
+    """带完整可观测性的 Agent"""
+
+    async def execute(self, task: str):
+        # 创建 Trace（顶层 Span）
+        with tracer.start_as_current_span("agent_execution") as root_span:
+            root_span.set_attribute("task", task)
+            root_span.set_attribute("agent.name", "research-agent")
+
+            # Step 1: 规划
+            plan = await self.plan(task)
+
+            # Step 2: 执行每个步骤
+            results = []
+            for step in plan.steps:
+                result = await self.execute_step(step)
+                results.append(result)
+
+            # 记录总体指标
+            root_span.set_attribute("total_steps", len(results))
+            root_span.set_attribute("task_success", True)
+
+            return self.synthesize(results)
+
+    async def plan(self, task):
+        with tracer.start_as_current_span("llm_call") as span:
+            span.set_attribute("gen_ai.system", "openai")
+            span.set_attribute("gen_ai.request.model", "gpt-4o")
+            span.set_attribute("gen_ai.operation.name", "planning")
+
+            response = await self.llm.invoke(task)
+
+            # 记录 token 使用
+            span.set_attribute("gen_ai.usage.input_tokens", response.usage.prompt_tokens)
+            span.set_attribute("gen_ai.usage.output_tokens", response.usage.completion_tokens)
+
+            return response
+
+    async def execute_step(self, step):
+        with tracer.start_as_current_span("agent_step") as span:
+            span.set_attribute("step.name", step.name)
+
+            if step.requires_tool:
+                # 工具调用子 Span
+                with tracer.start_as_current_span("tool_call") as tool_span:
+                    tool_span.set_attribute("tool.name", step.tool_name)
+                    tool_span.set_attribute("tool.input", str(step.tool_params))
+
+                    result = await self.call_tool(step.tool_name, step.tool_params)
+
+                    tool_span.set_attribute("tool.output_size", len(str(result)))
+                    if result.error:
+                        tool_span.set_status(trace.Status(trace.StatusCode.ERROR))
+                        tool_span.record_exception(result.error)
+
+                    return result</code></pre>
+      </details>
+      <p class="tr-code-note">原文代码里既有 OTel 标准属性（<code>gen_ai.*</code>），也有自定义属性（<code>tool.name</code>、<code>step.name</code>）。实际项目要约定哪些用标准、哪些用私有前缀，避免同名不同义。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="pillars-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三大支柱</p><h2 id="pillars-title">Trace、Metrics、Logs，<br>各回答一个问题。</h2></div>
+      <p class="reading-intro">Trace 回答“做了什么、每步多久”；Metrics 量化性能和健康状态；Logs 记录详细事件和错误。三者不能互相替代。</p>
+    </div>
+    <div class="prose">
+      <div class="tr-pillars">
+        <div class="tr-pillar"><b>Traces 追踪</b><span>完整执行路径；每步耗时。工具：Jaeger、Zipkin、Langfuse、LangSmith。</span></div>
+        <div class="tr-pillar"><b>Metrics 指标</b><span>请求延迟 P50/P95/P99、token 消耗、工具成功率、任务完成率、每次请求成本。工具：Prometheus、Datadog、Grafana。</span></div>
+        <div class="tr-pillar"><b>Logs 日志</b><span>LLM 输入输出、工具参数与返回值、错误堆栈。工具：ELK Stack、CloudWatch。</span></div>
+      </div>
+      <p class="tr-fixed-note">三大支柱与工具示例来自原文</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="metrics-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">指标口径</p><h2 id="metrics-title">每个数，<br>都要写死分子分母。</h2></div>
+      <p class="reading-intro">原文的核心提醒：指标名一样、口径不一样，两个团队的数字就没法比。每个指标要写清分子、分母、数据来源和已知偏差。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data tr-wide">
+          <caption class="sr-only">原文的线上指标口径表</caption>
+          <thead><tr><th scope="col">指标</th><th scope="col">分子</th><th scope="col">分母</th><th scope="col">数据来源</th><th scope="col">已知偏差</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">任务成功率</th><td>判定为成功的 run 数</td><td>进入执行的 run 数（用户主动中止单列）</td><td>规则判定 + 隐式成功 + 抽样复核</td><td>不校准会虚高</td></tr>
+            <tr><th scope="row">工具选错率</th><td>命中代理信号的调用数</td><td>工具调用总数</td><td>Trace 事件序列</td><td>代理信号会误报，只能看趋势</td></tr>
+            <tr><th scope="row">参数错误率</th><td>JSON Schema 校验失败次数</td><td>工具调用总数</td><td>工具入口埋点</td><td>只覆盖结构错误，语义错误漏掉</td></tr>
+            <tr><th scope="row">单 run 成本</th><td>token × 模型单价 + 外部 API 费用</td><td>进入执行的 run 数（另看 P50/P95 和长尾）</td><td>usage 字段 + 外部账单</td><td>缓存命中和折扣未计</td></tr>
+            <tr><th scope="row">耗时分解</th><td>模型 / 工具 / 排队 / 审批各段耗时</td><td>端到端耗时</td><td>Span 起止时间</td><td>并发 Span 重叠，不能直接相加</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="tr-fixed-note">口径表来自原文；本页未连接任何观测平台</p>
+      <h3>成功率最容易算错</h3>
+      <p>原文给了三种判定方式：有明确成功标记的走规则判定；没有的用 LLM-as-Judge，但必须先写 rubric；再叠加用户反馈。线上常用组合是：用户没重试、没报错，先记为隐式成功，再按固定比例抽样，用人工或 judge 复核校准。不校准，隐式成功会把数字抬高。</p>
+      <p>分母按 run 算，不按请求算；超时算失败；用户主动中止不计入分母，但单独报中止率。口径写进文档，不能指标难看就改。</p>
+      <p>工具选错率线上拿不到真值，只能用代理信号：同一意图连续重试、工具返回空结果后换工具、模型输出里出现自我纠正。代理信号误报多，线上只看趋势，准确值靠离线标注集。</p>
+      <p>耗时按 Span 分段记账。原文的代码注释明确：串行执行可以直接相加；并发 Span 应改用墙钟起止区间，否则会把重叠时间重复计算。</p>
+      <details>
+        <summary>查看 RunMetricsAggregator 的原文代码</summary>
+        <pre><code>class Outcome(Enum):
+    SUCCESS = "success"            # 规则判定成功
+    FAILURE = "failure"            # 规则判定失败
+    IMPLICIT_SUCCESS = "implicit"  # 无报错、无重试，待抽样复核
+    TIMEOUT = "timeout"
+    ABORTED = "aborted"            # 用户主动中止
+
+
+@dataclass
+class RunMetrics:
+    run_id: str
+    outcome: Outcome
+    model_ms: float = 0.0
+    tool_ms: float = 0.0
+    queue_ms: float = 0.0          # 排队
+    approval_ms: float = 0.0       # 人工审批等待
+    token_cost_usd: float = 0.0    # 按各模型单价分别计算后汇总
+    external_cost_usd: float = 0.0
+    tool_calls: int = 0
+    schema_failures: int = 0
+
+    @property
+    def cost_usd(self) -> float:
+        return self.token_cost_usd + self.external_cost_usd
+
+    @property
+    def latency_ms(self) -> float:
+        # 串行执行可以直接相加；并发 Span 应改用墙钟起止区间
+        return self.model_ms + self.tool_ms + self.queue_ms + self.approval_ms
+
+
+class RunMetricsAggregator:
+    """成功率：分母按 run；超时算失败；中止单独报，不进分母"""
+
+    def __init__(self) -&gt; None:
+        self._reviewed: dict[str, bool] = {}  # run_id -&gt; 复核是否成功
+
+    def review(self, run_id: str, is_success: bool) -&gt; None:
+        """按比例抽样人工或 LLM judge 复核，用来校准隐式成功"""
+        self._reviewed[run_id] = is_success
+
+    def success_rate(self, runs: list[RunMetrics]) -&gt; float:
+        denominator = [r for r in runs if r.outcome is not Outcome.ABORTED]
+        if not denominator:
+            return 0.0
+
+        numerator = 0
+        for run in denominator:
+            if run.outcome is Outcome.SUCCESS:
+                numerator += 1
+            elif run.outcome is Outcome.IMPLICIT_SUCCESS:
+                # 未复核先按成功计；复核为失败的扣回来
+                numerator += int(self._reviewed.get(run.run_id, True))
+        # TIMEOUT 和 FAILURE 留在分母里但不加分，等价于算失败
+        return numerator / len(denominator)</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="debug-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">调试场景</p><h2 id="debug-title">从失败 Trace，<br>走到复现修复。</h2></div>
+      <p class="reading-intro">原文给了一个五步调试流程：找失败 Trace、看 Span 树、检查出错 Span 详情、分析上下文、复现和修复。</p>
+    </div>
+    <div class="prose">
+      <ol>
+        <li><strong>找到失败的 Trace：</strong>按 request_id 或 error 状态筛选。</li>
+        <li><strong>查看 Span 树结构：</strong>定位哪个 Span 出错（红色标记）。</li>
+        <li><strong>检查出错 Span 的详情：</strong>LLM 调用看输入 Prompt 和输出；工具调用看参数和返回值；错误信息看异常类型和堆栈。</li>
+        <li><strong>分析上下文：</strong>前序 Span 的输出是否正常？传给它的输入是否合理？</li>
+        <li><strong>复现和修复：</strong>用相同输入参数重放，修复后重新运行验证。</li>
+      </ol>
+      <p>本页第 2 步的 Span 属性面板对应的就是第 3 步：选中出错工具 Span，能看到 <code>error.type</code>、异常事件和调用参数。第 3 步的指标口径对应第 1 步：先确认你看的是哪个指标、分子分母是什么，再决定要不要追这条 Trace。</p>
+      <p>多 Agent 场景的 Trace 更长、分支更多，浏览方式可以参考 <a href="../04-multi-agent/039-debugging-monitoring-multi-agent.html">039 多 Agent 调试与监控</a>；本页聚焦单条 Trace 的 Span 属性和指标口径，不重复多 Agent 的过滤视图。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="tools-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">工具对比</p><h2 id="tools-title">先看 OTel，<br>再看特色。</h2></div>
+      <p class="reading-intro">原文的工具表按开源/商业、OTel 支持和特色对比。工具状态只按原文，未联网核实。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data tr-wide">
+          <caption class="sr-only">原文的主流可观测性工具对比</caption>
+          <thead><tr><th scope="col">工具</th><th scope="col">开源 / 商业</th><th scope="col">OTel 支持</th><th scope="col">特色</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Langfuse</th><td>开源</td><td>✓</td><td>最流行的开源</td></tr>
+            <tr><th scope="row">LangSmith</th><td>商业</td><td>部分</td><td>LangChain</td></tr>
+            <tr><th scope="row">Arize Phoenix</th><td>开源</td><td>✓</td><td>ML + LLM</td></tr>
+            <tr><th scope="row">Traceloop</th><td>开源</td><td>✓ 原生</td><td>OTel 原生</td></tr>
+            <tr><th scope="row">Datadog</th><td>商业</td><td>✓</td><td>企业级</td></tr>
+            <tr><th scope="row">Arthur AI</th><td>商业</td><td>✓</td><td>Agent 专注</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="tr-fixed-note">工具功能与 OTel 状态按原文，未联网核实</p>
+      <div class="callout">
+        <p class="callout-label">原文两处口径不完全一致</p>
+        <p>简短回答称 LangSmith 2026-01 起支持 end-to-end native OTel；上面的工具表仍标“部分”。本页按原文并列呈现，不替原文更新状态。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">两个误区，<br>两个追问。</h2></div>
+      <p class="reading-intro">有日志不等于有 Trace；Trace 也不只在故障时有用。存储成本和 OTel 的价值是常见追问。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <div class="misconception-label">误区 01</div>
+        <div><h3>“有日志就不需要 Trace”</h3><p>日志是离散事件记录，Trace 是结构化因果链。日志告诉你“发生了什么”，Trace 告诉你“为什么发生”以及事件之间的关系。多步 Agent 中，没有 Trace 几乎无法定位问题。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 02</div>
+        <div><h3>“Trace 只在出问题时有用”</h3><p>日常监控同样重要：发现性能瓶颈（哪个 Span 最慢）、优化成本（哪个 LLM 调用 token 最多）、理解用户行为（Agent 通常走什么路径）。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 03</div>
+        <div><h3>如何控制 Trace 数据的存储成本？</h3><p>三条：采样，不是每个请求都记录完整 Trace，例如 10% 采样率；按需详细度，正常请求只记关键 Span，错误请求记全部细节；数据保留策略，Trace 数据保留 7–30 天。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 04</div>
+        <div><h3>OpenTelemetry 的优势是什么？</h3><p>供应商无关。用 OTel 标准化的数据可以发送到任何后端（Jaeger、Datadog、Langfuse）；换监控工具不需要改代码，只改 exporter 配置。这避免了供应商锁定。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="sources-title">
+    <p class="eyebrow">参考资料</p>
+    <h2 class="source-heading" id="sources-title">原文引用与延伸阅读</h2>
+    <p class="source-summary">以下链接来自原文。只有主动点击外链才会离开本页；本页不加载任何外部资源。</p>
+    <details>
+      <summary>展开 5 条参考资料</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://opentelemetry.io/blog/2025/ai-agent-observability/" rel="noreferrer noopener">AI Agent Observability - Evolving Standards (OpenTelemetry Blog)</a></li>
+          <li><a href="https://oneuptime.com/blog/post/2026-02-06-trace-ai-agent-execution-flows-opentelemetry/view" rel="noreferrer noopener">How to Trace AI Agent Execution Flows Using OpenTelemetry (OneUptime)</a></li>
+          <li><a href="https://agenta.ai/blog/the-ai-engineer-s-guide-to-llm-observability-with-opentelemetry" rel="noreferrer noopener">The AI Engineer's Guide to LLM Observability with OpenTelemetry (Agenta)</a></li>
+          <li><a href="https://www.arthur.ai/blog/best-practices-for-building-agents-part-1-observability-and-tracing" rel="noreferrer noopener">Best Practices for Building Agents: Observability and Tracing (Arthur AI)</a></li>
+          <li><a href="https://arize.com/blog/the-role-of-opentelemetry-in-llm-observability/" rel="noreferrer noopener">The Role of OpenTelemetry in LLM Observability (Arize AI)</a></li>
+        </ul>
+        <p class="source-footnote">OTel GenAI 语义约定的 Development 状态、工具支持情况均按原文版本呈现，本页未联网核实。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>08-evaluation/074-traces-and-spans.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 5 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const SPANS = Object.freeze({
+    normal: [
+      { id: "root", parent: null, name: "agent_execution", start: 0, dur: 8200, type: "root", status: "ok", tokens: 5450 },
+      { id: "plan", parent: "root", name: "llm_call · 理解任务", start: 0, dur: 1200, type: "llm", status: "ok", model: "gpt-4o", inTok: 150, outTok: 300, cost: 0.004 },
+      { id: "search", parent: "root", name: "tool_call · web_search", start: 1200, dur: 2500, type: "tool", status: "ok", tool: "web_search", callId: "call_abc123", outputSize: 1840, externalCost: 0.001 },
+      { id: "analyze", parent: "root", name: "llm_call · 分析结果", start: 3700, dur: 3100, type: "llm", status: "ok", model: "gpt-4o", inTok: 2400, outTok: 600, cost: 0.018 },
+      { id: "report", parent: "root", name: "llm_call · 生成报告", start: 6800, dur: 1400, type: "llm", status: "ok", model: "gpt-4o", inTok: 1200, outTok: 800, cost: 0.012 }
+    ],
+    error: [
+      { id: "root", parent: null, name: "agent_execution", start: 0, dur: 9000, type: "root", status: "error", tokens: 5450 },
+      { id: "plan", parent: "root", name: "llm_call · 理解任务", start: 0, dur: 1200, type: "llm", status: "ok", model: "gpt-4o", inTok: 150, outTok: 300, cost: 0.004 },
+      { id: "search", parent: "root", name: "tool_call · web_search", start: 1200, dur: 2500, type: "tool", status: "error", tool: "web_search", callId: "call_abc123", outputSize: 0, externalCost: 0.001, errorType: "rate_limit" },
+      { id: "retry", parent: "root", name: "tool_call · web_search（重试）", start: 3700, dur: 800, type: "tool", status: "ok", tool: "web_search_retry", callId: "call_def456", outputSize: 1840, externalCost: 0.001 },
+      { id: "analyze", parent: "root", name: "llm_call · 分析结果", start: 4500, dur: 3100, type: "llm", status: "ok", model: "gpt-4o", inTok: 2400, outTok: 600, cost: 0.018 },
+      { id: "report", parent: "root", name: "llm_call · 生成报告", start: 7600, dur: 1400, type: "llm", status: "ok", model: "gpt-4o", inTok: 1200, outTok: 800, cost: 0.012 }
+    ]
+  });
+
+  const METRICS = Object.freeze([
+    {
+      key: "success", name: "任务成功率",
+      num: "判定为成功的 run 数", den: "进入执行的 run 数（用户主动中止单列）",
+      source: "规则判定 + 隐式成功 + 抽样复核", bias: "不校准会虚高",
+      spans: ["root"]
+    },
+    {
+      key: "toolwrong", name: "工具选错率",
+      num: "命中代理信号的调用数", den: "工具调用总数",
+      source: "Trace 事件序列", bias: "代理信号会误报，只能看趋势",
+      spans: ["search", "retry"]
+    },
+    {
+      key: "param", name: "参数错误率",
+      num: "JSON Schema 校验失败次数", den: "工具调用总数",
+      source: "工具入口埋点", bias: "只覆盖结构错误，语义错误漏掉",
+      spans: ["search", "retry"]
+    },
+    {
+      key: "cost", name: "单 run 成本",
+      num: "token × 模型单价 + 外部 API 费用", den: "进入执行的 run 数（另看 P50/P95 和长尾）",
+      source: "usage 字段 + 外部账单", bias: "缓存命中和折扣未计",
+      spans: ["plan", "search", "retry", "analyze", "report"]
+    },
+    {
+      key: "latency", name: "耗时分解",
+      num: "模型 / 工具 / 排队 / 审批各段耗时", den: "端到端耗时",
+      source: "Span 起止时间", bias: "并发 Span 重叠，不能直接相加",
+      spans: ["plan", "search", "retry", "analyze", "report"]
+    }
+  ]);
+
+  const STAGES = Object.freeze([
+    {
+      nav: "Trace 全貌",
+      title: "一条 trace，就是一棵 span 树",
+      subtitle: "固定任务“分析竞品 A 定价策略”。正常 trace 总耗时 8.2s；打开错误开关后，工具限流重试，总耗时变成 9.0s。",
+      note: "固定教学 trace：耗时按原文 8.2s 示例，错误场景的 9.0s、token 和成本为本页补的教学值。",
+      summary: "阶段 1 / 3 · 正常 trace · 8.2s"
+    },
+    {
+      nav: "Span 属性",
+      title: "点开一个 span，看它的标准属性",
+      subtitle: "选中任意 span 查看 OTel GenAI 属性、token 和状态；错误 span 还带异常事件。",
+      note: "固定教学 trace：属性名按原文的 OTel GenAI 约定示例，属性值为本页预设。",
+      summary: "阶段 2 / 3 · 等待选择 span"
+    },
+    {
+      nav: "指标口径",
+      title: "选一个指标，看哪些 span 为它供数",
+      subtitle: "每个指标都有分子、分母、数据来源和已知偏差。选指标后，相关的 span 会高亮。",
+      note: "固定教学口径：指标定义来自原文；本 trace 的计算值是预设数据，不是真实监控统计。",
+      summary: "阶段 3 / 3 · 等待选择指标"
+    }
+  ]);
+
+  const state = { stage: 0, error: false, selectedSpan: "root", metric: "success" };
+  const byId = (id) => document.getElementById(id);
+  const fmt = (n) => n.toLocaleString("en-US");
+
+  function spans() {
+    return state.error ? SPANS.error : SPANS.normal;
+  }
+
+  function totalDuration() {
+    const root = spans().find((span) => span.type === "root");
+    return root.dur;
+  }
+
+  function totalTokens() {
+    return spans().filter((span) => span.type === "llm").reduce((sum, span) => sum + span.inTok + span.outTok, 0);
+  }
+
+  function totalCost() {
+    return spans().reduce((sum, span) => sum + (span.cost || 0) + (span.externalCost || 0), 0);
+  }
+
+  function toolCalls() {
+    return spans().filter((span) => span.type === "tool").length;
+  }
+
+  function metricValue(metric) {
+    if (metric.key === "success") return state.error ? "0 / 1" : "1 / 1";
+    if (metric.key === "toolwrong") return "0 / " + toolCalls();
+    if (metric.key === "param") return "0 / " + toolCalls();
+    if (metric.key === "cost") return "$" + totalCost().toFixed(3) + " / 1 run";
+    if (metric.key === "latency") {
+      const model = spans().filter((span) => span.type === "llm").reduce((sum, span) => sum + span.dur, 0);
+      const tool = spans().filter((span) => span.type === "tool").reduce((sum, span) => sum + span.dur, 0);
+      return `模型 ${(model / 1000).toFixed(1)}s + 工具 ${(tool / 1000).toFixed(1)}s = ${(totalDuration() / 1000).toFixed(1)}s`;
+    }
+    return "—";
+  }
+
+  function statusBadge(span) {
+    return span.status === "error"
+      ? '<span class="tr-status error">ERROR</span>'
+      : '<span class="tr-status">OK</span>';
+  }
+
+  function treeRows(interactive) {
+    const list = spans();
+    const hot = state.stage === 2
+      ? new Set((METRICS.find((metric) => metric.key === state.metric) || {}).spans || [])
+      : new Set();
+    return list.map((span) => {
+      const indent = span.parent ? 14 : 0;
+      const selected = state.selectedSpan === span.id;
+      const isHot = hot.has(span.id);
+      const tokens = span.type === "llm" ? `${fmt(span.inTok + span.outTok)} tok` : (span.type === "tool" ? "tool" : "—");
+      const inner = `<span class="tr-span-name"><span class="tr-indent" style="width:${indent}px"></span>${statusBadge(span)}${span.name}</span>
+        <span class="tr-span-dur">${(span.dur / 1000).toFixed(1)}s</span>
+        <span class="tr-span-tokens">${tokens}</span>`;
+      if (!interactive) {
+        return `<li><div class="tr-span${isHot ? " is-hot" : ""}">${inner}</div></li>`;
+      }
+      return `<li><button type="button" class="tr-span${isHot ? " is-hot" : ""}" data-span="${span.id}" aria-pressed="${selected}">${inner}</button></li>`;
+    }).join("");
+  }
+
+  function waterfall() {
+    const list = spans();
+    const total = totalDuration();
+    const hot = state.stage === 2
+      ? new Set((METRICS.find((metric) => metric.key === state.metric) || {}).spans || [])
+      : new Set();
+    const rows = list.map((span) => {
+      const left = (span.start / total) * 100;
+      const width = (span.dur / total) * 100;
+      const cls = span.type === "tool" ? "tool" : "";
+      const err = span.status === "error" ? " error" : "";
+      const isHot = hot.has(span.id) ? " is-hot" : "";
+      const label = width > 9 ? `${(span.dur / 1000).toFixed(1)}s` : "";
+      return `<div class="tr-wf-row">
+        <span class="tr-wf-label">${span.name.replace("llm_call · ", "").replace("tool_call · ", "")}</span>
+        <span class="tr-wf-track"><span class="tr-wf-bar ${cls}${err}${isHot}" style="left:${left.toFixed(3)}%;width:${width.toFixed(3)}%">${label}</span></span>
+      </div>`;
+    }).join("");
+    const ticks = [0, 0.25, 0.5, 0.75, 1].map((ratio) => {
+      const ms = Math.round(total * ratio);
+      return `<span class="tr-axis-tick" style="left:${ratio * 100}%">${(ms / 1000).toFixed(1)}s</span>`;
+    }).join("");
+    return `${rows}<div class="tr-axis"><span></span><span class="tr-axis-track">${ticks}</span></div>`;
+  }
+
+  function overviewScene() {
+    const status = state.error ? "失败" : "成功";
+    return `
+      <div class="tr-topbar" role="group" aria-label="切换错误场景">
+        <button type="button" class="tr-toggle" id="tr-error-toggle" aria-pressed="${state.error}">${state.error ? "关闭错误场景" : "打开错误场景：工具限流重试"}</button>
+        <span class="tr-badge ${state.error ? "tr-bad" : "tr-ok"}">${state.error ? "1 个错误工具 span（根 span 继承错误）" : "全部正常"}</span>
+      </div>
+      <div class="tr-metrics">
+        <div class="tr-metric"><b>总耗时</b><strong>${(totalDuration() / 1000).toFixed(1)}s</strong></div>
+        <div class="tr-metric"><b>总 tokens</b><strong>${fmt(totalTokens())}</strong></div>
+        <div class="tr-metric"><b>总成本</b><strong>$${totalCost().toFixed(3)}</strong></div>
+        <div class="tr-metric"><b>任务状态</b><strong class="${state.error ? "bad" : ""}">${status}</strong></div>
+      </div>
+      <div class="tr-grid" style="margin-top:var(--s-3)">
+        <section class="tr-panel" aria-label="Span 树">
+          <div class="tr-panel-head"><b>Span 树</b><span>父 Span 包含子 Span 的耗时</span></div>
+          <ul class="tr-tree">${treeRows(false)}</ul>
+        </section>
+        <section class="tr-panel" aria-label="时间线">
+          <div class="tr-panel-head"><b>时间线</b><span>0 – ${(totalDuration() / 1000).toFixed(1)}s</span></div>
+          <div class="tr-waterfall">${waterfall()}</div>
+        </section>
+      </div>
+      <p class="tr-fixed-note">固定教学数据：${state.error ? "错误场景 9.0s，含 800ms 重试" : "正常场景 8.2s，四项串行耗时相加"}；token 与成本为补值</p>`;
+  }
+
+  function selectedSpan() {
+    const list = spans();
+    return list.find((span) => span.id === state.selectedSpan) || list[0];
+  }
+
+  function attrRows(span) {
+    const rows = [];
+    rows.push(["span.id", span.id]);
+    rows.push(["span.parent", span.parent || "—"]);
+    rows.push(["duration_ms", span.dur]);
+    if (span.type === "root") {
+      rows.push(["task", "分析竞品 A 定价策略"]);
+      rows.push(["agent.name", "research-agent"]);
+      rows.push(["total_steps", "3"]);
+      rows.push(["task_success", span.status === "ok" ? "true" : "false"]);
+    }
+    if (span.type === "llm") {
+      rows.push(["gen_ai.system", "openai"]);
+      rows.push(["gen_ai.request.model", span.model]);
+      rows.push(["gen_ai.operation.name", span.name.includes("理解") ? "planning" : span.name.includes("分析") ? "analysis" : "report"]);
+      rows.push(["gen_ai.usage.input_tokens", fmt(span.inTok)]);
+      rows.push(["gen_ai.usage.output_tokens", fmt(span.outTok)]);
+      rows.push(["cost_usd", "$" + span.cost.toFixed(3)]);
+    }
+    if (span.type === "tool") {
+      rows.push(["gen_ai.tool.name", span.tool]);
+      rows.push(["gen_ai.tool.call_id", span.callId]);
+      rows.push(["tool.input", span.tool === "web_search" ? '{"query":"竞品A 定价","top_k":5}' : '{"query":"竞品A 定价","top_k":5,"retry":true}']);
+      rows.push(["tool.output_size", fmt(span.outputSize)]);
+      rows.push(["external_cost_usd", "$" + span.externalCost.toFixed(3)]);
+    }
+    if (span.errorType) rows.push(["error.type", span.errorType]);
+    rows.push(["status", span.status === "ok" ? "OK" : "ERROR"]);
+    return rows.map(([key, value]) => `<div class="tr-attr"><dt>${key}</dt><dd>${value}</dd></div>`).join("");
+  }
+
+  function detailScene() {
+    const span = selectedSpan();
+    const events = span.status === "error"
+      ? `<div class="tr-events"><b>events</b><div class="tr-event">exception.type = RateLimitError<br>exception.message = 429 Too Many Requests<br>retry_after_ms = 800</div></div>`
+      : "";
+    return `
+      <div class="tr-grid">
+        <section class="tr-panel" aria-label="选择 span">
+          <div class="tr-panel-head"><b>Span 列表</b><span>点选查看属性</span></div>
+          <ul class="tr-tree">${treeRows(true)}</ul>
+        </section>
+        <section class="tr-panel tr-detail" aria-label="Span 详情">
+          <p class="tr-badge ${span.status === "error" ? "tr-bad" : "tr-ok"}">${span.status === "error" ? "ERROR" : "OK"}</p>
+          <h3>${span.name}</h3>
+          <p>${span.parent ? `父 span：${span.parent}` : "根 span：这次完整执行"} · 耗时 ${(span.dur / 1000).toFixed(1)}s</p>
+          <dl class="tr-attrs">${attrRows(span)}</dl>
+          ${events}
+        </section>
+      </div>
+      <p class="tr-fixed-note">固定教学属性：键名按 OTel GenAI 约定示例，值为本页预设；未连接任何观测平台</p>`;
+  }
+
+  function metricScene() {
+    const metric = METRICS.find((item) => item.key === state.metric);
+    const tabs = METRICS.map((item) => `<button type="button" class="tr-metric-tab" data-metric="${item.key}" aria-pressed="${item.key === state.metric}">${item.name}</button>`).join("");
+    return `
+      <div class="tr-metric-tabs" role="group" aria-label="选择指标">${tabs}</div>
+      <div class="tr-grid" style="margin-top:var(--s-3)">
+        <section class="tr-panel" aria-label="高亮相关 span">
+          <div class="tr-panel-head"><b>贡献 span</b><span>黄色高亮为当前指标供数</span></div>
+          <ul class="tr-tree">${treeRows(false)}</ul>
+          <div class="tr-waterfall" style="margin-top:var(--s-3)">${waterfall()}</div>
+        </section>
+        <section class="tr-panel tr-detail" aria-label="指标口径">
+          <div class="tr-def">
+            <div class="tr-def-head"><b>${metric.name}</b><span>本 trace 的值：${metricValue(metric)}</span></div>
+            <div class="tr-def-row"><b>分子</b><span>${metric.num}</span></div>
+            <div class="tr-def-row"><b>分母</b><span>${metric.den}</span></div>
+            <div class="tr-def-row"><b>数据来源</b><span>${metric.source}</span></div>
+            <div class="tr-def-row"><b>已知偏差</b><span>${metric.bias}</span></div>
+          </div>
+          <p class="tr-trace-calc">${calcNote(metric)}</p>
+        </section>
+      </div>
+      <p class="tr-fixed-note">固定教学口径：指标定义来自原文；本 trace 的计算值仅为演示，不是真实监控统计</p>`;
+  }
+
+  function calcNote(metric) {
+    if (metric.key === "success") {
+      return state.error
+        ? "本 trace 在错误场景下任务失败，记 0 / 1。超时和失败留在分母里；用户主动中止才单列。"
+        : "本 trace 正常完成，记 1 / 1。线上还要用抽样复核校准隐式成功，否则成功率会虚高。";
+    }
+    if (metric.key === "toolwrong") {
+      return `本 trace 有 ${toolCalls()} 次工具调用；没有命中“连续重试、空结果换工具、自我纠正”的代理信号，所以记 0 / ${toolCalls()}。代理信号只用于看趋势。`;
+    }
+    if (metric.key === "param") {
+      return `本 trace 的 ${toolCalls()} 次工具调用都没有 JSON Schema 校验失败，记 0 / ${toolCalls()}。语义错误不计入这个指标。`;
+    }
+    if (metric.key === "cost") {
+      return `成本 = LLM token 成本 + 外部 API 费用 = $${totalCost().toFixed(3)}，分母 1 个 run。缓存命中和折扣没有计入。`;
+    }
+    return "耗时分解要按 Span 起止时间算。本 trace 是串行执行，可以直接相加；并发 span 要改用墙钟区间，避免重叠时间重复计算。";
+  }
+
+  const SCENES = [overviewScene, detailScene, metricScene];
+
+  function bindSceneControls() {
+    const errorToggle = byId("tr-error-toggle");
+    if (errorToggle) {
+      errorToggle.addEventListener("click", () => {
+        state.error = !state.error;
+        if (!spans().some((span) => span.id === state.selectedSpan)) state.selectedSpan = "root";
+        renderStage(0);
+        byId("tr-announcement").textContent = state.error ? "已打开错误场景：工具限流后重试" : "已关闭错误场景";
+      });
+    }
+    document.querySelectorAll("[data-span]").forEach((button) => {
+      const handler = () => {
+        state.selectedSpan = button.dataset.span;
+        renderStage(1);
+        byId("tr-announcement").textContent = `已选择 span：${button.dataset.span}`;
+      };
+      button.addEventListener("click", handler);
+    });
+    document.querySelectorAll("[data-metric]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.metric = button.dataset.metric;
+        renderStage(2);
+        byId("tr-announcement").textContent = `已选择指标：${METRICS.find((item) => item.key === state.metric).name}`;
+      });
+    });
+  }
+
+  function renderStage(stage) {
+    state.stage = stage;
+    const meta = STAGES[stage];
+    byId("tr-scene").innerHTML = SCENES[stage]();
+    byId("tr-index").textContent = `阶段 ${stage + 1} / 3 · 固定教学 trace`;
+    byId("tr-title").textContent = meta.title;
+    byId("tr-subtitle").textContent = meta.subtitle;
+    byId("tr-note").textContent = meta.note;
+    let summary = meta.summary;
+    if (stage === 1) summary = `阶段 2 / 3 · 已选 span：${selectedSpan().id}`;
+    if (stage === 2) summary = `阶段 3 / 3 · 指标：${METRICS.find((metric) => metric.key === state.metric).name}`;
+    if (state.error) summary = stage === 0 ? "阶段 1 / 3 · 错误 trace · 9.0s" : `${summary} · 错误场景`;
+    byId("tr-summary").textContent = summary;
+    byId("tr-back").disabled = stage === 0;
+    byId("tr-next").disabled = stage === STAGES.length - 1;
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      const active = Number(button.dataset.stage) === stage;
+      if (active) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    bindSceneControls();
+    byId("tr-announcement").textContent = `${meta.title}。${meta.subtitle}`;
+  }
+
+  byId("tr-reset").addEventListener("click", () => {
+    state.error = false;
+    state.selectedSpan = "root";
+    state.metric = "success";
+    renderStage(0);
+  });
+  byId("tr-back").addEventListener("click", () => renderStage(Math.max(0, state.stage - 1)));
+  byId("tr-next").addEventListener("click", () => renderStage(Math.min(STAGES.length - 1, state.stage + 1)));
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+
+  renderStage(0);
+</script>
+</body>
+</html>

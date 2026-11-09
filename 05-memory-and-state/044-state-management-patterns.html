@@ -1,0 +1,870 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>状态管理在 Agent 系统中的设计模式 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .sim-banner { display: flex; align-items: flex-start; gap: 9px; margin: var(--s-4) var(--s-6) 0; padding: 10px 12px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .sim-banner strong { color: #4d3000; }
+  .sim-banner::before { content: "模拟"; flex: 0 0 auto; margin-top: 1px; padding: 1px 6px; border-radius: 3px; background: #7a4b00; color: #fff; font: 10px/1.5 var(--mono); letter-spacing: .08em; }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 999px; border: 1px solid transparent; font: 11px/1.6 var(--mono); white-space: nowrap; }
+  .badge-neutral { background: #eef1ee; color: #3f463f; border-color: #c9cec9; }
+  .badge-info { background: #eaf1f8; color: #194f87; border-color: #9eb4c9; }
+  .badge-warn { background: #fdf3e3; color: #6b4300; border-color: #d9b47a; }
+  .badge-ok { background: #e6f2e6; color: #14532d; border-color: #9cc39e; }
+  .badge-bad { background: #fbecec; color: #8a1f1f; border-color: #d9a3a3; }
+  .badge-solid { background: #194f87; color: #fff; border-color: #194f87; }
+  .fsm { margin-top: var(--s-4); padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .fsm-path { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }
+  .fsm-node { padding: 5px 10px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface); color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  .fsm-node.is-done { border-color: #9cc39e; background: #eef7ee; color: #14532d; }
+  .fsm-node.is-current { border-color: #194f87; background: #194f87; color: #fff; font-weight: 600; }
+  .fsm-node.is-future { border-style: dashed; color: #4b514b; }
+  .fsm-arrow { color: var(--text-dim); font: 10px/1.5 var(--mono); }
+  .fsm-branch { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px dashed var(--border); display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: 11px; color: var(--text-dim); }
+  .stage-card { margin-top: var(--s-4); padding: var(--s-4) var(--s-5); border: 1px solid var(--border); border-left: 4px solid #194f87; border-radius: var(--r-1); background: var(--surface); }
+  .stage-card h3 { font-size: var(--t-h3); line-height: 1.45; }
+  .stage-card p { margin-top: var(--s-2); font-size: 12px; }
+  .stage-card .kv { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: var(--s-3); font-size: 12px; }
+  .stage-card .kv b { font: 600 10px/1.6 var(--mono); color: var(--text-dim); display: block; }
+  .cp-list { display: grid; gap: 6px; margin-top: var(--s-4); }
+  .cp { display: grid; grid-template-columns: 54px minmax(0, 1fr) auto; gap: var(--s-2); align-items: center; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; }
+  .cp .id { font: 600 11px/1.6 var(--mono); color: #194f87; }
+  .cp.pending { border-style: dashed; background: var(--surface-soft); }
+  .cp.pending .id { color: var(--text-dim); }
+  .cp .meta { color: var(--text-dim); font-size: 11px; }
+  .event-log { margin: var(--s-4) 0 0; padding: 0; list-style: none; border-top: 1px solid var(--border); }
+  .event-log li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: var(--s-2); align-items: start; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .event-log li:last-child { border-bottom: 0; }
+  .event-log .n { font: 11px/1.7 var(--mono); color: var(--text-dim); }
+  .restore-note { margin-top: var(--s-3); padding: 10px 12px; border: 1px solid #9eb4c9; border-radius: var(--r-1); background: #eaf1f8; color: #194f87; font-size: 12px; line-height: 1.75; }
+  .restore-note strong { color: #123f6c; }
+  .audit-loop { margin-top: var(--s-4); padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .audit-row { display: grid; grid-template-columns: minmax(0, 1fr) 74px minmax(0, 1fr); gap: var(--s-2); align-items: center; margin-top: var(--s-2); }
+  .audit-row:first-child { margin-top: 0; }
+  .audit-box { padding: 9px 11px; border: 1px solid #9eb4c9; border-radius: var(--r-1); background: var(--surface); text-align: center; font-size: 12px; }
+  .audit-box.state { border-color: #9cc39e; background: #eef7ee; color: #14532d; font-weight: 600; }
+  .audit-arrow { text-align: center; font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .audit-note { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px dashed var(--border); font-size: 12px; color: var(--text-dim); text-align: center; }
+  .fixed-note { display: inline-block; margin-top: var(--s-3); padding: 3px 8px; border: 1px dashed var(--border-bright); border-radius: 4px; color: var(--text-dim); font: 11px/1.6 var(--mono); }
+  .numeric-note { margin-top: var(--s-3); padding: 8px 11px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; }
+  @media (max-width: 720px) {
+    .sim-banner { margin-inline: var(--s-4); }
+    .cp { grid-template-columns: 48px minmax(0, 1fr); }
+    .cp .badge { grid-column: 1 / -1; justify-self: start; }
+    .event-log li { grid-template-columns: 24px minmax(0, 1fr); }
+    .event-log li .badge { grid-column: 1 / -1; justify-self: start; }
+    .audit-row { grid-template-columns: 1fr; }
+    .audit-arrow { text-align: left; padding-left: 4px; }
+    .stage-card { padding: var(--s-3) var(--s-4); }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">044 / 状态管理</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 18 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="043-persistent-memory.html">← 上一页 · 如何实现 Agent 的持久化记忆（…</a><a href="046-long-term-memory-storage.html">下一页 → · 长期记忆存储介质选型</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Memory &amp; State · 可交互讲解</p>
+      <h1>Agent 忘了刚才，<br>就谈不上下一步。</h1>
+    </div>
+    <div>
+      <p class="lead">状态管理决定 Agent 在任意时刻知道什么、做过什么、下一步该做什么。主流做法是共享状态图 + Reducer + Checkpoint：节点读写全局状态，Reducer 合并更新，每个执行步骤自动落快照。</p>
+      <p class="definition"><strong>关键边界：</strong>状态必须可序列化、可恢复、可审计。Checkpoint 保存的是“当时的状态”，恢复时只能回到快照点，不能凭空跳到任务末尾。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Memory &amp; State</span><span class="pill">FSM</span><span class="pill">Checkpoint 恢复</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="fsm-title">
+    <div class="player-top">
+      <div class="player-label">状态机与检查点恢复 <small>固定教学场景 · 本地模拟</small></div>
+      <div class="controls" role="group" aria-label="状态机演示控制">
+        <button type="button" class="button button-quiet" id="reset-button">重置</button>
+        <button type="button" class="button" id="back-button" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="next-button">下一步</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="状态机阶段">
+      <ol style="--stages: 6">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>初始</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>计划</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>执行</button></li>
+        <li><button type="button" class="stage-button" data-stage="3"><span class="stage-number">4</span>恢复</button></li>
+        <li><button type="button" class="stage-button" data-stage="4"><span class="stage-number">5</span>审核</button></li>
+        <li><button type="button" class="stage-button" data-stage="5"><span class="stage-number">6</span>完成</button></li>
+      </ol>
+    </nav>
+    <p class="sim-banner"><span><strong>本页只做本地状态模拟，不连接任何状态存储。</strong>任务编号、检查点编号、崩溃时间和恢复结果都是预设的教学数据；按钮只改变本页脚本里的状态对象。</span></p>
+    <div class="scene-caption">
+      <p class="figure-index" id="scene-index">阶段 1 / 6 · 固定教学场景</p>
+      <h2 id="fsm-title">先停在 idle，等一个任务事件</h2>
+      <p id="scene-subtitle">固定任务：把一份 12 页的调研材料整理成摘要。流程走 idle → planning → executing → reviewing → complete，中途模拟一次 Pod 重启。</p>
+    </div>
+    <div class="scene-host">
+      <div class="scene" id="state-scene"></div>
+      <p class="demo-note" id="scene-note">固定教学数据：状态、检查点与事件日志均为本页预设，不代表任何真实工作流引擎。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定状态机 · 本地模拟 · 不访问网络</span><span id="state-summary">阶段 1 / 6 · state = idle · 检查点 0 个</span></div>
+  </section>
+  <p id="state-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">为什么需要</p><h2 id="why-title">没有状态，<br>多步任务走不下去。</h2></div>
+      <p class="reading-intro">无状态 Agent 每次调用都是独立的：工具结果丢失，无法基于前序结果决策；中断后无法恢复，长任务不可靠。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">无状态与有状态 Agent 的对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">无状态 Agent</th><th scope="col">有状态 Agent</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">多步任务</th><td>每次 LLM 调用独立，难以继续</td><td>状态跨步骤持久化，支持复杂工作流</td></tr>
+            <tr><th scope="row">中断恢复</th><td>中断即丢失，长任务不可靠</td><td>可暂停、可恢复，支持 Human-in-the-Loop</td></tr>
+            <tr><th scope="row">调试审计</th><td>看不到中间状态</td><td>状态可检查，支持调试和审计</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="graph-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">模式 1</p><h2 id="graph-title">共享状态图：<br>Reducer 决定怎么合并。</h2></div>
+      <p class="reading-intro">LangGraph 的状态是流经每个节点的共享内存对象。节点读取状态、返回局部更新，框架用 Reducer 把更新合并回全局状态。</p>
+    </div>
+    <div class="prose">
+      <p>状态 Schema 用 <code>TypedDict</code> 定义。字段的更新方式由 <code>Annotated</code> 上的 Reducer 决定：<code>operator.add</code> 表示追加或累加，不写 Reducer 则直接替换。原文称这套 State + Reducer + Checkpoint 组合已成为业界主流，被 Klarna、Replit 等企业用于生产。</p>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">三种常见的 Reducer 行为</caption>
+          <thead><tr><th scope="col">写法</th><th scope="col">行为</th><th scope="col">示例</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><code>Annotated[list, operator.add]</code></th><td>追加：新消息加到列表末尾</td><td><code>messages</code></td></tr>
+            <tr><th scope="row"><code>Annotated[int, operator.add]</code></th><td>累加：数字相加</td><td><code>revision_count</code></td></tr>
+            <tr><th scope="row"><code>str</code>（无 Reducer）</th><td>替换：新值直接覆盖旧值</td><td><code>draft</code> / <code>status</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <details>
+        <summary>查看共享状态图的原文代码</summary>
+        <pre><code>from typing import TypedDict, Annotated
+from langgraph.graph import StateGraph, START
+import operator
+
+class AgentState(TypedDict):
+    messages: Annotated[list, operator.add]   # 追加
+    research_data: str                       # 替换
+    draft: str
+    revision_count: int
+    status: str
+
+def research_node(state: AgentState) -&gt; dict:
+    query = state["messages"][-1]["content"]
+    data = search(query)
+    return {"research_data": data, "status": "research_complete"}
+
+def write_node(state: AgentState) -&gt; dict:
+    draft = generate(state["research_data"])
+    return {
+        "draft": draft,
+        "revision_count": state["revision_count"] + 1,
+        "status": "draft_complete"
+    }
+
+def should_revise(state: AgentState) -&gt; str:
+    if state["revision_count"] &gt;= 3:
+        return "end"
+    if quality_score(state["draft"]) &lt; 0.8:
+        return "revise"
+    return "end"
+
+graph = StateGraph(AgentState)
+graph.add_node("research", research_node)
+graph.add_node("write", write_node)
+graph.add_edge(START, "research")
+graph.add_edge("research", "write")
+graph.add_conditional_edges("write", should_revise)</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="cp-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">模式 2</p><h2 id="cp-title">Checkpointing：<br>把“当时”存下来。</h2></div>
+      <p class="reading-intro">每个执行步骤后自动保存状态快照。服务重启、人工审批后继续、时间旅行调试，都从检查点恢复。</p>
+    </div>
+    <div class="prose">
+      <ul>
+        <li>2 小时的 Agent 任务中途 Pod 重启 → 从检查点恢复，不用从头跑。</li>
+        <li>Human-in-the-Loop：暂停等待审批 → 审批后从暂停点继续。</li>
+        <li>时间旅行调试：回到第 N 步，查看当时的完整状态。</li>
+      </ul>
+      <details>
+        <summary>查看 SqliteSaver 的原文代码与使用注意</summary>
+        <pre><code>from langgraph.checkpoint.sqlite import SqliteSaver
+
+# SqliteSaver.from_conn_string 是 context manager，
+# 必须用 with ... as 形式打开；
+# 直接赋值会得到未进入的 contextmanager 对象，运行时报错。
+with SqliteSaver.from_conn_string("./agent_state.db") as checkpointer:
+    app = graph.compile(checkpointer=checkpointer)
+
+    config = {"configurable": {"thread_id": "user_123_session_1"}}
+    result = app.invoke({"messages": [user_msg]}, config)
+
+    # 从上次暂停处继续
+    result = app.invoke(None, config)</code></pre>
+      </details>
+      <p>长进程服务可以用 <code>AsyncSqliteSaver</code> / <code>PostgresSaver</code> 的 <code>async with</code> 形式，也可以手动调用 <code>.setup()</code> + <code>.close()</code>，但 <code>with</code> 是官方推荐写法。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="es-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">模式 3</p><h2 id="es-title">事件溯源：<br>存变更，不存结果。</h2></div>
+      <p class="reading-intro">事件溯源记录所有状态变更事件，当前状态由事件推导。好处是完整回放和审计；代价是事件日志会持续增长。</p>
+    </div>
+    <div class="prose">
+      <details>
+        <summary>查看事件溯源的原文代码</summary>
+        <pre><code>class EventSourcedState:
+    """记录所有状态变更事件，支持回放"""
+
+    def __init__(self):
+        self.events = []          # 事件日志
+        self.current_state = {}   # 当前状态（由事件推导）
+
+    def apply_event(self, event: dict):
+        self.events.append({
+            **event,
+            "timestamp": datetime.now(),
+            "sequence": len(self.events)
+        })
+        self.current_state = self.rebuild()
+
+    def rebuild(self, up_to: int = None):
+        """从事件日志重建状态"""
+        state = {}
+        events = self.events[:up_to] if up_to else self.events
+        for event in events:
+            if event["type"] == "tool_result":
+                state[event["tool"]] = event["result"]
+            elif event["type"] == "decision":
+                state["last_decision"] = event["decision"]
+            elif event["type"] == "handoff":
+                state["current_agent"] = event["to_agent"]
+        return state
+
+    def replay_to(self, step: int):
+        """回放到特定步骤（时间旅行调试）"""
+        return self.rebuild(up_to=step)</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="fsm-pattern-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">模式 4</p><h2 id="fsm-pattern-title">有限状态机：<br>状态和事件都写死。</h2></div>
+      <p class="reading-intro">FSM 用明确的状态和转移规则管理流程。任何不在转移表里的事件都会被拒绝，适合线性或规则清晰的流程。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">原文 AgentFSM 的状态转移表</caption>
+          <thead><tr><th scope="col">当前状态</th><th scope="col">事件 → 目标状态</th></tr></thead>
+          <tbody>
+            <tr><th scope="row"><code>idle</code></th><td><code>receive_task</code> → <code>planning</code></td></tr>
+            <tr><th scope="row"><code>planning</code></th><td><code>plan_ready</code> → <code>executing</code>；<code>plan_failed</code> → <code>error</code></td></tr>
+            <tr><th scope="row"><code>executing</code></th><td><code>step_done</code> → <code>executing</code>；<code>all_done</code> → <code>reviewing</code>；<code>error</code> → <code>error</code></td></tr>
+            <tr><th scope="row"><code>reviewing</code></th><td><code>approved</code> → <code>complete</code>；<code>rejected</code> → <code>executing</code></td></tr>
+            <tr><th scope="row"><code>error</code></th><td><code>retry</code> → <code>planning</code>；<code>abort</code> → <code>idle</code></td></tr>
+            <tr><th scope="row"><code>complete</code></th><td><code>reset</code> → <code>idle</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <details>
+        <summary>查看 AgentFSM 的原文代码</summary>
+        <pre><code>class AgentFSM:
+    """用 FSM 管理 Agent 流程状态"""
+
+    TRANSITIONS = {
+        "idle":       {"receive_task": "planning"},
+        "planning":   {"plan_ready": "executing",
+                       "plan_failed": "error"},
+        "executing":  {"step_done": "executing",
+                       "all_done": "reviewing",
+                       "error": "error"},
+        "reviewing":  {"approved": "complete",
+                       "rejected": "executing"},
+        "error":      {"retry": "planning", "abort": "idle"},
+        "complete":   {"reset": "idle"},
+    }
+
+    def __init__(self):
+        self.state = "idle"
+        self.history = []
+
+    def transition(self, event: str):
+        allowed = self.TRANSITIONS.get(self.state, {})
+        if event not in allowed:
+            raise InvalidTransition(
+                f"Cannot {event} from {self.state}")
+        old_state = self.state
+        self.state = allowed[event]
+        self.history.append((old_state, event, self.state))</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="hitl-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">模式 5</p><h2 id="hitl-title">Human-in-the-Loop：<br>在节点里中断。</h2></div>
+      <p class="reading-intro">LangGraph 的 <code>interrupt</code> 在敏感操作前暂停，把动作和理由交给人。审批后从暂停点继续，而不是重跑整个任务。</p>
+    </div>
+    <div class="prose">
+      <details>
+        <summary>查看 interrupt 的原文代码</summary>
+        <pre><code>from langgraph.types import interrupt
+
+def sensitive_action_node(state):
+    """需要人工审批的敏感操作"""
+    action = plan_action(state)
+
+    approval = interrupt({
+        "action": action,
+        "reason": "此操作将修改生产数据库",
+        "options": ["approve", "reject", "modify"]
+    })
+
+    if approval["decision"] == "approve":
+        return execute(action)
+    elif approval["decision"] == "modify":
+        return execute(approval["modified_action"])
+    else:
+        return {"status": "rejected"}</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="audit-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">模式 6</p><h2 id="audit-title">外置状态 + 环境审计：<br>谁能写状态？</h2></div>
+      <p class="reading-intro">LongHorizon-Harness（2026-08）换了一个维度：状态只接受环境已验证的事实，模型自我判断不算数。Manager 派发，Executor 零上下文执行，Auditor 只读核验。</p>
+    </div>
+    <div class="prose">
+      <div class="audit-loop" role="img" aria-label="Manager 派发子任务给 Executor，Executor 提交结果给 Auditor，Auditor 只读核验环境，验证通过后事实写回任务状态，任务状态再驱动 Manager 派发下一个子任务">
+        <div class="audit-row"><div class="audit-box">Manager<br>维护任务状态</div><div class="audit-arrow">派发 →</div><div class="audit-box">Executor<br>零上下文执行，做完即弃</div></div>
+        <div class="audit-row"><div class="audit-box">任务状态<br>唯一跨子任务载体</div><div class="audit-arrow">← 验证通过才写回</div><div class="audit-box">Auditor<br>只读核验环境</div></div>
+        <div class="audit-row"><div class="audit-box">任务状态</div><div class="audit-arrow">据状态派发 →</div><div class="audit-box">Manager<br>下一个子任务</div></div>
+        <p class="audit-note">状态只接受环境已验证的事实：文件确实存在、测试确实通过，不是模型说“我做完了”。</p>
+      </div>
+      <p>对比常见做法：单个 Agent 在膨胀的上下文里自我评估“我刚才做成了吗”，一次误判会留在上下文里，后续每一步都在错误结论上继续推理。外置状态 + 独立审计切断这条链路：Executor 上下文每次归零，错误无处驻留；状态里的每条事实都被环境验证过。</p>
+      <p class="numeric-note">原文论文数据：WeaveBench 51.8% → 80.7%，OSWorld 2.0 2.8% → 8.3%，增益可迁移到 Claude Opus 4.7。以上为原文版本数据，本页未联网核实。</p>
+      <p>设计要点：状态是唯一的跨步骤载体，子任务之间不共享上下文，只共享状态；写状态需要凭据，来源必须是环境的可观测结果；审计只读，避免 Auditor 自己成为新的错误来源。</p>
+      <details>
+        <summary>查看原文 Mermaid 源码（外置状态闭环）</summary>
+        <pre><code>flowchart TD
+    M["Manager&lt;br/&gt;维护任务状态"] -- "派发子任务" --&gt; X["Executor&lt;br/&gt;零上下文执行，做完即弃"]
+    X -- "提交结果" --&gt; A["Auditor&lt;br/&gt;只读核验环境"]
+    A -- "验证通过&lt;br/&gt;事实才写回" --&gt; S["任务状态&lt;br/&gt;（唯一跨子任务载体）"]
+    S -- "据状态派发下一个子任务" --&gt; M</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="principles-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">设计原则</p><h2 id="principles-title">状态不是越多越好，<br>是越可用越好。</h2></div>
+      <p class="reading-intro">五条原则：可序列化、幂等、最小化、版本管理、显式 Reducer。再附一张场景到模式的选型表。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">原文给出的五条状态设计原则</caption>
+          <thead><tr><th scope="col">原则</th><th scope="col">说明</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">状态可序列化</th><td>所有状态必须可以 JSON 序列化，用于持久化和传输</td></tr>
+            <tr><th scope="row">幂等性</th><td>从同一检查点重放应产生相同结果</td></tr>
+            <tr><th scope="row">最小化状态</th><td>只保留必要信息，避免膨胀</td></tr>
+            <tr><th scope="row">版本管理</th><td>Schema 变更时需要迁移策略</td></tr>
+            <tr><th scope="row">显式 Reducer</th><td>明确定义状态更新规则：追加还是替换</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="table-wrap">
+        <table class="data wide">
+          <caption class="sr-only">原文的场景到模式选择指南</caption>
+          <thead><tr><th scope="col">场景</th><th scope="col">推荐模式</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">简单线性流程</th><td>FSM</td></tr>
+            <tr><th scope="row">复杂分支 + 循环</th><td>LangGraph 状态图</td></tr>
+            <tr><th scope="row">需要审计追踪</th><td>事件溯源</td></tr>
+            <tr><th scope="row">多 Agent 协作</th><td>共享状态 + Reducer</td></tr>
+            <tr><th scope="row">需要暂停 / 恢复</th><td>Checkpointing</td></tr>
+            <tr><th scope="row">高风险操作</th><td>Human-in-the-Loop + Checkpoint</td></tr>
+            <tr><th scope="row">超长程任务（几十步以上）</th><td>外置状态 + 环境审计（Manager-Executor-Auditor）</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">四个问题，<br>从全局变量问到性能。</h2></div>
+      <p class="reading-intro">前两个是误区，后两个是追问。回答时先给结论，再讲机制和代价。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <div class="misconception-label">误区 01</div>
+        <div><h3>“全局变量就是状态管理”</h3><p>Agent 的状态需要持久化、可恢复、可审计。全局变量在 Pod 重启后丢失、无法调试、不支持并发。需要 Checkpointer 或事件溯源等正式机制。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">误区 02</div>
+        <div><h3>“状态越详细越好”</h3><p>状态越大，序列化和反序列化越慢，Checkpoint 占用越多存储。只保留决策所需的最小信息集。中间推理过程应该在 Trace 中记录，而不是塞进状态。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 03</div>
+        <div><h3>LangGraph 的 Reducer 和 Redux 的 Reducer 有什么关系？</h3><p>概念相同：都是纯函数，接收当前状态和更新，返回新状态。LangGraph 用 Python 的 <code>Annotated</code> 类型标注来声明 Reducer 规则，例如 <code>operator.add</code> 表示追加。</p></div>
+      </div>
+      <div class="misconception">
+        <div class="misconception-label">追问 04</div>
+        <div><h3>Checkpointing 对性能的影响？</h3><p>每个 super-step 后保存检查点会增加延迟。优化方案：使用异步写入；只在关键步骤做 Checkpoint；用 Redis 替代 SQLite 做高性能 Checkpoint。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="sources-title">
+    <p class="eyebrow">参考资料</p>
+    <h2 class="source-heading" id="sources-title">原文引用与延伸阅读</h2>
+    <p class="source-summary">以下链接来自原文。只有主动点击外链才会离开本页；本页不加载任何外部资源。</p>
+    <details>
+      <summary>展开 5 条参考资料</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://dev.to/jamesli/langgraph-state-machines-managing-complex-agent-task-flows-in-production-36f4" rel="noreferrer noopener">LangGraph State Machines: Managing Complex Agent Task Flows (DEV)</a></li>
+          <li><a href="https://medium.com/@bharatraj1918/langgraph-state-management-part-1-how-langgraph-manages-state-for-multi-agent-workflows-da64d352c43b" rel="noreferrer noopener">LangGraph State Management Best Practices (Medium)</a></li>
+          <li><a href="https://markaicode.com/langgraph-production-agent/" rel="noreferrer noopener">Production Multi-Agent System with LangGraph: Checkpointing &amp; Error Recovery</a></li>
+          <li><a href="https://www.sitepoint.com/the-definitive-guide-to-agentic-design-patterns-in-2026/" rel="noreferrer noopener">Agentic Design Patterns: The 2026 Guide (SitePoint)</a></li>
+          <li><a href="https://arxiv.org/abs/2608.01964" rel="noreferrer noopener">LongHorizon-Harness: Advancing Long-Horizon Agents for Real-World Tasks (arXiv)</a></li>
+        </ul>
+        <p class="source-footnote">论文数字与框架行为均按原文 2026 年版本表述，本页未联网核实。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>05-memory-and-state/044-state-management-patterns.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 4 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const STATE_ORDER = ["idle", "planning", "executing", "reviewing", "complete"];
+  const RANK = { idle: 0, planning: 1, executing: 2, reviewing: 3, complete: 4 };
+
+  const STAGES = Object.freeze([
+    {
+      nav: "初始",
+      state: "idle",
+      title: "先停在 idle，等一个任务事件",
+      subtitle: "固定任务：把一份 12 页的调研材料整理成摘要。还没有收到 receive_task，状态机停在初始态。",
+      event: "等待任务",
+      transition: "—",
+      checkpoint: "—",
+      detail: "当前没有执行中的节点，也没有检查点。下一步要发生的是 receive_task，而不是直接跳到 executing。",
+      summary: "阶段 1 / 6 · state = idle · 检查点 0 个"
+    },
+    {
+      nav: "计划",
+      state: "planning",
+      title: "收到任务：idle → planning",
+      subtitle: "事件 receive_task 触发迁移。Manager 开始拆解任务、规划步骤；规划完成前不会进入 executing。",
+      event: "receive_task",
+      transition: "idle → planning",
+      checkpoint: "CP1 · planning",
+      detail: "每个 super-step 后自动保存检查点。CP1 记录的是 planning 状态，不是最终结果。",
+      summary: "阶段 2 / 6 · state = planning · 检查点 1 个"
+    },
+    {
+      nav: "执行",
+      state: "executing",
+      title: "计划就绪：planning → executing",
+      subtitle: "事件 plan_ready 触发迁移。执行第 1 步；executing 上的 step_done 是自环，做完一步仍然是 executing。",
+      event: "plan_ready",
+      transition: "planning → executing",
+      checkpoint: "CP2 · executing（第 1 步）",
+      detail: "此时只完成了第 1 步，后面还有第 2、3 步和审核。检查点 CP2 只记录“执行到第 1 步”的状态。",
+      summary: "阶段 3 / 6 · state = executing（第 1 步）· 检查点 2 个"
+    },
+    {
+      nav: "恢复",
+      state: "executing",
+      title: "Pod 重启：从 CP2 恢复，不跳到终点",
+      subtitle: "执行到第 1 步时进程崩溃。系统读取最近一次检查点 CP2，恢复到 executing（第 1 步），再继续往后跑。",
+      event: "crash → restore(CP2)",
+      transition: "无状态迁移（恢复）",
+      checkpoint: "CP2 · executing（已用于恢复）",
+      detail: "恢复的是快照里的状态，不是任务的最终状态。reviewing 和 complete 还没有发生，不能提前高亮。",
+      summary: "阶段 4 / 6 · 已从 CP2 恢复 · state = executing（第 1 步）"
+    },
+    {
+      nav: "审核",
+      state: "reviewing",
+      title: "三步做完：executing → reviewing",
+      subtitle: "剩下两步依次完成，事件 all_done 把状态推到 reviewing。审核节点检查产物，决定批准或打回。",
+      event: "step_done ×2 → all_done",
+      transition: "executing → reviewing",
+      checkpoint: "CP3 · reviewing",
+      detail: "审核是独立状态。如果 rejected，会回到 executing；本页固定走 approved 分支。",
+      summary: "阶段 5 / 6 · state = reviewing · 检查点 3 个"
+    },
+    {
+      nav: "完成",
+      state: "complete",
+      title: "审核通过：reviewing → complete",
+      subtitle: "事件 approved 触发最后一次迁移。任务结束，CP4 记录完成态，供审计和回放使用。",
+      event: "approved",
+      transition: "reviewing → complete",
+      checkpoint: "CP4 · complete",
+      detail: "完整路径：idle → planning → executing（崩溃恢复）→ reviewing → complete。error 分支未触发。",
+      summary: "阶段 6 / 6 · state = complete · 检查点 4 个"
+    }
+  ]);
+
+  const CP_DEFS = Object.freeze([
+    { id: "CP1", state: "planning", step: "计划完成时" },
+    { id: "CP2", state: "executing", step: "第 1 步完成后" },
+    { id: "CP3", state: "reviewing", step: "全部步骤完成后" },
+    { id: "CP4", state: "complete", step: "审核通过后" }
+  ]);
+
+  const state = { stage: 0 };
+  const byId = (id) => document.getElementById(id);
+
+  function stateStrip(current, stage) {
+    const now = RANK[current];
+    const nodes = STATE_ORDER.map((name) => {
+      let cls = "fsm-node";
+      if (name === current) cls += " is-current";
+      else if (RANK[name] < now) cls += " is-done";
+      else cls += " is-future";
+      return `<span class="${cls}">${name}</span>`;
+    }).join('<span class="fsm-arrow">→</span>');
+    return `<div class="fsm">
+      <div class="fsm-path" role="group" aria-label="当前状态：${current}">${nodes}</div>
+      <div class="fsm-branch"><span class="badge badge-neutral">error 分支未触发</span><span>plan_failed / error → error；retry → planning，abort → idle</span></div>
+    </div>`;
+  }
+
+  function checkpointList(stage) {
+    const savedCount = stage === 0 ? 0 : stage === 1 ? 1 : stage === 2 || stage === 3 ? 2 : stage === 4 ? 3 : 4;
+    const rows = CP_DEFS.map((cp, index) => {
+      const saved = index < savedCount;
+      const used = stage === 3 && cp.id === "CP2";
+      let status = `<span class="badge badge-neutral">未写入</span>`;
+      if (used) status = `<span class="badge badge-info">已恢复</span>`;
+      else if (saved) status = `<span class="badge badge-ok">已写入</span>`;
+      return `<div class="cp${saved ? "" : " pending"}">
+        <span class="id">${cp.id}</span>
+        <span>${cp.state}<span class="meta"> · ${cp.step}</span></span>
+        ${status}
+      </div>`;
+    }).join("");
+    return `<div class="cp-list" aria-label="检查点状态">${rows}</div>`;
+  }
+
+  function eventLog(stage) {
+    const rows = [];
+    rows.push(["receive_task", "idle → planning", "planning 阶段开始时"]);
+    if (stage >= 2) rows.push(["plan_ready", "planning → executing", "进入第 1 步"]);
+    if (stage >= 3) rows.push(["crash", "无迁移，读取 CP2", "恢复到 executing（第 1 步）"]);
+    if (stage >= 4) rows.push(["step_done ×2", "executing → executing", "第 2、3 步完成"]);
+    if (stage >= 4) rows.push(["all_done", "executing → reviewing", "进入审核"]);
+    if (stage >= 5) rows.push(["approved", "reviewing → complete", "任务完成"]);
+    const visible = stage === 0 ? [["—", "尚未收到事件", "停在 idle"]] : rows;
+    return `<ol class="event-log" aria-label="本阶段可见的事件日志">${visible.map((r, i) => `<li><span class="n">${String(i + 1).padStart(2, "0")}</span><span><code>${r[0]}</code> · ${r[1]}<br><span style="color:var(--text-dim)">${r[2]}</span></span></li>`).join("")}</ol>`;
+  }
+
+  function scene(stage) {
+    const meta = STAGES[stage];
+    const restore = stage === 3
+      ? `<div class="restore-note"><strong>恢复语义：</strong>CP2 里保存的 state = <code>executing</code>，step = 1。恢复后从这里继续，不会把 reviewing / complete 标成已完成。</div>`
+      : "";
+    return `
+      ${stateStrip(meta.state, stage)}
+      <div class="stage-card">
+        <h3>本阶段事件：${meta.event}</h3>
+        <p>${meta.detail}</p>
+        <div class="kv">
+          <span><b>状态迁移</b>${meta.transition}</span>
+          <span><b>检查点</b>${meta.checkpoint}</span>
+        </div>
+      </div>
+      ${restore}
+      ${checkpointList(stage)}
+      ${eventLog(stage)}
+      <p class="demo-note">固定教学数据：任务编号 task-42、崩溃时间与检查点内容均为预设；本页不连接任何状态存储。</p>`;
+  }
+
+  function renderStage(stage) {
+    state.stage = stage;
+    const meta = STAGES[stage];
+    byId("state-scene").innerHTML = scene(stage);
+    byId("scene-index").textContent = `阶段 ${stage + 1} / 6 · 固定教学场景`;
+    byId("fsm-title").textContent = meta.title;
+    byId("scene-subtitle").textContent = meta.subtitle;
+    byId("state-summary").textContent = meta.summary;
+    byId("back-button").disabled = stage === 0;
+    byId("next-button").disabled = stage === STAGES.length - 1;
+    document.querySelectorAll(".stage-button").forEach((button) => {
+      const active = Number(button.dataset.stage) === stage;
+      if (active) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    byId("state-announcement").textContent = `${meta.title}。${meta.subtitle}`;
+  }
+
+  byId("reset-button").addEventListener("click", () => renderStage(0));
+  byId("back-button").addEventListener("click", () => renderStage(Math.max(0, state.stage - 1)));
+  byId("next-button").addEventListener("click", () => renderStage(Math.min(STAGES.length - 1, state.stage + 1)));
+  document.querySelectorAll(".stage-button").forEach((button) => {
+    button.addEventListener("click", () => renderStage(Number(button.dataset.stage)));
+  });
+
+  renderStage(0);
+</script>
+</body>
+</html>

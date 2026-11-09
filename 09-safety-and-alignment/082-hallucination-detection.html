@@ -1,0 +1,803 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>如何检测和缓解 Agent 的幻觉（Hallucination）？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  /* 082 幻觉检测 */
+  .hc-stage { padding: var(--s-5) var(--s-6); }
+  .hc-toolbar { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; }
+  .hc-toolbar .button[aria-pressed="true"] { background: var(--accent-dim); border-color: var(--accent); color: var(--ink); font-weight: 600; }
+  .hc-toolbar-label { font: 11px/1.5 var(--mono); color: var(--text-dim); letter-spacing: .04em; margin-right: var(--s-1); }
+  .hc-source { margin-top: var(--s-4); padding: var(--s-3) var(--s-4); border: 1px dashed var(--border-bright); border-radius: var(--r-1); background: var(--surface-soft); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .hc-source b { color: var(--ink); }
+  .hc-layout { display: grid; grid-template-columns: 1.35fr 1fr; gap: var(--s-4); margin-top: var(--s-4); align-items: start; }
+  .hc-list { display: grid; gap: var(--s-3); }
+  .hc-claim { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3) var(--s-4); }
+  .hc-claim[data-selected="true"] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); }
+  .hc-claim-top { display: flex; gap: var(--s-3); align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
+  .hc-claim-text { flex: 1 1 220px; text-align: left; background: none; border: 0; padding: 0; font-size: 13px; line-height: 1.7; color: var(--ink); }
+  .hc-claim-text:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .hc-risk { display: inline-flex; align-items: center; min-height: 24px; padding: 1px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-soft); color: var(--text-dim); font-size: 11px; white-space: nowrap; }
+  .hc-risk.ok { background: #e9f1e7; border-color: #7f9b7c; color: #1f4d24; }
+  .hc-risk.warn { background: #fff4df; border-color: #a9741f; color: #6b4300; }
+  .hc-risk.bad { background: #fbe9e7; border-color: #b04a3f; color: #7a1f18; }
+  .hc-signals { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-3); }
+  .hc-sig { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: 5px 8px; min-width: 0; }
+  .hc-sig-label { display: block; font: 10px/1.5 var(--mono); color: var(--text-dim); letter-spacing: .02em; }
+  .hc-sig-value { display: block; margin-top: 2px; font-size: 12px; line-height: 1.5; color: var(--text-dim); overflow-wrap: anywhere; }
+  .hc-sig.ok { background: #e9f1e7; border-color: #7f9b7c; }
+  .hc-sig.ok .hc-sig-label, .hc-sig.ok .hc-sig-value { color: #1f4d24; }
+  .hc-sig.warn { background: #fff4df; border-color: #a9741f; }
+  .hc-sig.warn .hc-sig-label, .hc-sig.warn .hc-sig-value { color: #6b4300; }
+  .hc-sig.bad { background: #fbe9e7; border-color: #b04a3f; }
+  .hc-sig.bad .hc-sig-label, .hc-sig.bad .hc-sig-value { color: #7a1f18; }
+  .hc-pending { color: var(--text-dim); }
+  .hc-detail { border: 1px solid var(--border-bright); border-left: 4px solid var(--accent); border-radius: var(--r-1); background: var(--surface-soft); padding: var(--s-4); animation: arrive var(--med) var(--ease); }
+  .hc-detail h2 { font-size: 19px; line-height: 1.5; font-weight: 600; }
+  .hc-detail-type { margin-top: var(--s-2); font: 11px/1.6 var(--mono); color: var(--text-dim); }
+  .hc-detail-list { margin: var(--s-3) 0 0; padding: 0; list-style: none; }
+  .hc-detail-list li { padding: 7px 0; border-top: 1px solid var(--border); font-size: 12px; line-height: 1.65; }
+  .hc-detail-list b { display: block; font: 11px/1.5 var(--mono); color: var(--text-dim); }
+  .hc-advice { margin-top: var(--s-3); padding: var(--s-3); border-radius: var(--r-1); background: var(--surface); border: 1px solid var(--border); font-size: 12px; line-height: 1.7; }
+  .hc-advice b { color: var(--ink); }
+  .hc-summary { margin-top: var(--s-3); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .hc-summary b { color: var(--ink); }
+  .hc-verdict { margin-top: var(--s-3); padding: var(--s-3) var(--s-4); border-radius: var(--r-1); border: 1px solid var(--border-bright); background: var(--surface); font-size: 12px; line-height: 1.7; }
+  .hc-verdict b { color: var(--ink); }
+  .hc-table td, .hc-table th { vertical-align: top; }
+  .hc-table td:first-child, .hc-table th:first-child { min-width: 8em; }
+  .hc-matrix { min-width: 680px; }
+  .hc-types { min-width: 620px; }
+  .hc-strategies { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .hc-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .hc-card h3 { margin-top: 0; font-size: 16px; }
+  .hc-card p { margin-top: var(--s-2); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .hc-card .hc-tag { display: inline-block; font: 10px/1.5 var(--mono); color: var(--accent); letter-spacing: .04em; }
+  .hc-note { margin-top: var(--s-3); font-size: 11px; color: var(--text-dim); line-height: 1.7; }
+  .hc-warn { border: 1px solid #b45309; border-radius: var(--r-1); background: #fff8ec; padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+  .hc-warn .hc-warn-label { font: 600 11px/1.6 var(--mono); color: #8a4708; letter-spacing: .04em; }
+  .hc-warn p { font-size: var(--t-small); max-width: 52em; margin-top: 4px; }
+  @media (max-width: 980px) {
+    .hc-layout { grid-template-columns: 1fr; }
+    .hc-strategies { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 760px) {
+    .hc-stage { padding: var(--s-4); }
+    .hc-signals { grid-template-columns: 1fr; }
+    .hc-claim { padding: var(--s-3); }
+    .hc-detail { padding: var(--s-4); }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">082 / 幻觉检测与缓解</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 7 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="081-least-privilege-sandboxing.html">← 上一页 · Agent 的权限最小化原则与沙箱执…</a><a href="084-agent-alignment.html">下一页 → · Agent 对齐问题</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Safety &amp; Alignment · 可交互讲解</p>
+      <h1>幻觉的可怕，<br>是它会被执行。</h1>
+    </div>
+    <div>
+      <p class="lead">普通聊天说错一句话，用户还能怀疑。Agent 说错一句话，可能已经调了工具、改了数据、发了请求。检测要抓的不是“语气像不像”，而是每条声明有没有依据。</p>
+      <p class="definition">原文把检测分三类：<strong>不确定性估计、知识验证、自我一致性检查</strong>。缓解则要分层：结构化约束、RAG 接地、Guardian Agent、人工闭环。本页的损失金额与减少率按原文标注；互动中的公司、数字和 API 都是<strong>固定教学数据</strong>，不调用模型、不联网。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Safety &amp; Alignment</span><span class="pill">幻觉检测</span><span class="pill">固定教学数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-label="幻觉检测台：不确定性、一致性与外部验证">
+    <div class="player-top">
+      <div class="player-label">幻觉检测台 <small>对同一段 Agent 输出，逐层加检测</small></div>
+      <div class="controls" role="group" aria-label="幻觉检测控制">
+        <button type="button" class="button button-quiet" id="hc-reset">清空检测</button>
+        <button type="button" class="button" id="hc-all">运行全部检测</button>
+      </div>
+    </div>
+    <div class="hc-stage scene" data-scene="hallucination-inspector">
+      <div class="hc-toolbar" role="group" aria-label="检测维度">
+        <span class="hc-toolbar-label">检测维度</span>
+        <button type="button" class="button" data-method="uncertainty" aria-pressed="false">① 不确定性</button>
+        <button type="button" class="button" data-method="consistency" aria-pressed="false">② 一致性</button>
+        <button type="button" class="button" data-method="external" aria-pressed="false">③ 外部验证</button>
+      </div>
+      <div class="hc-source"><b>固定教学数据</b> · 场景：某零售公司 2025 Q3 经营看板（公司与数字均为虚构）。工具只返回“2025 Q3 营收 1,200 万元”，没有同比、没有增长率，也没有导出功能。以下 4 条声明来自同一段 Agent 总结。</div>
+      <div class="hc-layout">
+        <div>
+          <div class="hc-list" id="hc-list" aria-label="待检测的声明列表"></div>
+          <p class="hc-summary" id="hc-summary" role="status" aria-live="polite">尚未运行检测。点上方维度，或逐条点声明查看。</p>
+          <div class="hc-verdict" id="hc-verdict" hidden></div>
+        </div>
+        <div class="hc-detail" id="hc-detail">
+          <p class="figure-index">声明详情</p>
+          <h2 id="hc-detail-title">先选一条声明</h2>
+          <p class="hc-detail-type" id="hc-detail-type">左侧 4 条声明都可以点开</p>
+          <ul class="hc-detail-list" id="hc-detail-list"></ul>
+          <div class="hc-advice" id="hc-advice">检测结果只用于决定“要不要复核”，不等于自动判真伪。</div>
+        </div>
+      </div>
+      <p class="demo-note">固定教学数据：4 条声明、3 组信号与所有数值均为本页预设，用于演示检测逻辑；不调用模型、不联网、不连接任何真实系统。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定检测演示 · 不调用模型</span><span id="hc-state">已运行 0 / 3 个维度</span></div>
+  </section>
+  <p id="hc-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="hc-types-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">一 · 幻觉分三种</p><h2 id="hc-types-title">说错、编造、<br>误解工具。</h2></div>
+      <p class="reading-intro">原文把幻觉分成内在、外在，以及 Agent 特有的第三类。第三类最容易被忽略：工具明明返回了正确数据，Agent 在解读时仍能加出原文没有的结论。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data hc-types">
+          <caption class="sr-only">内在幻觉、外在幻觉与 Agent 特有幻觉的类型和示例</caption>
+          <thead><tr><th scope="col">类型</th><th scope="col">定义</th><th scope="col">例子</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">内在幻觉</th><td>生成内容与提供的上下文冲突。</td><td>文档写“收入增长 10%”，Agent 总结为“收入下降”。</td></tr>
+            <tr><th scope="row">外在幻觉</th><td>凭空捏造，无法从输入或已知知识验证。</td><td>虚构不存在的论文、编造 API 参数。</td></tr>
+            <tr><th scope="row">工具输出误解</th><td>Agent 特有的幻觉：工具返回 A，Agent 总结成 B。</td><td>数据库返回“Q3 收入 1,200 万”，Agent 总结成“Q3 收入增长 20%”。</td></tr>
+            <tr><th scope="row">跨步骤信息丢失</th><td>多步推理中遗忘或歪曲之前的结果。</td><td>第一步查到 A 供应商报价更低，最后汇总时写成 B 更低。</td></tr>
+            <tr><th scope="row">虚构工具能力</th><td>声称工具能做它实际做不到的事。</td><td>看板只有汇总视图，Agent 说“可按地区拆分并导出 CSV”。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="hc-warn">
+        <p class="hc-warn-label">Agent 场景的关键差异</p>
+        <p>普通 LLM 的幻觉停在文本层，Agent 的幻觉会进入行动层。它会按编造的 API 参数发请求、按错误的增长率改预算、按不存在的功能给用户承诺。所以“调了工具”不等于“有事实依据”，还要验证 Agent 对工具输出的<strong>解读</strong>。</p>
+      </div>
+      <p>原文给的行业口径是：幻觉相关事故每年造成超过 <strong>2.5 亿美元</strong>损失。这个数字按原文 2026-10 口径保留，本页未联网核实，也不把它当作精确统计。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="hc-detect-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">二 · 三类检测</p><h2 id="hc-detect-title">不确定、不一致、<br>对不上外部事实。</h2></div>
+      <p class="reading-intro">三类方法抓的是不同信号，没有哪一类单独够用。原文还给了一个容易误读的名字：FINCH-ZK 的“零知识”指不依赖外部知识库，不是密码学里的零知识证明。</p>
+    </div>
+    <div class="prose">
+      <div class="hc-strategies">
+        <div class="hc-card">
+          <span class="hc-tag">检测 1 · 不确定性</span>
+          <h3>Log Probability 分析</h3>
+          <p>看 token 的 logprob。原文示例把 <code>logprob &lt; -5.0</code> 的片段标为可疑。它便宜、实时，但只反映模型自己的把握，模型“自信地错”时抓不到。</p>
+        </div>
+        <div class="hc-card">
+          <span class="hc-tag">检测 2 · 一致性</span>
+          <h3>多次采样比对</h3>
+          <p>同一问题采样 N 次，抽取关键声明，看每条声明被多少次回答支持。原文示例用 5 次采样、支持数达到 <code>(N-1)×0.6</code> 才算一致。成本随 N 倍增，且只能发现“不稳定”，不能发现“稳定地错”。</p>
+        </div>
+        <div class="hc-card">
+          <span class="hc-tag">检测 3 · 外部验证</span>
+          <h3>知识库 / 搜索交叉验证</h3>
+          <p>把声明拿去和外部知识库、搜索结果、数据库最终状态比对。它能抓“稳定地错”，但依赖外部源的质量，也有延迟和成本。</p>
+        </div>
+        <div class="hc-card">
+          <span class="hc-tag">检测 2 的跨模型变体 · FINCH-ZK</span>
+          <h3>跨模型一致性</h3>
+          <p>把回答切成语义段落，用多个模型独立生成并比对，<strong>不使用外部知识库</strong>。原文注明：这里的“零知识”指 zero external knowledge，不是密码学 ZKP；核心是跨模型互验，不是单模型内部一致性。</p>
+        </div>
+      </div>
+
+      <h3>三类方法各自漏什么</h3>
+      <div class="table-wrap">
+        <table class="data hc-matrix">
+          <caption class="sr-only">三类幻觉检测方法的信号、擅长与盲区</caption>
+          <thead><tr><th scope="col">方法</th><th scope="col">信号</th><th scope="col">擅长抓</th><th scope="col">盲区</th><th scope="col">成本</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">Logprob</th><td>token 概率</td><td>生僻实体、编造参数</td><td>自信的错误、流畅的编造</td><td>几乎为零</td></tr>
+            <tr><th scope="row">多次采样</th><td>声明支持率</td><td>不稳定的答案、随机编造</td><td>稳定复现的错误</td><td>N 倍生成</td></tr>
+            <tr><th scope="row">外部验证</th><td>证据比对</td><td>事实错误、过期信息</td><td>外部源本身错误或缺失</td><td>检索 + 判断延迟</td></tr>
+            <tr><th scope="row">跨模型互验</th><td>模型间差异</td><td>单模型系统性编造</td><td>多个模型共享同一错误</td><td>多模型调用</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="hc-warn">
+        <p class="hc-warn-label">原文方法说明</p>
+        <p>FINCH-ZK 的示例用 gpt-4o、claude-sonnet-4-5、gemini-pro 三个模型对同一段落独立生成再比对。模型名与阈值按原文保留，标“原文版本、未联网核实”；本页不调用任何模型，也不验证这些模型当前是否可用。</p>
+      </div>
+      <details>
+        <summary>查看原文检测代码的结构（仅展示，不执行）</summary>
+        <pre><code>class HallucinationDetector:
+    # 方法 1：Log Probability 分析
+    def logprob_detection(self, response, logprobs):
+        suspicious_spans = []
+        for i, (token, logprob) in enumerate(zip(response.tokens, logprobs)):
+            if logprob &lt; -5.0:
+                suspicious_spans.append({...})
+        return suspicious_spans
+
+    # 方法 2：多次采样一致性检查
+    async def consistency_check(self, question, n_samples=5):
+        responses = [await self.llm.invoke(question, temperature=0.7)
+                     for _ in range(n_samples)]
+        # 抽取声明，统计每条声明被多少次回答支持
+        ...
+
+    # 方法 3：FINCH-ZK（零外部知识，跨模型一致性）
+    async def finch_zk_detection(self, response):
+        segments = self.segment_response(response)
+        # 每个段落用多个模型独立生成后比对
+        ...</code></pre>
+        <p class="source-footnote">代码按原文结构压缩，仅做 HTML 转义；本页不运行、不联网。</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="hc-mitigate-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三 · 缓解策略</p><h2 id="hc-mitigate-title">让模型少编，<br>也让它编了能被抓住。</h2></div>
+      <p class="reading-intro">原文给了四条缓解路径，优先级不同：结构化输出最便宜，RAG 最通用，Guardian Agent 最可靠但最贵，人工闭环留给关键事实。</p>
+    </div>
+    <div class="prose">
+      <div class="hc-strategies">
+        <div class="hc-card">
+          <span class="hc-tag">策略 1 · 最通用</span>
+          <h3>RAG 接地</h3>
+          <p>检索相关文档，把“只使用参考文档、没有就说无法回答、引用具体段落”写进 prompt。原文口径可减少 35–60% 幻觉，但不能消除：模型仍可能忽略文档或错误解读。</p>
+        </div>
+        <div class="hc-card">
+          <span class="hc-tag">策略 2 · 最可靠</span>
+          <h3>Guardian Agent 验证</h3>
+          <p>独立 Agent 抽取声明，逐条搜索证据并验证；有未验证声明就修正回答。原文口径可把幻觉率降到 1% 以下，代价是 2–5 秒额外延迟和高成本。</p>
+        </div>
+        <div class="hc-card">
+          <span class="hc-tag">策略 3 · 最便宜</span>
+          <h3>结构化输出约束</h3>
+          <p>用固定 schema 要求 <code>answer</code>、<code>sources</code>、<code>confidence</code>、<code>caveats</code>。它压缩自由生成空间，原文口径减少 20–30%，但不能保证内容真实。</p>
+        </div>
+        <div class="hc-card">
+          <span class="hc-tag">策略 4 · Agent 专用</span>
+          <h3>工具输出验证</h3>
+          <p>把工具原始数据和 Agent 总结一起交给 verifier，检查是否有遗漏、歪曲或添加。这是针对“工具返回对、总结写错”的唯一直接手段。</p>
+        </div>
+      </div>
+
+      <h3>RAG 接地的 prompt 结构</h3>
+      <p class="code-label">原文示例（仅展示，不执行）</p>
+      <pre><code>基于以下参考文档回答问题。
+规则：
+- 只使用参考文档中的信息
+- 如果文档中没有相关信息，明确说"根据现有资料无法回答"
+- 引用具体的文档段落作为依据
+
+参考文档：{docs}
+问题：{question}</code></pre>
+      <p>这三条规则分别对应三种失败：不用文档就自由发挥、不知道却硬答、答了但无法追溯。生产上还要加 Faithfulness 评估（例如 Ragas 的 Faithfulness 指标），否则“看起来引用了”不等于“引用支持结论”。</p>
+
+      <h3>结构化输出约束的 schema</h3>
+      <p class="code-label">原文示例（Python，仅展示，不执行）</p>
+      <pre><code>from pydantic import BaseModel
+
+class FactualAnswer(BaseModel):
+    answer: str
+    sources: list[str]     # 必须列出来源
+    confidence: float      # 自评置信度
+    caveats: list[str]     # 注意事项 / 不确定之处</code></pre>
+      <p>schema 本身不判别真伪，它的价值是强制模型暴露来源和不确定之处，让后续验证有抓手。自评置信度也不能直接当事实，校准差的模型会“自信地编”。</p>
+
+      <h3>工具输出验证：一个具体例子</h3>
+      <p>工具返回原始数据“2025 Q3 营收 1,200 万元”，Agent 总结成“Q3 营收同比增长 20%”。增长率不在原始数据里，属于 Agent 自己加的。验证 prompt 要问三件事：总结是否准确反映原始数据、是否遗漏、是否添加了原文没有的信息。输出可以是 <code>{"accurate": false, "issues": [...]}</code>。</p>
+      <p>这一步不能省。RAG 管的是“回答前有没有依据”，工具输出验证管的是“读完依据后有没有歪曲”。两者覆盖的是不同阶段。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="hc-effect-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四 · 效果与成本</p><h2 id="hc-effect-title">减少率越高，<br>代价通常越大。</h2></div>
+      <p class="reading-intro">原文给了一张策略对比表。数字是原文示例口径，不是本页实测，也不能把不同策略的减少率直接相加。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data hc-table">
+          <caption class="sr-only">七种幻觉缓解策略的原文示例效果、延迟与成本</caption>
+          <thead><tr><th scope="col">缓解策略</th><th scope="col" class="num">幻觉减少率</th><th scope="col">延迟影响</th><th scope="col">成本影响</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">RAG 接地</th><td class="num">35–60%</td><td>+200ms</td><td>低</td></tr>
+            <tr><th scope="row">Guardian Agent 验证</th><td class="num">80–99%</td><td>+2–5s</td><td>高</td></tr>
+            <tr><th scope="row">多次采样一致性</th><td class="num">40–60%</td><td>×N 倍</td><td>×N 倍</td></tr>
+            <tr><th scope="row">结构化输出约束</th><td class="num">20–30%</td><td>无</td><td>无</td></tr>
+            <tr><th scope="row">CoT 推理</th><td class="num">15–30%</td><td>+50%</td><td>中</td></tr>
+            <tr><th scope="row">RAG + NeMo Guardrails</th><td class="num">90–97%</td><td>+300ms</td><td>中</td></tr>
+            <tr><th scope="row">温度设为 0</th><td class="num">10–20%</td><td>无</td><td>无</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="source-footnote">以上百分比、延迟、成本均按原文 2026-10 口径保留，标“原文示例数据、未联网核实”；不是本页实测，也不保证在当前模型上复现。</p>
+      <div class="hc-warn">
+        <p class="hc-warn-label">不要把减少率相加</p>
+        <p>“RAG 减少 50% + Guardian 减少 90%”不等于 140%，也不等于“叠加后一定更好”。不同策略作用于不同失败模式，效果会重叠，成本也会叠加。正确做法是按场景风险选组合，再用自己的评测集测。</p>
+      </div>
+
+      <h3>按风险分级分配检测预算</h3>
+      <div class="table-wrap">
+        <table class="data hc-table">
+          <caption class="sr-only">按场景风险级别分配幻觉检测预算</caption>
+          <thead><tr><th scope="col">层级</th><th scope="col">适用输出</th><th scope="col">组合</th><th scope="col">取舍</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">第 1 层 · 全部输出</th><td>所有面向用户的回答</td><td>结构化约束 + 低温度</td><td>几乎免费；只能减少自由发挥，不能保证事实。</td></tr>
+            <tr><th scope="row">第 2 层 · 重要场景</th><td>业务数据、文档问答</td><td>第 1 层 + RAG 接地</td><td>低成本；需要检索质量与 Faithfulness 评估。</td></tr>
+            <tr><th scope="row">第 3 层 · 关键决策</th><td>财务、医疗、对外承诺</td><td>第 2 层 + Guardian Agent + 人工确认</td><td>高成本、高延迟；换来可追溯的逐条证据。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文的四条追问都指向同一个结论：幻觉不能被“完全消除”，只能按风险分层压低。对 Agent 来说，关键场景还要加一道“执行前确认”，因为错误一旦变成工具调用，就不再是文本问题。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="hc-mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="hc-mis-title">两个误区，<br>两个追问。</h2></div>
+      <p class="reading-intro">按原文顺序保留 4 条：前两条是误区，后两条是追问。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“用 RAG 就能消除幻觉。”</h3><p>RAG 显著减少幻觉，但不能消除。模型仍可能忽略检索到的文档自由发挥，或错误解读文档内容。RAG 要配合输出验证和 Faithfulness 评估（如 Ragas 的 Faithfulness 指标），否则“有引用”不等于“引用支持结论”。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“Agent 调了工具就不会幻觉。”</h3><p>Agent 在解读工具输出时仍会引入幻觉。数据库返回“Q3 收入 1,200 万”，Agent 可能总结成“Q3 收入增长 20%”，增长率是它自己编的。需要对工具输出的解读做专门验证。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>“如何在成本和幻觉检测率之间取平衡？”</h3><p>分级策略：所有输出用结构化约束 + 低温度，几乎免费；重要场景加 RAG 接地，成本低；关键决策用 Guardian Agent 验证，成本高但最可靠。按场景风险级别分配检测预算，不要对所有输出用同一套最贵的检测。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>“幻觉能被完全消除吗？”</h3><p>从当前技术看不能。幻觉是 LLM 基于概率采样、而非事实检索的生成机制的固有特性。但多层缓解可以把关键场景的幻觉率压到极低水平（原文口径 &lt; 1%）。长期方向是 Guardian Agent 架构加神经符号混合方法。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="hc-related-title">
+    <p class="eyebrow">相关阅读与参考</p>
+    <h2 class="source-heading" id="hc-related-title">继续深入</h2>
+    <p class="source-summary">相关页面按当前仓库进度列出；已废弃页面不提供链接。外链只有主动点击才会离开本页。</p>
+    <details>
+      <summary>展开相关阅读（5 条，其中 1 条已废弃）</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="../08-evaluation/069-evaluation-methodology.html">069 评估方法论</a>：如何为幻觉检测设计评测集与指标。</li>
+          <li><a href="../08-evaluation/071-llm-as-judge.html">071 LLM-as-Judge</a>：用模型做判分时的偏差与稳定性。</li>
+          <li><a href="../08-evaluation/077-continuous-evaluation-pipeline.html">077 持续评估流水线</a>：把幻觉率纳入上线后的持续监控。</li>
+          <li><a href="../08-evaluation/111-eval-harness-design.html">111 Eval Harness 设计</a>：评测条件如何影响最终分数。</li>
+          <li><span>083 内容过滤与毒性检测：已废弃，独特内容迁入 079</span></li>
+        </ul>
+        <p class="source-footnote">083 已废弃，独特内容迁入 079 的毒性检测小节，因此不提供链接。</p>
+      </div>
+    </details>
+
+    <details>
+      <summary>展开原文参考链接（4 条）</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://arxiv.org/html/2510.24476v1" target="_blank" rel="noopener noreferrer">Mitigating Hallucination in LLMs: An Application-Oriented Survey on RAG, Reasoning, and Agentic Systems（arXiv）</a></li>
+          <li><a href="https://deepchecks.com/llm-hallucination-detection-and-mitigation-best-techniques/" target="_blank" rel="noopener noreferrer">LLM Hallucination Detection and Mitigation: Best Techniques（Deepchecks）</a></li>
+          <li><a href="https://aws.amazon.com/blogs/machine-learning/reducing-hallucinations-in-large-language-models-with-custom-intervention-using-amazon-bedrock-agents/" target="_blank" rel="noopener noreferrer">Reducing Hallucinations with Custom Intervention Using Amazon Bedrock Agents（AWS）</a></li>
+          <li><a href="https://aclanthology.org/2025.emnlp-industry.139.pdf" target="_blank" rel="noopener noreferrer">Zero-Knowledge LLM Hallucination Detection and Mitigation（EMNLP 2025）</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>09-safety-and-alignment/082-hallucination-detection.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 6 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const HC_METHODS = Object.freeze(["uncertainty", "consistency", "external"]);
+  const HC_METHOD_LABELS = Object.freeze({
+    uncertainty: "不确定性",
+    consistency: "一致性",
+    external: "外部验证"
+  });
+
+  const HC_CLAIMS = Object.freeze([
+    {
+      id: "revenue",
+      text: "2025 年 Q3 营收为 1,200 万元。",
+      type: "正确陈述 · 对照工具输出",
+      verdict: "基本可靠",
+      verdictLevel: "ok",
+      signals: {
+        uncertainty: { level: "ok", value: "logprob -0.3", detail: "没有出现低概率片段，模型对该数字有较高把握。" },
+        consistency: { level: "ok", value: "5 / 5 一致", detail: "5 次采样都保留了同一个数字。" },
+        external: { level: "ok", value: "已核实", detail: "与固定工具输出中的“2025 Q3 营收 1,200 万元”一致。" }
+      },
+      advice: "保留，但仍要写明数据口径与时间范围，避免读者把它当成全年数据。"
+    },
+    {
+      id: "growth",
+      text: "营收同比增长 20%。",
+      type: "外在幻觉 · 工具输出误解",
+      verdict: "高风险",
+      verdictLevel: "bad",
+      signals: {
+        uncertainty: { level: "bad", value: "logprob -5.8", detail: "“20%”附近的 token 概率很低，属于原文阈值 -5.0 以下的可疑片段。" },
+        consistency: { level: "bad", value: "1 / 5 一致", detail: "5 次采样只有 1 次给出 20%，增长率数值不稳定。" },
+        external: { level: "bad", value: "无依据", detail: "工具只返回 Q3 营收，没有同比数据，也没有增长率。" }
+      },
+      advice: "删除增长率，或补充同比口径的数据源后再计算。不能让模型自己“算”一个没有依据的百分比。"
+    },
+    {
+      id: "source",
+      text: "该数据来自 2024 年年度财报。",
+      type: "内在幻觉 · 与输入冲突",
+      verdict: "高风险",
+      verdictLevel: "bad",
+      signals: {
+        uncertainty: { level: "ok", value: "logprob -1.2", detail: "句子本身流畅，logprob 不低。仅靠不确定性抓不到这类错误。" },
+        consistency: { level: "warn", value: "2 / 5 一致", detail: "只有 2 次采样坚持“2024 年年度财报”，其余说法不一致。" },
+        external: { level: "bad", value: "相矛盾", detail: "固定上下文写明数据来自 2025 Q3 经营看板，不是 2024 年年度财报。" }
+      },
+      advice: "改为“2025 Q3 经营看板”，并把来源字段作为结构化输出的一部分强制填写。"
+    },
+    {
+      id: "export",
+      text: "系统支持按地区拆分并导出 CSV。",
+      type: "虚构工具能力",
+      verdict: "高风险",
+      verdictLevel: "bad",
+      signals: {
+        uncertainty: { level: "bad", value: "logprob -6.4", detail: "“导出 CSV”“按地区拆分”都是低概率片段，模型在补全不存在的功能。" },
+        consistency: { level: "bad", value: "0 / 5 一致", detail: "5 次采样没有任何一次稳定复现这套功能描述。" },
+        external: { level: "warn", value: "文档未列出", detail: "固定工具文档只说明汇总视图，没有地区拆分或导出能力。未列出不等于一定不存在，但足以要求复核。" }
+      },
+      advice: "先查工具清单再承诺功能；对外回答应写成“当前看板仅提供汇总视图”。"
+    }
+  ]);
+
+  const hcById = (id) => document.getElementById(id);
+  const hcState = { methods: new Set(), selected: null };
+
+  function hcSignalHTML(claim, method) {
+    if (!hcState.methods.has(method)) {
+      return `<div class="hc-sig"><span class="hc-sig-label">${HC_METHOD_LABELS[method]}</span><span class="hc-sig-value hc-pending">未检测</span></div>`;
+    }
+    const signal = claim.signals[method];
+    return `<div class="hc-sig ${signal.level}"><span class="hc-sig-label">${HC_METHOD_LABELS[method]}</span><span class="hc-sig-value">${signal.value}</span></div>`;
+  }
+
+  function hcRenderList() {
+    hcById("hc-list").innerHTML = HC_CLAIMS.map((claim) => {
+      const showVerdict = hcState.methods.size === HC_METHODS.length;
+      return `<article class="hc-claim" data-claim="${claim.id}" data-selected="${hcState.selected === claim.id}">
+        <div class="hc-claim-top">
+          <button type="button" class="hc-claim-text" data-open="${claim.id}">${claim.text}</button>
+          <span class="hc-risk ${showVerdict ? claim.verdictLevel : ""}">${showVerdict ? claim.verdict : "待综合"}</span>
+        </div>
+        <div class="hc-signals">${HC_METHODS.map((method) => hcSignalHTML(claim, method)).join("")}</div>
+      </article>`;
+    }).join("");
+    hcById("hc-list").querySelectorAll("[data-open]").forEach((button) => {
+      button.addEventListener("click", () => hcSelect(button.dataset.open));
+    });
+  }
+
+  function hcRenderSummary() {
+    const count = hcState.methods.size;
+    if (count === 0) {
+      hcById("hc-summary").textContent = "尚未运行检测。点上方维度，或逐条点声明查看。";
+      hcById("hc-verdict").hidden = true;
+      hcById("hc-state").textContent = "已运行 0 / 3 个维度";
+      return;
+    }
+    const parts = [];
+    HC_METHODS.forEach((method) => {
+      if (!hcState.methods.has(method)) return;
+      const flagged = HC_CLAIMS.filter((claim) => claim.signals[method].level !== "ok").length;
+      parts.push(`${HC_METHOD_LABELS[method]}标记 ${flagged} 条`);
+    });
+    hcById("hc-summary").textContent = `${parts.join("；")}。共 ${HC_CLAIMS.length} 条声明。`;
+    hcById("hc-state").textContent = `已运行 ${count} / 3 个维度`;
+    const verdict = hcById("hc-verdict");
+    if (count === HC_METHODS.length) {
+      const high = HC_CLAIMS.filter((claim) => claim.verdictLevel === "bad").length;
+      const low = HC_CLAIMS.length - high;
+      verdict.hidden = false;
+      verdict.innerHTML = `<b>综合判定：</b>${high} 条高风险，${low} 条基本可靠。三个维度中至少一个标记为异常的声明，不应直接对用户输出或触发工具动作，应先复核。`;
+    } else {
+      verdict.hidden = true;
+    }
+  }
+
+  function hcRenderDetail() {
+    const claim = HC_CLAIMS.find((item) => item.id === hcState.selected);
+    if (!claim) {
+      hcById("hc-detail-title").textContent = "先选一条声明";
+      hcById("hc-detail-type").textContent = "左侧 4 条声明都可以点开";
+      hcById("hc-detail-list").innerHTML = "";
+      hcById("hc-advice").textContent = "检测结果只用于决定“要不要复核”，不等于自动判真伪。";
+      return;
+    }
+    hcById("hc-detail-title").textContent = claim.text;
+    hcById("hc-detail-type").textContent = claim.type;
+    hcById("hc-detail-list").innerHTML = HC_METHODS.map((method) => {
+      if (!hcState.methods.has(method)) {
+        return `<li><b>${HC_METHOD_LABELS[method]}</b><span class="hc-pending">该维度尚未检测。</span></li>`;
+      }
+      const signal = claim.signals[method];
+      return `<li><b>${HC_METHOD_LABELS[method]} · ${signal.value}</b>${signal.detail}</li>`;
+    }).join("");
+    hcById("hc-advice").innerHTML = `<b>处理建议：</b>${claim.advice}`;
+  }
+
+  function hcSelect(id) {
+    hcState.selected = id;
+    hcRenderList();
+    hcRenderDetail();
+    const claim = HC_CLAIMS.find((item) => item.id === id);
+    if (claim) hcById("hc-announcement").textContent = `已选择声明：${claim.text}。类型：${claim.type}。`;
+  }
+
+  function hcRun(method) {
+    if (!HC_METHODS.includes(method)) return;
+    hcState.methods.add(method);
+    document.querySelectorAll("[data-method]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(hcState.methods.has(button.dataset.method)));
+    });
+    hcRenderList();
+    hcRenderSummary();
+    hcRenderDetail();
+    hcById("hc-announcement").textContent = `已运行${HC_METHOD_LABELS[method]}检测。${hcById("hc-summary").textContent}`;
+  }
+
+  document.querySelectorAll("[data-method]").forEach((button) => {
+    button.addEventListener("click", () => hcRun(button.dataset.method));
+  });
+  hcById("hc-all").addEventListener("click", () => {
+    HC_METHODS.forEach((method) => hcState.methods.add(method));
+    document.querySelectorAll("[data-method]").forEach((button) => {
+      button.setAttribute("aria-pressed", "true");
+    });
+    hcRenderList();
+    hcRenderSummary();
+    hcRenderDetail();
+    hcById("hc-announcement").textContent = `已运行全部三个维度。${hcById("hc-summary").textContent} 综合判定见下方。`;
+  });
+  hcById("hc-reset").addEventListener("click", () => {
+    hcState.methods.clear();
+    hcState.selected = null;
+    document.querySelectorAll("[data-method]").forEach((button) => button.setAttribute("aria-pressed", "false"));
+    hcRenderList();
+    hcRenderSummary();
+    hcRenderDetail();
+    hcById("hc-announcement").textContent = "已清空检测，回到未检测状态。";
+  });
+
+  hcRenderList();
+  hcRenderSummary();
+  hcRenderDetail();
+</script>
+</body>
+</html>

@@ -1,0 +1,998 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Agent 产品如何做合规设计？EU AI Act 对 Agent 有何影响？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .ai-stage { padding-top: var(--s-2); }
+  .ai-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: var(--s-6); align-items: start; }
+  .ai-main { min-width: 0; }
+  .ai-side { min-width: 0; border-left: 1px solid var(--border); padding-left: var(--s-5); }
+  .ai-side h2 { font: 600 24px/1.4 var(--serif); margin: 2px 0 var(--s-2); }
+  .ai-side > p { color: var(--text-dim); font-size: var(--t-small); }
+  .ai-facts { display: grid; grid-template-columns: auto 1fr; gap: 5px 12px; margin: var(--s-4) 0 0; font-size: 12px; }
+  .ai-facts dt { color: var(--text-dim); }
+  .ai-facts dd { margin: 0; font-family: var(--mono); font-size: 11px; text-align: right; }
+  .ai-note { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px dashed var(--border); color: var(--text-dim); font-size: 11px; line-height: 1.7; }
+  .ai-modes { display: flex; flex-wrap: wrap; gap: 6px; padding: var(--s-4) var(--s-6) 0; }
+  .ai-mode { min-height: 36px; padding: 4px 12px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font-size: 12px; color: var(--text-dim); }
+  .ai-mode:hover { border-color: var(--accent); }
+  .ai-mode[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+  .ai-kicker { font: 10px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .08em; text-transform: uppercase; }
+  .ai-h3 { font: 600 21px/1.4 var(--serif); margin: 3px 0 var(--s-2); }
+  .ai-lede { font-size: 13px; color: var(--text-dim); max-width: 58em; }
+  .ai-rows { margin: var(--s-3) 0 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); overflow: hidden; }
+  .ai-row { display: grid; grid-template-columns: 88px minmax(0, 1fr); gap: 10px; padding: 8px 11px; border-bottom: 1px solid var(--border); font-size: 12px; line-height: 1.65; }
+  .ai-row:last-child { border-bottom: 0; }
+  .ai-row dt { color: var(--text-dim); font-size: 11px; }
+  .ai-row dd { margin: 0; }
+  .ai-row dd b { color: var(--ink); }
+  .ai-callout { margin-top: var(--s-3); border: 1px solid #9eb4c9; background: var(--accent-dim); border-radius: var(--r-1); padding: 9px 11px; font-size: 12px; line-height: 1.7; }
+  .ai-callout b { color: var(--accent); }
+  .ai-callout.warn { border-color: #e4c98f; background: #fdf9ef; }
+  .ai-callout.warn b { color: #7a4a00; }
+  .ai-ladder { display: grid; gap: 5px; margin-top: var(--s-3); }
+  .ai-level { display: grid; grid-template-columns: 92px minmax(0, 1fr) 92px; gap: 8px; align-items: center; padding: 7px 9px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 11px; line-height: 1.55; }
+  .ai-level .lvl { font: 600 11px/1.5 var(--mono); }
+  .ai-level .ex { color: var(--text-dim); font-size: 10.5px; }
+  .ai-level .duty { text-align: right; font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .ai-level.is-current { border-width: 2px; padding: 6px 8px; }
+  .ai-level.is-current[data-level="prohibited"] { border-color: #b03a3a; background: #fbeaea; }
+  .ai-level.is-current[data-level="prohibited"] .lvl { color: #8f1d1d; }
+  .ai-level.is-current[data-level="high"] { border-color: #b07d20; background: #fdf3df; }
+  .ai-level.is-current[data-level="high"] .lvl { color: #7a4a00; }
+  .ai-level.is-current[data-level="limited"] { border-color: #194f87; background: #eaf1f8; }
+  .ai-level.is-current[data-level="limited"] .lvl { color: #194f87; }
+  .ai-level.is-current[data-level="minimal"] { border-color: #2e7d32; background: #eef5ee; }
+  .ai-level.is-current[data-level="minimal"] .lvl { color: #1c5e20; }
+  .ai-reason { margin-top: var(--s-3); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 0 var(--r-1) var(--r-1) 0; background: var(--surface); padding: 9px 11px; }
+  .ai-reason b { display: block; font-size: 14px; }
+  .ai-reason p { margin-top: 2px; font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .ai-obligations { list-style: none; margin: var(--s-3) 0 0; padding: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); overflow: hidden; }
+  .ai-obligation { display: grid; grid-template-columns: 104px minmax(0, 1fr); gap: 10px; padding: 7px 10px; border-bottom: 1px solid var(--border); }
+  .ai-obligation:last-child { border-bottom: 0; }
+  .ai-art { align-self: start; font: 600 10px/1.6 var(--mono); color: var(--accent); overflow-wrap: anywhere; }
+  .ai-obligation b { display: block; font-size: 11.5px; line-height: 1.5; }
+  .ai-obligation p { margin-top: 1px; font-size: 10px; line-height: 1.65; color: var(--text-dim); }
+  .ai-checkpoints { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: var(--s-3); }
+  .ai-check { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 9px 11px; min-width: 0; }
+  .ai-check-top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px; }
+  .ai-check b { font-size: 11.5px; line-height: 1.5; }
+  .ai-map { font: 9px/1.5 var(--mono); color: #194f87; background: #eaf1f8; border: 1px solid #b9cbdd; border-radius: 999px; padding: 1px 6px; white-space: nowrap; }
+  .ai-check p { margin-top: 3px; font-size: 10px; line-height: 1.65; color: var(--text-dim); }
+  .ai-legal { font-size: 10px; line-height: 1.7; color: var(--text-dim); margin-top: var(--s-3); }
+  .ai-timeline { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: var(--s-3); }
+  .ai-date { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 8px 10px; min-width: 0; }
+  .ai-date b { display: block; font: 600 13px/1.4 var(--mono); color: var(--accent); }
+  .ai-date span { display: block; margin-top: 2px; font-size: 10.5px; line-height: 1.55; color: var(--text-dim); }
+  .ai-challenges { display: grid; gap: 10px; margin-top: var(--s-3); }
+  .ai-challenge { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 11px 13px; }
+  .ai-challenge h3 { margin: 0 0 3px; font-size: 13px; line-height: 1.5; }
+  .ai-challenge p { font-size: 11.5px; line-height: 1.75; color: var(--text-dim); }
+  .ai-challenge p + p { margin-top: 5px; }
+  .ai-challenge b { color: var(--ink); }
+  .ai-flow { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 11px 12px; }
+  .ai-flow-line { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; font-size: 10.5px; }
+  .ai-flow-line + .ai-flow-line { margin-top: 7px; }
+  .ai-node { border: 1px solid var(--border-bright); border-radius: 4px; padding: 3px 7px; background: var(--surface-soft); white-space: nowrap; }
+  .ai-node.dark { background: var(--accent); border-color: var(--accent); color: white; }
+  .ai-node.alert { border-color: #b03a3a; background: #fbeaea; color: #8f1d1d; }
+  .ai-node.soft { border-color: #9eb4c9; background: var(--accent-dim); color: var(--accent); }
+  .ai-arrow { color: var(--text-dim); font-family: var(--mono); }
+  .ai-branch { margin-top: 7px; border-top: 1px dashed var(--border); padding-top: 7px; }
+  .ai-branch-label { font: 10px/1.5 var(--mono); color: var(--text-dim); margin-bottom: 5px; }
+  .ai-branch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: stretch; }
+  .ai-branch + .ai-flow-line { margin-top: var(--s-3); }
+  .ai-branch-col { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); padding: 7px 8px; }
+  .ai-branch-col .ai-node { display: inline-block; }
+  .ai-branch-col .ai-arrow { display: block; margin: 3px 0; }
+  .ai-ob-table { min-width: 780px; }
+  .ai-ob-table td:first-child { min-width: 132px; }
+  .ai-check-table { min-width: 760px; }
+  .ai-check-table td:first-child { min-width: 120px; }
+  .ai-jur-table { min-width: 940px; }
+  .ai-jur-table td:first-child { min-width: 100px; }
+  .ai-audit-table { min-width: 560px; }
+  .ai-audit-table td:first-child { min-width: 220px; }
+  .ai-code-note { margin-top: var(--s-2); font-size: 10px; color: var(--text-dim); }
+  .ai-extra { margin: var(--s-3) 0 0; padding-left: 1.2em; }
+  .ai-extra li { font-size: 12px; line-height: 1.75; margin-block: 5px; }
+  .ai-extra li b { color: var(--ink); }
+  @media (max-width: 960px) {
+    .ai-grid { grid-template-columns: minmax(0, 1fr); gap: var(--s-4); }
+    .ai-side { border-left: 0; border-top: 1px solid var(--border); padding-left: 0; padding-top: var(--s-4); }
+    .ai-checkpoints { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .ai-modes { padding: var(--s-3) var(--s-4) 0; }
+    .ai-level { grid-template-columns: 74px minmax(0, 1fr); }
+    .ai-level .duty { grid-column: 2; text-align: left; }
+    .ai-row { grid-template-columns: 74px minmax(0, 1fr); }
+    .ai-obligation { grid-template-columns: 78px minmax(0, 1fr); }
+    .ai-timeline { grid-template-columns: 1fr; }
+    .ai-branch-grid { grid-template-columns: 1fr; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">115 / EU AI Act 合规</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 10 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="085-red-teaming-agents.html">← 上一页 · Red Teaming</a><a href="../10-production-and-deployment/086-llmops-and-deployment.html">下一页 → · LLMOps 与 Agent 部署架…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Safety &amp; Alignment · 可交互讲解</p>
+      <h1>先把用途分级，<br>再把义务落到卡点。</h1>
+    </div>
+    <div>
+      <p class="lead">EU AI Act 按风险把 AI 系统分成禁止、高风险、有限风险、最小风险四档。原文标注：高风险系统的核心义务于 2026-08-02 全面生效，最高罚款 €35M 或全球年营收 7%。对 Agent 来说，合规的起点是判定用途，然后把透明度、HITL、审计日志、PII 处理做成架构里的强制卡点。</p>
+      <p class="definition">关键边界：本页法规条款、生效日期、罚款只按<strong>原文时点</strong>转述，标“原文版本、未联网核实”，<strong>不构成法律意见</strong>。四种产品的分级是固定教学假设，真实判定需要法务按最新法规确认。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Safety &amp; Alignment</span><span class="pill">合规</span><span class="pill">固定教学分级</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="ai-caption-title">
+    <div class="player-top">
+      <div class="player-label">合规分级台 <small>四种固定产品 · 用途 → 等级 → 义务 → 卡点</small></div>
+      <div class="controls" role="group" aria-label="分级台控制">
+        <button type="button" class="button button-quiet" id="ai-reset">重置</button>
+        <button type="button" class="button" id="ai-prev" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="ai-next">下一步 →</button>
+      </div>
+    </div>
+    <div class="ai-modes" role="group" aria-label="选择固定产品">
+      <button type="button" class="ai-mode" data-product="service" aria-pressed="true">客服 Agent</button>
+      <button type="button" class="ai-mode" data-product="recruit" aria-pressed="false">招聘筛选 Agent</button>
+      <button type="button" class="ai-mode" data-product="credit" aria-pressed="false">信贷评估 Agent</button>
+      <button type="button" class="ai-mode" data-product="scoring" aria-pressed="false">社会评分 Agent</button>
+    </div>
+    <div class="stage-nav">
+      <ol style="--stages: 4">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>用途</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>分级</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>义务</button></li>
+        <li><button type="button" class="stage-button" data-stage="3"><span class="stage-number">4</span>卡点</button></li>
+      </ol>
+    </div>
+    <div class="scene-host">
+      <div class="ai-stage scene" id="ai-scene" data-scene="eu-ai-act">
+        <div class="ai-grid">
+          <section class="ai-main" id="ai-main" aria-label="合规分级内容"></section>
+          <aside class="ai-side" aria-labelledby="ai-caption-title">
+            <p class="figure-index" id="ai-figure">图 1 · 用途判定</p>
+            <h2 id="ai-caption-title">合规是架构的<br>一层，不是补丁。</h2>
+            <p id="ai-desc">先确认产品在什么场景、对谁、做什么。同一个 Agent，换个用途就可能从有限风险变成高风险。</p>
+            <dl class="ai-facts">
+              <dt>固定产品</dt><dd id="ai-fact-product">客服 Agent</dd>
+              <dt>风险等级</dt><dd id="ai-fact-level">有限风险</dd>
+              <dt>适用义务</dt><dd id="ai-fact-ob">2</dd>
+              <dt>工程卡点</dt><dd id="ai-fact-check">4</dd>
+              <dt>当前步骤</dt><dd id="ai-fact-step">1 / 4</dd>
+            </dl>
+            <div class="ai-note">固定教学数据：四种产品、用途、分级、义务数量和卡点都写死在页面里，不连接任何合规系统。法规条款、日期和罚款按原文时点转述，原文版本、未联网核实，不构成法律意见。</div>
+          </aside>
+        </div>
+      </div>
+      <p class="demo-note">分级台说明：四种产品是固定教学案例，不是对真实产品的法律判定。页面只演示“用途 → 风险等级 → 义务 → 工程卡点”的推导方式，不提交任何合规材料，也不连接监管系统。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学分级 · 4 种产品 · 4 个步骤</span><span id="ai-summary">客服 Agent · 有限风险 · 第 1 / 4 步</span></div>
+  </section>
+  <p id="ai-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="levels-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">风险分级体系</p><h2 id="levels-title">风险越高，<br>义务越重。</h2></div>
+      <p class="reading-intro">原文把 EU AI Act 的核心设计概括为“风险越高，义务越重”：禁止、高风险、有限风险、最小风险四档，义务依次递减。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data ai-ob-table">
+          <thead><tr><th>等级</th><th>原文列举的场景</th><th>义务强度</th></tr></thead>
+          <tbody>
+            <tr><td><strong>禁止使用</strong></td><td>社会评分、实时生物识别、潜意识操纵、剥削弱势群体</td><td>不可接受风险，全面禁止</td></tr>
+            <tr><td><strong>高风险</strong></td><td>招聘、信贷、医疗、执法、教育、关键基础设施等</td><td>严格义务：风险体系、数据治理、文档、日志、透明度、人工监督、稳健性、事后监控、合格评定</td></tr>
+            <tr><td><strong>有限风险</strong></td><td>聊天机器人、Deepfake、情感识别</td><td>透明度义务：须告知用户</td></tr>
+            <tr><td><strong>最小风险</strong></td><td>垃圾邮件过滤、游戏 AI、库存预测</td><td>无额外义务，可自由部署</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="ai-timeline">
+        <div class="ai-date"><b>2025-02-02</b><span>禁止性条款适用（原文标注）</span></div>
+        <div class="ai-date"><b>2025-08-02</b><span>通用型 AI 模型（GPAI）条款适用（原文标注）</span></div>
+        <div class="ai-date"><b>2026-08-02</b><span>高风险系统义务全面生效（原文标注，EU AI Act 生效满 24 个月）</span></div>
+      </div>
+      <div class="callout">
+        <p class="callout-label">原文版本、未联网核实</p>
+        <p>以上日期、分级和罚款口径均按原文时点转述，本页未联网核对法规最新修订或实施指南，不构成法律意见。原文同时提醒：面向欧盟市场的 Agent 产品，必须在 2026-08-02 前完成高风险合规，或证明自己不属于高风险。</p>
+      </div>
+      <p>原文强调：对 Agent 产品来说，判定所属层级是最关键的一步，它直接决定合规资源投入。多数通用对话 Agent / Coding Agent 落在“有限风险”或“最小风险”；一旦进入招聘筛选、信用评估、保险定价、医疗诊断、教育评估等领域，立刻被划入“高风险”，触发全套义务。判定不看技术，看用途。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="obligations-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">高风险义务</p><h2 id="obligations-title">九项义务，<br>逐条对应工程。</h2></div>
+      <p class="reading-intro">一旦被判定为高风险，原文列出九类义务。每一项都能翻译成具体工程动作；合规的增量成本，主要是把已有实践文档化、制度化、可审计化。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data ai-ob-table">
+          <thead><tr><th>义务维度</th><th>法规要求</th><th>工程落地</th></tr></thead>
+          <tbody>
+            <tr><td><strong>风险管理体系</strong></td><td>全生命周期建立持续的风险识别与缓解流程（Art.9）</td><td>每次 Agent 架构变更后跑风险评估流水线</td></tr>
+            <tr><td><strong>数据与数据治理</strong></td><td>训练/验证/测试数据须相关、无错、完整（Art.10）</td><td>数据血缘记录、偏见检测、数据卡片（datasheet）</td></tr>
+            <tr><td><strong>技术文档</strong></td><td>系统上线前完成并持续维护技术文档（Art.11）</td><td>自动生成模型卡片、系统架构文档、变更日志</td></tr>
+            <tr><td><strong>记录与日志</strong></td><td>自动记录事件（logging），确保可追溯（Art.12）</td><td>结构化 trace，保留 tool call 全量日志</td></tr>
+            <tr><td><strong>透明度与信息</strong></td><td>向部署者提供清晰的使用说明（Art.13）</td><td>Agent 能力边界文档、已知失败模式披露</td></tr>
+            <tr><td><strong>人工监督</strong></td><td>允许自然人在使用期间有效监督（Art.14）</td><td>HITL 卡点、人工中断/覆盖机制</td></tr>
+            <tr><td><strong>稳健性、准确性与网络安全</strong></td><td>具适当韧性，能抵御错误与恶意攻击（Art.15）</td><td>Red Team 测试、对抗性鲁棒性、Prompt Injection 防御</td></tr>
+            <tr><td><strong>事后监控</strong></td><td>上线后持续监控性能与风险（Art.72）</td><td>生产环境可观测性 + 异常告警</td></tr>
+            <tr><td><strong>合格评定与 CE 标志</strong></td><td>通过合格评定，加贴 CE 标志（Art.43-48）</td><td>第三方审计 / 自我声明（视类别）</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <p class="callout-label">原文判断</p>
+        <p>这些义务看起来繁重，但从工程角度看，多数是成熟工程实践的法律化：可观测性、文档化、人工审核、安全测试本就是生产级 Agent 的标配。真正的增量成本在“把已有实践文档化、制度化、可审计化”，而不是从零发明一套系统。</p>
+      </div>
+      <p class="ai-legal">条款编号和生效状态按原文时点记录，原文版本、未联网核实；本页不构成法律意见。真实项目应由法务确认适用条款和合格评定路径。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="gpai-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">GPAI 条款</p><h2 id="gpai-title">你多半是部署者，<br>不是提供者。</h2></div>
+      <p class="reading-intro">Agent 通常构建在通用大模型（GPAI）之上。原文对 GPAI 模型提供者单独设定义务；对 Agent 团队的影响，是责任边界和上游信息获取。</p>
+    </div>
+    <div class="prose">
+      <ul class="ai-extra">
+        <li><b>所有 GPAI 提供者：</b>须维护技术文档、训练数据摘要、版权合规、向下游部署者传递信息。</li>
+        <li><b>系统性风险 GPAI：</b>训练算力超过 10²⁵ FLOPS 阈值的模型，额外要求模型评估、对抗性测试（Red Teaming）、严重事件上报、网络安全保护。</li>
+      </ul>
+      <div class="callout">
+        <p class="callout-label">对 Agent 团队的影响</p>
+        <p>原文判断：你通常是“部署者”而非“提供者”，主要义务在自己这层；但你有权要求模型提供者传递必要的技术文档与能力边界信息。如果你对底层模型做了显著微调（fine-tuning）使其进入新用途，责任边界会向你偏移。</p>
+      </div>
+      <p>这也是面试常问的边界题：不要把“模型提供者的合规”当成“我的合规”。部署者仍有透明度、人工监督、日志、事后监控等义务；上游文档是输入，不是免责证明。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="challenges-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">Agent 特有挑战</p><h2 id="challenges-title">代码是确定的，<br>Agent 不是。</h2></div>
+      <p class="reading-intro">传统软件合规的对象是确定性的代码逻辑；Agent 合规面对的是概率性的自主决策链。原文列出三个独有难题。</p>
+    </div>
+    <div class="prose">
+      <div class="ai-challenges">
+        <div class="ai-challenge">
+          <h3>挑战一：自主决策的可解释性</h3>
+          <p>传统软件的决策路径由代码硬编码，审计就是读代码。Agent 的决策由 LLM 在运行时动态生成，同一次输入可能走完全不同的工具调用序列。EU AI Act 高风险义务要求决策可解释、可追溯，但 Agent 的 reasoning 过程往往是黑盒。</p>
+        </div>
+        <div class="ai-challenge">
+          <h3>挑战二：工具调用的全链路审计</h3>
+          <p>Agent 的危害往往不在“说了什么”，而在“做了什么”：自主下单、修改生产配置、对外发送内容。logging 义务落到 Agent 上，意味着每一次 tool call 的入参、出参、时间戳、触发 reasoning 都必须结构化留存，且日志本身要防篡改。</p>
+        </div>
+        <div class="ai-challenge">
+          <h3>挑战三：记忆系统与 GDPR 的交叉</h3>
+          <p>Agent 的 long-term memory 会持续积累对话历史、偏好画像、执行过的操作。这与 GDPR 的数据最小化、目的限制、删除权（Right to Erasure）、数据可携带权产生直接冲突。合规的 memory 系统必须支持：按用户粒度隔离、可导出、可彻底删除、有保留期限策略。</p>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data ai-audit-table">
+          <thead><tr><th>传统软件审计</th><th>Agent 审计</th></tr></thead>
+          <tbody>
+            <tr><td><code>if score&gt;80 → 通过</code><br><code>else → 拒绝</code><br><br>可读，规则确定，审计简单</td><td>LLM 生成的 reasoning：<br><code>"用户信用良好，建议批准"</code><br>→ tool: <code>check_credit()</code><br>→ tool: <code>calc_risk()</code><br>→ tool: <code>approve_loan()</code><br><br>路径动态，需记录每步 reasoning</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文的落点是：Agent 合规不能只审最终输出，要审“决策链 + 工具调用 + 记忆”。这也是后面合规架构把审计日志和 HITL 放进执行循环的原因。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="architecture-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">合规设计清单与架构</p><h2 id="architecture-title">把义务嵌进<br>执行循环。</h2></div>
+      <p class="reading-intro">原文把合规做成一套“合规中间层”：透明度、PII 脱敏、风险评估、HITL、审计日志、输出护栏、事后监控，串成强制卡点。</p>
+    </div>
+    <div class="prose">
+      <div class="ai-flow" role="img" aria-label="合规架构：用户请求经过透明度声明、PII 脱敏、Agent 推理；每次工具调用进入风险评估器，低风险直接写审计日志，高风险先经 HITL 卡点再写日志；最后经过输出护栏、最终响应和事后监控">
+        <div class="ai-flow-line">
+          <span class="ai-node">用户请求</span><span class="ai-arrow">→</span>
+          <span class="ai-node dark">① 透明度声明</span><span class="ai-arrow">→</span>
+          <span class="ai-node">② PII 脱敏</span><span class="ai-arrow">→</span>
+          <span class="ai-node">③ Agent 推理</span>
+        </div>
+        <div class="ai-branch">
+          <div class="ai-branch-label">每次工具调用 ↓</div>
+          <div class="ai-branch-grid">
+            <div class="ai-branch-col">
+              <span class="ai-node soft">④ 风险评估器</span>
+              <span class="ai-arrow">低风险 ↓</span>
+              <span class="ai-node">⑥ 全链路审计日志</span>
+            </div>
+            <div class="ai-branch-col">
+              <span class="ai-node soft">④ 风险评估器</span>
+              <span class="ai-arrow">高风险 ↓</span>
+              <span class="ai-node alert">⑤ HITL 卡点 · 人工确认</span>
+              <span class="ai-arrow">↓</span>
+              <span class="ai-node">⑥ 全链路审计日志</span>
+            </div>
+          </div>
+        </div>
+        <div class="ai-flow-line">
+          <span class="ai-node">⑥ 全链路审计日志</span><span class="ai-arrow">→</span>
+          <span class="ai-node">⑦ 输出护栏</span><span class="ai-arrow">→</span>
+          <span class="ai-node dark">最终响应</span><span class="ai-arrow">→</span>
+          <span class="ai-node">⑧ 事后监控</span>
+        </div>
+      </div>
+      <p>这张图的关键不是节点数量，而是两个分支：低风险工具调用直接留痕放行；高风险调用必须先经过人工确认，再进入审计日志。合规不是最后加一道检查，而是每次工具调用都走同一条中间层。</p>
+      <details>
+        <summary>展开原文的 Mermaid 架构源码</summary>
+        <pre><code>flowchart TD
+    U["用户请求"] --&gt; T["① 透明度声明&lt;br/&gt;AI 身份与能力边界"]
+    T --&gt; P["② PII 脱敏&lt;br/&gt;假名化 · 注入拦截"]
+    P --&gt; AG["③ Agent 推理"]
+    AG -- "每次工具调用" --&gt; RA{"④ 风险评估器"}
+    RA -- "低风险放行" --&gt; LOG["⑥ 全链路审计日志"]
+    RA -- "高风险" --&gt; HITL["⑤ HITL 卡点&lt;br/&gt;人工确认"]
+    HITL --&gt; LOG
+    LOG --&gt; OG["⑦ 输出护栏&lt;br/&gt;合规检查"]
+    OG --&gt; RESP["最终响应"]
+    RESP --&gt; PM["⑧ 事后监控&lt;br/&gt;指标告警 · 事件上报"]
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef agent fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class RA,HITL decision
+    class AG agent
+    class U,T,P,LOG,OG,RESP,PM proc</code></pre>
+        <p class="ai-code-note">Mermaid 源码按原文保留；页面不加载 Mermaid，阅读以上方 CSS 流程图为离线版本。</p>
+      </details>
+
+      <h3>合规设计清单</h3>
+      <div class="table-wrap">
+        <table class="data ai-check-table">
+          <thead><tr><th>合规要素</th><th>设计动作</th><th>对应法规义务</th></tr></thead>
+          <tbody>
+            <tr><td><strong>透明度声明</strong></td><td>交互入口展示「AI 生成 / 自主操作」告知</td><td>透明度义务（Art.13 / 有限风险告知）</td></tr>
+            <tr><td><strong>PII 处理</strong></td><td>输入端假名化（pseudonymization），memory 按用户隔离、可删除</td><td>GDPR 数据最小化、删除权</td></tr>
+            <tr><td><strong>HITL 卡点</strong></td><td>不可逆操作（支付、删除、外发）前强制人工确认</td><td>人工监督（Art.14）</td></tr>
+            <tr><td><strong>全链路日志</strong></td><td>结构化 trace：reasoning + tool call 入参出参 + 时间戳</td><td>记录与日志（Art.12）</td></tr>
+            <tr><td><strong>风险评估器</strong></td><td>按操作类型 + 影响面打分，高风险自动升级</td><td>风险管理体系（Art.9）</td></tr>
+            <tr><td><strong>模型/系统卡片</strong></td><td>自动生成能力边界、已知失败模式、训练数据摘要</td><td>技术文档（Art.11）</td></tr>
+            <tr><td><strong>事后监控</strong></td><td>生产可观测性 + 异常检测 + 严重事件上报通道</td><td>事后监控（Art.72）</td></tr>
+            <tr><td><strong>对抗性测试</strong></td><td>定期 Red Team，覆盖 Prompt Injection、越狱</td><td>稳健性与网络安全（Art.15）</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <details>
+        <summary>展开原文的合规中间件节选（伪代码）</summary>
+        <pre><code># ── 风险分级：哪些 tool call 需要人工确认 ──────────────────
+RISK_LEVELS = {
+    "search_web": "low",
+    "read_file": "low",
+    "write_file": "medium",
+    "send_email": "high",        # 外发通信 → HITL
+    "make_payment": "critical",  # 金融交易 → HITL
+    "delete_record": "critical", # 不可逆操作 → HITL
+}
+
+@dataclass
+class AuditEntry:
+    """单条审计日志——满足 EU AI Act Art.12 记录义务"""
+    trace_id: str
+    timestamp: float
+    tool_name: str
+    input_hash: str       # 存哈希而非原文，兼顾审计与隐私
+    output_hash: str
+    reasoning: str        # Agent 决策依据（可解释性）
+    risk_level: str
+    approved_by: str = ""  # HITL 审批人
+    metadata: dict = field(default_factory=dict)
+
+class ComplianceMiddleware:
+    """Agent 合规中间件：审计 + HITL + PII 脱敏"""
+
+    def before_tool_call(self, tool_name: str, params: dict,
+                         reasoning: str, trace_id: str) -> dict:
+        risk = RISK_LEVELS.get(tool_name, "medium")
+        if risk in {"high", "critical"}:
+            # 高风险操作：升级人工确认（对应 Art.14 人工监督）
+            return {
+                "needs_approval": True,
+                "risk_level": risk,
+                "tool": tool_name,
+                "reasoning": reasoning,
+                "message": f"高风险操作 {tool_name}，等待人工确认",
+            }
+        return {"needs_approval": False, "risk_level": risk}
+
+    def purge_user_data(self, user_id: str) -> int:
+        """Right to Erasure——彻底删除某用户的所有 trace"""
+        before = len(self.audit_log)
+        self.audit_log = [
+            e for e in self.audit_log
+            if e.metadata.get("user_id") != user_id
+        ]
+        return before - len(self.audit_log)</code></pre>
+        <p class="ai-code-note">以上为原文节选，只作阅读展示，本页不执行。审计日志存哈希而非原文，既满足可追溯，又降低日志本身的隐私泄露面。</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="jurisdiction-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">多法域对比</p><h2 id="jurisdiction-title">出海产品，<br>要过几张卷？</h2></div>
+      <p class="reading-intro">原文对比 EU、中国、美国三大法域：立法思路、核心机制、适用对象、关键要求、内容监管、生效状态和罚款上限都不同。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data ai-jur-table">
+          <thead><tr><th>维度</th><th>EU AI Act</th><th>中国《生成式 AI 服务管理暂行办法》</th><th>美国（联邦无统一法 + 州级）</th></tr></thead>
+          <tbody>
+            <tr><td><strong>立法思路</strong></td><td>横向风险分级，统一立法</td><td>按服务类型垂直监管，备案制</td><td>无联邦统一法，州级碎片化 + 行业指导</td></tr>
+            <tr><td><strong>核心机制</strong></td><td>四级风险分级 + 合格评定</td><td>算法备案 + 安全评估 + 内容合规</td><td>高风险场景的事前影响评估（州级）</td></tr>
+            <tr><td><strong>适用对象</strong></td><td>在欧盟市场的所有 AI 系统（含域外提供者）</td><td>面向中国公众提供生成式 AI 服务</td><td>各州管辖范围内的 AI 系统</td></tr>
+            <tr><td><strong>关键要求</strong></td><td>透明度、人工监督、日志、数据治理</td><td>训练数据合法、内容真实准确、标识 AI 生成</td><td>透明度、影响评估、反歧视</td></tr>
+            <tr><td><strong>内容监管</strong></td><td>较少涉及具体内容</td><td><strong>严格</strong>：须符合核心价值观，禁止生成违法内容</td><td>主要关注歧视、深度伪造</td></tr>
+            <tr><td><strong>生效状态</strong></td><td>高风险义务 2026-08-02 全面生效（原文标注）</td><td>2023-08-15 已生效（原文标注）</td><td>Colorado AI Act 2026-02-01 生效（原文标注）</td></tr>
+            <tr><td><strong>罚款上限</strong></td><td>€35M 或全球营收 7%（原文标注）</td><td>警告、罚款、暂停服务</td><td>各州不同</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="callout">
+        <p class="callout-label">原文提醒</p>
+        <p>美国加州 SB-1047（前沿 AI 模型安全法案）已于 2024 年被州长否决，未成为法律；Colorado SB 24-205（消费者 AI 保护法）已签署，2026-02-01 生效，是美国首部全面性州级 AI 法。联邦层面目前主要靠部门指引（如 NIST AI RMF 自愿框架），尚无统一立法。以上状态按原文时点，原文版本、未联网核实。</p>
+      </div>
+      <p>原文的实践建议是“最高水位线”策略：以最严法域（通常是 EU）为基线设计合规架构，再叠加各市场的特殊要求，例如中国的内容合规与备案、美国部分州的算法审计。这样避免为每个市场维护独立合规版本的高昂成本。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">判定看用途，<br>合规要可追溯。</h2></div>
+      <p class="reading-intro">原文列了 1 条误区和 4 条追问。高频点是：我的 Agent 算不算高风险、合规与迭代是否冲突、开源责任怎么分、记忆怎么同时满足两部法规、误操作谁担责。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>我的 Agent 算不算高风险？判定标准是什么？</h3><p>两条路径：路径一是用途清单（EU AI Act Annex III），列举招聘筛选、信贷评估、保险定价、教育评分、医疗诊断、执法辅助、关键基础设施管理、民主程序中的投票辅助等；路径二是产品安全法规附件（Annex I）下的 AI 组件，如医疗器械、机械、航空器中的 AI。通用客服 Agent 不是高风险，但同样代码一旦用于筛选简历，立刻变成高风险。判定不看技术，看用途。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“合规和快速迭代不可兼得。”</h3><p>合规并非要求冻结架构，而是要求变更可控可追溯。原文建议建立“合规即代码”（Compliance as Code）流水线：把透明度声明、风险评估、日志规范沉淀为 CI/CD 中的自动检查项，而非人工 review。真正的成本在初次搭建合规基础设施，后续边际成本很低。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>开源 Agent 的责任归属是谁？</h3><p>EU AI Act 区分“提供者（provider）”和“部署者（deployer）”。开源模型在“非服务化分发”下享有一定豁免；但一旦你把开源 Agent 包装成服务对外提供，你就是 provider，承担全套义务。只做内部工具且不对外，义务较轻。微调开源模型用于新用途的团队，可能从部署者升级为提供者——原文称这是开源生态中的灰色地带。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 3</p>
+      <div><h3>Agent 的记忆系统怎么同时满足 EU AI Act 和 GDPR？</h3><p>两部法规关注点不同但交叉：EU AI Act 关注决策可审计（要求保留日志），GDPR 关注隐私保护（要求最小化、可删除）。冲突点是“日志保留”与“删除权”。解法是日志只存哈希和结构化元数据，不存 PII 原文；memory 按用户隔离，支持粒度化删除和保留期限；对必须保留的决策证据做假名化处理，使数据主体不可直接识别。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 4</p>
+      <div><h3>Agent 发生误操作致损，谁担责？</h3><p>EU AI Act 下责任链条大致是：提供者保证系统本身合规（技术文档、风险体系）；部署者负责正确使用（人工监督、事后监控）；若因部署者未执行 HITL 导致事故，部署者担主责。但实际诉讼中，用户往往同时起诉提供者和部署者。工程上能做的，是确保每次高风险操作都有明确的人工确认记录，把责任边界留痕。具体责任认定请咨询法律顾问。</p></div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="links-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">延伸思考 / 交叉引用</p><h2 id="links-title">合规不是孤岛，<br>它连着安全与部署。</h2></div>
+      <p class="reading-intro">原文把合规放在安全、护栏、HITL、最小权限、评估和生产部署的交叉点上。下面按原文的六条交叉引用整理。</p>
+    </div>
+    <div class="prose">
+      <ul class="ai-extra">
+        <li><b>078 Agent 安全风险：</b>合规是安全风险的“法律外壳”。理解 Agent 有哪些攻击面（Prompt Injection、越权工具调用），是判断合规义务轻重的前提。<a href="078-agent-safety-risks.html">打开 078 Agent 安全风险</a>。</li>
+        <li><b>079 Guardrails：</b>输入/输出护栏是合规中间件的核心组件，护栏拦截率直接对应“稳健性与网络安全”义务的落地证据。<a href="079-guardrails-basics.html">打开 079 Guardrails</a>。</li>
+        <li><b>080 Human-in-the-Loop：</b>HITL 卡点是满足“人工监督”（Art.14）义务的标准工程模式；本文的合规中间件本质上是 HITL 的风险分级自动化。<a href="080-human-in-the-loop.html">打开 080 Human-in-the-Loop</a>。</li>
+        <li><b>081 最小权限与沙箱：</b>最小权限原则既是安全最佳实践，也是合规审计中“数据治理”与“网络安全”义务的直接证据。<a href="081-least-privilege-sandboxing.html">打开 081 最小权限与沙箱</a>。</li>
+        <li><b>076 静态 Benchmark 陷阱：</b>合规要求“稳健性”证据，但静态 benchmark 高分不等于生产可靠；合规审计需要真实环境的事后监控数据，而非榜单分数。<a href="../08-evaluation/076-static-benchmark-trap.html">打开 076 静态 Benchmark 陷阱</a>。</li>
+        <li><b>104 / 010 生产部署：</b>合规架构（日志、监控、HITL）应作为生产部署基础设施的一部分，从架构评审阶段纳入。<a href="../01-agent-architecture/010-production-agent-system-design.html">打开 010 生产级 Agent 系统设计</a>；<a href="../10-production-and-deployment/104-agent-production-troubleshooting.html">打开 104 生产故障排查</a>。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《Agent 产品如何做合规设计？EU AI Act 对 Agent 有何影响？》。法规条款、日期、罚款和州级法案状态按原文时点记录，本页未联网核实，不构成法律意见。</p>
+    <details>
+      <summary>展开原文列出的八条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://artificialintelligenceact.eu/" target="_blank" rel="noopener noreferrer">EU AI Act 官方门户（全文、时间线、常见问题）</a></li>
+          <li><a href="https://eur-lex.europa.eu/eli/reg/2024/1689/oj" target="_blank" rel="noopener noreferrer">EU AI Act 全文（EUR-Lex）</a></li>
+          <li><a href="https://www.hklaw.com/en/insights/publications/2026/04/us-companies-face-eu-ai-acts-possible-august-2026-compliance-deadline" target="_blank" rel="noopener noreferrer">Holland &amp; Knight：US Companies Face EU AI Act's August 2026 Compliance Deadline</a></li>
+          <li><a href="https://modulos.ai/ai-compliance-guide/" target="_blank" rel="noopener noreferrer">Modulos：2026 AI Compliance Guide</a></li>
+          <li><a href="https://dl.acm.org/doi/full/10.1145/3710808" target="_blank" rel="noopener noreferrer">CACM：加州 SB-1047 否决分析（The Defeat of California's SB 1047）</a></li>
+          <li><a href="http://www.cac.gov.cn/2023-07/13/c_1690898327029107.htm" target="_blank" rel="noopener noreferrer">国家网信办：《生成式人工智能服务管理暂行办法》</a></li>
+          <li><a href="https://www.nist.gov/it/ai-risk-management-framework" target="_blank" rel="noopener noreferrer">NIST AI Risk Management Framework (AI RMF 1.0)</a></li>
+          <li><a href="https://digital-strategy.ec.europa.eu/en/policies/regulatory-framework-ai" target="_blank" rel="noopener noreferrer">European Commission：AI Act 指南与实施问答</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。法规问题请以官方文本和法务意见为准。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>09-safety-and-alignment/115-agent-compliance-eu-ai-act.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 6 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const AI_HIGH_OBLIGATIONS = [
+    { art: "Art.9", name: "风险管理体系", note: "全生命周期建立持续的风险识别与缓解流程；架构变更后跑风险评估流水线。" },
+    { art: "Art.10", name: "数据与数据治理", note: "训练/验证/测试数据须相关、无错、完整；记录数据血缘、做偏见检测、维护数据卡片。" },
+    { art: "Art.11", name: "技术文档", note: "上线前完成并持续维护技术文档；自动生成模型卡、系统架构文档、变更日志。" },
+    { art: "Art.12", name: "记录与日志", note: "自动记录事件，确保可追溯；结构化 trace 保留 tool call 全量日志。" },
+    { art: "Art.13", name: "透明度与信息", note: "向部署者提供清晰的使用说明；披露能力边界和已知失败模式。" },
+    { art: "Art.14", name: "人工监督", note: "允许自然人在使用期间有效监督；提供 HITL 卡点、人工中断与覆盖机制。" },
+    { art: "Art.15", name: "稳健性、准确性与网络安全", note: "具适当韧性，能抵御错误与恶意攻击；红队、对抗鲁棒性、Prompt Injection 防御。" },
+    { art: "Art.72", name: "事后监控", note: "上线后持续监控性能与风险；生产可观测性加异常告警。" },
+    { art: "Art.43-48", name: "合格评定与 CE 标志", note: "通过合格评定并加贴 CE 标志；第三方审计或自我声明，视类别而定。" }
+  ];
+
+  const AI_HIGH_CHECKPOINTS = [
+    { name: "合规中间层", maps: "Art.9 / Art.14", note: "每次工具调用前做风险评估，高风险自动升级人工确认。" },
+    { name: "全链路审计", maps: "Art.12", note: "记录 trace_id、时间戳、tool call 入参出参、reasoning、审批人；日志防篡改。" },
+    { name: "PII 脱敏与删除", maps: "GDPR", note: "输入端假名化；memory 按用户隔离，支持导出、彻底删除和保留期限。" },
+    { name: "HITL 卡点", maps: "Art.14", note: "支付、删除、外发等不可逆操作前强制人工确认；记录审批人。" },
+    { name: "透明度声明", maps: "Art.13", note: "交互入口展示 AI 身份、能力边界和自主操作范围。" },
+    { name: "文档自动化", maps: "Art.11", note: "自动生成模型卡、系统卡、架构文档和变更日志。" },
+    { name: "对抗性测试", maps: "Art.15", note: "季度红队，覆盖 Prompt Injection、越狱和工具滥用。" },
+    { name: "生产监控与上报", maps: "Art.72", note: "指标告警、异常检测、严重事件上报通道。" }
+  ];
+
+  const AI_PRODUCTS = {
+    service: {
+      label: "客服 Agent",
+      use: "面向公众的售后客服，回答订单和退换货问题；可查询订单，不直接发起退款。",
+      annex: "未命中 Annex III 用途清单",
+      role: "部署者（基于第三方模型构建服务）",
+      basis: "用途是通用客服，不涉及招聘、信贷、医疗、执法、教育等高风险场景。",
+      level: "limited",
+      levelLabel: "有限风险",
+      reason: "聊天机器人须告知用户正在与 AI 交互；未进入高风险用途，不触发高风险系统的全套义务。",
+      obligations: [
+        { art: "Art.13", name: "透明度告知", note: "交互入口说明 AI 身份、能力边界和自动处理范围。" },
+        { art: "GDPR", name: "PII 最小化", note: "对话与记忆中只保留必要个人数据，支持用户删除和导出。" }
+      ],
+      checkpoints: [
+        { name: "AI 身份标识", maps: "透明度", note: "对话入口固定展示“AI 生成 / 自动处理”。" },
+        { name: "PII 脱敏", maps: "GDPR", note: "输入端假名化；memory 按用户隔离、可删除。" },
+        { name: "审计日志", maps: "工程加严", note: "记录 tool call 入参出参，便于事后追溯。" },
+        { name: "高风险动作审批", maps: "工程加严", note: "支付、删除、外发前人工确认；不是有限风险的法定强制，但建议加严。" }
+      ]
+    },
+    recruit: {
+      label: "招聘筛选 Agent",
+      use: "筛选简历、排序候选人、生成面试问题，辅助招聘团队做初筛。",
+      annex: "命中 Annex III：就业与工人管理（招聘筛选）",
+      role: "提供者（自研并对欧盟市场提供服务）",
+      basis: "用途直接进入招聘筛选，属于原文列举的高风险场景；判定看用途，不看模型能力。",
+      level: "high",
+      levelLabel: "高风险",
+      reason: "招聘筛选命中高风险用途清单，触发透明度、人工监督、日志、数据治理、稳健性等全套义务。",
+      obligations: AI_HIGH_OBLIGATIONS,
+      checkpoints: AI_HIGH_CHECKPOINTS.concat([
+        { name: "候选人申诉通道", maps: "Art.14", note: "被筛选结果影响的候选人可请求人工复核，并记录复核结论。" }
+      ])
+    },
+    credit: {
+      label: "信贷评估 Agent",
+      use: "评估小微企业贷款申请，输出额度与利率建议，供信贷员参考。",
+      annex: "命中 Annex III：信贷/信用评估",
+      role: "提供者 + 部署者（自研自用）",
+      basis: "信贷评估属于原文列举的高风险场景；同时与 GDPR 的数据最小化、删除权交叉。",
+      level: "high",
+      levelLabel: "高风险",
+      reason: "信贷评估命中高风险用途清单；拒贷或差别定价会直接影响个人/企业权益，人工监督和可解释性要求更重。",
+      obligations: AI_HIGH_OBLIGATIONS,
+      checkpoints: AI_HIGH_CHECKPOINTS.concat([
+        { name: "拒贷理由可解释", maps: "Art.13 / Art.14", note: "输出可读的拒绝理由和关键因子，支持人工复核与申诉。" }
+      ])
+    },
+    scoring: {
+      label: "社会评分 Agent",
+      use: "根据用户行为给社会信用打分，分数影响公共服务资格。",
+      annex: "命中禁止性实践：社会评分",
+      role: "任何提供者/部署者",
+      basis: "社会评分属于原文列举的不可接受风险；不是“满足义务就能上线”。",
+      level: "prohibited",
+      levelLabel: "禁止使用",
+      reason: "原文结论是全面禁止。合规动作不是补文档，而是停止该用途；具体法律后果请咨询法律顾问。",
+      obligations: [
+        { art: "禁止性条款", name: "不得投放或提供", note: "社会评分属于不可接受风险，原文结论是全面禁止。" },
+        { art: "禁止性条款", name: "不得面向欧盟市场提供", note: "原文只给禁止结论；适用范围和处置方式请由法务按最新法规确认。" }
+      ],
+      checkpoints: [
+        { name: "用途准入黑名单", maps: "产品立项", note: "社会评分、实时生物识别、潜意识操纵等直接拒绝。" },
+        { name: "评审一票否决", maps: "产品/法务", note: "合规评审对禁止用途直接否决，不进入排期。" },
+        { name: "合同与销售条款", maps: "对外承诺", note: "禁止把 Agent 能力用于社会评分，并在合同中写明用途限制。" }
+      ]
+    }
+  };
+
+  const AI_LEVELS = [
+    { key: "prohibited", name: "禁止使用", en: "Prohibited", ex: "社会评分、实时生物识别、潜意识操纵、剥削弱势群体", duty: "全面禁止" },
+    { key: "high", name: "高风险", en: "High-Risk", ex: "招聘、信贷、医疗、执法、教育、关键基础设施", duty: "严格义务" },
+    { key: "limited", name: "有限风险", en: "Limited", ex: "聊天机器人、Deepfake、情感识别", duty: "透明度告知" },
+    { key: "minimal", name: "最小风险", en: "Minimal", ex: "垃圾邮件过滤、游戏 AI、库存预测", duty: "无额外义务" }
+  ];
+
+  const AI_STEPS = [
+    { label: "用途", figure: "图 1 · 用途判定", title: "先看用途，<br>不看技术。", desc: "先确认产品在什么场景、对谁、做什么。同一个 Agent，换个用途就可能从有限风险变成高风险。", heading: "先看用途，再看技术。" },
+    { label: "分级", figure: "图 2 · 风险等级", title: "用途命中，<br>等级就定了。", desc: "对照禁止性实践和 Annex III 用途清单，确定四档中的哪一档；判定不看模型能力。", heading: "用途命中，等级就定了。" },
+    { label: "义务", figure: "图 3 · 义务清单", title: "等级决定<br>义务清单。", desc: "禁止用途没有“满足义务”这条路；高风险触发九类义务；有限风险主要是透明度告知。", heading: "等级决定义务清单。" },
+    { label: "卡点", figure: "图 4 · 工程卡点", title: "每条义务，<br>落到一个卡点。", desc: "把条款翻译成架构里的强制动作：透明度声明、PII 脱敏、HITL、审计日志、风险评估器、事后监控。", heading: "每条义务，落到一个卡点。" }
+  ];
+
+  const aiMain = document.getElementById("ai-main");
+  const aiModes = Array.from(document.querySelectorAll(".ai-mode"));
+  const aiStageButtons = Array.from(document.querySelectorAll(".stage-button"));
+  const aiPrev = document.getElementById("ai-prev");
+  const aiNext = document.getElementById("ai-next");
+  const aiReset = document.getElementById("ai-reset");
+  const aiFigure = document.getElementById("ai-figure");
+  const aiDesc = document.getElementById("ai-desc");
+  const aiFactProduct = document.getElementById("ai-fact-product");
+  const aiFactLevel = document.getElementById("ai-fact-level");
+  const aiFactOb = document.getElementById("ai-fact-ob");
+  const aiFactCheck = document.getElementById("ai-fact-check");
+  const aiFactStep = document.getElementById("ai-fact-step");
+  const aiSummary = document.getElementById("ai-summary");
+  const aiAnnouncement = document.getElementById("ai-announcement");
+  let aiProduct = "service";
+  let aiStep = 0;
+
+  function aiLevelLadder(current) {
+    return AI_LEVELS.map((level) => {
+      const cls = level.key === current ? " is-current" : "";
+      return '<div class="ai-level' + cls + '" data-level="' + level.key + '">' +
+        '<span class="lvl">' + level.name + '</span>' +
+        '<span class="ex">' + level.ex + '</span>' +
+        '<span class="duty">' + level.duty + '</span>' +
+        '</div>';
+    }).join("");
+  }
+
+  function aiRenderStep(product, step) {
+    if (step === 0) {
+      return '<p class="ai-kicker">固定产品 · ' + product.label + '</p>' +
+        '<h3 class="ai-h3">' + product.use + '</h3>' +
+        '<dl class="ai-rows">' +
+        '<div class="ai-row"><dt>用途清单</dt><dd>' + product.annex + '</dd></div>' +
+        '<div class="ai-row"><dt>你的角色</dt><dd>' + product.role + '</dd></div>' +
+        '<div class="ai-row"><dt>判定依据</dt><dd>' + product.basis + '</dd></div>' +
+        '</dl>' +
+        '<div class="ai-callout"><b>判定顺序：</b>先看用途是否落入禁止性实践，再看是否命中 Annex III 高风险清单，最后看是否属于有限风险（如聊天机器人）。技术栈、模型大小和准确率都不改变用途判定。</div>';
+    }
+    if (step === 1) {
+      const timeline = product.level === "high"
+        ? '<div class="ai-callout warn"><b>时间点（原文标注）：</b>高风险系统义务于 2026-08-02 全面生效。面向欧盟市场的产品，需要在此前完成高风险合规，或证明自己不属于高风险。原文版本、未联网核实。</div>'
+        : product.level === "prohibited"
+          ? '<div class="ai-callout warn"><b>时间点（原文标注）：</b>禁止性条款已于 2025-02-02 适用。这不是“未来要补”的义务，而是当前就应停止的用途。原文版本、未联网核实。</div>'
+          : '<div class="ai-callout"><b>时间点（原文标注）：</b>有限风险主要对应透明度义务；高风险义务于 2026-08-02 全面生效。若产品后续扩展到招聘、信贷等场景，需要重新判定。原文版本、未联网核实。</div>';
+      return '<p class="ai-kicker">风险分级 · ' + product.levelLabel + '</p>' +
+        '<h3 class="ai-h3">' + AI_STEPS[1].heading + '</h3>' +
+        '<div class="ai-ladder" aria-label="四档风险等级，当前产品所在等级已高亮">' + aiLevelLadder(product.level) + '</div>' +
+        '<p class="ai-legal">表中顺序：风险从高到低，义务从重到轻。</p>' +
+        '<div class="ai-reason"><b>' + product.levelLabel + '</b><p>' + product.reason + '</p></div>' +
+        timeline;
+    }
+    if (step === 2) {
+      const intro = product.level === "prohibited"
+        ? "禁止用途没有“满足义务就能上线”这条路。原文结论是全面禁止；下面是应停止的动作。"
+        : product.level === "high"
+          ? "高风险触发九类义务。条款编号按原文，具体适用和合格评定路径需由法务确认。"
+          : "有限风险主要是透明度告知；下面两条是原文义务与 GDPR 交叉项。";
+      return '<p class="ai-kicker">' + product.levelLabel + ' · 适用义务</p>' +
+        '<h3 class="ai-h3">' + AI_STEPS[2].heading + '</h3>' +
+        '<p class="ai-lede">' + intro + '</p>' +
+        '<ul class="ai-obligations">' + product.obligations.map((o) =>
+          '<li class="ai-obligation"><span class="ai-art">' + o.art + '</span><div><b>' + o.name + '</b><p>' + o.note + '</p></div></li>'
+        ).join("") + '</ul>' +
+        '<p class="ai-legal">条款编号、生效状态和罚款口径按原文时点，原文版本、未联网核实，不构成法律意见。真实项目请以官方文本和法务意见为准。</p>';
+    }
+    return '<p class="ai-kicker">' + product.levelLabel + ' · 工程卡点</p>' +
+      '<h3 class="ai-h3">' + AI_STEPS[3].heading + '</h3>' +
+      '<p class="ai-lede">每条义务都要落到一个可检查的工程动作；下面的映射是工程建议，不是法规原文。</p>' +
+      '<div class="ai-checkpoints">' + product.checkpoints.map((c) =>
+        '<div class="ai-check"><div class="ai-check-top"><b>' + c.name + '</b><span class="ai-map">' + c.maps + '</span></div><p>' + c.note + '</p></div>'
+      ).join("") + '</div>' +
+      '<div class="ai-callout"><b>落地顺序建议：</b>先把审计日志和 HITL 做成中间层，再接透明度声明、PII 脱敏、输出护栏和事后监控。这样每次工具调用都走同一条合规链路，而不是在业务代码里散落检查。</div>';
+  }
+
+  function aiRender(announce) {
+    const product = AI_PRODUCTS[aiProduct];
+    const step = AI_STEPS[aiStep];
+    aiMain.innerHTML = aiRenderStep(product, aiStep);
+    aiModes.forEach((button) => {
+      button.setAttribute("aria-pressed", button.dataset.product === aiProduct ? "true" : "false");
+    });
+    aiStageButtons.forEach((button, i) => {
+      if (i === aiStep) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    aiFigure.textContent = step.figure;
+    aiDesc.textContent = step.desc;
+    aiFactProduct.textContent = product.label;
+    aiFactLevel.textContent = product.levelLabel;
+    aiFactOb.textContent = String(product.obligations.length);
+    aiFactCheck.textContent = String(product.checkpoints.length);
+    aiFactStep.textContent = (aiStep + 1) + " / 4";
+    aiSummary.textContent = product.label + " · " + product.levelLabel + " · 第 " + (aiStep + 1) + " / 4 步";
+    aiPrev.disabled = aiStep === 0;
+    aiNext.disabled = aiStep === AI_STEPS.length - 1;
+    aiNext.textContent = aiStep === AI_STEPS.length - 1 ? "已到卡点" : "下一步 →";
+    if (announce) {
+      aiAnnouncement.textContent = product.label + "，第 " + (aiStep + 1) + " 步：" + step.label + "。风险等级：" + product.levelLabel + "。";
+    }
+  }
+
+  aiModes.forEach((button) => {
+    button.addEventListener("click", () => {
+      aiProduct = button.dataset.product;
+      aiRender(true);
+    });
+  });
+  aiStageButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      aiStep = Number(button.dataset.stage);
+      aiRender(true);
+    });
+  });
+  aiPrev.addEventListener("click", () => {
+    if (aiStep > 0) {
+      aiStep -= 1;
+      aiRender(true);
+    }
+  });
+  aiNext.addEventListener("click", () => {
+    if (aiStep < AI_STEPS.length - 1) {
+      aiStep += 1;
+      aiRender(true);
+    }
+  });
+  aiReset.addEventListener("click", () => {
+    aiProduct = "service";
+    aiStep = 0;
+    aiRender(false);
+    aiAnnouncement.textContent = "已重置：客服 Agent，第 1 步用途判定，有限风险。";
+  });
+
+  aiRender(false);
+</script>
+</body>
+</html>

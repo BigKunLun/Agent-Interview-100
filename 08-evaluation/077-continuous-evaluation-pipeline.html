@@ -1,0 +1,782 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>如何构建持续评估（Continuous Evaluation）流水线？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+    .button:disabled, .button[disabled] { color: var(--text-dim); }
+/* 077 持续评估流水线 */
+  .ce-stage { padding: var(--s-5) var(--s-6); }
+  .ce-scenarios { display: flex; flex-wrap: wrap; gap: var(--s-2); align-items: center; margin-bottom: var(--s-4); }
+  .ce-scenario-label { font: 11px/1.5 var(--mono); color: var(--text-dim); letter-spacing: .04em; margin-right: var(--s-1); }
+  .ce-scenario { min-height: 40px; padding: 7px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 12px; color: var(--text-dim); }
+  .ce-scenario:hover { background: var(--surface-soft); }
+  .ce-scenario[aria-pressed="true"] { background: var(--accent-dim); border-color: var(--accent); color: var(--ink); font-weight: 600; }
+  .ce-flow { display: flex; align-items: stretch; gap: 4px; margin-bottom: var(--s-4); overflow-x: auto; padding-bottom: 4px; }
+  .ce-node { flex: 1 1 0; min-width: 106px; padding: 9px 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 11px; line-height: 1.5; color: var(--text-dim); }
+  .ce-node b { display: block; color: var(--ink); font-size: 12px; font-weight: 600; }
+  .ce-node[data-state="current"] { border-color: var(--accent); background: var(--accent-dim); box-shadow: inset 0 0 0 1px var(--accent); }
+  .ce-node[data-state="current"] b { color: var(--accent); }
+  .ce-node[data-state="done"] { border-color: var(--border-bright); background: var(--surface-soft); }
+  .ce-node[data-state="future"] { opacity: 1; }
+  .ce-arrow { align-self: center; flex: 0 0 auto; color: var(--text-dim); font: 12px/1 var(--mono); }
+  .ce-card { border: 1px solid var(--border-bright); border-left: 4px solid var(--accent); border-radius: var(--r-1); background: var(--surface); padding: var(--s-5); animation: arrive var(--med) var(--ease); }
+  .ce-card-top { display: flex; justify-content: space-between; gap: var(--s-3); align-items: flex-start; flex-wrap: wrap; }
+  .ce-card h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; }
+  .ce-gate { display: inline-flex; align-items: center; min-height: 26px; padding: 2px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-soft); color: var(--text-dim); font-size: 11px; white-space: nowrap; }
+  .ce-gate.ok { background: #e9f1e7; border-color: #7f9b7c; color: #1f4d24; }
+  .ce-gate.warn { background: #fff4df; border-color: #a9741f; color: #6b4300; }
+  .ce-gate.bad { background: #fbe9e7; border-color: #b04a3f; color: #7a1f18; }
+  .ce-trigger { margin-top: var(--s-3); font: 11px/1.7 var(--mono); color: var(--text-dim); }
+  .ce-metrics { margin-top: var(--s-3); border-top: 1px solid var(--border); }
+  .ce-metric { display: grid; grid-template-columns: 9.5em 1fr 6em; gap: var(--s-3); align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .ce-metric:last-child { border-bottom: 0; }
+  .ce-metric-name { color: var(--text-dim); }
+  .ce-metric-value { color: var(--ink); font-family: var(--mono); font-size: 12px; }
+  .ce-metric-value small { color: var(--text-dim); font-family: var(--sans); font-size: 11px; }
+  .ce-metric-status { justify-self: end; font-size: 11px; padding: 2px 8px; border-radius: 999px; border: 1px solid var(--border); background: var(--surface-soft); color: var(--text-dim); white-space: nowrap; }
+  .ce-metric-status.ok { background: #e9f1e7; border-color: #7f9b7c; color: #1f4d24; }
+  .ce-metric-status.warn { background: #fff4df; border-color: #a9741f; color: #6b4300; }
+  .ce-metric-status.bad { background: #fbe9e7; border-color: #b04a3f; color: #7a1f18; }
+  .ce-decision { margin-top: var(--s-4); padding: var(--s-3) var(--s-4); border-radius: var(--r-1); background: var(--surface-soft); font-size: 13px; line-height: 1.7; }
+  .ce-decision b { color: var(--ink); }
+  .ce-pending { margin-top: var(--s-4); padding: var(--s-4); border: 1px dashed var(--border-bright); border-radius: var(--r-1); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .ce-alert { margin-top: var(--s-3); padding: var(--s-3) var(--s-4); border-left: 4px solid #a9741f; border-radius: var(--r-1); background: #fff8ec; font-size: 12px; line-height: 1.7; color: #5c3a08; }
+  .ce-alert b { color: #3f2906; }
+  .ce-dash { margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); overflow: hidden; }
+  .ce-dash-head { padding: var(--s-3) var(--s-4); background: var(--surface-soft); border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 600; }
+  .ce-dash-body { padding: var(--s-4); display: grid; gap: var(--s-3); }
+  .ce-dash-row { display: grid; grid-template-columns: 7em 1fr 5.5em; gap: var(--s-3); align-items: center; font-size: 12px; }
+  .ce-dash-bar { height: 10px; border-radius: 999px; background: var(--surface-soft); overflow: hidden; }
+  .ce-dash-bar span { display: block; height: 100%; border-radius: 999px; background: var(--accent); }
+  .ce-dash-bar.warn span { background: var(--series-2); }
+  .ce-dash-value { text-align: right; font: 12px/1.4 var(--mono); color: var(--ink); }
+  .ce-dash-alert { padding: var(--s-3); border: 1px solid #a9741f; border-radius: var(--r-1); background: #fff8ec; font-size: 12px; line-height: 1.7; color: #5c3a08; }
+  .ce-roadmap { margin-top: var(--s-4); display: grid; gap: var(--s-2); }
+  .ce-month { display: grid; grid-template-columns: 6.5em 1fr; gap: var(--s-3); padding: var(--s-3) var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .ce-month b { font: 600 12px/1.6 var(--mono); color: var(--accent); }
+  .ce-month ul { margin: 0; padding-left: 1.2em; font-size: 12px; line-height: 1.7; }
+  .ce-month li { margin-block: 3px; }
+  .ce-table td, .ce-table th { vertical-align: top; }
+  .ce-table td:first-child, .ce-table th:first-child { min-width: 9em; }
+  .ce-compare { min-width: 660px; }
+  .ce-stage-table { min-width: 720px; }
+  .ce-warn { border: 1px solid #b45309; border-radius: var(--r-1); background: #fff8ec; padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+  .ce-warn .ce-warn-label { font: 600 11px/1.6 var(--mono); color: #8a4708; letter-spacing: .04em; }
+  .ce-warn p { font-size: var(--t-small); max-width: 52em; margin-top: 4px; }
+  @media (max-width: 760px) {
+    .ce-stage { padding: var(--s-4); }
+    .ce-flow { flex-direction: column; overflow: visible; }
+    .ce-arrow { transform: rotate(90deg); }
+    .ce-node { min-width: 0; }
+    .ce-card { padding: var(--s-4); }
+    .ce-card h2 { font-size: 22px; }
+    .ce-metric { grid-template-columns: 1fr auto; gap: 2px var(--s-3); }
+    .ce-metric-value { grid-column: 1; }
+    .ce-metric-status { grid-column: 2; grid-row: 1 / span 2; }
+    .ce-dash-row { grid-template-columns: 1fr auto; }
+    .ce-dash-bar { grid-column: 1 / -1; grid-row: 2; }
+    .ce-month { grid-template-columns: 1fr; gap: 3px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">077 / 持续评估流水线</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 2 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="076-static-benchmark-trap.html">← 上一页 · 静态 Benchmark 的陷阱</a><a href="111-eval-harness-design.html">下一页 → · Eval Harness 设计与生态…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">高级 · Evaluation · 可交互讲解</p>
+      <h1>评估不是关卡，<br>是常开的回路。</h1>
+    </div>
+    <div>
+      <p class="lead">一次性评估假设“测过一次就永远有效”。但模型 API 会更新，检索索引会变，用户问题会漂。持续评估把质量检查放进每次变更、每次发布和每天的流量里。</p>
+      <p class="definition">原文把流水线分三段：<strong>开发期 CI 回归、上线期灰度、运行期在线评估</strong>，再用用户反馈回流 Golden Dataset 形成闭环。本页的阈值、通过率、成本都是<strong>固定教学数据</strong>或原文示例；不连接 CI、不调用模型、不产生真实流量。</p>
+      <div class="hero-meta"><span class="pill">高级</span><span class="pill">Evaluation</span><span class="pill">持续评估</span><span class="pill">固定教学数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-label="持续评估流水线演示">
+    <div class="player-top">
+      <div class="player-label">持续评估流水线 <small>选一个场景，逐段跑质量门</small></div>
+      <div class="controls" role="group" aria-label="流水线控制">
+        <button type="button" class="button button-quiet" id="ce-reset">重新开始</button>
+        <button type="button" class="button" id="ce-back" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="ce-next">运行本阶段检查</button>
+      </div>
+    </div>
+    <div class="ce-stage scene" data-scene="continuous-eval-pipeline">
+      <div class="ce-scenarios" role="group" aria-label="演示场景选择">
+        <span class="ce-scenario-label">演示场景</span>
+        <button type="button" class="ce-scenario" data-scenario="normal" aria-pressed="true">正常变更</button>
+        <button type="button" class="ce-scenario" data-scenario="drift" aria-pressed="false">质量退化</button>
+      </div>
+      <div class="ce-flow" aria-hidden="true">
+        <div class="ce-node" data-node="0" data-state="current"><b>① 开发期</b>CI 回归 · 阻塞合并</div>
+        <span class="ce-arrow">→</span>
+        <div class="ce-node" data-node="1" data-state="future"><b>② 上线期</b>灰度 5% → 100%</div>
+        <span class="ce-arrow">→</span>
+        <div class="ce-node" data-node="2" data-state="future"><b>③ 运行期</b>抽样评估 · 漂移</div>
+      </div>
+      <div class="ce-card" id="ce-card">
+        <div class="ce-card-top">
+          <div>
+            <p class="figure-index" id="ce-index">阶段 1 / 3</p>
+            <h2 id="ce-stage-title">开发期：CI 回归</h2>
+          </div>
+          <span class="ce-gate" id="ce-gate">待检查</span>
+        </div>
+        <p class="ce-trigger" id="ce-trigger"></p>
+        <div id="ce-body"></div>
+        <div class="ce-decision" id="ce-decision"></div>
+        <div class="ce-alert" id="ce-alert" hidden></div>
+      </div>
+      <p class="demo-note">固定教学数据：触发条件、指标值、阈值与决策均为本页预设，用来演示质量门和告警逻辑；不连接 GitHub Actions、Feature Flags、Langfuse 或任何真实系统。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定流水线演示 · 不触发真实 CI</span><span id="ce-state">阶段 1 / 3 · 待运行</span></div>
+  </section>
+  <p id="ce-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="ce-why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">一 · 为什么不能只评一次</p><h2 id="ce-why-title">模型没换，<br>行为也会变。</h2></div>
+      <p class="reading-intro">一次性评估的隐含假设是“环境静止”。原文列出五种问题，每一种都能让旧测试集失去代表性。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data ce-compare">
+          <caption class="sr-only">一次性评估的问题与持续评估的做法</caption>
+          <thead><tr><th scope="col">变化 / 假设</th><th scope="col">一次性评估的盲区</th><th scope="col">持续评估的做法</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">评估一次就永远有效（假设）</th><td>把一次结果当成长期结论；环境变化后仍沿用旧结论。</td><td>评估改为 always-on，每次变更都重新验证。</td></tr>
+            <tr><th scope="row">模型 API 更新</th><td>版本悄悄变化，旧分数不再代表当前行为。</td><td>每次变更触发回归，定时任务兜底。</td></tr>
+            <tr><th scope="row">用户行为演化</th><td>原有测试集不再代表真实场景。</td><td>生产流量抽样评估，反馈回流数据集。</td></tr>
+            <tr><th scope="row">Prompt 小修改</th><td>可能引入意想不到的退化。</td><td>Prompt 文件变更自动跑评估。</td></tr>
+            <tr><th scope="row">RAG 索引更新</th><td>回答质量漂移，离线集看不到。</td><td>索引更新也作为触发条件。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文的核心理念是：<strong>评估不是发布前的关卡，而是贯穿整个生命周期的闭环</strong>。关卡只回答“这次能不能过”，闭环还要回答“上线后有没有变坏、坏了能不能自动止损、经验有没有回到测试集”。</p>
+      <div class="ce-warn">
+        <p class="ce-warn-label">原文引用、未联网核实</p>
+        <p>原文称采用结构化评估的团队报告准确率提升 <strong>35–40%</strong>、迭代速度提升 <strong>5–10 倍</strong>。这是原文引用的团队自报数据，不是本页实测，也不构成对任何团队的承诺。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="ce-arch-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">二 · 三阶段架构</p><h2 id="ce-arch-title">每段有门，<br>最后回到起点。</h2></div>
+      <p class="reading-intro">开发期用回归测试挡住坏变更，上线期用灰度控制影响面，运行期用抽样和漂移检测发现渐进退化。用户反馈再回流到 Golden Dataset。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data ce-stage-table">
+          <caption class="sr-only">持续评估三阶段的触发、内容、门与工具</caption>
+          <thead><tr><th scope="col">阶段</th><th scope="col">触发 / 范围</th><th scope="col">评估内容</th><th scope="col">质量门</th><th scope="col">工具示例</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">开发期</th><td>Prompt、模型配置、Agent 代码、RAG 索引变更。</td><td>Golden Dataset 回归、Prompt Injection 等安全测试、格式测试。</td><td>关键指标低于阈值 → 阻止 PR 合并。</td><td>GitHub Actions + DeepEval / Ragas。</td></tr>
+            <tr><th scope="row">上线期</th><td>Canary 环境 5% 流量。</td><td>Canary 与 Production 的质量、满意度、延迟 P95、成本对比。</td><td>达标则 25% → 50% → 100%；退化则自动回滚。</td><td>Feature Flags + A/B 测试框架。</td></tr>
+            <tr><th scope="row">运行期</th><td>10% 生产请求抽样。</td><td>LLM Judge 评分、24 小时趋势、显式与隐式反馈、熔断。</td><td>质量分低于阈值或成本超预算 → 降级。</td><td>Langfuse / Braintrust + Prometheus + PagerDuty。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>三段的门不是同一个东西。开发期门是“别把已知的坏变更放进来”，上线期门是“坏变更只影响 5%”，运行期门是“坏变化发生时自动止损”。缺任何一段，另外两段都会被迫承担不属于它的责任。</p>
+
+      <details>
+        <summary>查看原文三阶段闭环 Mermaid 源码（离线仅作文本）</summary>
+        <pre><code>flowchart TD
+    A["变更触发&lt;br/&gt;Prompt / 模型 / 代码"] --&gt; B["开发期：CI 回归&lt;br/&gt;不达标阻塞 PR 合并"]
+    B --&gt; C["上线期：灰度发布&lt;br/&gt;5% → 25% → 50% → 100%"]
+    C --&gt; D["运行期：在线抽样评估&lt;br/&gt;+ 漂移检测"]
+    D --&gt; Q{"漂移 / 质量退化？"}
+    Q -- "是" --&gt; E["熔断 / 自动回滚"]
+    Q -- "否" --&gt; F["用户反馈回流&lt;br/&gt;Golden Dataset 更新"]
+    F --&gt; B
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef err fill:#ffebee,stroke:#c62828,color:#b71c1c
+    class A,B,C,D,F proc
+    class Q decision
+    class E err</code></pre>
+        <p class="source-footnote">源码按原文保留，仅做 HTML 转义；上方流水线是同一闭环的离线可读呈现。</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="ce-ci-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三 · CI/CD 集成</p><h2 id="ce-ci-title">变更触发，<br>基线对比，阻塞合并。</h2></div>
+      <p class="reading-intro">原文的 GitHub Actions 例子把三件事串起来：路径触发的回归、独立的安全测试、与基线对比后回帖到 PR。</p>
+    </div>
+    <div class="prose">
+      <ul>
+        <li><strong>触发：</strong>PR 修改 <code>prompts/**</code>、<code>config/model.yaml</code>、<code>src/agent/**</code>；另有每天凌晨 2 点的定时运行。</li>
+        <li><strong>回归：</strong>在 Golden Dataset 上跑 pytest，输出当前结果并与 baseline 对比。</li>
+        <li><strong>安全：</strong>独立的注入测试集，不让安全用例被普通回归淹没。</li>
+        <li><strong>门：</strong><code>--max-regression 0.05</code>，关键指标是 accuracy 与 safety_pass_rate；超限则失败。</li>
+        <li><strong>反馈：</strong>把评估结果自动回帖到 PR，让人在合并前看到证据。</li>
+      </ul>
+      <p class="code-label">原文 GitHub Actions 示例（YAML，仅展示，不执行）</p>
+      <pre><code>name: LLM Continuous Evaluation
+
+on:
+  pull_request:
+    paths:
+      - 'prompts/**'
+      - 'config/model.yaml'
+      - 'src/agent/**'
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  regression-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run core regression tests
+        run: |
+          python -m pytest tests/eval/regression/ \
+            --golden-dataset data/golden_v3.json \
+            --baseline results/baseline.json \
+            --output results/current.json
+      - name: Run safety tests
+        run: |
+          python -m pytest tests/eval/safety/ \
+            --injection-dataset data/injection_tests.json
+      - name: Compare with baseline
+        run: |
+          python scripts/compare_eval.py \
+            --baseline results/baseline.json \
+            --current results/current.json \
+            --max-regression 0.05 \
+            --critical-metrics accuracy,safety_pass_rate</code></pre>
+      <p class="source-footnote">工作流文件名、版本号、阈值按原文 2026-10 口径保留；本页不运行、不连接 GitHub。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="ce-online-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四 · 在线评估与反馈闭环</p><h2 id="ce-online-title">抽样打分，<br>漂移告警，反馈回炉。</h2></div>
+      <p class="reading-intro">在线评估不是给每个请求打分，而是按比例抽样。原文的示例是 10% 抽样、24 小时窗口、退化超过 10% 告警、最近 100 个请求平均质量低于 0.5 触发熔断。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data ce-table">
+          <caption class="sr-only">在线评估、漂移检测与熔断的原文示例参数</caption>
+          <thead><tr><th scope="col">机制</th><th scope="col">原文示例</th><th scope="col">作用</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">抽样评估</th><td><code>sample_rate=0.1</code>，Judge 对请求打分。</td><td>用可控成本覆盖真实流量分布。</td></tr>
+            <tr><th scope="row">漂移检测</th><td>24 小时窗口，当前均值相对基线下降超过 10% 告警。</td><td>发现渐进退化，而不是等用户投诉。</td></tr>
+            <tr><th scope="row">熔断</th><td>最近 100 个请求平均质量 &lt; 0.5 → 切换降级模式。</td><td>质量过低时先止损，再排查。</td></tr>
+            <tr><th scope="row">反馈回流</th><td>负面反馈经人工审核后，加入 Golden Dataset。</td><td>让测试集跟上真实失败，不是只增数量。</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>反馈要分显式和隐式。显式是点赞 / 点踩、评分、投诉；隐式是重试率、编辑率、会话放弃率。原文特别强调，负面反馈不能自动进测试集，必须经过人工审核并填入修正后的期望输出，否则会把用户的误解也固化成标准答案。</p>
+      <p class="source-footnote">10%、24 小时、10%、0.5 都是原文示例阈值，不是通用推荐值；本页把它们作为固定教学数据演示。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="ce-dash-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">五 · 监控仪表盘</p><h2 id="ce-dash-title">一眼看到，<br>哪条线在往下走。</h2></div>
+      <p class="reading-intro">原文给了一个仪表盘草图：质量趋势、告警、按类别分析、CI/CD 记录。下面是同一结构的离线静态呈现，数值为固定教学数据。</p>
+    </div>
+    <div class="prose">
+      <div class="ce-dash" role="img" aria-label="固定教学数据仪表盘：质量 4.2/5 下降 0.1，安全 98.5% 持平，延迟 P95 2.3 秒上升 0.2 秒；代码类质量 3.8/5 需关注；两条告警">
+        <div class="ce-dash-head">Agent 持续评估仪表盘 · 固定教学数据</div>
+        <div class="ce-dash-body">
+          <div class="ce-dash-row"><span>质量</span><div class="ce-dash-bar"><span style="width:84%"></span></div><span class="ce-dash-value">4.2 / 5 ↓0.1</span></div>
+          <div class="ce-dash-row"><span>安全</span><div class="ce-dash-bar"><span style="width:98.5%"></span></div><span class="ce-dash-value">98.5% →</span></div>
+          <div class="ce-dash-row"><span>延迟 P95</span><div class="ce-dash-bar warn"><span style="width:64%"></span></div><span class="ce-dash-value">2.3s ↑0.2</span></div>
+          <div class="ce-dash-row"><span>代码类质量</span><div class="ce-dash-bar warn"><span style="width:76%"></span></div><span class="ce-dash-value">3.8 / 5 关注</span></div>
+          <div class="ce-dash-alert"><b>告警（固定教学数据）：</b>代码生成质量下降 8%（最近 24 小时）；成本 / 请求上升 15%（模型切换导致）。</div>
+          <p class="source-footnote" style="margin: 0">CI/CD 记录示例：PR #234 通过（quality=4.3，safety=99%）；PR #233 失败（quality=3.1 &lt; 阈值 3.5）。以上均为原文草图口径，不是真实项目数据。</p>
+        </div>
+      </div>
+      <p>仪表盘要能回答四个问题：现在好不好、比昨天差多少、差在哪个类别、哪次变更导致的。如果只有一条总分曲线，排查仍然要靠猜。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="ce-roadmap-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">六 · 实施路线图</p><h2 id="ce-roadmap-title">先记录，再拦截，<br>最后闭环。</h2></div>
+      <p class="reading-intro">原文按六个月排了四段。顺序有讲究：先有 trace 和指标，才谈得上评估；先有离线回归，才谈得上 CI 门；先有在线数据，才谈得上漂移和熔断。</p>
+    </div>
+    <div class="prose">
+      <div class="ce-roadmap">
+        <div class="ce-month"><b>Month 1</b><ul><li>接入 Langfuse / LangSmith，所有请求记录 Trace。</li><li>定义核心指标：质量、安全、延迟、成本。</li><li>构建初始 Golden Dataset（50–100 条）。</li></ul></div>
+        <div class="ce-month"><b>Month 2</b><ul><li>回归测试接入 GitHub Actions。</li><li>Prompt 变更触发自动评估。</li><li>PR 中自动回帖评估报告。</li></ul></div>
+        <div class="ce-month"><b>Month 3</b><ul><li>部署 LLM Judge 对生产流量抽样评估。</li><li>搭建监控仪表盘。</li><li>配置告警规则；建立用户反馈收集。</li></ul></div>
+        <div class="ce-month"><b>Month 4–6</b><ul><li>用户反馈回流 Golden Dataset。</li><li>漂移检测 + 自动熔断。</li><li>A/B 测试框架；定期评估审查会议。</li></ul></div>
+      </div>
+      <p class="source-footnote">时间安排为原文建议，不是实施承诺；团队规模与现有基础设施不同，节奏会变。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="ce-mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="ce-mis-title">两个误区，<br>两个追问。</h2></div>
+      <p class="reading-intro">按原文顺序保留 4 条：前两条是误区，后两条是追问。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“评估一次就够了，模型又没变。”</h3><p>即使不主动换模型，API 提供商也可能更新版本；RAG 索引更新、用户行为变化都会导致质量漂移。持续评估是发现这些隐性退化的唯一方式。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“在线评估太贵了。”</h3><p>抽样 10% 的请求，用低成本模型做 Judge（原文示例约 $0.001 / 评估），1 万请求 / 天约 $1 / 天。相比质量问题导致的用户流失，这个成本很小。关键是按风险选抽样率和 Judge 档位，不是全量用最贵的模型。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>“如何处理评估指标之间的冲突？”</h3><p>三步：定义各指标的优先级和阈值；用加权综合得分（原文示例 quality×0.5 + cost×0.2 + latency×0.2 + safety×0.1）；设置硬性底线，例如安全分低于 95% 一票否决。权重是示例，不是通用配方。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>“小团队如何低成本起步？”</h3><p>最小可行方案三步：用 Langfuse（免费开源）记录所有请求；维护 50 条 Golden Dataset，用 pytest 在 CI 里跑；生产环境收集点赞 / 点踩反馈。原文称这三步一周能搭好，之后逐步迭代。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="ce-related-title">
+    <p class="eyebrow">相关阅读与参考</p>
+    <h2 class="source-heading" id="ce-related-title">继续深入</h2>
+    <p class="source-summary">相关页面按当前仓库进度列出；外链只有主动点击才会离开本页。</p>
+    <details>
+      <summary>展开相关阅读（5 条）</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="069-evaluation-methodology.html">069 评估方法论</a>：评估方法选择与 Agent 评估四层模型。</li>
+          <li><a href="071-llm-as-judge.html">071 LLM-as-Judge</a>：在线评分所用的 Judge 如何校准。</li>
+          <li><a href="073-regression-testing.html">073 回归测试</a>：Golden Dataset 与基线对比的细节。</li>
+          <li><a href="076-static-benchmark-trap.html">076 静态 Benchmark 陷阱</a>：为什么一次性分数会失效。</li>
+          <li><a href="111-eval-harness-design.html">111 Eval Harness 设计</a>：评测运行时如何影响分数与复现。</li>
+        </ul>
+      </div>
+    </details>
+
+    <details>
+      <summary>展开原文参考链接（5 条）</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://onereach.ai/blog/llmops-for-ai-agents-in-production/" target="_blank" rel="noopener noreferrer">LLMOps for AI Agents: Monitoring, Testing &amp; Iteration in Production（OneReach）</a></li>
+          <li><a href="https://www.zenml.io/blog/what-1200-production-deployments-reveal-about-llmops-in-2025" target="_blank" rel="noopener noreferrer">What 1,200 Production Deployments Reveal About LLMOps in 2025（ZenML）</a></li>
+          <li><a href="https://www.datadoghq.com/blog/llm-evaluation-framework-best-practices/" target="_blank" rel="noopener noreferrer">Building an LLM Evaluation Framework: Best Practices（Datadog）</a></li>
+          <li><a href="https://orq.ai/blog/agent-evaluation" target="_blank" rel="noopener noreferrer">Agent Evaluation in 2025: Complete Guide（Orq.ai）</a></li>
+          <li><a href="https://www.braintrust.dev/articles/best-llm-monitoring-tools-2026" target="_blank" rel="noopener noreferrer">5 Best Tools for Monitoring LLM Applications in 2026（Braintrust）</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>08-evaluation/077-continuous-evaluation-pipeline.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 6 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const CE_STAGES = Object.freeze([
+    {
+      name: "开发期：CI 回归",
+      trigger: "触发：prompts/agent.md 变更 → 在 Golden Dataset 上跑回归、安全与格式测试",
+      metrics: [
+        { name: "回归质量", value: "4.30 / 5", note: "基线 4.40 · 最大允许回退 5%", status: "ok", statusText: "达标" },
+        { name: "安全通过率", value: "99.2%", note: "阈值 ≥ 95%", status: "ok", statusText: "达标" },
+        { name: "格式合规", value: "100%", note: "阈值 100%", status: "ok", statusText: "达标" }
+      ],
+      decision: "<b>质量门：通过。</b>关键指标没有超过回退阈值，允许合并 PR；评估报告自动回帖到 PR。",
+      alert: ""
+    },
+    {
+      name: "上线期：灰度发布",
+      trigger: "触发：新版本部署到 Canary，5% 流量；对比 Canary 与 Production 的质量、延迟和成本",
+      metrics: [
+        { name: "回答质量", value: "4.31 / 5", note: "生产 4.28 · 变化 +0.7%", status: "ok", statusText: "达标" },
+        { name: "延迟 P95", value: "2.35s", note: "生产 2.30s · +2.2%", status: "ok", statusText: "达标" },
+        { name: "成本 / 请求", value: "$0.012", note: "生产 $0.0115 · +4.3%", status: "ok", statusText: "达标" },
+        { name: "安全评分", value: "99.1%", note: "阈值 ≥ 95%", status: "ok", statusText: "达标" }
+      ],
+      decision: "<b>质量门：通过。</b>按 5% → 25% → 50% → 100% 逐步扩量；每一档继续对比质量与成本。",
+      alert: ""
+    },
+    {
+      name: "运行期：在线抽样",
+      trigger: "触发：10% 生产请求抽样；24 小时窗口对比基线；同时收集显式与隐式反馈",
+      metrics: [
+        { name: "抽样质量", value: "4.30 / 5", note: "基线 4.29 · +0.2%", status: "ok", statusText: "稳定" },
+        { name: "安全评分", value: "99.0%", note: "阈值 ≥ 95%", status: "ok", statusText: "稳定" },
+        { name: "漂移检测", value: "无显著漂移", note: "告警线：下降超过 10%", status: "ok", statusText: "正常" },
+        { name: "反馈回流", value: "3 条待审核", note: "负面反馈需人工确认后入集", status: "warn", statusText: "观察" }
+      ],
+      decision: "<b>闭环：稳定。</b>指标没有触发漂移告警；用户负面反馈经人工审核后加入 Golden Dataset，下一轮 CI 会覆盖。",
+      alert: ""
+    }
+  ]);
+
+  const CE_DRIFT_STAGES = Object.freeze([
+    CE_STAGES[0],
+    {
+      name: "上线期：灰度发布",
+      trigger: "触发：新版本部署到 Canary，5% 流量；对比 Canary 与 Production 的质量、延迟和成本",
+      metrics: [
+        { name: "回答质量", value: "3.72 / 5", note: "生产 4.28 · −13.1%", status: "bad", statusText: "退化" },
+        { name: "延迟 P95", value: "2.70s", note: "生产 2.30s · +17.4%", status: "bad", statusText: "超线" },
+        { name: "成本 / 请求", value: "$0.0132", note: "生产 $0.0115 · +14.8%", status: "warn", statusText: "偏高" },
+        { name: "安全评分", value: "97.8%", note: "阈值 ≥ 95%", status: "warn", statusText: "下降" }
+      ],
+      decision: "<b>质量门：不通过。</b>回答质量下降 13.1%，超过 10% 告警线；自动回滚，Canary 流量归零，不进入 25%。",
+      alert: "<b>自动回滚已触发。</b>固定教学数据：Canary 流量从 5% 归零，生产继续运行旧版本；回滚事件写入发布记录，等待复盘。"
+    },
+    {
+      name: "运行期：在线抽样",
+      trigger: "触发：回滚后继续 10% 抽样；24 小时窗口监控旧版本是否稳定，并跟踪负面反馈",
+      metrics: [
+        { name: "抽样质量", value: "4.27 / 5", note: "基线 4.29 · −0.5%", status: "ok", statusText: "稳定" },
+        { name: "安全评分", value: "98.9%", note: "阈值 ≥ 95%", status: "ok", statusText: "稳定" },
+        { name: "漂移检测", value: "已记录一次告警", note: "来源：Canary 版本，已回滚", status: "warn", statusText: "观察" },
+        { name: "反馈回流", value: "11 条待审核", note: "含本次退化相关负反馈", status: "warn", statusText: "待处理" }
+      ],
+      decision: "<b>闭环：已止损。</b>旧版本指标稳定；本次退化样本进入复盘，人工确认后加入 Golden Dataset，防止同类变更再次通过。",
+      alert: "<b>复盘项：</b>为什么开发期回归没有发现这次退化？固定教学数据提示：离线集缺少该类真实请求，需要从本次负反馈补题。"
+    }
+  ]);
+
+  const ceState = { scenario: "normal", step: 0, revealed: false };
+  const ceById = (id) => document.getElementById(id);
+
+  function ceData() {
+    return ceState.scenario === "normal" ? CE_STAGES : CE_DRIFT_STAGES;
+  }
+
+  function ceRender(announce = true) {
+    const stages = ceData();
+    const stage = stages[ceState.step];
+    ceById("ce-index").textContent = `阶段 ${ceState.step + 1} / 3`;
+    ceById("ce-stage-title").textContent = stage.name;
+    ceById("ce-trigger").textContent = stage.trigger;
+
+    const gate = ceById("ce-gate");
+    gate.className = "ce-gate";
+    if (!ceState.revealed) {
+      gate.textContent = "待检查";
+      ceById("ce-body").innerHTML = `<div class="ce-pending">本阶段尚未运行检查。指标与质量门结果会在点击“运行本阶段检查”后出现，未来阶段不会提前显示结果。</div>`;
+      ceById("ce-decision").innerHTML = "是否通过由关键指标与阈值共同决定；固定教学数据只演示判定逻辑。";
+      ceById("ce-alert").hidden = true;
+    } else {
+      const hasBad = stage.metrics.some((metric) => metric.status === "bad");
+      const hasWarn = stage.metrics.some((metric) => metric.status === "warn");
+      gate.classList.add(hasBad ? "bad" : hasWarn ? "warn" : "ok");
+      gate.textContent = hasBad ? "不通过" : hasWarn ? "通过 · 有观察项" : "通过";
+      ceById("ce-body").innerHTML = `<div class="ce-metrics">${stage.metrics.map((metric) =>
+        `<div class="ce-metric">
+          <span class="ce-metric-name">${metric.name}</span>
+          <span class="ce-metric-value">${metric.value} <small>${metric.note}</small></span>
+          <span class="ce-metric-status ${metric.status}">${metric.statusText}</span>
+        </div>`).join("")}</div>`;
+      ceById("ce-decision").innerHTML = stage.decision;
+      const alert = ceById("ce-alert");
+      alert.hidden = !stage.alert;
+      alert.innerHTML = stage.alert;
+    }
+
+    document.querySelectorAll("[data-node]").forEach((node) => {
+      const index = Number(node.dataset.node);
+      node.dataset.state = index < ceState.step ? "done" : index === ceState.step ? "current" : "future";
+    });
+    document.querySelectorAll("[data-scenario]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.scenario === ceState.scenario));
+    });
+    ceById("ce-back").disabled = ceState.step === 0 && !ceState.revealed;
+    const next = ceById("ce-next");
+    if (!ceState.revealed) {
+      next.textContent = "运行本阶段检查";
+      next.disabled = false;
+    } else if (ceState.step < 2) {
+      next.textContent = "进入下一阶段";
+      next.disabled = false;
+    } else {
+      next.textContent = "流水线已完成";
+      next.disabled = true;
+    }
+    ceById("ce-state").textContent = `阶段 ${ceState.step + 1} / 3 · ${ceState.revealed ? "已检查" : "待运行"} · ${ceState.scenario === "normal" ? "正常变更" : "质量退化"}`;
+    if (announce) {
+      ceById("ce-announcement").textContent = `阶段 ${ceState.step + 1}，${stage.name}。${ceState.revealed ? gate.textContent + "。" + stage.decision.replace(/<[^>]+>/g, "") : "尚未运行检查。"}`;
+    }
+  }
+
+  function ceNext() {
+    if (!ceState.revealed) {
+      ceState.revealed = true;
+      ceRender();
+      return;
+    }
+    if (ceState.step < 2) {
+      ceState.step += 1;
+      ceState.revealed = false;
+      ceRender();
+    }
+  }
+
+  function ceBack() {
+    if (ceState.revealed) {
+      ceState.revealed = false;
+    } else if (ceState.step > 0) {
+      ceState.step -= 1;
+      ceState.revealed = true;
+    }
+    ceRender();
+  }
+
+  ceById("ce-next").addEventListener("click", ceNext);
+  ceById("ce-back").addEventListener("click", ceBack);
+  ceById("ce-reset").addEventListener("click", () => {
+    ceState.step = 0;
+    ceState.revealed = false;
+    ceRender(false);
+    ceById("ce-announcement").textContent = "已重新开始，回到开发期，尚未运行检查。";
+  });
+  document.querySelectorAll("[data-scenario]").forEach((button) => {
+    button.addEventListener("click", () => {
+      ceState.scenario = button.dataset.scenario;
+      ceState.step = 0;
+      ceState.revealed = false;
+      ceRender(false);
+      ceById("ce-announcement").textContent = `已切换到${button.textContent}场景，回到开发期，尚未运行检查。`;
+    });
+  });
+
+  ceRender(false);
+</script>
+</body>
+</html>

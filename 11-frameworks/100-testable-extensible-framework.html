@@ -1,0 +1,1244 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>如何设计可测试、可扩展的 Agent 框架抽象层？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .button:disabled, .button-primary:disabled { color: #4b514b; background: #e4e6df; border-color: #b9beb6; }
+  .badge { display: inline-flex; align-items: center; justify-self: start; margin-top: 4px; padding: 1px 8px; border: 1px solid transparent; border-radius: 999px; font: 11px/1.7 var(--mono); white-space: nowrap; }
+  .badge-neutral { border-color: #c9cec9; background: #eef1ee; color: #3f463f; }
+  .badge-info { border-color: #9eb4c9; background: #eaf1f8; color: #194f87; }
+  .badge-warn { border-color: #d9b47a; background: #fdf3e3; color: #6b4300; }
+  .badge-ok { border-color: #9cc39e; background: #e6f2e6; color: #14532d; }
+  .mock-tag { display: inline-flex; align-items: center; gap: 6px; padding: 2px 9px; border: 1px solid #9eb4c9; border-radius: 999px; background: #eaf1f8; color: #123f6c; font: 11px/1.6 var(--mono); letter-spacing: .02em; }
+  .mock-tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: #194f87; }
+  .wire-stage { padding: var(--s-4) var(--s-6) var(--s-5); }
+  .preset-row { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-bottom: var(--s-4); }
+  .preset-label { font: 11px/1.6 var(--mono); color: var(--text-dim); }
+  .preset-hint { font-size: 11px; line-height: 1.6; color: var(--text-dim); }
+  .core-box { border: 1px solid #194f87; border-radius: var(--r-1); background: #f7fbff; padding: var(--s-4); }
+  .core-kicker { font: 10px/1.6 var(--mono); letter-spacing: .05em; color: #123f6c; }
+  .core-box h3 { margin-top: 2px; font: 600 22px/1.4 var(--mono); }
+  .core-code { margin-top: var(--s-2); padding: 8px 10px; border-radius: var(--r-1); background: #fff; font: 11px/1.75 var(--mono); color: #202421; overflow-wrap: anywhere; }
+  .core-note { margin-top: var(--s-2); font-size: 11px; line-height: 1.7; color: #3f463f; }
+  .wire-arrow { display: grid; justify-items: center; gap: 2px; padding: 7px 0; font: 11px/1.6 var(--mono); color: #123f6c; }
+  .wire-arrow i { font-style: normal; font-size: 18px; line-height: 1; }
+  .port-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); }
+  .port-card { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3) var(--s-3) var(--s-2); }
+  .port-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .port-name { font: 600 12px/1.6 var(--mono); }
+  .port-current { margin-top: 2px; font: 600 14px/1.5 var(--mono); overflow-wrap: anywhere; }
+  .port-options { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+  .adapter { min-height: 34px; padding: 4px 9px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); color: var(--ink); font: 11px/1.5 var(--mono); }
+  .adapter:hover { background: var(--surface-soft); }
+  .adapter[aria-pressed="true"] { background: var(--ink); border-color: var(--ink); color: var(--surface); }
+  .port-note { margin-top: 7px; font-size: 11px; line-height: 1.6; color: var(--text-dim); }
+  .wire-note { margin-top: var(--s-3); padding: 7px 10px; border: 1px dashed #9eb4c9; border-radius: var(--r-1); background: #fff; color: #123f6c; font-size: 11px; line-height: 1.7; }
+  .wire-log { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px dashed var(--border); }
+  .wire-log-label { font: 10px/1.6 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .wire-log-value { margin-top: 2px; font-size: 11px; line-height: 1.6; overflow-wrap: anywhere; }
+  .trace-panel { margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); }
+  .trace-head { display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; }
+  .trace-kicker { font: 10px/1.6 var(--mono); letter-spacing: .04em; color: var(--text-dim); }
+  .trace-scenario { margin-top: 2px; font: 11px/1.7 var(--mono); overflow-wrap: anywhere; }
+  .trace-lock { margin-top: var(--s-3); padding: 9px 11px; border: 1px solid #d9b47a; border-radius: var(--r-1); background: #fdf3e3; color: #6b4300; font-size: 12px; line-height: 1.7; }
+  .trace-list { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 6px; }
+  .trace-item { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; gap: 8px; align-items: start; padding: 7px 9px; border: 1px solid #c9cec9; border-radius: var(--r-1); background: #f7f8f5; }
+  .trace-item.is-current { border-color: #194f87; background: #f4f8fc; }
+  .trace-item.is-done { border-color: #9cc39e; background: #f2f9f2; }
+  .trace-num { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid #194f87; border-radius: 50%; background: #eaf1f8; color: #123f6c; font: 600 11px/1 var(--mono); }
+  .trace-body b { display: block; font-size: 12px; line-height: 1.55; }
+  .trace-body small { display: block; margin-top: 2px; font-size: 11px; line-height: 1.65; color: #3f463f; overflow-wrap: anywhere; }
+  .trace-result { margin-top: var(--s-3); padding: 8px 10px; border: 1px solid #9cc39e; border-radius: var(--r-1); background: #f2f9f2; color: #14532d; font-size: 12px; line-height: 1.7; }
+  .trace-result code { color: #14532d; }
+  .layer-stack { display: grid; gap: 4px; margin-top: var(--s-4); }
+  .layer-row { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 10px; align-items: start; padding: 8px 11px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .layer-row.l1 { border-left: 4px solid #194f87; }
+  .layer-row.l2 { border-left: 4px solid #9eb4c9; }
+  .layer-row.l3 { border-left: 4px solid #2e7d32; background: #f7fbf7; }
+  .layer-row.l4 { border-left: 4px solid #b45309; }
+  .layer-row.l5 { border-left: 4px solid #6b21a8; }
+  .layer-index { font: 600 11px/1.6 var(--mono); color: var(--text-dim); }
+  .layer-row b { display: block; font-size: 13px; line-height: 1.5; }
+  .layer-row small { display: block; margin-top: 1px; font-size: 11px; line-height: 1.6; color: var(--text-dim); }
+  .layer-note { margin-top: var(--s-2); font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .pi-table td, .pi-table th { vertical-align: top; }
+  .code-note { margin-top: var(--s-2); font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  @media (max-width: 1000px) {
+    .wire-stage { padding-inline: var(--s-5); }
+  }
+  @media (max-width: 720px) {
+    .wire-stage { padding: var(--s-4); }
+    .port-grid { grid-template-columns: 1fr; }
+    .wire-log { grid-template-columns: 1fr; gap: 6px; }
+    .trace-item { grid-template-columns: 24px minmax(0, 1fr); }
+    .trace-item .badge { grid-column: 2; }
+    .layer-row { grid-template-columns: 36px minmax(0, 1fr); }
+    .preset-hint { flex-basis: 100%; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">100 / 可测试可扩展框架</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 6 / 9 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="099-assistants-api-vs-claude-sdk.html">← 上一页 · OpenAI Responses A…</a><a href="110-coding-agent-harness-comparison.html">下一页 → · 主流 Coding Agent Ha…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">高级 · Frameworks · 可交互讲解</p>
+      <h1>核心只认接口，<br>依赖都能替换。</h1>
+    </div>
+    <div>
+      <p class="lead">可测试、可扩展的 Agent 框架把系统拆成边界清晰的模块：Agent Loop 和推理策略在核心层，LLM、工具、存储通过 Port 接口隔离，具体实现在 Adapter 层可插拔替换。依赖注入让测试可以注入 Mock，而不改核心代码。</p>
+      <p class="definition"><strong>关键边界：</strong>依赖方向是外层依赖内层，核心层只定义 Protocol，不包含实现；接口只为真正需要替换的组件定义，<strong>YAGNI 同样适用于框架设计</strong>。本页代码只作转义文本展示，不执行，也不声称测试通过。</p>
+      <div class="hero-meta"><span class="pill">高级</span><span class="pill">Frameworks</span><span class="pill">Port / Adapter</span><span class="pill">依赖注入</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="wire-title">
+    <div class="player-top">
+      <div class="player-label">AgentLoop 装配台 <small>Port / Adapter / Mock · 固定教学装配</small></div>
+      <div class="controls" role="group" aria-label="装配与固定轨迹控制">
+        <button type="button" class="button button-quiet" id="reset-button">重置</button>
+        <button type="button" class="button" id="back-button" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="next-button" disabled>下一步 →</button>
+      </div>
+    </div>
+
+    <nav class="stage-nav" aria-label="固定样例轨迹阶段">
+      <ol id="stage-list" style="--stages: 5"></ol>
+    </nav>
+
+    <div class="scene-caption">
+      <p class="figure-index"><span id="step-index">装配与固定轨迹 · 第 1 / 5 步</span> <span class="mock-tag">固定教学装配 · 不执行代码</span></p>
+      <h2 id="wire-title">先装配，再走固定样例轨迹。</h2>
+      <p id="wire-subtitle">默认生产装配含真实适配器，本页不执行真实调用。点“Mock 测试装配”后，才能逐步查看固定样例的 Mock 轨迹。</p>
+    </div>
+
+    <div class="scene-host">
+      <div class="wire-stage">
+        <div class="preset-row" role="group" aria-label="装配预设">
+          <span class="preset-label">预设：</span>
+          <button type="button" class="button" id="preset-production">生产装配</button>
+          <button type="button" class="button" id="preset-test">Mock 测试装配</button>
+          <span class="preset-hint">也可以直接点每个 Port 卡片里的适配器。</span>
+        </div>
+
+        <div class="core-box">
+          <p class="core-kicker">核心层 · 只依赖接口，不依赖具体实现</p>
+          <h3>AgentLoop</h3>
+          <p class="core-code">__init__(llm: LLMPort, tools: list[ToolPort], state_store: StatePort, middlewares: list[MiddlewarePort], max_steps: int = 10, strategy: ReasoningStrategy)</p>
+          <p class="core-note">核心代码不 import OpenAIAdapter、RedisStateStore 或任何具体实现；它只认 Protocol。换实现发生在构造函数注入点。</p>
+        </div>
+
+        <p class="wire-arrow"><span>构造函数注入</span><i aria-hidden="true">↓</i><span>Port 接口</span></p>
+
+        <div class="port-grid">
+          <article class="port-card" data-port="llm">
+            <div class="port-head"><span class="port-name">LLMPort</span><span class="badge badge-neutral" data-kind>真实适配器</span></div>
+            <p class="port-current" data-current>OpenAIAdapter</p>
+            <div class="port-options" role="group" aria-label="选择 LLM 适配器">
+              <button type="button" class="adapter" data-adapter="openai" aria-pressed="true">OpenAIAdapter</button>
+              <button type="button" class="adapter" data-adapter="anthropic" aria-pressed="false">AnthropicAdapter</button>
+              <button type="button" class="adapter" data-adapter="mock" aria-pressed="false">MockLLMAdapter</button>
+            </div>
+            <p class="port-note" data-note>真实适配器 · 调用 OpenAI 兼容接口；本页不执行</p>
+          </article>
+
+          <article class="port-card" data-port="tools">
+            <div class="port-head"><span class="port-name">ToolPort</span><span class="badge badge-neutral" data-kind>真实适配器</span></div>
+            <p class="port-current" data-current>SearchTool</p>
+            <div class="port-options" role="group" aria-label="选择工具适配器">
+              <button type="button" class="adapter" data-adapter="search" aria-pressed="true">SearchTool</button>
+              <button type="button" class="adapter" data-adapter="mock" aria-pressed="false">MockTool</button>
+            </div>
+            <p class="port-note" data-note>真实工具 · 本页不执行</p>
+          </article>
+
+          <article class="port-card" data-port="state">
+            <div class="port-head"><span class="port-name">StatePort</span><span class="badge badge-neutral" data-kind>真实适配器</span></div>
+            <p class="port-current" data-current>RedisStateStore</p>
+            <div class="port-options" role="group" aria-label="选择状态存储适配器">
+              <button type="button" class="adapter" data-adapter="redis" aria-pressed="true">RedisStateStore</button>
+              <button type="button" class="adapter" data-adapter="memory" aria-pressed="false">InMemoryStateStore</button>
+            </div>
+            <p class="port-note" data-note>生产存储 · 需要 Redis；本页不连接</p>
+          </article>
+
+          <article class="port-card" data-port="middleware">
+            <div class="port-head"><span class="port-name">MiddlewarePort</span><span class="badge badge-neutral" data-kind>横切逻辑</span></div>
+            <p class="port-current" data-current>LoggingMiddleware</p>
+            <div class="port-options" role="group" aria-label="选择中间件">
+              <button type="button" class="adapter" data-adapter="logging" aria-pressed="true">Logging</button>
+              <button type="button" class="adapter" data-adapter="guardrail" aria-pressed="false">Guardrail</button>
+              <button type="button" class="adapter" data-adapter="none" aria-pressed="false">无</button>
+            </div>
+            <p class="port-note" data-note>横切逻辑 · 记录 LLM / 工具调用日志</p>
+          </article>
+        </div>
+
+        <p class="wire-note"><strong>依赖方向：</strong>AgentLoop → Port 接口 ← Adapter 实现。外层可以换，核心不用改；中间件包裹调用管线，不污染核心逻辑。</p>
+
+        <div class="wire-log">
+          <div><p class="wire-log-label">装配模式</p><p class="wire-log-value" id="assembly-mode">生产装配</p></div>
+          <div><p class="wire-log-label">核心改动</p><p class="wire-log-value">0 行 · AgentLoop 构造函数不变</p></div>
+          <div><p class="wire-log-label">固定样例</p><p class="wire-log-value" id="trace-status">需要 MockLLMAdapter + InMemoryStateStore</p></div>
+        </div>
+
+        <div class="trace-panel">
+          <div class="trace-head">
+            <div><p class="trace-kicker">固定样例 · 原文测试场景</p><p class="trace-scenario">agent.run("生命的意义是什么？", session_id="s1") · max_steps=10</p></div>
+            <span class="badge badge-neutral" id="trace-mode">未就绪</span>
+          </div>
+          <p class="trace-lock" id="trace-lock">当前装配含真实适配器或 Redis：本页不执行真实调用。点“Mock 测试装配”后，才能查看固定 Mock 轨迹。</p>
+          <ol class="trace-list" id="trace-list"></ol>
+          <p class="trace-result" id="trace-result" hidden>预期断言：<code>result == "答案是 42"</code>（原文测试逻辑，本页未运行 pytest，不声称测试通过）</p>
+        </div>
+
+        <p class="demo-note">固定教学装配：适配器选择、Mock 响应、State 内容和轨迹阶段都写死在页面里。本页不执行 Python、不运行 pytest、不调用任何模型或 Redis，也不访问网络。换适配器只改变页面状态，不代表真实系统已运行。</p>
+      </div>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学装配 · 不执行代码 · 不联网</span><span id="state-summary">生产装配 · 固定轨迹未就绪</span></div>
+  </section>
+  <p id="wire-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="principles-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">一、总览</p><h2 id="principles-title">五条原则，<br>把变化关在边界外。</h2></div>
+      <p class="reading-intro">原文把可测试、可扩展拆成五条架构原则。核心不是“多抽象”，而是让每个模块能被单独测试、单独替换，且替换时不碰核心逻辑。</p>
+    </div>
+    <div class="prose">
+      <ol>
+        <li><strong>端口-适配器架构（Hexagonal Architecture）：</strong>业务逻辑（Agent Loop、推理策略）在核心层，外部依赖（LLM API、工具、存储）通过接口（Port）隔离，具体实现（Adapter）可插拔替换。</li>
+        <li><strong>依赖注入（DI）：</strong>LLM Client、Tool Registry、State Store 等通过构造函数注入，测试时可注入 Mock。</li>
+        <li><strong>中间件模式：</strong>日志、追踪、安全检查等横切关注点通过可组合的中间件实现，不污染核心逻辑。</li>
+        <li><strong>策略模式：</strong>推理策略（ReAct / Plan-Execute / CoT）、路由策略（模型选择）、重试策略等可插拔。</li>
+        <li><strong>事件驱动：</strong>Agent 执行过程发出事件（on_llm_call、on_tool_use、on_step_complete），观测和扩展通过事件监听实现。</li>
+      </ol>
+      <p><strong>测试策略也分层：</strong>单元测试 Mock LLM 响应 → 集成测试用真实 API → 端到端测试验证完整工作流。OpenAI Agents SDK 的“最小抽象”和 LangChain 1.0 的“中间件架构”都是这些原则的实际体现。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="layers-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">二、分层架构</p><h2 id="layers-title">五层，<br>依赖只朝一个方向。</h2></div>
+      <p class="reading-intro">应用层放业务 Agent，编排层跑 Agent Loop，核心层定义 Port 和数据模型，适配器层实现外部依赖，中间件层处理横切关注点。外层依赖内层，内层不反向依赖。</p>
+    </div>
+    <div class="prose">
+      <figure>
+        <div class="layer-stack" role="img" aria-label="五层架构：应用层、编排层、核心层、适配器层、中间件层；核心层只定义 Port 接口">
+          <div class="layer-row l1"><span class="layer-index">L1</span><div><b>应用层 Application</b><small>具体业务 Agent：客服、代码助手等</small></div></div>
+          <div class="layer-row l2"><span class="layer-index">L2</span><div><b>编排层 Orchestration</b><small>Agent Loop、多 Agent 协调 / 工作流引擎</small></div></div>
+          <div class="layer-row l3"><span class="layer-index">L3</span><div><b>核心层 Core</b><small>Port 接口定义、数据模型、事件系统</small></div></div>
+          <div class="layer-row l4"><span class="layer-index">L4</span><div><b>适配器层 Adapters</b><small>LLM Adapter、Tools Adapter、Storage Adapter</small></div></div>
+          <div class="layer-row l5"><span class="layer-index">L5</span><div><b>中间件层 Middleware</b><small>Logging / Tracing、Guardrails / Caching</small></div></div>
+        </div>
+        <p class="layer-note">原文图按结构层次排列五层；依赖原则是外层依赖内层，核心层不反向依赖外层。适配器实现核心层定义的 Port，中间件包裹调用管线。</p>
+        <figcaption class="code-note">图 1 · 五层架构。可测试性来自依赖方向：核心只认 Port 接口，LLM / 工具 / 存储全是可替换适配器，测试即换 Mock。</figcaption>
+      </figure>
+      <details>
+        <summary>查看原文 Mermaid 分层图源码</summary>
+        <div class="source-content">
+          <pre><code>flowchart TD
+    subgraph L1["应用层 Application"]
+        A["具体业务 Agent&lt;br/&gt;客服、代码助手等"]
+    end
+    subgraph L2["编排层 Orchestration"]
+        B["Agent Loop&lt;br/&gt;多 Agent 协调 / 工作流引擎"]
+    end
+    subgraph L3["核心层 Core"]
+        C["Port 接口定义&lt;br/&gt;数据模型 / 事件系统"]
+    end
+    subgraph L4["适配器层 Adapters"]
+        D["LLM Adapter"]
+        E["Tools Adapter"]
+        F["Storage Adapter"]
+    end
+    subgraph L5["中间件层 Middleware"]
+        G["Logging / Tracing&lt;br/&gt;Guardrails / Caching"]
+    end
+    L1 --- L2
+    L2 --- L3
+    L3 --- L4
+    L4 --- L5
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    classDef neutral fill:#eceff1,stroke:#546e7a,color:#37474f
+    class A,B proc
+    class C store
+    class D,E,F,G neutral</code></pre>
+          <p class="source-footnote">源码按原文保留，仅做 HTML 转义；上方静态分层按同一层次关系呈现。</p>
+        </div>
+      </details>
+      <ul>
+        <li><strong>依赖方向：</strong>外层依赖内层，内层不依赖外层。</li>
+        <li><strong>核心层只定义接口（Protocol），不包含实现。</strong></li>
+        <li><strong>适配器可独立替换</strong>，不影响其他层。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="port-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三、Port 接口</p><h2 id="port-title">先定协议，<br>再谈实现。</h2></div>
+      <p class="reading-intro">数据模型用 dataclass，核心接口用 Protocol。LLM、工具、状态存储、中间件各有一个 Port；核心层只依赖这些协议。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">数据模型与 Port 接口 · 原文代码，仅转义展示，不执行</p>
+      <pre><code>from abc import ABC, abstractmethod
+from typing import Protocol, AsyncIterator
+from dataclasses import dataclass
+
+# ===== 数据模型 =====
+@dataclass
+class Message:
+    role: str  # "system" | "user" | "assistant" | "tool"
+    content: str
+    tool_calls: list["ToolCall"] | None = None
+
+@dataclass
+class ToolCall:
+    id: str
+    name: str
+    arguments: dict
+
+@dataclass
+class ToolResult:
+    tool_call_id: str
+    content: str
+    success: bool
+
+# ===== 核心接口（Port）=====
+
+class LLMPort(Protocol):
+    """LLM 接口——所有 LLM 实现必须满足此协议"""
+    async def complete(
+        self, messages: list[Message], tools: list[dict] | None = None
+    ) -&gt; Message: ...
+
+    async def stream(
+        self, messages: list[Message], tools: list[dict] | None = None
+    ) -&gt; AsyncIterator[str]: ...
+
+class ToolPort(Protocol):
+    """工具接口"""
+    @property
+    def name(self) -&gt; str: ...
+    @property
+    def schema(self) -&gt; dict: ...
+    async def execute(self, arguments: dict) -&gt; ToolResult: ...
+
+class StatePort(Protocol):
+    """状态存储接口"""
+    async def load(self, session_id: str) -&gt; dict | None: ...
+    async def save(self, session_id: str, state: dict) -&gt; None: ...
+    async def delete(self, session_id: str) -&gt; None: ...
+
+class MiddlewarePort(Protocol):
+    """中间件接口"""
+    async def before_llm_call(self, messages: list[Message]) -&gt; list[Message]: ...
+    async def after_llm_call(self, response: Message) -&gt; Message: ...
+    async def before_tool_call(self, tool_call: ToolCall) -&gt; ToolCall: ...
+    async def after_tool_call(self, result: ToolResult) -&gt; ToolResult: ...</code></pre>
+      <div class="table-wrap">
+        <table class="data pi-table">
+          <caption class="sr-only">四个 Port 的职责</caption>
+          <thead><tr><th scope="col">Port</th><th scope="col">职责</th><th scope="col">替换什么</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">LLMPort</th><td>complete 与 stream 两个异步方法</td><td>OpenAI、Anthropic、Mock 等模型实现</td></tr>
+            <tr><th scope="row">ToolPort</th><td>name、schema、execute</td><td>搜索、数据库、Mock 工具</td></tr>
+            <tr><th scope="row">StatePort</th><td>load、save、delete</td><td>内存、Redis 等状态存储</td></tr>
+            <tr><th scope="row">MiddlewarePort</th><td>LLM 与工具调用前后的钩子</td><td>日志、护栏、缓存等横切逻辑</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>注意 <code>abc.ABC</code> 和 <code>abstractmethod</code> 被 import 了，但下面的核心接口用的是 <code>Protocol</code>。Protocol 更轻，不要求适配器继承某个基类，只要方法形状匹配。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="adapter-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四、Adapter 实现</p><h2 id="adapter-title">同一接口，<br>三种实现。</h2></div>
+      <p class="reading-intro">OpenAI、Anthropic 和 Mock 都实现 LLMPort；状态存储有内存和 Redis 两种。测试时换成 Mock，生产时换成真实适配器，AgentLoop 不需要改。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">适配器、用途与替换影响</caption>
+          <thead><tr><th scope="col">适配器</th><th scope="col">实现</th><th scope="col">用途</th><th scope="col">替换影响</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">OpenAIAdapter</th><td>LLMPort</td><td>调用 OpenAI 兼容接口</td><td>核心不改，只换注入</td></tr>
+            <tr><th scope="row">AnthropicAdapter</th><td>LLMPort</td><td>调用 Anthropic 接口</td><td>核心不改，只换注入</td></tr>
+            <tr><th scope="row">MockLLMAdapter</th><td>LLMPort</td><td>按顺序返回固定 Message</td><td>核心不改，测试可重复</td></tr>
+            <tr><th scope="row">InMemoryStateStore</th><td>StatePort</td><td>进程内字典</td><td>核心不改，适合测试/开发</td></tr>
+            <tr><th scope="row">RedisStateStore</th><td>StatePort</td><td>Redis 持久化</td><td>核心不改，适合生产</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <details>
+        <summary>展开原文的适配器实现代码（OpenAI / Anthropic / Mock / 两种状态存储）</summary>
+        <div class="source-content">
+          <pre><code># ===== LLM 适配器 =====
+
+class OpenAIAdapter:
+    """OpenAI LLM 适配器"""
+    def __init__(self, model: str = "gpt-4o", api_key: str = None):
+        from openai import AsyncOpenAI
+        self.client = AsyncOpenAI(api_key=api_key)
+        self.model = model
+
+    async def complete(self, messages, tools=None):
+        response = await self.client.chat.completions.create(
+            model=self.model,
+            messages=[m.to_openai_format() for m in messages],
+            tools=tools,
+        )
+        return Message.from_openai(response.choices[0].message)
+
+
+class AnthropicAdapter:
+    """Anthropic LLM 适配器"""
+    def __init__(self, model: str = "claude-sonnet-4-5"):
+        import anthropic
+        self.client = anthropic.AsyncAnthropic()
+        self.model = model
+
+    async def complete(self, messages, tools=None):
+        response = await self.client.messages.create(
+            model=self.model,
+            messages=[m.to_anthropic_format() for m in messages],
+            tools=tools,
+        )
+        return Message.from_anthropic(response)
+
+
+class MockLLMAdapter:
+    """Mock LLM 适配器——用于测试"""
+    def __init__(self, responses: list[Message]):
+        self.responses = iter(responses)
+
+    async def complete(self, messages, tools=None):
+        return next(self.responses)
+
+# ===== 状态存储适配器 =====
+
+class InMemoryStateStore:
+    """内存状态存储——用于测试和开发"""
+    def __init__(self):
+        self._store = {}
+
+    async def load(self, session_id):
+        return self._store.get(session_id)
+
+    async def save(self, session_id, state):
+        self._store[session_id] = state
+
+class RedisStateStore:
+    """Redis 状态存储——用于生产"""
+    def __init__(self, redis_url: str):
+        import redis.asyncio as redis
+        self.redis = redis.from_url(redis_url)
+
+    async def load(self, session_id):
+        data = await self.redis.get(f"agent:state:{session_id}")
+        return json.loads(data) if data else None
+
+    async def save(self, session_id, state):
+        await self.redis.set(f"agent:state:{session_id}", json.dumps(state))</code></pre>
+          <p class="source-footnote">原文代码仅做 HTML 转义展示；本页不安装 openai / anthropic / redis，也不执行这些方法。模型名与包名按原文保留，未联网核实现状。</p>
+        </div>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="loop-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">五、Agent Loop 与依赖注入</p><h2 id="loop-title">构造函数就是<br>替换点。</h2></div>
+      <p class="reading-intro">AgentLoop 的构造函数接收 LLMPort、ToolPort 列表、StatePort、MiddlewarePort 列表、max_steps 和推理策略。测试时传入 Mock，生产时传入真实适配器，循环代码本身不变。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">AgentLoop · 原文代码，仅转义展示，不执行</p>
+      <pre><code>class AgentLoop:
+    """核心 Agent 执行循环——通过依赖注入实现可测试性"""
+
+    def __init__(
+        self,
+        llm: LLMPort,                          # 注入 LLM
+        tools: list[ToolPort] = None,           # 注入工具
+        state_store: StatePort = None,          # 注入状态存储
+        middlewares: list[MiddlewarePort] = None,# 注入中间件
+        max_steps: int = 10,
+        strategy: "ReasoningStrategy" = None,   # 注入推理策略
+    ):
+        self.llm = llm
+        self.tool_registry = {t.name: t for t in (tools or [])}
+        self.state_store = state_store or InMemoryStateStore()
+        self.middlewares = middlewares or []
+        self.max_steps = max_steps
+        self.strategy = strategy or ReactStrategy()
+        self.event_bus = EventBus()  # 事件系统
+
+    async def run(self, user_input: str, session_id: str = None) -&gt; str:
+        """执行 Agent"""
+        # 加载或初始化状态
+        state = await self.state_store.load(session_id) if session_id else None
+        messages = state["messages"] if state else []
+        messages.append(Message(role="user", content=user_input))
+
+        for step in range(self.max_steps):
+            # 中间件：前处理
+            for mw in self.middlewares:
+                messages = await mw.before_llm_call(messages)
+
+            # 发出事件
+            self.event_bus.emit("before_llm_call", {"step": step, "messages": messages})
+
+            # 调用 LLM
+            tool_schemas = [t.schema for t in self.tool_registry.values()]
+            response = await self.llm.complete(messages, tools=tool_schemas or None)
+
+            # 中间件：后处理
+            for mw in self.middlewares:
+                response = await mw.after_llm_call(response)
+
+            messages.append(response)
+            self.event_bus.emit("after_llm_call", {"step": step, "response": response})
+
+            # 检查是否需要工具调用
+            if not response.tool_calls:
+                # 保存状态
+                if session_id:
+                    await self.state_store.save(session_id, {"messages": messages})
+                return response.content
+
+            # 执行工具
+            for tc in response.tool_calls:
+                tool = self.tool_registry[tc.name]
+                result = await tool.execute(tc.arguments)
+                messages.append(Message(role="tool", content=result.content))
+                self.event_bus.emit("tool_executed", {"tool": tc.name, "result": result})
+
+        return "达到最大步数限制"</code></pre>
+      <p><strong>可测试性来自注入点：</strong><code>llm</code>、<code>tools</code>、<code>state_store</code>、<code>middlewares</code> 都是参数。测试传 <code>MockLLMAdapter</code> 和 <code>InMemoryStateStore</code>，生产传真实适配器；<code>max_steps</code> 和 <code>strategy</code> 也可以替换，不需要改循环。</p>
+      <p><strong>原文里的命名差异：</strong>短答用 <code>on_llm_call</code>、<code>on_tool_use</code>、<code>on_step_complete</code> 命名事件；示例代码实际 emit 的是 <code>before_llm_call</code>、<code>after_llm_call</code>、<code>tool_executed</code>。两处命名不一致，按原文保留，不影响“事件驱动”这条原则。</p>
+      <p><strong>本页提醒（按代码推断）：</strong>代码里 <code>state_store or InMemoryStateStore()</code> 有默认值。生产装配如果忘了注入 Redis，会静默退回内存存储；这不是 bug 的免死金牌，而是需要在启动检查里显式确认的配置风险。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="middleware-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">六、中间件</p><h2 id="middleware-title">横切逻辑，<br>组合而不是散落。</h2></div>
+      <p class="reading-intro">日志、护栏、缓存各自实现 MiddlewarePort，按顺序组合进 AgentLoop。顺序会改变行为：先检查安全，再查缓存，最后记录日志。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">中间件与组合顺序 · 原文代码，仅转义展示，不执行</p>
+      <pre><code># 中间件：横切关注点的可组合实现
+
+class LoggingMiddleware:
+    """日志中间件"""
+    async def before_llm_call(self, messages):
+        logger.info(f"LLM 调用：{len(messages)} 条消息")
+        return messages
+
+    async def after_llm_call(self, response):
+        logger.info(f"LLM 响应：{response.content[:100]}...")
+        return response
+
+    async def before_tool_call(self, tool_call):
+        logger.info(f"工具调用：{tool_call.name}")
+        return tool_call
+
+    async def after_tool_call(self, result):
+        logger.info(f"工具结果：{result.success}")
+        return result
+
+
+class GuardrailMiddleware:
+    """安全护栏中间件"""
+    async def before_llm_call(self, messages):
+        last_msg = messages[-1].content
+        if self.detect_injection(last_msg):
+            raise SecurityError("检测到 Prompt 注入")
+        return messages
+
+    async def after_llm_call(self, response):
+        if self.contains_pii(response.content):
+            response.content = self.redact_pii(response.content)
+        return response
+
+
+class CachingMiddleware:
+    """缓存中间件"""
+    def __init__(self, cache: dict = None):
+        self.cache = cache or {}
+
+    async def before_llm_call(self, messages):
+        key = self._hash(messages)
+        if key in self.cache:
+            raise CacheHit(self.cache[key])  # 跳过 LLM 调用
+        return messages
+
+    async def after_llm_call(self, response):
+        # 缓存响应
+        return response
+
+
+# 中间件组合：按顺序执行
+agent = AgentLoop(
+    llm=OpenAIAdapter(),
+    middlewares=[
+        GuardrailMiddleware(),   # 1. 先检查安全
+        CachingMiddleware(),     # 2. 再检查缓存
+        LoggingMiddleware(),     # 3. 最后记录日志
+    ],
+)</code></pre>
+      <p><strong>顺序即策略（按上面代码推断）：</strong>护栏放在缓存前面，意味着每次请求都先做安全检查；如果缓存命中直接跳过 LLM，护栏仍然生效。反过来把缓存放前面，命中缓存时 CacheHit 会在护栏之前抛出，护栏就被绕过。原文用这个组合示范“可组合”的代价：组合顺序本身也是设计决策，原文没有给出生产环境的统一顺序建议。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="testing-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">七、测试策略</p><h2 id="testing-title">Mock 测逻辑，<br>真实 API 测集成。</h2></div>
+      <p class="reading-intro">单元测试用 Mock 固定 LLM 输出，验证 AgentLoop 的逻辑；集成测试用真实 API 验证适配器；端到端测试验证完整工作流。每层覆盖不同风险。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">测试层次、替换方式与覆盖的风险</caption>
+          <thead><tr><th scope="col">层次</th><th scope="col">替换方式</th><th scope="col">覆盖的风险</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">单元测试</th><td>Mock LLM / Mock Tool / 内存状态</td><td>循环控制、工具分支、最大步数、状态保存、中间件顺序</td></tr>
+            <tr><th scope="row">集成测试</th><td>真实 LLM API / 真实工具</td><td>适配器协议、鉴权、错误码、真实响应形状</td></tr>
+            <tr><th scope="row">端到端测试</th><td>完整工作流</td><td>跨组件协作、会话持久化、最终输出</td></tr>
+            <tr><th scope="row">评估测试</th><td>LLM-as-Judge</td><td>输出质量、非确定性下的整体表现</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <h3>原文的五个单元测试</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">原文测试用例与验证目标</caption>
+          <thead><tr><th scope="col">测试</th><th scope="col">验证什么</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">test_simple_response</th><td>LLM 直接返回答案，无工具调用</td></tr>
+            <tr><th scope="row">test_tool_call_flow</th><td>LLM 调用工具后，基于工具结果给出答案</td></tr>
+            <tr><th scope="row">test_max_steps_limit</th><td>LLM 无限循环调用工具时，达到最大步数停止</td></tr>
+            <tr><th scope="row">test_state_persistence</th><td>状态在会话间持久化，user + assistant 两条消息</td></tr>
+            <tr><th scope="row">test_middleware_execution_order</th><td>中间件按 A:before → B:before → A:after → B:after 执行</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <details>
+        <summary>展开原文的 pytest 测试代码（仅展示，不运行）</summary>
+        <div class="source-content">
+          <pre><code>import pytest
+
+class TestAgentLoop:
+    """Agent Loop 的单元测试——使用 Mock"""
+
+    @pytest.mark.asyncio
+    async def test_simple_response(self):
+        """测试：LLM 直接返回答案（无工具调用）"""
+        mock_llm = MockLLMAdapter(responses=[
+            Message(role="assistant", content="答案是 42"),
+        ])
+        agent = AgentLoop(llm=mock_llm)
+        result = await agent.run("生命的意义是什么？")
+        assert result == "答案是 42"
+
+    @pytest.mark.asyncio
+    async def test_tool_call_flow(self):
+        """测试：LLM 调用工具后给出答案"""
+        mock_llm = MockLLMAdapter(responses=[
+            # 第一轮：请求调用工具
+            Message(role="assistant", content="",
+                    tool_calls=[ToolCall(id="1", name="search", arguments={"q": "test"})]),
+            # 第二轮：基于工具结果给出答案
+            Message(role="assistant", content="搜索结果是..."),
+        ])
+        mock_tool = MockTool(name="search", result="找到 3 条结果")
+
+        agent = AgentLoop(llm=mock_llm, tools=[mock_tool])
+        result = await agent.run("搜索 test")
+        assert "搜索结果" in result
+
+    @pytest.mark.asyncio
+    async def test_max_steps_limit(self):
+        """测试：达到最大步数时停止"""
+        # 模拟 LLM 无限循环调用工具
+        mock_llm = MockLLMAdapter(responses=[
+            Message(role="assistant", content="",
+                    tool_calls=[ToolCall(id=str(i), name="search", arguments={})])
+            for i in range(20)
+        ])
+        agent = AgentLoop(llm=mock_llm, tools=[MockTool("search")], max_steps=3)
+        result = await agent.run("test")
+        assert "最大步数" in result
+
+    @pytest.mark.asyncio
+    async def test_state_persistence(self):
+        """测试：状态在会话间持久化"""
+        store = InMemoryStateStore()
+        mock_llm = MockLLMAdapter(responses=[
+            Message(role="assistant", content="你好！"),
+        ])
+        agent = AgentLoop(llm=mock_llm, state_store=store)
+        await agent.run("hi", session_id="s1")
+
+        state = await store.load("s1")
+        assert len(state["messages"]) == 2  # user + assistant
+
+    @pytest.mark.asyncio
+    async def test_middleware_execution_order(self):
+        """测试：中间件按正确顺序执行"""
+        order = []
+
+        class TrackingMiddleware:
+            def __init__(self, name):
+                self.name = name
+            async def before_llm_call(self, msgs):
+                order.append(f"{self.name}:before")
+                return msgs
+            async def after_llm_call(self, resp):
+                order.append(f"{self.name}:after")
+                return resp
+
+        agent = AgentLoop(
+            llm=MockLLMAdapter([Message(role="assistant", content="ok")]),
+            middlewares=[TrackingMiddleware("A"), TrackingMiddleware("B")],
+        )
+        await agent.run("test")
+        assert order == ["A:before", "B:before", "A:after", "B:after"]</code></pre>
+          <p class="source-footnote">以上为原文测试代码，仅做 HTML 转义展示；本页没有安装 pytest，也没有运行这些测试，不声称测试通过。</p>
+        </div>
+      </details>
+      <h3>非确定性怎么测</h3>
+      <ul>
+        <li><strong>Mock：</strong>固定 LLM 输出，测试围绕它的逻辑。</li>
+        <li><strong>快照测试：</strong>记录真实 LLM 输出作为基线，后续对比偏差。</li>
+        <li><strong>属性测试：</strong>不测具体输出内容，测输出的属性（如“返回的 JSON 必须包含 name 字段”“不包含 PII”）。</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="misconception-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="misconception-title">四条，<br>按原文顺序。</h2></div>
+      <p class="reading-intro">两条误区，两条追问；答案都来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“可测试性意味着 100% 覆盖率。”</h3><p>Agent 系统中，LLM 输出的非确定性使得 100% 确定性测试不现实。正确的测试策略是分层的：单元测试 Mock LLM（验证逻辑）→ 集成测试用真实 API（验证集成）→ 评估测试用 LLM-as-Judge（验证质量）。每层覆盖不同的风险。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“接口越多越好。”</h3><p>过度抽象和不够抽象一样有害。只为真正需要替换的组件定义接口。如果你的项目永远不会换 LLM 提供商，一个简单的封装函数就够了，不需要 Port/Adapter 全套架构。YAGNI 原则同样适用于框架设计。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>如何处理 LLM 响应的非确定性测试？</h3><p>三种方法：Mock——固定 LLM 输出，测试围绕它的逻辑；快照测试——记录真实 LLM 输出作为基线，后续对比偏差；属性测试——不测具体输出内容，测输出的属性（如“返回的 JSON 必须包含 name 字段”“不包含 PII”）。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>事件驱动 vs 回调 vs 中间件，怎么选？</h3><p>回调（Callback）适合简单的钩子（on_start / on_end）；中间件（Middleware）适合可组合的请求/响应处理管线；事件驱动（Event Bus）适合松耦合的观测和扩展，多个监听器互不影响。生产框架通常三者结合：中间件处理核心管线，事件驱动处理观测，回调提供简单的用户扩展点。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《如何设计可测试、可扩展的 Agent 框架抽象层？》。原文用于解释本题，代码示例仅按原文展示，本页未执行，也不代表其测试已通过。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://www.flowhunt.io/blog/building-extensible-ai-agents-with-langchain-1-0/" target="_blank" rel="noopener noreferrer">Building Extensible AI Agents: Middleware Patterns (FlowHunt)</a></li>
+          <li><a href="https://www.moltbook.com/post/d5b5d112-35b4-4317-bc98-cc97682b3962" target="_blank" rel="noopener noreferrer">Dependency Injection Patterns for Agent Architectures (Moltbook)</a></li>
+          <li><a href="https://arxiv.org/html/2512.08769v1" target="_blank" rel="noopener noreferrer">A Practical Guide for Designing, Developing, and Deploying Agentic AI (arXiv)</a></li>
+          <li><a href="https://arxiv.org/html/2512.09458v1" target="_blank" rel="noopener noreferrer">Architectures for Building Agentic AI (arXiv)</a></li>
+          <li><a href="https://medium.com/@chris.p.hughes10/architecting-multi-agent-systems-evolving-proven-patterns-to-agentic-systems-01b2b74e1fa5df" target="_blank" rel="noopener noreferrer">Architecting Multi-Agent Systems: Evolving Proven Patterns (Medium)</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>11-frameworks/100-testable-extensible-framework.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 7 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const ADAPTERS = {
+    llm: {
+      openai: { label: "OpenAIAdapter", kind: "真实适配器", note: "真实适配器 · 调用 OpenAI 兼容接口；本页不执行" },
+      anthropic: { label: "AnthropicAdapter", kind: "真实适配器", note: "真实适配器 · 调用 Anthropic 接口；本页不执行" },
+      mock: { label: "MockLLMAdapter", kind: "Mock 适配器", note: "测试适配器 · 按顺序返回固定 Message；不联网" }
+    },
+    tools: {
+      search: { label: "SearchTool", kind: "真实适配器", note: "真实工具 · 本页不执行" },
+      mock: { label: "MockTool", kind: "Mock 适配器", note: "测试工具 · 返回固定结果" }
+    },
+    state: {
+      redis: { label: "RedisStateStore", kind: "真实适配器", note: "生产存储 · 需要 Redis；本页不连接" },
+      memory: { label: "InMemoryStateStore", kind: "Mock 适配器", note: "测试存储 · 进程内字典" }
+    },
+    middleware: {
+      logging: { label: "LoggingMiddleware", kind: "横切逻辑", note: "横切逻辑 · 记录 LLM / 工具调用日志" },
+      guardrail: { label: "GuardrailMiddleware", kind: "横切逻辑", note: "横切逻辑 · 检查注入、脱敏 PII" },
+      none: { label: "无中间件", kind: "不注入", note: "不注入中间件 · 核心循环不变" }
+    }
+  };
+
+  const PRESETS = {
+    production: { llm: "openai", tools: "search", state: "redis", middleware: "logging" },
+    test: { llm: "mock", tools: "mock", state: "memory", middleware: "none" }
+  };
+
+  const TRACE_NAV = ["注入", "加载", "前处理", "调用", "终止"];
+  const state = { selected: { ...PRESETS.production }, trace: 0 };
+  const byId = (id) => document.getElementById(id);
+
+  function currentLabels() {
+    return {
+      llm: ADAPTERS.llm[state.selected.llm].label,
+      tools: ADAPTERS.tools[state.selected.tools].label,
+      state: ADAPTERS.state[state.selected.state].label,
+      middleware: ADAPTERS.middleware[state.selected.middleware].label
+    };
+  }
+
+  function isMockReady() {
+    return state.selected.llm === "mock" && state.selected.state === "memory";
+  }
+
+  function assemblyMode() {
+    const mockLLM = state.selected.llm === "mock";
+    const memory = state.selected.state === "memory";
+    if (isMockReady() && state.selected.tools === "mock" && state.selected.middleware === "none" && mockLLM && memory) return "Mock 测试装配";
+    if (mockLLM || memory || state.selected.tools === "mock") return "混合装配";
+    return "生产装配";
+  }
+
+  function traceDetails() {
+    const p = currentLabels();
+    const step3 = state.selected.middleware === "none"
+      ? "middlewares=[]：跳过 before_llm_call，消息原样进入 LLM。"
+      : state.selected.middleware === "logging"
+        ? "LoggingMiddleware.before_llm_call：记录当前 1 条消息，然后返回原消息。"
+        : "GuardrailMiddleware.before_llm_call：检查最后一条消息是否含注入；固定样例不含注入，继续。";
+    return [
+      {
+        title: "注入：把 Mock 适配器交给构造函数。",
+        detail: `AgentLoop(llm=${p.llm}([...]), tools=[${p.tools}], state_store=${p.state}(), middlewares=[${p.middleware}], max_steps=10)。核心 AgentLoop 代码没有改，只换构造参数。`
+      },
+      {
+        title: "加载：session_id=s1 没有历史。",
+        detail: "state_store.load('s1') 返回 None，messages 从空列表开始；追加 Message(role='user', content='生命的意义是什么？')。"
+      },
+      {
+        title: "前处理：中间件按顺序执行。",
+        detail: step3
+      },
+      {
+        title: "调用：Mock 返回固定消息。",
+        detail: `llm.complete(messages, tools=tool_schemas or None) 由 ${p.llm} 返回 Message(role='assistant', content='答案是 42')。没有真实网络调用。`
+      },
+      {
+        title: "终止：没有 tool_calls，保存并返回。",
+        detail: "response.tool_calls 为空，不进入工具分支；state_store.save('s1', {'messages': [...]}) 后 return '答案是 42'。原文断言 result == '答案是 42'，本页未运行。"
+      }
+    ];
+  }
+
+  function buildStageNav() {
+    const list = byId("stage-list");
+    list.style.setProperty("--stages", String(TRACE_NAV.length));
+    list.textContent = "";
+    TRACE_NAV.forEach((name, index) => {
+      const li = document.createElement("li");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "stage-button";
+      button.dataset.step = String(index);
+      button.setAttribute("aria-controls", "explainer");
+      button.setAttribute("aria-label", `第 ${index + 1} 步：${name}`);
+      button.innerHTML = `<span class="stage-number">${index + 1}</span><span>${name}</span>`;
+      button.addEventListener("click", () => goTo(index));
+      li.append(button);
+      list.append(li);
+    });
+  }
+
+  function updateStageNav() {
+    const ready = isMockReady();
+    document.querySelectorAll("#stage-list .stage-button").forEach((button) => {
+      const index = Number(button.dataset.step);
+      button.disabled = !ready;
+      if (ready && index === state.trace) {
+        button.setAttribute("aria-current", "step");
+      } else {
+        button.removeAttribute("aria-current");
+      }
+    });
+  }
+
+  function renderPorts() {
+    Object.keys(ADAPTERS).forEach((port) => {
+      const card = document.querySelector(`.port-card[data-port="${port}"]`);
+      const selected = state.selected[port];
+      const data = ADAPTERS[port][selected];
+      card.querySelector("[data-current]").textContent = data.label;
+      card.querySelector("[data-kind]").textContent = data.kind;
+      card.querySelector("[data-kind]").className = `badge ${data.kind === "Mock 适配器" ? "badge-info" : "badge-neutral"}`;
+      card.querySelector("[data-note]").textContent = data.note;
+      card.querySelectorAll(".adapter").forEach((button) => {
+        button.setAttribute("aria-pressed", button.dataset.adapter === selected ? "true" : "false");
+      });
+    });
+  }
+
+  function renderTrace() {
+    const ready = isMockReady();
+    const details = traceDetails();
+    const list = byId("trace-list");
+    list.textContent = "";
+    byId("trace-lock").hidden = ready;
+    byId("trace-result").hidden = !(ready && state.trace === 4);
+    byId("trace-mode").textContent = ready ? "Mock 轨迹就绪" : "未就绪";
+    byId("trace-mode").className = `badge ${ready ? "badge-ok" : "badge-neutral"}`;
+    if (!ready) {
+      byId("trace-status").textContent = "需要 MockLLMAdapter + InMemoryStateStore";
+      return;
+    }
+    for (let i = 0; i <= state.trace; i += 1) {
+      const item = document.createElement("li");
+      const status = i < state.trace ? "已完成" : (state.trace === 4 ? "已完成" : "当前步骤");
+      item.className = "trace-item " + (i < state.trace || state.trace === 4 ? "is-done" : "is-current");
+      item.innerHTML = `<span class="trace-num">${i + 1}</span><span class="trace-body"><b>${details[i].title}</b><small>${details[i].detail}</small></span><span class="badge ${status === "当前步骤" ? "badge-info" : "badge-ok"}">${status}</span>`;
+      list.append(item);
+    }
+    if (state.trace === 4) {
+      byId("trace-status").textContent = "固定轨迹 5 / 5 · 预期断言已展示";
+    } else {
+      byId("trace-status").textContent = `Mock 轨迹第 ${state.trace + 1} / 5 步`;
+    }
+  }
+
+  function render() {
+    renderPorts();
+    const ready = isMockReady();
+    const mode = assemblyMode();
+    byId("assembly-mode").textContent = mode;
+    byId("trace-status").textContent = ready
+      ? `Mock 轨迹第 ${state.trace + 1} / 5 步`
+      : "需要 MockLLMAdapter + InMemoryStateStore";
+    const details = traceDetails();
+    if (ready) {
+      byId("wire-title").textContent = details[state.trace].title;
+      byId("wire-subtitle").textContent = details[state.trace].detail;
+      byId("step-index").textContent = `装配与固定轨迹 · 第 ${state.trace + 1} / 5 步`;
+    } else {
+      byId("wire-title").textContent = "当前装配不是 Mock 组合。";
+      byId("wire-subtitle").textContent = "含真实适配器或 Redis 时，本页不执行真实调用。点“Mock 测试装配”后，才能查看固定 Mock 轨迹。";
+      byId("step-index").textContent = "装配与固定轨迹 · 等待 Mock 组合";
+    }
+    renderTrace();
+    updateStageNav();
+    byId("back-button").disabled = !ready || state.trace === 0;
+    byId("next-button").disabled = !ready || state.trace === 4;
+    byId("state-summary").textContent = ready
+      ? `${mode} · 固定轨迹第 ${state.trace + 1} / 5 步 · 未执行代码`
+      : `${mode} · 固定轨迹未就绪 · 不执行真实调用`;
+  }
+
+  function announce(text) {
+    byId("wire-announcement").textContent = text;
+  }
+
+  function goTo(index) {
+    if (!isMockReady()) {
+      announce("当前装配不是 Mock 组合，固定轨迹不可用。");
+      return;
+    }
+    state.trace = Math.max(0, Math.min(index, 4));
+    render();
+    announce(`固定轨迹第 ${state.trace + 1} 步：${TRACE_NAV[state.trace]}。`);
+  }
+
+  function next() {
+    if (isMockReady() && state.trace < 4) goTo(state.trace + 1);
+  }
+
+  function back() {
+    if (isMockReady() && state.trace > 0) goTo(state.trace - 1);
+  }
+
+  function setAdapter(port, adapter) {
+    state.selected[port] = adapter;
+    state.trace = 0;
+    render();
+    announce(`已把 ${port} 换成 ${ADAPTERS[port][adapter].label}。`);
+  }
+
+  function setPreset(name) {
+    state.selected = { ...PRESETS[name] };
+    state.trace = 0;
+    render();
+    announce(name === "test" ? "已载入 Mock 测试装配，可以走固定轨迹。" : "已载入生产装配，固定轨迹不可用。");
+  }
+
+  function reset() {
+    state.selected = { ...PRESETS.production };
+    state.trace = 0;
+    render();
+    announce("已重置为生产装配。");
+  }
+
+  document.querySelectorAll(".port-card").forEach((card) => {
+    const port = card.dataset.port;
+    card.querySelectorAll(".adapter").forEach((button) => {
+      button.addEventListener("click", () => setAdapter(port, button.dataset.adapter));
+    });
+  });
+  byId("preset-production").addEventListener("click", () => setPreset("production"));
+  byId("preset-test").addEventListener("click", () => setPreset("test"));
+  byId("next-button").addEventListener("click", next);
+  byId("back-button").addEventListener("click", back);
+  byId("reset-button").addEventListener("click", reset);
+
+  buildStageNav();
+  render();
+</script>
+</body>
+</html>

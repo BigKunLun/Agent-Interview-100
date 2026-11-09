@@ -1,0 +1,1216 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Prompt 版本管理与 A/B 测试 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .pv-stage { padding-top: var(--s-2); }
+  .pv-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: var(--s-6); align-items: start; }
+  .pv-main { min-width: 0; }
+  .pv-side { min-width: 0; border-left: 1px solid var(--border); padding-left: var(--s-5); }
+  .pv-side h2 { font: 600 24px/1.4 var(--serif); margin: 2px 0 var(--s-2); }
+  .pv-side > p { color: var(--text-dim); font-size: var(--t-small); }
+  .pv-facts { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; margin: var(--s-4) 0 0; font-size: 12px; }
+  .pv-facts dt { color: var(--text-dim); }
+  .pv-facts dd { margin: 0; font-family: var(--mono); font-size: 11px; text-align: right; }
+  .pv-note { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px dashed var(--border); color: var(--text-dim); font-size: 11px; line-height: 1.7; }
+  .pv-h3 { font-size: 15px; font-weight: 600; margin: 0 0 var(--s-2); }
+  .pv-h3 small { font: 400 10px/1.6 var(--mono); color: var(--text-dim); margin-left: 6px; }
+  .pv-demo-sub { font: 10px/1.6 var(--mono); color: var(--text-dim); margin: 0 0 var(--s-2); }
+  .pv-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3) var(--s-4); }
+  .pv-card + .pv-card { margin-top: var(--s-3); }
+  .pv-timeline { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .pv-ver { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 8px 9px; min-width: 0; }
+  .pv-ver b { display: block; font: 600 14px/1.3 var(--mono); }
+  .pv-ver span { display: block; margin-top: 4px; font-size: 10px; line-height: 1.5; color: var(--text-dim); }
+  .pv-ver .pv-badge { display: inline-flex; }
+  .pv-ver[data-current="true"] { border-color: #9eb4c9; background: var(--accent-dim); }
+  .pv-badge { display: inline-flex; align-items: center; min-height: 20px; padding: 1px 7px; border-radius: 999px; border: 1px solid transparent; font: 600 10px/1.4 var(--mono); white-space: nowrap; }
+  .pv-badge.ok { color: #1c5e20; background: #e8f2e7; border-color: #b9d8b7; }
+  .pv-badge.info { color: #194f87; background: #eaf1f8; border-color: #b9cbdd; }
+  .pv-badge.warn { color: #7a4a00; background: #fdf3df; border-color: #e4c98f; }
+  .pv-badge.bad { color: #8f1d1d; background: #fbeaea; border-color: #e2b6b6; }
+  .pv-badge.mute { color: #3f4650; background: #eef0f2; border-color: #cfd4d9; }
+  .pv-hyp { margin-top: var(--s-3); border-left: 3px solid var(--accent); background: var(--surface); padding: var(--s-3) var(--s-4); font-size: var(--t-small); }
+  .pv-hyp b { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+  .pv-prompt { margin-top: var(--s-3); display: grid; grid-template-columns: 1fr 1fr; gap: 8px; align-items: start; }
+  .pv-prompt pre { margin: 0; font-size: 11px; line-height: 1.7; }
+  .pv-prompt .pv-code-label { font: 10px/1.6 var(--mono); color: var(--text-dim); margin-bottom: 3px; display: block; }
+  .pv-summary { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: var(--s-3); }
+  .pv-summary span { font: 11px/1.6 var(--mono); color: var(--text-dim); }
+  .pv-summary strong { font: 600 13px/1.4 var(--mono); color: var(--ink); }
+  .pv-users { display: grid; grid-template-columns: repeat(20, minmax(0, 1fr)); gap: 3px; }
+  .pv-user { display: block; aspect-ratio: 1; border-radius: 3px; border: 1px solid transparent; min-height: 0; padding: 0; background: transparent; }
+  .pv-user.c { background: #dce6f0; border-color: #a9bfd5; }
+  .pv-user.t { background: #f6ddc9; border-color: #d9a97f; }
+  .pv-user:hover { outline: 2px solid var(--accent); outline-offset: 1px; }
+  .pv-legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: var(--s-3); font-size: 11px; color: var(--text-dim); }
+  .pv-legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  .pv-formula { margin-top: var(--s-3); background: var(--surface-soft); border: 1px solid var(--border); border-radius: var(--r-1); padding: var(--s-3); font: 11px/1.9 var(--mono); overflow-wrap: anywhere; }
+  .pv-danger { margin-top: var(--s-3); border: 1px solid #e2b6b6; background: #fbeaea; border-radius: var(--r-1); padding: var(--s-3) var(--s-4); font-size: 12px; line-height: 1.7; color: #6d2020; }
+  .pv-danger b { color: #8f1d1d; }
+  .pv-chips { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: var(--s-3); }
+  .pv-chip { min-height: 32px; padding: 3px 10px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface); font: 11px/1.4 var(--mono); color: var(--text-dim); }
+  .pv-chip:hover { border-color: var(--accent); }
+  .pv-chip[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-dim); color: var(--accent); font-weight: 600; }
+  .pv-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  table.pv-table { width: 100%; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+  table.pv-table th, table.pv-table td { padding: 7px 9px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: middle; white-space: nowrap; }
+  table.pv-table thead th { font: 500 10px/1.5 var(--mono); color: var(--text-dim); background: var(--surface-soft); }
+  table.pv-table tbody tr:last-child td { border-bottom: 0; }
+  table.pv-table td.num { text-align: right; font-family: var(--mono); }
+  table.pv-table tr[data-selected="true"] td { background: #f4f7fa; }
+  .pv-box { margin-top: var(--s-4); }
+  .pv-box-row { display: grid; grid-template-columns: 84px minmax(0, 1fr) 64px; gap: 8px; align-items: center; margin-top: 14px; }
+  .pv-box-row:first-of-type { margin-top: 6px; }
+  .pv-box-label { font: 10px/1.4 var(--mono); color: var(--text-dim); }
+  .pv-track { position: relative; height: 26px; border-bottom: 1px solid var(--border); }
+  .pv-whisker { position: absolute; top: 12px; height: 2px; background: #8b928c; }
+  .pv-box-range { position: absolute; top: 4px; height: 18px; background: #dce6f0; border: 1px solid #7c96b1; border-radius: 2px; }
+  .pv-box-row.is-treat .pv-box-range { background: #f6ddc9; border-color: #bb7d4c; }
+  .pv-median { position: absolute; top: 2px; height: 22px; width: 2px; background: #30352f; }
+  .pv-mean { position: absolute; top: 8px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: var(--accent); border: 2px solid var(--surface); }
+  .pv-box-row.is-treat .pv-mean { background: #a2460c; }
+  .pv-scale { display: flex; justify-content: space-between; margin: 2px 0 0 92px; font: 9px/1.6 var(--mono); color: var(--text-dim); }
+  .pv-legend2 { margin-top: var(--s-2); font-size: 10px; color: var(--text-dim); }
+  .pv-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+  .pv-stat { border: 1px solid var(--border); border-radius: 4px; background: var(--surface); padding: 6px 8px; min-width: 0; }
+  .pv-stat dt { font: 9px/1.4 var(--mono); color: var(--text-dim); }
+  .pv-stat dd { margin: 1px 0 0; font: 600 15px/1.3 var(--mono); overflow-wrap: anywhere; }
+  .pv-verdict { margin-top: var(--s-3); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 9px 12px; border-radius: var(--r-1); border: 1px solid var(--border); background: var(--surface); font-size: 12px; }
+  .pv-verdict.ok { border-color: #b9d8b7; background: #e8f2e7; color: #1c5e20; }
+  .pv-verdict.bad { border-color: #e2b6b6; background: #fbeaea; color: #8f1d1d; }
+  .pv-verdict b { font-family: var(--mono); }
+  .pv-decide { border: 1px solid #e2b6b6; background: #fbeaea; border-radius: var(--r-1); padding: var(--s-3) var(--s-4); }
+  .pv-decide b { display: block; color: #8f1d1d; font-size: 15px; }
+  .pv-decide p { margin-top: 3px; font-size: 12px; color: #5f2626; }
+  .pv-check { list-style: none; margin: var(--s-3) 0 0; padding: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .pv-check li { display: grid; grid-template-columns: 74px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 10px; border-bottom: 1px solid var(--border); font-size: 11px; }
+  .pv-check li:last-child { border-bottom: 0; }
+  .pv-check .what { color: var(--text-dim); font-family: var(--mono); font-size: 10px; }
+  .pv-roll { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin-top: var(--s-3); }
+  .pv-roll-step { border: 1px solid var(--border); border-radius: var(--r-1); padding: 7px 8px; background: var(--surface-soft); color: var(--text-dim); }
+  .pv-roll-step b { display: block; font: 600 13px/1.3 var(--mono); color: #3f4650; }
+  .pv-roll-step span { display: block; font-size: 9px; margin-top: 2px; line-height: 1.5; }
+  .pv-roll-step em { display: inline-block; margin-top: 4px; font: 600 9px/1.4 var(--mono); font-style: normal; color: #6b4a12; background: #fdf3df; border: 1px solid #e4c98f; border-radius: 999px; padding: 0 5px; }
+  .pv-next { margin-top: var(--s-3); font-size: 12px; color: var(--text-dim); border-top: 1px dashed var(--border); padding-top: var(--s-3); }
+  .pv-life { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: var(--s-3); }
+  .pv-life-box { border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); padding: 6px 10px; font: 600 12px/1.4 var(--mono); }
+  .pv-life-box small { display: block; font: 400 9px/1.5 var(--mono); color: var(--text-dim); }
+  .pv-life-arrow { color: var(--text-dim); font-family: var(--mono); font-size: 12px; }
+  .pv-life-notes { margin: 6px 0 0; padding-left: 1.2em; font-size: 12px; color: var(--text-dim); }
+  .pv-life-notes li { margin-block: 2px; }
+  .pv-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: var(--s-3); }
+  .pv-compare > div { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3); font-size: 12px; line-height: 1.7; }
+  .pv-compare b { display: block; margin-bottom: 4px; font-size: 12px; }
+  .pv-compare .bad { border-color: #e2b6b6; }
+  .pv-compare .bad b { color: #8f1d1d; }
+  .pv-compare .good { border-color: #b9d8b7; }
+  .pv-compare .good b { color: #1c5e20; }
+  .pv-compare ul { margin: 0; padding-left: 1.1em; }
+  .pv-steps { margin: var(--s-3) 0 0; padding-left: 1.3em; }
+  .pv-steps li { font-size: var(--t-small); margin-block: 5px; }
+  .pv-steps b { font-family: var(--mono); font-size: 12px; }
+  .pv-ladder { list-style: none; margin: var(--s-3) 0 0; padding: 0; }
+  .pv-ladder li { display: grid; grid-template-columns: 68px minmax(0, 1fr); gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+  .pv-ladder li:last-child { border-bottom: 0; }
+  .pv-ladder b { font: 600 12px/1.5 var(--mono); color: var(--accent); }
+  @media (max-width: 960px) {
+    .pv-grid { grid-template-columns: 1fr; gap: var(--s-4); }
+    .pv-side { border-left: 0; border-top: 1px solid var(--border); padding-left: 0; padding-top: var(--s-4); }
+  }
+  @media (max-width: 720px) {
+    .pv-timeline { grid-template-columns: 1fr 1fr; }
+    .pv-prompt { grid-template-columns: 1fr; }
+    .pv-users { grid-template-columns: repeat(10, minmax(0, 1fr)); }
+    .pv-stats { grid-template-columns: 1fr 1fr; }
+    .pv-compare { grid-template-columns: 1fr; }
+    .pv-box-row { grid-template-columns: 70px minmax(0, 1fr) 56px; }
+    .pv-scale { margin-left: 78px; }
+    .pv-roll { grid-template-columns: 1fr 1fr; }
+    .pv-check li { grid-template-columns: 62px minmax(0, 1fr); }
+    .pv-check li .pv-badge { grid-column: 2; justify-self: start; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">066 / Prompt 版本与 A/B</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 13 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="065-programmatic-prompt-optimization.html">← 上一页 · 自动化 Prompt 优化</a><a href="068-cross-model-prompt-portability.html">下一页 → · 跨模型 Prompt 迁移</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Prompt Engineering · 可交互讲解</p>
+      <h1>Prompt 改动，<br>也要能回滚。</h1>
+    </div>
+    <div>
+      <p class="lead">生产环境里 Prompt 就是代码：每次修改生成不可变的新版本，记录改动原因和指标，能一键切回旧版；上线前用真实流量做 A/B 测试，质量显著提升且成本、延迟、安全护栏全部通过，才逐步放量。</p>
+      <p class="definition">关键边界：<strong>统计显著不等于可以上线</strong>。质量分涨了，但成本或延迟超出预算，也应该留在旧版本。本页用一个固定教学实验演示这条判断链。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Prompt Engineering</span><span class="pill">版本管理</span><span class="pill">A/B 实验面板</span><span class="pill">固定教学数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="pv-caption-title">
+    <div class="player-top">
+      <div class="player-label">A/B 实验面板 <small>v1.0 对照 vs v1.1 候选 · 固定 80 名用户</small></div>
+      <div class="controls" role="group" aria-label="实验面板控制">
+        <button type="button" class="button button-quiet" id="pv-reset">重置</button>
+        <button type="button" class="button" id="pv-prev" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="pv-next">下一步 →</button>
+      </div>
+    </div>
+    <div class="stage-nav">
+      <ol style="--stages: 5">
+        <li><button type="button" class="stage-button" data-stage="0" aria-current="step"><span class="stage-number">1</span>假设</button></li>
+        <li><button type="button" class="stage-button" data-stage="1"><span class="stage-number">2</span>分流</button></li>
+        <li><button type="button" class="stage-button" data-stage="2"><span class="stage-number">3</span>指标</button></li>
+        <li><button type="button" class="stage-button" data-stage="3"><span class="stage-number">4</span>检验</button></li>
+        <li><button type="button" class="stage-button" data-stage="4"><span class="stage-number">5</span>决策</button></li>
+      </ol>
+    </div>
+    <div class="scene-host">
+      <div class="pv-stage scene" id="pv-scene" data-scene="ab-experiment">
+        <div class="pv-grid">
+          <section class="pv-main" id="pv-main" aria-label="实验步骤内容"></section>
+          <aside class="pv-side" aria-labelledby="pv-caption-title">
+            <p class="figure-index" id="pv-figure">图 1 · 实验配置</p>
+            <h2 id="pv-caption-title">先写清楚要验证什么。</h2>
+            <p id="pv-desc">对照 v1.0，候选 v1.1 补充了 3 条 few-shot 示例。实验只回答一个问题：质量提升是否值得多花的钱和延迟。</p>
+            <dl class="pv-facts">
+              <dt>实验 ID</dt><dd>pv-2026-10-quality-36</dd>
+              <dt>候选状态</dt><dd>testing</dd>
+              <dt>分流</dt><dd>50 / 50</dd>
+              <dt>样本</dt><dd>80 人 · 40 / 40</dd>
+              <dt>主指标</dt><dd>质量评分</dd>
+              <dt>护栏</dt><dd>成本 / 延迟 / 安全</dd>
+            </dl>
+            <div class="pv-note">固定教学数据：80 名用户、4 组指标和全部统计结果都是写死的。页面只做展示与算术，不调用模型、不连接实验平台，也不代表真实业务流量。</div>
+          </aside>
+        </div>
+      </div>
+      <p class="demo-note">实验面板说明：版本号、用户桶位、质量分、单次成本、延迟和安全探针结果均为固定教学数据。显著性由页面用固定数组现场计算 Welch t 检验，属于教学演示，不是真实 A/B 报告。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学实验 · 80 名用户 · 4 个指标</span><span id="pv-state-summary">第 1 / 5 步 · 版本与假设</span></div>
+  </section>
+  <p id="pv-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="why-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">问题起点</p><h2 id="why-title">改了一个词，<br>线上变了个样。</h2></div>
+      <p class="reading-intro">Prompt 没有版本管理时，质量下降只能靠回忆；有版本管理时，每次改动都有全文、原因和指标，回滚是一条命令的事。</p>
+    </div>
+    <div class="prose">
+      <div class="pv-compare">
+        <div class="bad">
+          <b>没有版本管理</b>
+          <ul>
+            <li>开发者 A 改了 System Prompt 直接上线</li>
+            <li>用户投诉回答质量下降</li>
+            <li>“之前的 Prompt 是什么？”没有人记得</li>
+            <li>无法回滚，只能临时再改一版赌一次</li>
+          </ul>
+        </div>
+        <div class="good">
+          <b>有版本管理</b>
+          <ul>
+            <li>v1.0 → v1.1（改语气）→ v1.2（加安全规则）→ v2.0（重构）</li>
+            <li>每版保留完整 Prompt 全文，旧版不被覆盖</li>
+            <li>修改日志、原因、负责人和性能基准都能查</li>
+            <li>线上出问题，一键切回上一个 active 版本</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>版本生命周期</h3>
+      <p>每个版本在四个状态之间流转。新版本激活时，旧的 active 版本自动归档；归档版本不删除，保留回滚能力。</p>
+      <div class="pv-life" role="img" aria-label="版本生命周期：draft 到 testing，测试通过到 active，新版本激活后 archived；testing 可打回 draft，archived 可回滚到 active">
+        <span class="pv-life-box">draft<small>草稿</small></span>
+        <span class="pv-life-arrow">→</span>
+        <span class="pv-life-box">testing<small>测试 / 灰度</small></span>
+        <span class="pv-life-arrow">→</span>
+        <span class="pv-life-box">active<small>线上生效</small></span>
+        <span class="pv-life-arrow">→</span>
+        <span class="pv-life-box">archived<small>归档保留</small></span>
+      </div>
+      <ul class="pv-life-notes">
+        <li>testing → draft：验证不通过，打回修改。</li>
+        <li>archived → active：一键回滚。回滚本质是把旧版本重新 promote 成 active。</li>
+        <li>active 不直接删除；归档是默认终点，不是销毁。</li>
+      </ul>
+      <details>
+        <summary>展开原文的 Mermaid 状态图源码</summary>
+        <pre><code>stateDiagram-v2
+    state "draft 草稿" as draft
+    state "testing 测试" as testing
+    state "active 活跃" as active
+    state "archived 归档" as archived
+    [*] --> draft: 创建新版本
+    draft --> testing: 提交测试
+    testing --> draft: 验证不通过，打回修改
+    testing --> active: 验证通过，上线
+    active --> archived: 新版本激活，旧版自动归档
+    archived --> active: 一键回滚
+    archived --> [*]</code></pre>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="arch-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">版本管理架构</p><h2 id="arch-title">不可变、可追溯、<br>能一键回滚。</h2></div>
+      <p class="reading-intro">三条原则对应三个工程动作：版本只追加不覆盖，元数据随版本走，promote 与 rollback 共用同一条状态切换路径。</p>
+    </div>
+    <div class="prose">
+      <h3>一个版本记录包含什么</h3>
+      <p>Prompt 全文、版本号、创建时间、创建人、修改原因、目标模型、状态和后续填充的指标。状态只允许四个值：<code>draft</code>、<code>testing</code>、<code>active</code>、<code>archived</code>。</p>
+      <pre><code>class PromptVersionManager:
+    def create_version(self, prompt_id, content, metadata):
+        version = {
+            "prompt_id": prompt_id,
+            "version": self.get_next_version(prompt_id),   # v1.0 → v1.1
+            "content": content,              # Prompt 全文，不可变
+            "created_at": datetime.now(),
+            "created_by": metadata["author"],
+            "change_reason": metadata["reason"],
+            "model": metadata["target_model"],
+            "status": "draft",               # draft → testing → active → archived
+            "metrics": {},                   # 性能数据，后续填充
+        }
+        self.storage.save(version)
+        return version
+
+    def promote(self, prompt_id, version, target_status):
+        # 设为 active 前，先把当前 active 版本归档
+        if target_status == "active":
+            current = self.get_active(prompt_id)
+            if current:
+                current["status"] = "archived"
+                self.storage.save(current)
+        prompt = self.storage.get(prompt_id, version)
+        prompt["status"] = target_status
+        self.storage.save(prompt)
+
+    def rollback(self, prompt_id, target_version):
+        # 回滚 = 把归档版本重新激活，旧 active 自动归档
+        self.promote(prompt_id, target_version, "active")</code></pre>
+      <p>注意 <code>promote</code> 里的顺序：先归档当前 active，再激活目标版本。如果反过来，中间会出现两个 active 版本，线上到底读哪个就变成了未定义行为。</p>
+
+      <h3>Prompt 与代码分离</h3>
+      <p>把 Prompt 硬编码在函数里，改一句话就要走一次代码发布；抽到注册表后，运行时按 ID 和版本读取，改 Prompt 不需要重新部署代码。</p>
+      <pre><code># ❌ 硬编码：改 Prompt 就要改代码、重新部署
+def generate_response(user_input):
+    prompt = f"你是一个友好的助手。请回答：{user_input}"
+    return llm.invoke(prompt)
+
+# ✓ 外部加载：数据库 / 配置中心 / 文件均可
+registry = PromptRegistry(config_source=db)
+prompt_template = registry.get_prompt("customer_service_v2")   # 默认取 active
+response = llm.invoke(prompt_template.format(input=user_input))</code></pre>
+      <div class="callout">
+        <p class="callout-label">边界</p>
+        <p>解耦解决的是“改 Prompt 不用发版”，不解决“改完一定更好”。发布流程、评估套件和回滚能力仍然要单独建设，否则只是把改错的门槛降低了。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="ab-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">A/B 测试</p><h2 id="ab-title">同一用户，<br>永远进同一组。</h2></div>
+      <p class="reading-intro">A/B 测试不是随机调用两次模型做对比，而是把真实流量按稳定规则分给两个版本，再比较同一组指标。</p>
+    </div>
+    <div class="prose">
+      <h3>六个步骤</h3>
+      <ol class="pv-steps">
+        <li><b>定义假设</b>：写清改了什么、预期哪个指标变好、护栏是什么。</li>
+        <li><b>选择指标</b>：质量、效率、安全、业务四类，不能只看准确率。</li>
+        <li><b>分流流量</b>：按用户 ID 做确定性哈希，保证同一用户始终进同一组。</li>
+        <li><b>收集数据</b>：记录延迟、token、成本、质量评分和安全结果。</li>
+        <li><b>统计检验</b>：对主要指标做显著性检验，同时检查护栏指标。</li>
+        <li><b>决策上线</b>：显著且护栏全过才放量；否则保留对照版本。</li>
+      </ol>
+
+      <h3>分流必须跨进程稳定</h3>
+      <pre><code>def assign_variant(test_id, user_id, split):
+    # 必须用 hashlib，不能用 Python 内置 hash()：
+    # hash() 在每个进程启动时随机加盐（PYTHONHASHSEED），
+    # 多副本服务会让同一用户在不同副本进入不同组，A/B 数据作废。
+    digest = hashlib.md5(f"{test_id}:{user_id}".encode("utf-8")).hexdigest()
+    bucket = int(digest, 16) % 100        # 跨进程稳定
+    cumulative = 0
+    for variant, share in split.items():  # {"control": 0.5, "treatment": 0.5}
+        cumulative += share * 100
+        if bucket &lt; cumulative:
+            return variant</code></pre>
+      <div class="pv-danger"><b>常见事故：</b>用内置 <code>hash()</code> 做分桶。Python 每个进程启动时会随机化字符串哈希，同一个用户在 A 副本可能进 control、在 B 副本进 treatment。用户看到的回答来回跳，两组数据也互相污染。</div>
+
+      <h3>和传统 A/B 测试的差别</h3>
+      <p>LLM 输出本身有随机性，同一 Prompt 两次回答也可能不同。所以样本量要更大，指标不能只看点击率或准确率，还要看回答质量、安全性、token 成本和延迟。原文建议每组至少 500–1000 次调用，并可用 LLM-as-Judge 加速质量评估。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="metrics-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">评估指标</p><h2 id="metrics-title">质量、效率、<br>安全、业务。</h2></div>
+      <p class="reading-intro">四类指标回答四个不同问题：答得好不好、快不快贵不贵、守不守边界、有没有业务价值。单看一类都会做出片面决策。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>类别</th><th>指标</th><th>怎么量</th></tr></thead>
+          <tbody>
+            <tr><td>质量</td><td>LLM-as-Judge 评分</td><td>用评审模型按 1–5 分打分</td></tr>
+            <tr><td>质量</td><td>用户满意度</td><td>点赞 / 点踩反馈</td></tr>
+            <tr><td>质量</td><td>任务完成率</td><td>Agent 是否成功完成任务</td></tr>
+            <tr><td>效率</td><td>延迟</td><td>端到端响应时间</td></tr>
+            <tr><td>效率</td><td>Token 消耗</td><td>输入 + 输出 token 数</td></tr>
+            <tr><td>效率</td><td>成本</td><td>每次调用的费用</td></tr>
+            <tr><td>安全</td><td>拒绝率</td><td>不当请求被拒绝的比例</td></tr>
+            <tr><td>安全</td><td>幻觉率</td><td>事实错误的比例</td></tr>
+            <tr><td>安全</td><td>注入防御率</td><td>Prompt Injection 攻击被挡住的比例</td></tr>
+            <tr><td>业务</td><td>转化率</td><td>用户是否完成期望行为</td></tr>
+            <tr><td>业务</td><td>留存率</td><td>用户是否继续使用</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>页面实验只取四个代表指标：质量评分、单次成本、平均延迟、安全通过率。真实实验应该先固定一个主指标，再给其余指标设护栏阈值，避免“什么都想优化，最后无法判断”。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="rollout-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">渐进式发布</p><h2 id="rollout-title">先 5%，<br>再谈全量。</h2></div>
+      <p class="reading-intro">Prompt 的行为变化可能很隐蔽，直接全量等于拿全部用户做测试。原文给出一条逐级放大的路径。</p>
+    </div>
+    <div class="prose">
+      <ol class="pv-ladder">
+        <li><b>0. 开发环境</b><span>跑自动化评估套件，通过后才允许进入线上灰度。</span></li>
+        <li><b>1. 5%</b><span>Canary 灰度，监控 24 小时无异常。</span></li>
+        <li><b>2. 20%</b><span>扩大流量，继续收集 A/B 数据。</span></li>
+        <li><b>3. 50%</b><span>A/B 测试达到统计显著，继续监控 1 周。</span></li>
+        <li><b>4. 100%</b><span>全量发布，旧版本归档，保留一键回滚能力。</span></li>
+      </ol>
+      <div class="callout">
+        <p class="callout-label">顺序不能省</p>
+        <p>灰度 5% 的价值不是“省流量”，而是把错误限制在可回滚的范围内。每一步都要有明确的退出条件：错误率、延迟、成本或安全指标越线就停，而不是等全量后才发现。</p>
+      </div>
+
+      <h3>工具生态</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <thead><tr><th>工具</th><th>核心能力</th></tr></thead>
+          <tbody>
+            <tr><td>LangSmith</td><td>Prompt 版本管理 + 评估 + Tracing</td></tr>
+            <tr><td>Braintrust</td><td>Prompt A/B 测试 + 评估 + 日志</td></tr>
+            <tr><td>PromptLayer</td><td>Prompt 版本管理 + 请求日志 + 分析</td></tr>
+            <tr><td>LaunchDarkly</td><td>特性开关 + 灰度发布 + A/B 测试</td></tr>
+            <tr><td>Humanloop</td><td>Prompt 管理 + 评估 + 微调</td></tr>
+            <tr><td>Git + CI/CD</td><td>Prompt 作为代码文件管理</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>工具名与能力按原文列出，只表示原文这样描述，未联网核对各产品当前版本与功能范围。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">两个误区，<br>两个追问。</h2></div>
+      <p class="reading-intro">两条误区都在“把 Prompt 当小事”；两条追问分别问样本量和模型版本兼容。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“Prompt 修改是小事，不需要正式流程。”</h3><p>Prompt 的微小改动可能导致大幅行为变化。一个词的修改可能让安全护栏失效或回答质量骤降。生产环境中的 Prompt 变更应该像代码变更一样，有 Review、测试和渐进式发布。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“A/B 测试只需要看准确率。”</h3><p>LLM 的 A/B 测试需要多维指标：质量、成本、延迟、安全。一个 Prompt 可能提升了准确率，但增加了 50% 的 token 消耗。只看单一指标会导致片面决策。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>LLM A/B 测试需要多大样本量？</h3><p>由于 LLM 输出的高方差性，通常需要比传统 A/B 测试更大的样本量，原文建议至少每组 500–1000 次调用。可以用 LLM-as-Judge 替代人工评估来加速数据收集。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>如何处理 Prompt 在不同模型版本间的兼容性？</h3><p>模型提供商的更新可能改变模型行为。原文给出的做法是：每次模型更新后自动运行回归测试；把模型版本锁定在 Prompt 元数据中；维护跨模型的 Prompt 变体。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《Prompt 版本管理与 A/B 测试》。原文用于解释本题，不代表其工具描述或经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://dev.to/kuldeep_paul/mastering-prompt-versioning-best-practices-for-scalable-llm-development-2mgm" target="_blank" rel="noopener noreferrer">Mastering Prompt Versioning: Best Practices (Dev.to)</a></li>
+          <li><a href="https://launchdarkly.com/blog/prompt-versioning-and-management/" target="_blank" rel="noopener noreferrer">Prompt Versioning &amp; Management Guide (LaunchDarkly)</a></li>
+          <li><a href="https://www.braintrust.dev/articles/ab-testing-llm-prompts" target="_blank" rel="noopener noreferrer">A/B Testing for LLM Prompts: A Practical Guide (Braintrust)</a></li>
+          <li><a href="https://www.traceloop.com/blog/the-definitive-guide-to-a-b-testing-llm-models-in-production" target="_blank" rel="noopener noreferrer">The Definitive Guide to A/B Testing LLM Models in Production (Traceloop)</a></li>
+          <li><a href="https://render.com/articles/best-practices-for-running-ai-output-ab-test-in-production" target="_blank" rel="noopener noreferrer">Best Practices for Running AI Output A/B Test in Production (Render)</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，未联网核验内容。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>07-prompt-engineering/066-prompt-versioning-ab-testing.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 5 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const PV_USERS = "U-001:32:c,U-002:06:c,U-003:49:c,U-004:34:c,U-005:27:c,U-006:56:t,U-007:06:c,U-008:72:t,U-009:55:t,U-010:99:t,U-011:89:t,U-012:73:t,U-013:00:c,U-014:07:c,U-015:57:t,U-016:39:c,U-017:44:c,U-018:81:t,U-019:74:t,U-020:76:t,U-021:17:c,U-022:71:t,U-023:16:c,U-024:94:t,U-025:77:t,U-026:54:t,U-027:37:c,U-028:20:c,U-029:56:t,U-030:81:t,U-031:55:t,U-032:01:c,U-033:39:c,U-034:09:c,U-035:92:t,U-036:63:t,U-037:58:t,U-038:86:t,U-039:81:t,U-040:38:c,U-041:54:t,U-042:45:c,U-043:49:c,U-044:67:t,U-045:98:t,U-046:32:c,U-047:02:c,U-048:52:t,U-049:81:t,U-050:61:t,U-051:16:c,U-052:38:c,U-053:72:t,U-054:32:c,U-055:05:c,U-056:32:c,U-057:53:t,U-058:61:t,U-059:87:t,U-060:02:c,U-061:02:c,U-062:83:t,U-063:30:c,U-064:64:t,U-065:21:c,U-066:59:t,U-067:77:t,U-068:17:c,U-069:23:c,U-070:81:t,U-071:29:c,U-072:07:c,U-073:19:c,U-074:35:c,U-075:67:t,U-076:04:c,U-077:85:t,U-078:25:c,U-079:87:t,U-080:09:c"
+    .split(",").map((row) => {
+      const [id, bucket, variant] = row.split(":");
+      return { id, bucket: Number(bucket), variant };
+    });
+
+  const PV_DATA = {
+    quality: {
+      control: [3.2, 3.5, 4.2, 3.5, 4.0, 4.4, 4.2, 3.5, 4.0, 3.8, 3.6, 4.2, 3.9, 3.3, 3.2, 3.6, 4.3, 3.3, 3.8, 3.5, 3.6, 4.1, 3.5, 4.2, 3.8, 4.3, 3.8, 3.8, 3.5, 4.0, 4.0, 3.4, 3.9, 3.5, 4.4, 2.8, 2.7, 2.9, 3.1, 3.7],
+      treatment: [4.1, 3.3, 5.0, 3.2, 4.6, 4.1, 3.5, 3.4, 4.3, 3.5, 3.7, 4.5, 3.4, 3.3, 4.4, 4.7, 3.5, 4.5, 5.0, 5.0, 3.9, 4.6, 4.1, 3.4, 3.1, 2.9, 3.6, 4.0, 3.7, 3.4, 4.3, 3.5, 3.8, 4.2, 5.0, 4.0, 4.1, 5.0, 4.0, 3.3]
+    },
+    cost: {
+      control: [0.0103, 0.0073, 0.0091, 0.0101, 0.0090, 0.0087, 0.0082, 0.0098, 0.0088, 0.0086, 0.0104, 0.0081, 0.0091, 0.0092, 0.0098, 0.0113, 0.0086, 0.0086, 0.0083, 0.0103, 0.0079, 0.0075, 0.0098, 0.0083, 0.0096, 0.0098, 0.0093, 0.0085, 0.0080, 0.0105, 0.0064, 0.0090, 0.0078, 0.0077, 0.0087, 0.0088, 0.0113, 0.0101, 0.0094, 0.0067],
+      treatment: [0.0111, 0.0149, 0.0134, 0.0107, 0.0117, 0.0123, 0.0137, 0.0123, 0.0136, 0.0107, 0.0115, 0.0108, 0.0116, 0.0119, 0.0121, 0.0109, 0.0113, 0.0119, 0.0137, 0.0134, 0.0148, 0.0136, 0.0111, 0.0125, 0.0114, 0.0122, 0.0100, 0.0119, 0.0120, 0.0095, 0.0116, 0.0115, 0.0114, 0.0127, 0.0133, 0.0141, 0.0126, 0.0107, 0.0134, 0.0126]
+    },
+    latency: {
+      control: [1040, 901, 908, 814, 878, 942, 841, 831, 750, 735, 792, 756, 867, 832, 844, 805, 937, 919, 899, 705, 829, 797, 775, 848, 791, 726, 844, 824, 839, 807, 776, 899, 894, 772, 739, 684, 922, 711, 931, 901],
+      treatment: [1063, 1049, 996, 1047, 896, 959, 1039, 1063, 1042, 924, 847, 947, 934, 883, 916, 1042, 962, 996, 1114, 1054, 1074, 1061, 1106, 871, 931, 1043, 1029, 1081, 1084, 931, 1115, 980, 1116, 1035, 954, 971, 1010, 959, 1123, 1055]
+    },
+    safety: {
+      control: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 0],
+      treatment: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100, 100]
+    }
+  };
+
+  const PV_METRICS = [
+    { key: "quality", label: "质量评分", unit: "分", mode: "abs", digits: 2, guard: "≥ 0.20 分提升", guardPass: (d) => d.delta >= 0.20 },
+    { key: "cost", label: "单次成本", unit: "", mode: "pct", digits: 4, prefix: "$", guard: "涨幅 ≤ 20%", guardPass: (d) => d.relDelta <= 0.20 },
+    { key: "latency", label: "平均延迟", unit: "ms", mode: "pct", digits: 0, guard: "涨幅 ≤ 15%", guardPass: (d) => d.relDelta <= 0.15 },
+    { key: "safety", label: "安全通过率", unit: "%", mode: "pp", digits: 1, guard: "降幅 ≤ 1 pp", guardPass: (d) => d.delta >= -1 }
+  ];
+
+  const PV_STAGES = [
+    {
+      nav: "版本与假设",
+      figure: "图 1 · 实验配置",
+      title: "先写清楚要验证什么。",
+      desc: "对照 v1.0，候选 v1.1 补充了 3 条 few-shot 示例。实验只回答一个问题：质量提升是否值得多花的钱和延迟。"
+    },
+    {
+      nav: "稳定分流",
+      figure: "图 2 · 固定分流",
+      title: "同一用户，永远同一组。",
+      desc: "80 名用户按稳定哈希进入 50/50 两组。页面展示的是固定桶位表；生产环境要用跨进程稳定的哈希，不能用会被随机加盐的内置 hash()。"
+    },
+    {
+      nav: "指标对比",
+      figure: "图 3 · 指标对比",
+      title: "四个指标，两张脸。",
+      desc: "质量评分变好，成本和延迟同时变差。表格看总体差异，箱线图看分布，避免被一个均值遮住长尾。"
+    },
+    {
+      nav: "显著性",
+      figure: "图 4 · 显著性检验",
+      title: "差异是真的，还是波动？",
+      desc: "页面用固定样本现场计算 Welch t 检验。p 值小只说明“差异不太像随机波动”，不说明“值得上线”。"
+    },
+    {
+      nav: "决策与放量",
+      figure: "图 5 · 决策",
+      title: "质量赢了，实验输了。",
+      desc: "主指标显著提升，但成本与延迟双双越过护栏阈值。结论是不晋级 active，线上继续跑 v1.0。"
+    }
+  ];
+
+  const pvState = { stage: 0, metric: "quality" };
+  const pvById = (id) => document.getElementById(id);
+
+  function pvEl(tag, cls, text) {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function pvBadge(text, tone) {
+    return pvEl("span", "pv-badge " + tone, text);
+  }
+
+  function pvStats(values) {
+    const n = values.length;
+    const mean = values.reduce((a, b) => a + b, 0) / n;
+    const variance = values.reduce((sum, v) => sum + (v - mean) * (v - mean), 0) / (n - 1);
+    return { n, mean, sd: Math.sqrt(variance), variance };
+  }
+
+  function pvQuantile(sorted, q) {
+    const pos = (sorted.length - 1) * q;
+    const base = Math.floor(pos);
+    const rest = pos - base;
+    if (sorted[base + 1] === undefined) return sorted[base];
+    return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
+  }
+
+  function pvGammaLn(x) {
+    const cof = [76.18009172947146, -86.50532032941677, 24.01409824083091, -1.231739572450155, 0.1208650973866179e-2, -0.5395239384953e-5];
+    let y = x;
+    let tmp = x + 5.5;
+    tmp -= (x + 0.5) * Math.log(tmp);
+    let ser = 1.000000000190015;
+    for (let j = 0; j < 6; j += 1) ser += cof[j] / (++y);
+    return -tmp + Math.log(2.5066282746310005 * ser / x);
+  }
+
+  function pvBetaCf(a, b, x) {
+    const MAXIT = 200;
+    const EPS = 3e-14;
+    const FPMIN = 1e-300;
+    const qab = a + b;
+    const qap = a + 1;
+    const qam = a - 1;
+    let c = 1;
+    let d = 1 - (qab * x) / qap;
+    if (Math.abs(d) < FPMIN) d = FPMIN;
+    d = 1 / d;
+    let h = d;
+    for (let m = 1; m <= MAXIT; m += 1) {
+      const m2 = 2 * m;
+      let aa = (m * (b - m) * x) / ((qam + m2) * (a + m2));
+      d = 1 + aa * d;
+      if (Math.abs(d) < FPMIN) d = FPMIN;
+      c = 1 + aa / c;
+      if (Math.abs(c) < FPMIN) c = FPMIN;
+      d = 1 / d;
+      h *= d * c;
+      aa = (-(a + m) * (qab + m) * x) / ((a + m2) * (qap + m2));
+      d = 1 + aa * d;
+      if (Math.abs(d) < FPMIN) d = FPMIN;
+      c = 1 + aa / c;
+      if (Math.abs(c) < FPMIN) c = FPMIN;
+      d = 1 / d;
+      const del = d * c;
+      h *= del;
+      if (Math.abs(del - 1) < EPS) break;
+    }
+    return h;
+  }
+
+  function pvBetaI(a, b, x) {
+    if (x <= 0) return 0;
+    if (x >= 1) return 1;
+    const bt = Math.exp(pvGammaLn(a + b) - pvGammaLn(a) - pvGammaLn(b) + a * Math.log(x) + b * Math.log(1 - x));
+    if (x < (a + 1) / (a + b + 2)) return (bt * pvBetaCf(a, b, x)) / a;
+    return 1 - (bt * pvBetaCf(b, a, 1 - x)) / b;
+  }
+
+  function pvTCdf(t, df) {
+    const x = df / (df + t * t);
+    const tail = 0.5 * pvBetaI(df / 2, 0.5, x);
+    return t > 0 ? 1 - tail : tail;
+  }
+
+  function pvWelch(a, b) {
+    const sa = pvStats(a);
+    const sb = pvStats(b);
+    const se = Math.sqrt(sa.variance / sa.n + sb.variance / sb.n);
+    const t = (sb.mean - sa.mean) / se;
+    const df = Math.pow(sa.variance / sa.n + sb.variance / sb.n, 2) /
+      (Math.pow(sa.variance / sa.n, 2) / (sa.n - 1) + Math.pow(sb.variance / sb.n, 2) / (sb.n - 1));
+    const p = 2 * (1 - pvTCdf(Math.abs(t), df));
+    return { sa, sb, t, df, p, diff: sb.mean - sa.mean };
+  }
+
+  function pvMetricByKey(key) {
+    return PV_METRICS.find((m) => m.key === key);
+  }
+
+  function pvFmt(metric, value) {
+    if (metric.mode === "pct") return (metric.prefix || "") + value.toFixed(metric.digits) + metric.unit;
+    return value.toFixed(metric.digits) + metric.unit;
+  }
+
+  function pvDeltaText(metric, result) {
+    if (metric.mode === "pp") {
+      const sign = result.diff >= 0 ? "+" : "−";
+      return sign + Math.abs(result.diff).toFixed(1) + " pp";
+    }
+    if (metric.mode === "pct") {
+      const rel = result.diff / result.sa.mean;
+      const sign = rel >= 0 ? "+" : "−";
+      return sign + (Math.abs(rel) * 100).toFixed(1) + "%";
+    }
+    const sign = result.diff >= 0 ? "+" : "−";
+    return sign + Math.abs(result.diff).toFixed(2) + " 分";
+  }
+
+  function pvMetricResult(key) {
+    const metric = pvMetricByKey(key);
+    return pvWelch(PV_DATA[key].control, PV_DATA[key].treatment);
+  }
+
+  function pvRenderStage1(host) {
+    const timeline = pvEl("div", "pv-timeline");
+    [
+      { v: "v1.0", status: "active", tone: "ok", reason: "基线版本 · 张岚 · 09-12", current: true },
+      { v: "v1.1", status: "testing", tone: "info", reason: "补 3 条示例、加语气约束 · 李哲 · 10-18", current: true },
+      { v: "v1.2", status: "draft", tone: "mute", reason: "增加安全拒答规则 · 李哲 · 10-24", current: false },
+      { v: "v2.0", status: "draft", tone: "mute", reason: "重构为工具调用格式 · 王珂 · 10-26", current: false }
+    ].forEach((item) => {
+      const card = pvEl("div", "pv-ver");
+      card.dataset.current = String(item.current);
+      const head = pvEl("b", "", item.v);
+      card.append(head, pvBadge(item.status, item.tone), pvEl("span", "", item.reason));
+      timeline.append(card);
+    });
+    host.append(pvEl("p", "pv-h3", "版本时间线"), timeline);
+
+    const hyp = pvEl("div", "pv-hyp");
+    const hypB = pvEl("b", "", "H1");
+    hyp.append(hypB, document.createTextNode("：v1.1 的质量均分比 v1.0 至少高 0.20 分；同时成本涨幅 ≤ 20%、平均延迟涨幅 ≤ 15%、安全通过率降幅 ≤ 1 个百分点。四条全部满足才允许放量。"));
+    host.append(hyp);
+
+    const promptCard = pvEl("div", "pv-card");
+    promptCard.append(pvEl("p", "pv-h3", "改了什么"), pvEl("p", "pv-demo-sub", "Prompt 摘录 · 固定示例"));
+    const grid = pvEl("div", "pv-prompt");
+    const left = pvEl("div");
+    left.append(pvEl("span", "pv-code-label", "v1.0 对照"));
+    const pre1 = pvEl("pre");
+    pre1.append(pvEl("code", "", "你是电商客服助手。\n回答要准确、简洁，不确定时说明。"));
+    left.append(pre1);
+    const right = pvEl("div");
+    right.append(pvEl("span", "pv-code-label", "v1.1 候选"));
+    const pre2 = pvEl("pre");
+    pre2.append(pvEl("code", "", "你是电商客服助手。\n回答要准确、简洁，不确定时说明。\n请按以下示例的语气和结构回答：\n示例 1（退货）……\n示例 2（物流）……\n示例 3（发票）……"));
+    right.append(pre2);
+    grid.append(left, right);
+    promptCard.append(grid);
+    host.append(promptCard);
+  }
+
+  function pvRenderStage2(host) {
+    const controlCount = PV_USERS.filter((u) => u.variant === "c").length;
+    const treatCount = PV_USERS.length - controlCount;
+    const summary = pvEl("div", "pv-summary");
+    const s1 = pvEl("span");
+    s1.append(document.createTextNode("入组 "), pvEl("strong", "", String(PV_USERS.length)), document.createTextNode(" 人"));
+    const s2 = pvEl("span");
+    s2.append(document.createTextNode("control "), pvEl("strong", "", String(controlCount)), document.createTextNode(" · treatment "), pvEl("strong", "", String(treatCount)));
+    summary.append(s1, s2, pvBadge("固定桶位表", "mute"));
+    host.append(summary);
+
+    const grid = pvEl("div", "pv-users");
+    grid.setAttribute("role", "img");
+    grid.setAttribute("aria-label", "80 名用户的固定分流结果：control " + controlCount + " 人，treatment " + treatCount + " 人。每格一名用户，颜色区分版本。");
+    PV_USERS.forEach((user) => {
+      const cell = pvEl("span", "pv-user " + user.variant);
+      cell.title = user.id + " · bucket " + String(user.bucket).padStart(2, "0") + " · " + (user.variant === "c" ? "control v1.0" : "treatment v1.1");
+      grid.append(cell);
+    });
+    host.append(grid);
+
+    const legend = pvEl("div", "pv-legend");
+    const l1 = pvEl("span");
+    const i1 = pvEl("i");
+    i1.style.background = "#dce6f0";
+    i1.style.border = "1px solid #a9bfd5";
+    l1.append(i1, document.createTextNode("control · v1.0"));
+    const l2 = pvEl("span");
+    const i2 = pvEl("i");
+    i2.style.background = "#f6ddc9";
+    i2.style.border = "1px solid #d9a97f";
+    l2.append(i2, document.createTextNode("treatment · v1.1"));
+    legend.append(l1, l2);
+    host.append(legend);
+
+    const formula = pvEl("div", "pv-formula");
+    formula.append(document.createTextNode("bucket = hashlib.md5(\"pv-2026-10-quality-36:U-001\") % 100 = 32 → control"));
+    formula.append(document.createElement("br"));
+    formula.append(document.createTextNode("U-006 的 bucket = 56 → treatment。同一 test_id + user_id 永远得到同一桶位。"));
+    host.append(formula);
+
+    const danger = pvEl("div", "pv-danger");
+    danger.append(pvEl("b", "", "不能用的做法："));
+    danger.append(document.createTextNode("用 Python 内置 hash() 分桶。它每个进程随机加盐，同一用户换一个副本就可能换组；实验结果会被污染，用户看到的行为也会来回跳。"));
+    host.append(danger);
+
+    const note = pvEl("p", "pv-demo-note", "");
+    note.style.cssText = "margin-top:8px;font-size:10px;color:var(--text-dim)";
+    note.textContent = "固定教学数据：80 个桶位按原文的 md5(test_id:user_id) 规则预先生成，页面不重新计算哈希。";
+    host.append(note);
+  }
+
+  function pvRenderChips(host) {
+    const chips = pvEl("div", "pv-chips");
+    chips.setAttribute("role", "group");
+    chips.setAttribute("aria-label", "选择指标");
+    PV_METRICS.forEach((metric) => {
+      const chip = pvEl("button", "pv-chip", metric.label);
+      chip.type = "button";
+      chip.dataset.metric = metric.key;
+      chip.setAttribute("aria-pressed", String(pvState.metric === metric.key));
+      chip.addEventListener("click", () => {
+        pvState.metric = metric.key;
+        pvRender();
+        pvAnnounce("已切换到" + metric.label + "，均值 " + pvFmt(metric, pvStats(PV_DATA[metric.key].control).mean) + " 对 " + pvFmt(metric, pvStats(PV_DATA[metric.key].treatment).mean) + "。");
+      });
+      chips.append(chip);
+    });
+    host.append(chips);
+  }
+
+  function pvRenderStage3(host) {
+    pvRenderChips(host);
+    const tableWrap = pvEl("div", "pv-table-wrap");
+    const table = pvEl("table", "pv-table");
+    const thead = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    ["指标", "control v1.0", "treatment v1.1", "变化", "护栏"].forEach((text) => {
+      headRow.append(pvEl("th", "", text));
+    });
+    thead.append(headRow);
+    const tbody = document.createElement("tbody");
+    PV_METRICS.forEach((metric) => {
+      const result = pvMetricResult(metric.key);
+      const row = document.createElement("tr");
+      row.dataset.selected = String(pvState.metric === metric.key);
+      row.append(pvEl("td", "", metric.label));
+      row.append(pvEl("td", "num", pvFmt(metric, result.sa.mean)));
+      row.append(pvEl("td", "num", pvFmt(metric, result.sb.mean)));
+      row.append(pvEl("td", "num", pvDeltaText(metric, result)));
+      const guardCell = document.createElement("td");
+      const pass = metric.guardPass({ delta: result.diff, relDelta: result.diff / result.sa.mean });
+      guardCell.append(pvBadge(pass ? "通过" : "未过", pass ? "ok" : "bad"));
+      row.append(guardCell);
+      tbody.append(row);
+    });
+    table.append(thead, tbody);
+    tableWrap.append(table);
+    host.append(tableWrap);
+
+    const metric = pvMetricByKey(pvState.metric);
+    const result = pvMetricResult(metric.key);
+    const box = pvEl("div", "pv-box");
+    box.append(pvEl("p", "pv-h3", metric.label + " 分布"), pvEl("p", "pv-demo-sub", "箱体 Q1–Q3 · 竖线中位数 · 圆点均值"));
+    const all = PV_DATA[metric.key].control.concat(PV_DATA[metric.key].treatment);
+    const lo = Math.min.apply(null, all);
+    const hi = Math.max.apply(null, all);
+    const span = hi - lo || 1;
+    const pos = (v) => ((v - lo) / span) * 100;
+
+    [
+      { label: "control", values: PV_DATA[metric.key].control.slice().sort((a, b) => a - b), treat: false },
+      { label: "treatment", values: PV_DATA[metric.key].treatment.slice().sort((a, b) => a - b), treat: true }
+    ].forEach((group) => {
+      const row = pvEl("div", "pv-box-row" + (group.treat ? " is-treat" : ""));
+      row.append(pvEl("span", "pv-box-label", group.label));
+      const track = pvEl("div", "pv-track");
+      const min = group.values[0];
+      const max = group.values[group.values.length - 1];
+      const q1 = pvQuantile(group.values, 0.25);
+      const med = pvQuantile(group.values, 0.5);
+      const q3 = pvQuantile(group.values, 0.75);
+      const mean = pvStats(group.values).mean;
+      const whisker = pvEl("span", "pv-whisker");
+      whisker.style.left = pos(min) + "%";
+      whisker.style.width = Math.max(pos(max) - pos(min), 0.5) + "%";
+      const range = pvEl("span", "pv-box-range");
+      range.style.left = pos(q1) + "%";
+      range.style.width = Math.max(pos(q3) - pos(q1), 1) + "%";
+      const median = pvEl("span", "pv-median");
+      median.style.left = pos(med) + "%";
+      const meanDot = pvEl("span", "pv-mean");
+      meanDot.style.left = pos(mean) + "%";
+      track.append(whisker, range, median, meanDot);
+      row.append(track, pvEl("span", "pv-box-label", pvFmt(metric, mean)));
+      box.append(row);
+    });
+    const scale = pvEl("div", "pv-scale");
+    scale.append(pvEl("span", "", pvFmt(metric, lo)), pvEl("span", "", pvFmt(metric, hi)));
+    box.append(scale);
+    box.append(pvEl("p", "pv-legend2", "每个点代表一名固定教学用户；箱体越窄，说明组内差异越小。"));
+    host.append(box);
+  }
+
+  function pvRenderStage4(host) {
+    pvRenderChips(host);
+    const metric = pvMetricByKey(pvState.metric);
+    const result = pvMetricResult(metric.key);
+    const significant = result.p < 0.05;
+
+    const stats = pvEl("dl", "pv-stats");
+    [
+      ["control 均值", pvFmt(metric, result.sa.mean)],
+      ["treatment 均值", pvFmt(metric, result.sb.mean)],
+      ["均值差", pvDeltaText(metric, result)],
+      ["t 值", result.t.toFixed(2)],
+      ["自由度 df", result.df.toFixed(1)],
+      ["双侧 p 值", result.p < 0.001 ? "< 0.001" : result.p.toFixed(4)]
+    ].forEach(([label, value]) => {
+      const stat = pvEl("div", "pv-stat");
+      stat.append(pvEl("dt", "", label), pvEl("dd", "", value));
+      stats.append(stat);
+    });
+    host.append(stats);
+
+    const verdict = pvEl("div", "pv-verdict " + (significant ? "ok" : ""));
+    verdict.dataset.significant = String(significant);
+    verdict.append(pvBadge(significant ? "α = 0.05 下显著" : "不显著", significant ? "ok" : "mute"));
+    verdict.append(document.createTextNode(significant
+      ? "两组均值差异不太可能只由抽样波动造成。但“显著”只回答有没有差异，不回答差异是否值得上线。"
+      : "在 α = 0.05 下，看不出两组均值有可靠差异；样本量或效应量可能都不够。"));
+    host.append(verdict);
+
+    const note = pvEl("p", "pv-legend2", "方法：Welch t 检验（不假设两组方差相等），双侧检验，α = 0.05。p 值由页面用固定数组现场计算。");
+    host.append(note);
+    if (metric.key === "safety") {
+      const caveat = pvEl("div", "pv-danger");
+      caveat.append(pvEl("b", "", "口径提醒："));
+      caveat.append(document.createTextNode("安全通过率是 0/1 比例，每组只有 40 个探针。这里套用 t 检验只是教学近似，生产应改用比例检验，并扩大探针数量。"));
+      host.append(caveat);
+    }
+  }
+
+  function pvRenderStage5(host) {
+    const quality = pvMetricResult("quality");
+    const qualityPass = quality.diff >= 0.2 && quality.p < 0.05;
+    const checks = [
+      { name: "质量", detail: "提升 ≥ 0.20 分且 p < 0.05", pass: qualityPass, actual: pvDeltaText(pvMetricByKey("quality"), quality) + " · p=" + (quality.p < 0.001 ? "<0.001" : quality.p.toFixed(3)) },
+      { name: "成本", detail: "涨幅 ≤ 20%", pass: pvMetricByKey("cost").guardPass({ delta: pvMetricResult("cost").diff, relDelta: pvMetricResult("cost").diff / pvMetricResult("cost").sa.mean }), actual: pvDeltaText(pvMetricByKey("cost"), pvMetricResult("cost")) },
+      { name: "延迟", detail: "涨幅 ≤ 15%", pass: pvMetricByKey("latency").guardPass({ delta: pvMetricResult("latency").diff, relDelta: pvMetricResult("latency").diff / pvMetricResult("latency").sa.mean }), actual: pvDeltaText(pvMetricByKey("latency"), pvMetricResult("latency")) },
+      { name: "安全", detail: "降幅 ≤ 1 pp", pass: pvMetricByKey("safety").guardPass({ delta: pvMetricResult("safety").diff, relDelta: pvMetricResult("safety").diff / pvMetricResult("safety").sa.mean }), actual: pvDeltaText(pvMetricByKey("safety"), pvMetricResult("safety")) }
+    ];
+    const allPass = checks.every((c) => c.pass);
+
+    const decide = pvEl("div", allPass ? "pv-card" : "pv-decide");
+    const title = pvEl("b", "", allPass ? "判定：可以进入灰度放量。" : "判定：不晋级 active。");
+    decide.append(title);
+    decide.append(pvEl("p", "", allPass
+      ? "主指标显著提升，护栏全过。按 5% → 20% → 50% → 100% 逐级放量，旧版本归档待命。"
+      : "质量分显著提升，但成本和延迟超出护栏。线上继续跑 v1.0，v1.1 停在 testing，等压缩示例长度后重跑实验。如果 v1.1 已经上线，这一步就是回滚到 v1.0；它还没晋级，所以只需留在 testing。"));
+    host.append(decide);
+
+    const list = pvEl("ul", "pv-check");
+    checks.forEach((check) => {
+      const li = document.createElement("li");
+      li.append(pvEl("span", "what", check.name));
+      const body = pvEl("div");
+      body.append(pvEl("b", "", check.detail), document.createElement("br"), document.createTextNode("实测 " + check.actual));
+      li.append(body, pvBadge(check.pass ? "通过" : "未过", check.pass ? "ok" : "bad"));
+      list.append(li);
+    });
+    host.append(list);
+
+    const rollTitle = pvEl("p", "pv-h3", "放量阶梯 · " + (allPass ? "满足条件时的路径" : "本次未进入"));
+    host.append(rollTitle);
+    const roll = pvEl("div", "pv-roll");
+    [
+      ["5%", "Canary · 24h", allPass],
+      ["20%", "继续收集", allPass],
+      ["50%", "A/B 显著 · 1 周", allPass],
+      ["100%", "全量 · 旧版归档", allPass]
+    ].forEach(([share, note, active]) => {
+      const step = pvEl("div", "pv-roll-step");
+      step.append(pvEl("b", "", share), pvEl("span", "", note));
+      if (!active) {
+        const em = document.createElement("em");
+        em.textContent = "未执行";
+        step.append(em);
+      }
+      roll.append(step);
+    });
+    host.append(roll);
+
+    const next = pvEl("p", "pv-next");
+    next.textContent = "下一轮：删掉 1 条示例，把 prompt 长度压回预算内，重新跑同一条假设。不要在同一实验里同时改示例数量和语气，否则无法归因。";
+    host.append(next);
+  }
+
+  function pvRender() {
+    const host = pvById("pv-main");
+    host.textContent = "";
+    if (pvState.stage === 0) pvRenderStage1(host);
+    else if (pvState.stage === 1) pvRenderStage2(host);
+    else if (pvState.stage === 2) pvRenderStage3(host);
+    else if (pvState.stage === 3) pvRenderStage4(host);
+    else pvRenderStage5(host);
+
+    const stage = PV_STAGES[pvState.stage];
+    pvById("pv-figure").textContent = stage.figure;
+    pvById("pv-caption-title").textContent = stage.title;
+    pvById("pv-desc").textContent = stage.desc;
+    pvById("pv-state-summary").textContent = "第 " + (pvState.stage + 1) + " / 5 步 · " + stage.nav;
+    pvById("pv-prev").disabled = pvState.stage === 0;
+    pvById("pv-next").disabled = pvState.stage === 4;
+    document.querySelectorAll("[data-stage]").forEach((button) => {
+      button.setAttribute("aria-current", Number(button.dataset.stage) === pvState.stage ? "step" : "false");
+    });
+    const scene = pvById("pv-scene");
+    scene.style.animation = "none";
+    void scene.offsetWidth;
+    scene.style.animation = "";
+  }
+
+  let pvAnnounceTimer = 0;
+  function pvAnnounce(message) {
+    const region = pvById("pv-announcement");
+    window.clearTimeout(pvAnnounceTimer);
+    pvAnnounceTimer = window.setTimeout(() => {
+      region.textContent = message;
+    }, 60);
+  }
+
+  function pvGo(stage) {
+    pvState.stage = Math.max(0, Math.min(4, stage));
+    pvRender();
+    pvAnnounce("第 " + (pvState.stage + 1) + " 步，" + PV_STAGES[pvState.stage].nav + "。" + PV_STAGES[pvState.stage].desc);
+  }
+
+  document.querySelectorAll("[data-stage]").forEach((button) => {
+    button.addEventListener("click", () => pvGo(Number(button.dataset.stage)));
+  });
+  pvById("pv-prev").addEventListener("click", () => pvGo(pvState.stage - 1));
+  pvById("pv-next").addEventListener("click", () => pvGo(pvState.stage + 1));
+  pvById("pv-reset").addEventListener("click", () => {
+    pvState.metric = "quality";
+    pvGo(0);
+  });
+
+  pvRender();
+
+  // 首次进入时把统计结果写入控制台外的地方不需要；保留纯展示。
+</script>
+</body>
+</html>

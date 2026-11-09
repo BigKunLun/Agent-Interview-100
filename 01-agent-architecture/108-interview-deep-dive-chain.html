@@ -1,0 +1,965 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>面试追问链：从「什么是 Agent」到系统设计的 10 层递进追问 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .a108-presets { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 0 var(--s-6); margin-top: var(--s-4); }
+  .a108-preset-label { font: var(--t-label)/1.6 var(--mono); color: var(--text-dim); margin-right: 2px; }
+  .a108-preset { min-height: 44px; padding: 7px 12px; border: 1px solid var(--border-bright); border-radius: var(--r-1); background: var(--surface); font-size: var(--t-label); }
+  .a108-preset:hover { background: var(--surface-soft); }
+  .a108-preset[aria-pressed="true"] { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+  .a108-range { flex: 1 1 240px; min-width: 0; font: 10px/1.6 var(--mono); color: var(--text-dim); }
+  .stage-button.is-start .stage-number { border-color: #2e7d32; color: #2e7d32; }
+  .stage-button.is-target .stage-number { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-dim); }
+  .stage-button.is-beyond:not([aria-current="step"]) { opacity: .45; }
+  .a108-panel { padding: var(--s-3) var(--s-6) 0; }
+  .a108-head { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .a108-tier { padding: 2px 9px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface-soft); font: 9px/1.7 var(--mono); color: var(--text-dim); }
+  .a108-tier.is-mid { border-color: #9eb4c9; color: var(--accent); }
+  .a108-tier.is-high { border-color: #c2410c; color: #8a2c0a; }
+  .a108-q { margin-top: 7px; font: 600 22px/1.5 var(--serif); }
+  .a108-grid { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, .85fr); gap: var(--s-4); margin-top: var(--s-3); }
+  .a108-box { min-width: 0; padding: 11px 12px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+  .a108-box-label { font: 9px/1.6 var(--mono); letter-spacing: .05em; color: var(--text-dim); margin-bottom: 4px; }
+  .a108-points { margin: 0; padding-left: 1.25em; }
+  .a108-points li { font-size: 12px; line-height: 1.65; margin-block: 4px; }
+  .a108-score { display: grid; gap: 5px; }
+  .a108-score div { padding: 6px 8px; border-radius: var(--r-1); background: var(--surface-soft); font-size: 11px; line-height: 1.6; }
+  .a108-score b { display: block; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .a108-score .is-good { border-left: 3px solid #2e7d32; }
+  .a108-score .is-ok { border-left: 3px solid #c9a227; }
+  .a108-score .is-bad { border-left: 3px solid #c62828; }
+  .a108-next { margin-top: var(--s-3); padding: 9px 11px; border: 1px dashed var(--accent); border-radius: var(--r-1); background: var(--accent-dim); font-size: 11px; line-height: 1.7; }
+  .a108-next b { font-family: var(--mono); font-size: 10px; color: var(--accent); }
+  .a108-foot { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; padding: var(--s-4) var(--s-6) var(--s-5); }
+  .a108-level-block { padding: var(--s-4) 0; border-bottom: 1px dashed var(--border); }
+  .a108-level-block:last-child { border-bottom: 0; }
+  .a108-level-block h3 { margin-top: 0; }
+  .a108-level-block .a108-lq { font-weight: 600; font-size: var(--t-small); }
+  .a108-level-block ul { margin-top: var(--s-2); }
+  .a108-level-block .a108-lt { font-size: 11px; color: var(--text-dim); margin-top: var(--s-2); }
+  .a108-level-block .a108-lt b { color: var(--ink); }
+  .a108-roles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; margin-top: var(--s-4); }
+  .a108-role { padding: 9px 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); font-size: 11px; line-height: 1.6; }
+  .a108-role b { display: block; font: 9px/1.6 var(--mono); color: var(--text-dim); }
+  @media (max-width: 1000px) {
+    .a108-presets, .a108-panel, .a108-foot { padding-inline: var(--s-5); }
+  }
+  @media (max-width: 720px) {
+    .a108-presets { padding-inline: var(--s-4); }
+    .a108-preset-label { flex-basis: 100%; }
+    .a108-panel { padding: var(--s-3) var(--s-4) 0; }
+    .a108-q { font-size: 19px; }
+    .a108-grid { grid-template-columns: 1fr; }
+    .a108-foot { padding: var(--s-3) var(--s-4) var(--s-4); }
+    .a108-roles { grid-template-columns: 1fr 1fr; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">108 / 面试追问链</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 7 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="010-production-agent-system-design.html">← 上一页 · 生产级 Agent 系统设计（含智能…</a><a href="109-what-is-agent-harness.html">下一页 → · 什么是 Agent Harness？…</a></div>
+    </nav>
+    <main id="main-content">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">中级 · Agent 架构 · 可交互讲解</p>
+          <h1>十层追问，<br>找到能力天花板。</h1>
+        </div>
+        <div>
+          <p class="lead">面试追问链从“什么是 LLM Agent”起步，经过 Agent Loop、终止条件、错误恢复、Self-Reflection、Reflection 局限、RAG、Multi-Agent、生产部署，最终落到系统安全。</p>
+          <p class="definition"><strong>目的不是难倒候选人，而是定位能力边界。</strong>好的追问链逻辑连贯、难度递进、可调节；面试官根据回答实时决定跳级、停留还是结束。</p>
+          <div class="hero-meta"><span class="pill">中级</span><span class="pill">面试方法</span><span class="pill">十层追问</span><span class="pill">能力映射</span></div>
+        </div>
+      </header>
+
+      <section class="walkthrough" id="explainer" aria-labelledby="a108-demo-title">
+        <div class="player-top">
+          <div class="player-label">十层追问导航 <small>问题 → 要点 → 追问意图</small></div>
+          <div class="controls" role="group" aria-label="追问链导航控制">
+            <button type="button" class="button button-quiet" id="a108-reset">回到 L1</button>
+            <button type="button" class="button" id="a108-back" disabled>上一层</button>
+            <button type="button" class="button button-primary" id="a108-next">下一层 →</button>
+          </div>
+        </div>
+
+        <nav class="stage-nav" aria-label="追问层级">
+          <ol id="a108-stage-list" style="--stages: 5"></ol>
+        </nav>
+
+        <div class="a108-presets" role="group" aria-label="选择候选人级别">
+          <span class="a108-preset-label">候选人级别</span>
+          <button type="button" class="a108-preset" data-preset="junior" aria-pressed="false">初级</button>
+          <button type="button" class="a108-preset" data-preset="mid" aria-pressed="true">中级</button>
+          <button type="button" class="a108-preset" data-preset="senior" aria-pressed="false">高级</button>
+          <button type="button" class="a108-preset" data-preset="staff" aria-pressed="false">Staff</button>
+          <span class="a108-range" id="a108-range">建议路径：起点 L2 · 目标 L5 · 上限 L7</span>
+        </div>
+
+        <div class="scene-caption">
+          <p class="figure-index"><span id="a108-step-index">追问导航 · L2 / 10</span></p>
+          <h2 id="a108-demo-title">L2 · 核心循环</h2>
+          <p id="a108-subtitle">基础层 · 概念记忆与理解。选择层级查看期望答案、评分标准和下一层追问意图。</p>
+        </div>
+
+        <div class="scene-host">
+          <div class="a108-panel">
+            <div class="a108-head">
+              <span class="a108-tier" id="a108-tier">基础</span>
+              <span class="a108-tier" id="a108-bloom">Bloom：记忆 / 理解</span>
+              <span class="a108-tier" id="a108-role">对应：初级工程师</span>
+            </div>
+            <h2 class="a108-q" id="a108-question">什么是 LLM Agent？它和普通 LLM 应用有什么区别？</h2>
+            <div class="a108-grid">
+              <div class="a108-box">
+                <p class="a108-box-label">期望答案要点</p>
+                <ul class="a108-points" id="a108-points"></ul>
+              </div>
+              <div>
+                <div class="a108-box">
+                  <p class="a108-box-label">评分标准</p>
+                  <div class="a108-score" id="a108-score"></div>
+                </div>
+                <p class="a108-next"><b>追问意图</b><br><span id="a108-transition"></span></p>
+              </div>
+            </div>
+          </div>
+          <div class="a108-foot">
+            <span class="demo-note" style="border:0; padding:0; margin:0;">固定教学数据 · 问题与评分标准来自原文</span>
+            <span id="a108-state" style="font: 10px/1.6 var(--mono); color: var(--text-dim);">L1 · 基础 · 初级工程师</span>
+          </div>
+        </div>
+      </section>
+      <p id="a108-announce" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+      <section class="reading" aria-labelledby="a108-map-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">一、追问链全景</p><h2 id="a108-map-title">十层一条链，<br>每层承接上一答。</h2></div>
+          <p class="reading-intro">基础两层、中级三层、高级五层。难度从概念记忆递进到系统设计，链条本身是动态导航，不是死板题库。</p>
+        </div>
+        <div class="prose">
+          <figure>
+            <div class="a108-roles" role="img" aria-label="追问链十层：L1 什么是 LLM Agent，L2 核心循环，L3 循环终止，L4 选错工具，L5 自我修正，L6 Reflection 局限，L7 外部知识，L8 多 Agent 协作，L9 生产部署，L10 系统安全">
+              <div class="a108-role"><b>L1 · 基础</b>什么是 LLM Agent</div>
+              <div class="a108-role"><b>L2 · 基础</b>核心循环</div>
+              <div class="a108-role"><b>L3 · 中级</b>循环何时终止</div>
+              <div class="a108-role"><b>L4 · 中级</b>选错工具怎么办</div>
+              <div class="a108-role"><b>L5 · 中级</b>如何自我修正</div>
+              <div class="a108-role"><b>L6 · 高级</b>Reflection 局限</div>
+              <div class="a108-role"><b>L7 · 高级</b>外部知识辅助</div>
+              <div class="a108-role"><b>L8 · 高级</b>多 Agent 协作</div>
+              <div class="a108-role"><b>L9 · 高级</b>生产部署</div>
+              <div class="a108-role"><b>L10 · 高级</b>系统安全</div>
+            </div>
+            <figcaption class="read-figure-note">图 1 · 十层追问链。L1–L2 基础，L3–L5 中级，L6–L10 高级；每一层都由上一层的回答自然引出。</figcaption>
+          </figure>
+          <details>
+            <summary>查看原文 Mermaid 追问链源码</summary>
+            <pre><code>flowchart TD
+    subgraph B["基础 —— 概念记忆与理解"]
+        L1["L1 什么是 LLM Agent"]
+        L2["L2 核心循环"]
+    end
+    subgraph M["中级 —— 分析与应用"]
+        L3["L3 循环何时终止"]
+        L4["L4 选错工具怎么办"]
+        L5["L5 如何自我修正"]
+    end
+    subgraph A["高级 —— 评价与系统设计"]
+        L6["L6 Reflection 局限"]
+        L7["L7 外部知识辅助"]
+        L8["L8 多 Agent 协作"]
+        L9["L9 生产部署"]
+        L10["L10 系统安全"]
+    end
+    L1 --&gt; L2 --&gt; L3 --&gt; L4 --&gt; L5 --&gt; L6 --&gt; L7 --&gt; L8 --&gt; L9 --&gt; L10
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    class L1,L2,L3,L4,L5,L6,L7,L8,L9,L10 proc</code></pre>
+            <p class="source-footnote">源码按原文保留，仅做 HTML 转义；上方层级图按同一顺序呈现。</p>
+          </details>
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">难度分层与能力映射</caption>
+              <thead><tr><th scope="col">层级</th><th scope="col">难度</th><th scope="col">考察维度</th><th scope="col">Bloom 认知层级</th><th scope="col">对应职级</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">L1–L2</th><td>基础</td><td>概念记忆与理解</td><td>记忆 / 理解</td><td>初级工程师</td></tr>
+                <tr><th scope="row">L3–L5</th><td>中级</td><td>分析与应用</td><td>应用 / 分析</td><td>中级工程师</td></tr>
+                <tr><th scope="row">L6–L8</th><td>高级</td><td>评价与权衡</td><td>评价</td><td>高级工程师</td></tr>
+                <tr><th scope="row">L9–L10</th><td>高级</td><td>系统设计与创造</td><td>创造</td><td>Staff+</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a108-levels-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">二、十层逐层看</p><h2 id="a108-levels-title">每层的问题、<br>要点和追问意图。</h2></div>
+          <p class="reading-intro">这一节按原文顺序列出 L1–L10。互动区是同一份数据的导航视图，方便按候选人水平跳转。</p>
+        </div>
+        <div class="prose">
+          <div class="a108-level-block">
+            <h3>L1（基础）什么是 LLM Agent？</h3>
+            <p class="a108-lq">面试官问：“什么是 LLM Agent？它和普通 LLM 应用有什么区别？”</p>
+            <ul>
+              <li>Agent 是以 LLM 为推理引擎、能自主完成多步任务的系统。</li>
+              <li>核心区别：感知（Perceive）→ 推理（Reason）→ 行动（Act）的循环。</li>
+              <li>传统 LLM 应用是无状态单轮文本处理器；Agent 是有状态、目标驱动的自主系统。</li>
+              <li>Agent 具备工具使用（Tool Use）能力，能与外部世界交互。</li>
+            </ul>
+            <p class="a108-lt"><b>追问意图：</b>候选人提到“循环”或“多步”时，面试官追问循环的具体机制。</p>
+          </div>
+
+          <div class="a108-level-block">
+            <h3>L2（基础）Agent 的核心循环是怎样的？</h3>
+            <p class="a108-lq">面试官问：“你提到 Agent 会循环执行，这个循环具体是怎么工作的？”</p>
+            <ul>
+              <li>Agent Loop 四阶段：Observe → Think → Act → Observe。</li>
+              <li>Think 阶段由 LLM 完成推理，Act 阶段调用工具并获取结果。</li>
+              <li>每次循环更新上下文（Context），积累到下一轮推理。</li>
+              <li>典型实现模式：ReAct（Reasoning + Acting）。</li>
+            </ul>
+            <details>
+              <summary>展开 L2 原文 AgentLoop 代码</summary>
+              <pre><code>class AgentLoop:
+    def __init__(self, llm, tools, max_steps=10):
+        self.llm, self.tools, self.max_steps = llm, tools, max_steps
+
+    def run(self, goal: str) -&gt; str:
+        context = [{"role": "user", "content": goal}]
+        for step in range(self.max_steps):
+            response = self.llm.chat(context)           # Think
+            if response.is_final_answer:
+                return response.content
+            result = self.tools.execute(                 # Act
+                response.tool_call.name, response.tool_call.arguments
+            )
+            context.append({"role": "assistant", "content": response})
+            context.append({"role": "tool", "content": result})  # Observe
+        return "达到最大步数限制，任务未完成"</code></pre>
+            </details>
+            <p class="a108-lt"><b>追问意图：</b>候选人描述了循环后，面试官追问关键工程问题——循环不能无限跑，什么时候停？</p>
+          </div>
+
+          <div class="a108-level-block">
+            <h3>L3（中级）循环什么时候终止？</h3>
+            <p class="a108-lq">面试官问：“这个循环不能永远跑下去吧？怎么决定什么时候该停？”</p>
+            <ul>
+              <li><strong>Max Steps 限制：</strong>硬性上限，防止无限循环。</li>
+              <li><strong>目标达成检测：</strong>LLM 判断任务完成（如生成 <code>final_answer</code>）。</li>
+              <li><strong>收敛判断：</strong>检测连续几轮输出是否重复或无实质进展。</li>
+              <li><strong>资源预算：</strong>Token 消耗、时间、API 调用次数达到上限。</li>
+            </ul>
+            <p class="a108-lt"><b>追问意图：</b>终止是“正常结束”，但如果 Agent 执行过程中犯错了呢？面试官引入错误处理话题。</p>
+          </div>
+
+          <div class="a108-level-block">
+            <h3>L4（中级）如果 Agent 在第一步就选错了工具怎么办？</h3>
+            <p class="a108-lq">面试官问：“假设 Agent 需要查数据库，但第一步却调了不相关的 API，怎么办？”</p>
+            <ul>
+              <li><strong>错误信息回传：</strong>将错误作为 Observation 反馈给 LLM，让它重新决策。</li>
+              <li><strong>重试策略：</strong>指数退避重试、限制同一工具连续重试次数。</li>
+              <li><strong>Self-Correction：</strong>LLM 阅读错误信息后调整行动计划。</li>
+              <li><strong>Fallback 机制：</strong>工具不可用时切换备选工具或人工接管。</li>
+              <li><strong>预防措施：</strong>工具描述（Tool Description）要精准，减少选错概率。</li>
+            </ul>
+            <details>
+              <summary>展开 L4 原文错误恢复代码</summary>
+              <pre><code>def execute_with_recovery(self, tool_name, tool_args, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            return {"status": "success", "result": self.tools.execute(tool_name, tool_args)}
+        except ToolNotFoundError:
+            return {"status": "error", "message": f"工具不存在，可用: {self.tools.list()}"}
+        except ToolExecutionError as e:
+            if attempt &lt; max_retries - 1:
+                return {"status": "error", "message": f"第{attempt+1}次失败: {e}，请换方案"}
+    return {"status": "fatal", "message": "多次重试失败，请人工介入"}</code></pre>
+            </details>
+            <p class="a108-lt"><b>追问意图：</b>候选人提到“自我纠错”时，面试官追问——怎么让这种能力更系统化？</p>
+          </div>
+
+          <div class="a108-level-block">
+            <h3>L5（中级）如何让 Agent 有自我修正能力？</h3>
+            <p class="a108-lq">面试官问：“除了简单的重试，有没有更系统的方法让 Agent 反思并修正错误？”</p>
+            <ul>
+              <li><strong>Self-Reflection：</strong>Agent 行动后显式评估自己的输出质量。</li>
+              <li><strong>Reflexion 框架：</strong>Actor（执行）→ Evaluator（评估）→ Self-Reflection（反思改进）。</li>
+              <li><strong>外部验证器：</strong>单元测试、代码执行、规则校验等客观验证手段。</li>
+              <li><strong>经验记忆：</strong>将反思结论存入 Memory，避免重复犯错。</li>
+            </ul>
+            <p class="a108-lt"><b>追问意图：</b>候选人对 Reflection 有了解后，面试官切换到挑战模式——这方法有什么问题？</p>
+          </div>
+
+          <div class="a108-level-block">
+            <h3>L6（高级）Reflection 有什么局限？</h3>
+            <p class="a108-lq">面试官问：“Reflection 听起来很好，但它有什么局限性？什么场景会失效？”</p>
+            <ul>
+              <li><strong>推理幻觉：</strong>LLM 可能“反思”出错误结论，越反思越偏。</li>
+              <li><strong>额外 Token 成本：</strong>每次反思需要额外 LLM 调用，成本线性增长。</li>
+              <li><strong>收敛不保证：</strong>没有数学证明反思一定改善结果，可能震荡。</li>
+              <li><strong>自我认知盲区：</strong>LLM 难以发现自身系统性偏差。</li>
+              <li><strong>验证器依赖：</strong>没有可靠外部验证器的领域（如开放式创意任务），反思效果有限。</li>
+            </ul>
+            <p class="a108-lt"><b>追问意图：</b>候选人提到“外部知识”或“验证器”不足时，面试官引导至 RAG 话题。</p>
+          </div>
+
+          <div class="a108-level-block">
+            <h3>L7（高级）如何用外部知识辅助 Agent 决策？</h3>
+            <p class="a108-lq">面试官问：“Agent 自身知识有限，如何引入外部知识辅助决策？”</p>
+            <ul>
+              <li><strong>RAG 集成：</strong>Agent 在推理前检索相关文档，增强上下文。</li>
+              <li><strong>Knowledge Graph：</strong>结构化知识图谱提供实体关系，辅助推理。</li>
+              <li><strong>动态上下文注入：</strong>根据任务阶段动态选择注入哪些知识。</li>
+              <li><strong>工具即知识：</strong>将数据库查询、API 调用作为知识获取手段。</li>
+              <li><strong>上下文窗口管理：</strong>知识太多挤占推理空间，需要 Relevance Ranking。</li>
+            </ul>
+            <details>
+              <summary>展开 L7 原文 RAGEnhancedAgent 代码</summary>
+              <pre><code>class RAGEnhancedAgent:
+    def __init__(self, llm, tools, retriever):
+        self.llm, self.tools, self.retriever = llm, tools, retriever
+
+    def think(self, context: list) -&gt; str:
+        query = self._extract_search_query(context)
+        docs = self.retriever.search(query, top_k=5)        # 检索
+        augmented = [{"role": "system", "content": self._format(docs)}, *context]
+        return self.llm.chat(augmented)                      # 增强推理</code></pre>
+            </details>
+            <p class="a108-lt"><b>追问意图：</b>当任务复杂到一个 Agent 无法胜任时，面试官引入 Multi-Agent 话题。</p>
+          </div>
+
+          <div class="a108-level-block">
+            <h3>L8（高级）如果一个 Agent 不够，多个 Agent 如何协作？</h3>
+            <p class="a108-lq">面试官问：“任务太复杂一个 Agent 处理不了，你怎么设计多 Agent 协作？”</p>
+            <ul>
+              <li><strong>Multi-Agent 模式：</strong>Orchestrator-Worker、Hierarchical、Peer-to-Peer。</li>
+              <li><strong>Handoff 机制：</strong>Agent 间任务交接，包括上下文传递和责任转移。</li>
+              <li><strong>编排器（Orchestrator）：</strong>中央调度器分配任务、收集结果、处理冲突。</li>
+              <li><strong>专业化分工：</strong>每个 Agent 有独立 System Prompt、工具集和知识库。</li>
+            </ul>
+            <p class="a108-lt"><b>追问意图：</b>架构设计完成后，面试官关注工程落地——这套系统怎么上生产？</p>
+          </div>
+
+          <div class="a108-level-block">
+            <h3>L9（高级）这套多 Agent 系统如何部署到生产？</h3>
+            <p class="a108-lq">面试官问：“要把这套多 Agent 系统部署到生产环境，需要考虑哪些问题？”</p>
+            <ul>
+              <li><strong>架构设计：</strong>Agent 作为微服务、消息队列解耦、状态持久化。</li>
+              <li><strong>可扩展性：</strong>水平扩展 Worker Agent、任务队列负载均衡。</li>
+              <li><strong>可观测性：</strong>每步 LLM 调用和工具执行都需 Trace（LangSmith / OpenTelemetry）。</li>
+              <li><strong>成本控制：</strong>Token 监控、缓存策略、模型分级（简单任务用小模型）。</li>
+              <li><strong>容错设计：</strong>Checkpoint 机制、崩溃恢复、幂等性保证。</li>
+            </ul>
+            <details>
+              <summary>展开 L9 原文 production_config</summary>
+              <pre><code>production_config = {
+    "agent":        {"max_steps": 25, "timeout_seconds": 300, "checkpoint": "redis"},
+    "llm":          {"primary": "claude-sonnet-4", "fallback": "claude-haiku-4", "temperature": 0.0},
+    "observability": {"trace_backend": "opentelemetry", "metrics": ["token_usage", "latency", "error_rate"]},
+    "cost_control":  {"max_tokens_per_session": 100000, "cache": "semantic",
+                      "model_routing": {"simple": "haiku", "complex": "sonnet"}},
+}</code></pre>
+            </details>
+            <p class="a108-lt"><b>追问意图：</b>系统上了生产就面临安全风险，面试官最终追问安全性。</p>
+          </div>
+
+          <div class="a108-level-block">
+            <h3>L10（高级）如何保证系统安全？</h3>
+            <p class="a108-lq">面试官问：“这套 Agent 系统直接与外部 API 和数据库交互，怎么保证它不会做出危险操作？”</p>
+            <ul>
+              <li><strong>Guardrails（护栏）：</strong>输入过滤（Prompt Injection 检测）、输出校验（敏感信息过滤）。</li>
+              <li><strong>权限最小化（Least Privilege）：</strong>每个 Agent 只拥有完成任务所需最小权限。</li>
+              <li><strong>沙箱执行：</strong>代码执行和文件操作在隔离环境中运行。</li>
+              <li><strong>Human-in-the-Loop：</strong>高风险操作（删除数据、转账）必须人工确认。</li>
+              <li><strong>Red Teaming：</strong>定期对 Agent 进行对抗性测试，发现安全漏洞。</li>
+            </ul>
+            <p class="a108-lt"><b>追问意图：</b>链条终点。系统安全是最后一层，没有下一层追问。</p>
+          </div>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a108-interviewer-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">三、面试官视角</p><h2 id="a108-interviewer-title">按候选人级别，<br>调起点和天花板。</h2></div>
+          <p class="reading-intro">追问链不是死板题库，而是动态导航工具。候选人级别决定起点、目标层级和上限；回答质量决定跳级、递进、停留还是结束。</p>
+        </div>
+        <div class="prose">
+          <div class="table-wrap">
+            <table class="data">
+              <caption class="sr-only">不同候选人级别的起点、目标与上限</caption>
+              <thead><tr><th scope="col">候选人级别</th><th scope="col">起点</th><th scope="col">目标</th><th scope="col">上限</th></tr></thead>
+              <tbody>
+                <tr><th scope="row">junior</th><td>L1</td><td>L3</td><td>L5</td></tr>
+                <tr><th scope="row">mid</th><td>L2</td><td>L5</td><td>L7</td></tr>
+                <tr><th scope="row">senior</th><td>L3</td><td>L7</td><td>L10</td></tr>
+                <tr><th scope="row">staff</th><td>L5</td><td>L9</td><td>L10</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <pre><code>class InterviewNavigator:
+    LEVELS = {
+        "junior": {"start": 1, "target": 3, "max": 5},
+        "mid":    {"start": 2, "target": 5, "max": 7},
+        "senior": {"start": 3, "target": 7, "max": 10},
+        "staff":  {"start": 5, "target": 9, "max": 10},
+    }
+
+    def decide_next(self, current_level, answer_quality, candidate_level):
+        cfg = self.LEVELS[candidate_level]
+        if answer_quality == "excellent":
+            return min(current_level + 2, cfg["max"])   # 跳级追问
+        elif answer_quality == "good":
+            return min(current_level + 1, cfg["max"])   # 正常递进
+        elif answer_quality == "struggling":
+            return current_level                        # 停留并引导
+        else:
+            return f"能力边界在 L{current_level}，建议结束追问"</code></pre>
+          <p><strong>回答质量与动作：</strong>excellent → 跳两级（不超过上限）；good → 正常递进一级；struggling → 停留并引导；否则记录能力边界并结束。互动区顶部的候选人级别按钮就是这套配置的导航视图。</p>
+        </div>
+      </section>
+
+      <section class="reading" aria-labelledby="a108-mis-title">
+        <div class="reading-header">
+          <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="a108-mis-title">两条误区，<br>两条追问。</h2></div>
+          <p class="reading-intro">前两条纠正“背答案”和“问到答不出为止”，后两条讨论 L5 卡住怎么引导，以及如何适配不同级别。</p>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">误区 1</p>
+          <div><h3>“背答案就够了，追问链上的每个答案都背下来就能过面试。”</h3><p>追问链的核心价值在于考察思维过程而非记忆力。优秀的面试官会根据候选人回答动态调整追问方向，背诵标准答案的候选人在面试官稍微变换角度时就会暴露。真正有效的准备是理解每层问题之间的逻辑关联——为什么 L3 的终止条件自然引出 L4 的错误恢复？因为终止是“正常结束”，错误是“异常情况”，二者共同构成 Agent Loop 的健壮性要求。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">误区 2</p>
+          <div><h3>“面试追问就是刁难候选人，问到答不出来为止。”</h3><p>追问链的目标不是“难倒”候选人，而是精确定位其能力边界。好的追问过程应让候选人感到“被引导着思考”而非“被拷问”。面试官在候选人卡住时应提供线索（如“你有没有想过错误信息可以作为反馈？”），帮助其展示最佳水平。找到天花板后应及时停止，而非继续施压。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">追问 1</p>
+          <div><h3>如果候选人在 L5 卡住了，你作为面试官会怎么引导？</h3><p>候选人卡住通常有两种情况。第一种是知道“重试”但不知道如何系统化，可引导：“如果让 Agent 不仅重试，还要先分析为什么失败了，你会怎么设计？”帮助候选人想到 Evaluator 概念。第二种是完全没接触过 Reflection，可降维引导：“你自己写代码犯了错，思考过程是什么？先看报错、再分析原因、再修改——能不能让 Agent 也这样做？”如果引导后仍无法回答，说明能力边界在 L4–L5 之间，对应中级水平。</p></div>
+        </div>
+        <div class="misconception">
+          <p class="misconception-label">追问 2</p>
+          <div><h3>这条追问链如何适配不同级别（初级/中级/高级）的候选人？</h3><p>核心是调整“起点”和“天花板”。初级候选人从 L1 起，目标 L3，达到 L5 即超预期；中级从 L2 起，目标 L5–L6；高级从 L3 甚至 L5 起，目标 L8–L9；Staff 级别直接从 L5 起，期望完整回答到 L10。同一层级也可调整深度：对初级问“Agent Loop 是什么”，对高级问“你在生产中遇到过 Agent Loop 的哪些坑”——同是 L2 的问题，考察维度完全不同。</p></div>
+        </div>
+      </section>
+
+      <section class="source-section" aria-labelledby="a108-source-title">
+        <p class="eyebrow">技术细节，按需展开</p>
+        <h2 class="source-heading" id="a108-source-title">原文参考资料</h2>
+        <p class="source-summary">讲解依据《面试追问链：从「什么是 Agent」到系统设计的 10 层递进追问》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+        <details>
+          <summary>展开原文列出的五条参考链接</summary>
+          <div class="source-content">
+            <ul>
+              <li><a href="https://arxiv.org/abs/2303.11366" target="_blank" rel="noopener noreferrer">Reflexion: Language Agents with Verbal Reinforcement Learning (Shinn et al., 2023)</a></li>
+              <li><a href="https://arxiv.org/abs/2210.03629" target="_blank" rel="noopener noreferrer">ReAct: Synergizing Reasoning and Acting in Language Models (Yao et al., 2023)</a></li>
+              <li><a href="https://www.anthropic.com/engineering/building-effective-agents" target="_blank" rel="noopener noreferrer">Building Effective Agents (Anthropic Blog)</a></li>
+              <li><a href="https://lilianweng.github.io/posts/2023-06-23-agent/" target="_blank" rel="noopener noreferrer">LLM Powered Autonomous Agents (Lilian Weng Blog)</a></li>
+              <li><a href="https://owasp.org/www-project-top-10-for-large-language-model-applications/" target="_blank" rel="noopener noreferrer">OWASP Top 10 for LLM Applications (OWASP Foundation)</a></li>
+            </ul>
+            <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+          </div>
+        </details>
+      </section>
+    </main>
+    <footer><span>Agent-Interview-100 · <code>01-agent-architecture/108-interview-deep-dive-chain.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 3 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+
+  const A108_LEVELS = [
+    {
+      id: 1, short: "什么是 LLM Agent", tier: "基础", tierClass: "", bloom: "记忆 / 理解", role: "初级工程师",
+      question: "什么是 LLM Agent？它和普通 LLM 应用有什么区别？",
+      points: [
+        "Agent 是以 LLM 为推理引擎、能自主完成多步任务的系统",
+        "核心区别：感知（Perceive）→ 推理（Reason）→ 行动（Act）的循环",
+        "传统 LLM 应用是无状态单轮文本处理器；Agent 是有状态、目标驱动的自主系统",
+        "Agent 具备工具使用（Tool Use）能力，能与外部世界交互"
+      ],
+      excellent: "清晰区分 Agent 与传统 LLM 应用，提到自主性、状态管理、工具调用，并给出具体例子",
+      pass: "知道 Agent 能调用工具、多步执行，但底层机制描述模糊",
+      fail: "将 Agent 等同于“加了 System Prompt 的 ChatGPT”",
+      transition: "候选人提到“循环”或“多步”时，面试官追问循环的具体机制。"
+    },
+    {
+      id: 2, short: "核心循环", tier: "基础", tierClass: "", bloom: "记忆 / 理解", role: "初级工程师",
+      question: "你提到 Agent 会循环执行，这个循环具体是怎么工作的？",
+      points: [
+        "Agent Loop 四阶段：Observe → Think → Act → Observe",
+        "Think 阶段由 LLM 完成推理，Act 阶段调用工具并获取结果",
+        "每次循环更新上下文（Context），积累到下一轮推理",
+        "典型实现模式：ReAct（Reasoning + Acting）"
+      ],
+      excellent: "能画出循环流程，提到 ReAct 模式，理解上下文如何在循环间传递",
+      pass: "知道“LLM 调用 → 工具执行 → 再调用”的基本流程",
+      fail: "无法描述循环结构，认为 Agent 只是“调用一次 LLM 然后执行”",
+      transition: "候选人描述了循环后，面试官追问关键工程问题——循环不能无限跑，什么时候停？"
+    },
+    {
+      id: 3, short: "循环何时终止", tier: "中级", tierClass: "is-mid", bloom: "应用 / 分析", role: "中级工程师",
+      question: "这个循环不能永远跑下去吧？怎么决定什么时候该停？",
+      points: [
+        "Max Steps 限制：硬性上限，防止无限循环",
+        "目标达成检测：LLM 判断任务完成（如生成 final_answer）",
+        "收敛判断：检测连续几轮输出是否重复或无实质进展",
+        "资源预算：Token 消耗、时间、API 调用次数达到上限"
+      ],
+      excellent: "提到多种终止策略并能分析 trade-off，理解“由系统而非 Agent 保证终止”的原则",
+      pass: "知道 Max Steps 和目标检测，但对死循环检测和优雅降级缺乏认识",
+      fail: "只知道 Max Steps，不理解为什么仅靠 LLM 自行判断终止是不可靠的",
+      transition: "终止是“正常结束”，但如果 Agent 执行过程中犯错了呢？面试官引入错误处理话题。"
+    },
+    {
+      id: 4, short: "选错工具怎么办", tier: "中级", tierClass: "is-mid", bloom: "应用 / 分析", role: "中级工程师",
+      question: "假设 Agent 需要查数据库，但第一步却调了不相关的 API，怎么办？",
+      points: [
+        "错误信息回传：将错误作为 Observation 反馈给 LLM，让它重新决策",
+        "重试策略：指数退避重试、限制同一工具连续重试次数",
+        "Self-Correction：LLM 阅读错误信息后调整行动计划",
+        "Fallback 机制：工具不可用时切换备选工具或人工接管",
+        "预防措施：工具描述（Tool Description）要精准，减少选错概率"
+      ],
+      excellent: "区分“选错工具”和“工具执行失败”，提出预防 + 恢复的完整策略",
+      pass: "知道把错误信息反馈给 LLM 让它重试",
+      fail: "认为“选错工具就失败了”，不理解 Agent 的自我纠错能力",
+      transition: "候选人提到“自我纠错”时，面试官追问——怎么让这种能力更系统化？"
+    },
+    {
+      id: 5, short: "如何自我修正", tier: "中级", tierClass: "is-mid", bloom: "应用 / 分析", role: "中级工程师",
+      question: "除了简单的重试，有没有更系统的方法让 Agent 反思并修正错误？",
+      points: [
+        "Self-Reflection：Agent 行动后显式评估自己的输出质量",
+        "Reflexion 框架：Actor（执行）→ Evaluator（评估）→ Self-Reflection（反思改进）",
+        "外部验证器：单元测试、代码执行、规则校验等客观验证手段",
+        "经验记忆：将反思结论存入 Memory，避免重复犯错"
+      ],
+      excellent: "能描述 Reflexion 框架，区分内部反思与外部验证，理解经验记忆的价值",
+      pass: "知道“让 LLM 反思自己的输出”，但缺乏框架级认知",
+      fail: "将自我修正等同于“重试”，不理解反思与简单重试的本质区别",
+      transition: "候选人对 Reflection 有了解后，面试官切换到挑战模式——这方法有什么问题？"
+    },
+    {
+      id: 6, short: "Reflection 局限", tier: "高级", tierClass: "is-high", bloom: "评价", role: "高级工程师",
+      question: "Reflection 听起来很好，但它有什么局限性？什么场景会失效？",
+      points: [
+        "推理幻觉：LLM 可能“反思”出错误结论，越反思越偏",
+        "额外 Token 成本：每次反思需要额外 LLM 调用，成本线性增长",
+        "收敛不保证：没有数学证明反思一定改善结果，可能震荡",
+        "自我认知盲区：LLM 难以发现自身系统性偏差",
+        "验证器依赖：没有可靠外部验证器的领域（如开放式创意任务），反思效果有限"
+      ],
+      excellent: "指出 3 个以上局限，并提出缓解策略（如“反思 + 外部验证”组合）",
+      pass: "意识到 Token 成本和幻觉风险，但无法深入分析",
+      fail: "认为 Reflection 是万能的，未考虑过失败场景",
+      transition: "候选人提到“外部知识”或“验证器”不足时，面试官引导至 RAG 话题。"
+    },
+    {
+      id: 7, short: "外部知识辅助", tier: "高级", tierClass: "is-high", bloom: "评价", role: "高级工程师",
+      question: "Agent 自身知识有限，如何引入外部知识辅助决策？",
+      points: [
+        "RAG 集成：Agent 在推理前检索相关文档，增强上下文",
+        "Knowledge Graph：结构化知识图谱提供实体关系，辅助推理",
+        "动态上下文注入：根据任务阶段动态选择注入哪些知识",
+        "工具即知识：将数据库查询、API 调用作为知识获取手段",
+        "上下文窗口管理：知识太多挤占推理空间，需要 Relevance Ranking"
+      ],
+      excellent: "能描述 RAG 在 Agent Loop 中的集成位置，理解上下文窗口管理挑战",
+      pass: "知道 RAG 基本概念，但不清楚如何与 Agent Loop 结合",
+      fail: "将 RAG 等同于“把所有文档塞进 Prompt”",
+      transition: "当任务复杂到一个 Agent 无法胜任时，面试官引入 Multi-Agent 话题。"
+    },
+    {
+      id: 8, short: "多 Agent 协作", tier: "高级", tierClass: "is-high", bloom: "评价", role: "高级工程师",
+      question: "任务太复杂一个 Agent 处理不了，你怎么设计多 Agent 协作？",
+      points: [
+        "Multi-Agent 模式：Orchestrator-Worker、Hierarchical、Peer-to-Peer",
+        "Handoff 机制：Agent 间任务交接，包括上下文传递和责任转移",
+        "编排器（Orchestrator）：中央调度器分配任务、收集结果、处理冲突",
+        "专业化分工：每个 Agent 有独立 System Prompt、工具集和知识库"
+      ],
+      excellent: "对比多种协作模式的 trade-off，理解 Handoff 的上下文传递挑战",
+      pass: "知道“拆分成多个 Agent”，但对编排机制描述不清",
+      fail: "认为“多个 Agent 就是多线程调同一个 LLM”",
+      transition: "架构设计完成后，面试官关注工程落地——这套系统怎么上生产？"
+    },
+    {
+      id: 9, short: "生产部署", tier: "高级", tierClass: "is-high", bloom: "创造", role: "Staff+",
+      question: "要把这套多 Agent 系统部署到生产环境，需要考虑哪些问题？",
+      points: [
+        "架构设计：Agent 作为微服务、消息队列解耦、状态持久化",
+        "可扩展性：水平扩展 Worker Agent、任务队列负载均衡",
+        "可观测性：每步 LLM 调用和工具执行都需 Trace（LangSmith / OpenTelemetry）",
+        "成本控制：Token 监控、缓存策略、模型分级（简单任务用小模型）",
+        "容错设计：Checkpoint 机制、崩溃恢复、幂等性保证"
+      ],
+      excellent: "覆盖可观测性、成本控制、容错、扩展四个维度，能给出具体技术选型",
+      pass: "知道需要监控和日志，但对 Trace 粒度和成本优化缺乏具体方案",
+      fail: "只关注功能实现，未考虑运维层面的挑战",
+      transition: "系统上了生产就面临安全风险，面试官最终追问安全性。"
+    },
+    {
+      id: 10, short: "系统安全", tier: "高级", tierClass: "is-high", bloom: "创造", role: "Staff+",
+      question: "这套 Agent 系统直接与外部 API 和数据库交互，怎么保证它不会做出危险操作？",
+      points: [
+        "Guardrails（护栏）：输入过滤（Prompt Injection 检测）、输出校验（敏感信息过滤）",
+        "权限最小化（Least Privilege）：每个 Agent 只拥有完成任务所需最小权限",
+        "沙箱执行：代码执行和文件操作在隔离环境中运行",
+        "Human-in-the-Loop：高风险操作（删除数据、转账）必须人工确认",
+        "Red Teaming：定期对 Agent 进行对抗性测试，发现安全漏洞"
+      ],
+      excellent: "能描述多层防护架构，理解 Prompt Injection 威胁，提到 Red Teaming 实践",
+      pass: "知道需要权限控制和人工确认，但安全思维不够系统化",
+      fail: "认为“限制工具权限就够了”，未考虑 Prompt Injection 和对抗性攻击",
+      transition: "链条终点。系统安全是最后一层，没有下一层追问。"
+    }
+  ];
+
+  const A108_PRESETS = {
+    junior: { label: "初级", start: 1, target: 3, max: 5 },
+    mid: { label: "中级", start: 2, target: 5, max: 7 },
+    senior: { label: "高级", start: 3, target: 7, max: 10 },
+    staff: { label: "Staff", start: 5, target: 9, max: 10 }
+  };
+
+  const state = { level: 2, preset: "mid" };
+  const byId = (id) => document.getElementById(id);
+
+  function buildStageNav() {
+    const list = byId("a108-stage-list");
+    list.style.setProperty("--stages", "5");
+    list.textContent = "";
+    A108_LEVELS.forEach((level) => {
+      const li = document.createElement("li");
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "stage-button";
+      button.dataset.level = String(level.id);
+      button.setAttribute("aria-controls", "explainer");
+      button.setAttribute("aria-label", `第 ${level.id} 层：${level.question}`);
+      button.innerHTML = `<span class="stage-number">${level.id}</span><span>L${level.id}</span>`;
+      button.addEventListener("click", () => goTo(level.id));
+      li.append(button);
+      list.append(li);
+    });
+  }
+
+  function renderRange() {
+    const preset = A108_PRESETS[state.preset];
+    byId("a108-range").textContent = `建议路径：起点 L${preset.start} · 目标 L${preset.target} · 上限 L${preset.max}${state.level > preset.max ? " · 当前已超出上限" : ""}`;
+    document.querySelectorAll(".a108-preset").forEach((button) => {
+      button.setAttribute("aria-pressed", button.dataset.preset === state.preset ? "true" : "false");
+    });
+    document.querySelectorAll("#a108-stage-list .stage-button").forEach((button) => {
+      const id = Number(button.dataset.level);
+      button.classList.toggle("is-start", id === preset.start);
+      button.classList.toggle("is-target", id === preset.target);
+      button.classList.toggle("is-beyond", id > preset.max);
+    });
+  }
+
+  function render() {
+    const level = A108_LEVELS[state.level - 1];
+    const preset = A108_PRESETS[state.preset];
+
+    document.querySelectorAll("#a108-stage-list .stage-button").forEach((button) => {
+      const id = Number(button.dataset.level);
+      if (id === state.level) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+
+    byId("a108-step-index").textContent = `追问导航 · L${level.id} / 10`;
+    byId("a108-demo-title").textContent = `L${level.id} · ${level.short}`;
+    byId("a108-subtitle").textContent = `${level.tier}层 · ${level.bloom} · 对应${level.role}。选择层级查看期望答案、评分标准和下一层追问意图。`;
+    byId("a108-tier").textContent = level.tier;
+    byId("a108-tier").className = `a108-tier ${level.tierClass}`.trim();
+    byId("a108-bloom").textContent = `Bloom：${level.bloom}`;
+    byId("a108-role").textContent = `对应：${level.role}`;
+    byId("a108-question").textContent = level.question;
+
+    const points = byId("a108-points");
+    points.textContent = "";
+    level.points.forEach((text) => {
+      const li = document.createElement("li");
+      li.textContent = text;
+      points.append(li);
+    });
+
+    const score = byId("a108-score");
+    score.textContent = "";
+    [["优秀", level.excellent, "is-good"], ["合格", level.pass, "is-ok"], ["不足", level.fail, "is-bad"]].forEach(([label, text, cls]) => {
+      const box = document.createElement("div");
+      box.className = cls;
+      const b = document.createElement("b");
+      b.textContent = label;
+      box.append(b, document.createTextNode(text));
+      score.append(box);
+    });
+
+    byId("a108-transition").textContent = level.transition;
+    byId("a108-state").textContent = `L${level.id} · ${level.tier} · ${level.role} · 建议上限 L${preset.max}`;
+    byId("a108-back").disabled = state.level === 1;
+    byId("a108-next").disabled = state.level === A108_LEVELS.length;
+    renderRange();
+  }
+
+  function goTo(id) {
+    state.level = Math.max(1, Math.min(id, A108_LEVELS.length));
+    render();
+    const level = A108_LEVELS[state.level - 1];
+    byId("a108-announce").textContent = `第 ${level.id} 层，${level.tier}：${level.question}`;
+  }
+
+  function setPreset(id) {
+    state.preset = id;
+    const preset = A108_PRESETS[id];
+    goTo(preset.start);
+    byId("a108-announce").textContent = `已选择${preset.label}候选人，从 L${preset.start} 开始，目标 L${preset.target}，上限 L${preset.max}。`;
+  }
+
+  document.querySelectorAll(".a108-preset").forEach((button) => {
+    button.addEventListener("click", () => setPreset(button.dataset.preset));
+  });
+  byId("a108-next").addEventListener("click", () => goTo(state.level + 1));
+  byId("a108-back").addEventListener("click", () => goTo(state.level - 1));
+  byId("a108-reset").addEventListener("click", () => {
+    goTo(1);
+    byId("a108-announce").textContent = "已回到 L1。";
+  });
+
+  buildStageNav();
+  render();
+</script>
+</body>
+</html>

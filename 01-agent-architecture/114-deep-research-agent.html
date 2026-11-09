@@ -1,0 +1,1068 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>什么是 Deep Research / Agentic Search Agent？它和 Agentic RAG 有何区别？ · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  .dr-scene { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .dr-grid { display: grid; grid-template-columns: minmax(0, 1.32fr) minmax(0, 1fr); gap: var(--s-5); align-items: start; }
+  .dr-work { min-width: 0; }
+  .dr-roundbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding: 8px 10px; border: 1px solid var(--border); border-radius: var(--r-1); background: #f7f6f1; font-size: 11px; line-height: 1.6; }
+  .dr-roundbar b { font-family: var(--mono); font-weight: 600; }
+  .dr-stop { margin-left: auto; display: inline-flex; align-items: center; gap: 5px; padding: 1px 8px; border: 1px solid var(--border-bright); border-radius: 999px; font-family: var(--mono); font-size: 10px; background: var(--surface); }
+  .dr-stop.is-hit { border-color: #2e7d32; background: #eef7ee; color: #1b5e20; }
+  .dr-plan { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-2); margin-top: var(--s-3); }
+  .dr-q { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 10px; min-width: 0; transition: border-color var(--fast) var(--ease), background var(--fast) var(--ease); }
+  .dr-q.is-gap { border-color: #c2410c; background: #fff8f3; }
+  .dr-q.is-ok { border-color: #9fc59f; background: #f7fbf6; }
+  .dr-q-head { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+  .dr-q-id { font: 600 10px/1.5 var(--mono); color: var(--accent); }
+  .dr-q-state { font: 9px/1.5 var(--mono); color: var(--text-dim); padding: 1px 5px; border: 1px solid var(--border); border-radius: 999px; background: var(--surface-soft); white-space: nowrap; }
+  .dr-q.is-gap .dr-q-state { color: #9a3412; border-color: #d9a07b; background: #fff1e8; }
+  .dr-q.is-ok .dr-q-state { color: #1b5e20; border-color: #9fc59f; background: #eef7ee; }
+  .dr-q h3 { margin-top: 3px; font-size: 12px; line-height: 1.5; font-weight: 600; }
+  .dr-q-meta { display: flex; justify-content: space-between; gap: 6px; margin-top: 7px; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .dr-track { height: 5px; margin-top: 5px; border-radius: 999px; background: var(--surface-soft); overflow: hidden; }
+  .dr-track span { display: block; height: 100%; width: 0; background: var(--series-3); transition: width var(--med) var(--ease); }
+  .dr-q.is-gap .dr-track span { background: var(--series-2); }
+
+  .dr-queries { margin-top: var(--s-3); padding: 9px 10px; border: 1px dashed var(--border-bright); border-radius: var(--r-1); background: var(--surface); }
+  .dr-queries-label { font: 9px/1.5 var(--mono); color: var(--text-dim); letter-spacing: .04em; }
+  .dr-query-row { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px; }
+  .dr-query { padding: 3px 8px; border: 1px solid var(--border-bright); border-radius: 999px; background: var(--surface-soft); font: 10px/1.5 var(--mono); }
+  .dr-query.is-new { border-color: #c2410c; background: #fff1e8; color: #9a3412; }
+  .dr-query.is-empty { border-style: dashed; color: var(--text-dim); background: transparent; }
+
+  .dr-evidence { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 9px 10px; }
+  .dr-evidence-head { display: flex; justify-content: space-between; gap: 8px; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .dr-ev-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .dr-ev { display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface-soft); font-size: 10px; line-height: 1.5; }
+  .dr-ev b { font: 600 9px/1.5 var(--mono); color: var(--accent); }
+  .dr-ev.is-new { border-color: #2e7d32; background: #f2f9f1; }
+  .dr-ev-empty { font-size: 10px; color: var(--text-dim); }
+
+  .dr-report { margin-top: var(--s-3); border: 1px solid #9fc59f; border-radius: var(--r-1); background: #f7fbf6; padding: 10px; }
+  .dr-report-head { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .dr-report-head b { font: 600 12px/1.5 var(--sans); }
+  .dr-report-head span { font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .dr-report ol { margin: 7px 0 0; padding-left: 1.2em; font-size: 10px; line-height: 1.7; color: var(--text-dim); }
+  .dr-report li { margin-block: 2px; }
+  .dr-report .cite { font: 9px/1.5 var(--mono); color: var(--accent); }
+
+  .dr-panel { min-width: 0; border: 1px solid var(--border); border-radius: var(--r-1); background: #f7f6f1; padding: var(--s-4); }
+  .dr-panel-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .dr-panel-head h2 { font: 600 19px/1.45 var(--serif); }
+  .dr-step { font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .dr-panel > p { margin-top: var(--s-2); font-size: 12px; line-height: 1.7; }
+  .dr-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; margin-top: var(--s-3); }
+  .dr-metric { padding: 6px 8px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); }
+  .dr-metric dt { font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .dr-metric dd { margin: 0; font: 600 16px/1.3 var(--mono); }
+  .dr-verdict { display: inline-flex; align-items: center; gap: 5px; margin-top: var(--s-3); padding: 3px 9px; border-radius: 999px; border: 1px solid var(--border-bright); font: 11px/1.6 var(--mono); background: var(--surface); }
+  .dr-verdict.go { border-color: #c2410c; background: #fff1e8; color: #9a3412; }
+  .dr-verdict.stop { border-color: #2e7d32; background: #eef7ee; color: #1b5e20; }
+  .dr-log { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 4px; }
+  .dr-log li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 6px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 4px; background: var(--surface); font-size: 10px; line-height: 1.55; }
+  .dr-log li b { font: 600 9px/1.55 var(--mono); color: var(--accent); }
+  .dr-log li.is-current { border-color: var(--accent); background: var(--accent-dim); }
+  .dr-caption { margin-top: var(--s-4); padding-top: var(--s-3); border-top: 1px solid var(--border); }
+  .dr-caption h2 { font: 600 21px/1.45 var(--serif); }
+  .dr-caption p { margin-top: var(--s-2); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .dr-action { display: inline-block; margin-top: var(--s-2); padding: 3px 9px; border: 1px solid var(--border-bright); border-radius: 999px; font: 10px/1.6 var(--mono); color: var(--accent); background: var(--accent-dim); }
+
+  /* 阅读：循环图 */
+  .dr-loop { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--s-2); margin-top: var(--s-4); }
+  .dr-node { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: 9px 7px; text-align: center; }
+  .dr-node b { display: block; font-size: 12px; line-height: 1.5; }
+  .dr-node small { display: block; margin-top: 2px; font: 9px/1.5 var(--mono); color: var(--text-dim); }
+  .dr-node.decision { border-color: #d9a441; background: #fffaf0; }
+  .dr-back { grid-column: 1 / -1; display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px dashed #c2410c; border-radius: var(--r-1); background: #fff7f2; font: 10px/1.5 var(--mono); color: #9a3412; }
+  .dr-back span { font-size: 15px; line-height: 1; }
+  .dr-flowline { grid-column: 1 / -1; text-align: center; font: 10px/1.5 var(--mono); color: var(--text-dim); }
+
+  .dr-four { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-2); margin-top: var(--s-4); }
+  .dr-risk { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3); }
+  .dr-risk h3 { margin-top: 0; font-size: 15px; }
+  .dr-risk p { font-size: 12px; }
+  .dr-risk .tag { display: inline-block; margin-bottom: 3px; font: 9px/1.5 var(--mono); color: #9a3412; letter-spacing: .04em; }
+  .dr-source-note { font-size: 11px; line-height: 1.7; color: var(--text-dim); margin-top: var(--s-2); }
+
+  @media (max-width: 960px) {
+    .dr-grid { grid-template-columns: 1fr; }
+    .dr-panel { order: 2; }
+    .dr-loop { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .dr-back, .dr-flowline { grid-column: 1 / -1; }
+    .dr-four { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .dr-scene { padding: var(--s-4); }
+    .dr-plan { grid-template-columns: 1fr; }
+    .dr-q { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; }
+    .dr-q-head { grid-column: 1; }
+    .dr-q h3 { grid-column: 1; }
+    .dr-q-meta { grid-column: 1 / -1; }
+    .dr-track { grid-column: 1 / -1; }
+    .dr-q-state { grid-column: 2; grid-row: 1; }
+    .dr-loop { grid-template-columns: 1fr; }
+    .dr-node { text-align: left; }
+    .dr-back { grid-column: auto; }
+    .dr-metrics { grid-template-columns: 1fr 1fr; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">114 / Deep Research</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 10 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="113-computer-use-agent.html">← 上一页 · 什么是 Computer Use /…</a><a href="../02-rag/011-rag-overview-and-pipeline.html">下一页 → · RAG 概念、Pipeline 与组…</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">中级 · Agent 架构 · 可交互讲解</p>
+      <h1>不是搜一次，<br>是研究很多轮。</h1>
+    </div>
+    <div>
+      <p class="lead">Deep Research Agent 把一个复杂问题变成多轮、多源的自主调研：先拆问题、制定计划，再并行或串行检索、读全文抽取证据，判断证据是否充分，不够就补检，最后综合成一份带引用的结构化长报告。</p>
+      <p class="definition">关键边界：<strong>Agentic RAG 是检索的自主化，Deep Research 是检索自主化之上的报告产品化。</strong>前者输出答案，后者输出报告；三个独有要素是显式研究计划、充分性感知的迭代终止、长报告综合与引用管理。</p>
+      <div class="hero-meta"><span class="pill">中级</span><span class="pill">Agent 架构</span><span class="pill">Deep Research</span><span class="pill">多轮检索闭环</span><span class="pill">固定教学轨迹</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-labelledby="dr-step-title">
+    <div class="player-top">
+      <div class="player-label">一个研究问题的两轮调研 <small>固定教学轨迹 · 不联网、不调用搜索引擎</small></div>
+      <div class="controls" role="group" aria-label="研究轨迹控制">
+        <button type="button" class="button button-quiet" id="dr-reset">重置</button>
+        <button type="button" class="button" id="dr-prev" disabled>上一步</button>
+        <button type="button" class="button button-primary" id="dr-next">下一步 →</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="研究轨迹七步">
+      <ol style="--stages: 7">
+        <li><button type="button" class="stage-button" data-step="1" aria-current="step" aria-controls="dr-scene" aria-label="第 1 步：规划"><span class="stage-number">1</span><span>规划</span></button></li>
+        <li><button type="button" class="stage-button" data-step="2" aria-controls="dr-scene" aria-label="第 2 步：第一轮检索"><span class="stage-number">2</span><span>检索</span></button></li>
+        <li><button type="button" class="stage-button" data-step="3" aria-controls="dr-scene" aria-label="第 3 步：阅读抽取"><span class="stage-number">3</span><span>阅读</span></button></li>
+        <li><button type="button" class="stage-button" data-step="4" aria-controls="dr-scene" aria-label="第 4 步：充分性检查"><span class="stage-number">4</span><span>检查</span></button></li>
+        <li><button type="button" class="stage-button" data-step="5" aria-controls="dr-scene" aria-label="第 5 步：补充检索"><span class="stage-number">5</span><span>补检</span></button></li>
+        <li><button type="button" class="stage-button" data-step="6" aria-controls="dr-scene" aria-label="第 6 步：再次检查"><span class="stage-number">6</span><span>充分</span></button></li>
+        <li><button type="button" class="stage-button" data-step="7" aria-controls="dr-scene" aria-label="第 7 步：综合报告"><span class="stage-number">7</span><span>综合</span></button></li>
+      </ol>
+    </nav>
+    <div class="dr-scene scene" id="dr-scene">
+      <div class="dr-grid">
+        <div class="dr-work">
+          <div class="dr-roundbar">
+            <span>研究轮次 <b id="dr-round">0</b> / 2</span>
+            <span>已读全文 <b id="dr-read">0</b> / 12</span>
+            <span class="dr-stop" id="dr-stop">未触发停止</span>
+          </div>
+          <div class="dr-plan" id="dr-plan">
+            <article class="dr-q" data-q="q1">
+              <div class="dr-q-head"><span class="dr-q-id">Q1</span><span class="dr-q-state" data-state>待检索</span></div>
+              <h3>定价与计费方式</h3>
+              <p class="dr-q-meta"><span data-src>0 来源</span><span data-ev>0 证据</span></p>
+              <div class="dr-track"><span data-track></span></div>
+            </article>
+            <article class="dr-q" data-q="q2">
+              <div class="dr-q-head"><span class="dr-q-id">Q2</span><span class="dr-q-state" data-state>待检索</span></div>
+              <h3>运行时能力（工具 / 沙箱 / 长会话）</h3>
+              <p class="dr-q-meta"><span data-src>0 来源</span><span data-ev>0 证据</span></p>
+              <div class="dr-track"><span data-track></span></div>
+            </article>
+            <article class="dr-q" data-q="q3">
+              <div class="dr-q-head"><span class="dr-q-id">Q3</span><span class="dr-q-state" data-state>待检索</span></div>
+              <h3>配额与限额</h3>
+              <p class="dr-q-meta"><span data-src>0 来源</span><span data-ev>0 证据</span></p>
+              <div class="dr-track"><span data-track></span></div>
+            </article>
+          </div>
+          <div class="dr-queries">
+            <p class="dr-queries-label" id="dr-query-label">本轮查询：尚未发起</p>
+            <div class="dr-query-row" id="dr-query-row"><span class="dr-query is-empty">等待规划</span></div>
+          </div>
+          <div class="dr-evidence">
+            <div class="dr-evidence-head"><span>证据池 · 已登记条目</span><span id="dr-ev-count">0 条</span></div>
+            <div class="dr-ev-list" id="dr-ev-list"><span class="dr-ev-empty">还没有证据。阅读全文并抽取后才会登记。</span></div>
+          </div>
+          <div class="dr-report" id="dr-report" hidden>
+            <div class="dr-report-head"><b>报告：三家云厂商 Agent 托管方案对比</b><span>固定教学示例</span></div>
+            <ol>
+              <li>摘要：三家在定价、能力与限额上的差异</li>
+              <li>定价与计费方式 <span class="cite">[S1][S2]</span></li>
+              <li>运行时能力 <span class="cite">[S3][S4]</span></li>
+              <li>配额与限额 <span class="cite">[S5][S6]</span></li>
+              <li>结论：按场景选型，而不是只看单项</li>
+            </ol>
+          </div>
+          <p class="demo-note">固定教学数据：研究问题、子问题、来源数量、证据条目和报告提纲都为演示而设。页面不联网、不调用搜索引擎、不读取任何真实网页，也不生成真实引用链接。</p>
+        </div>
+
+        <aside class="dr-panel" aria-labelledby="dr-step-title">
+          <div class="dr-panel-head"><h2 id="dr-step-title">先拆问题：把大题目变成三个可检索子问题。</h2><span class="dr-step" id="dr-position">第 1 / 7 步</span></div>
+          <p id="dr-step-description">plan-first：先列出研究计划和搜索意图，再开始搜索。原文提到 Gemini 会把计划显式给用户审阅和修改。</p>
+          <dl class="dr-metrics">
+            <div class="dr-metric"><dt>累计查询</dt><dd id="dr-m-queries">0</dd></div>
+            <div class="dr-metric"><dt>已读全文</dt><dd id="dr-m-read">0</dd></div>
+            <div class="dr-metric"><dt>证据条目</dt><dd id="dr-m-evidence">0</dd></div>
+            <div class="dr-metric"><dt>子问题覆盖</dt><dd id="dr-m-coverage">0 / 3</dd></div>
+          </dl>
+          <span class="dr-verdict" id="dr-verdict">计划待执行</span>
+          <ol class="dr-log" id="dr-log" aria-label="研究轨迹日志"></ol>
+        </aside>
+      </div>
+      <div class="dr-caption">
+        <p class="figure-index" id="dr-caption-index">图 1 · 第 1 / 7 步</p>
+        <h2 id="dr-caption-title">先拆问题：把大题目变成三个可检索子问题。</h2>
+        <p id="dr-caption-desc">plan-first：先列出研究计划和搜索意图，再开始搜索。原文提到 Gemini 会把计划显式给用户审阅和修改。</p>
+        <span class="dr-action" id="dr-action-pill">查询规划与分解</span>
+      </div>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学轨迹 · 两轮检索，第二轮由缺口触发</span><span id="dr-state-summary">第 1 / 7 步 · 未连接搜索引擎</span></div>
+  </section>
+  <p id="dr-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="loop-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">一 · 核心循环</p><h2 id="loop-title">检索、阅读、检查，<br>不够就再来一轮。</h2></div>
+      <p class="reading-intro">Deep Research 的内核是充分性感知的多轮检索循环。OpenAI、Perplexity、Gemini 的实现细节不同，但高层骨架一致：证据不足就改写补检，充分才进入长报告合成。</p>
+    </div>
+    <div class="prose">
+      <div class="dr-loop" role="img" aria-label="用户问题到查询规划、检索、阅读抽取、充分性检查；不充分时回到检索，充分时进入综合报告">
+        <div class="dr-node"><b>查询规划</b><small>拆子问题 / 搜索意图</small></div>
+        <div class="dr-node"><b>检索</b><small>并行 fan-out / 串行 chain</small></div>
+        <div class="dr-node"><b>阅读 + 抽取</b><small>读全文，抽取证据</small></div>
+        <div class="dr-node decision"><b>充分性判断</b><small>覆盖 + 质量够吗？</small></div>
+        <div class="dr-node"><b>综合报告</b><small>多章节 + 内联引用</small></div>
+        <div class="dr-flowline">用户问题 → 规划 → 检索 → 阅读 → 判断 → 综合 → 带引用的长报告</div>
+        <div class="dr-back"><span>↺</span>不充分：改写查询 / 针对缺口补充检索 → 回到检索与阅读，再判断一次。这条回边是核心，不是一次检索就结束。</div>
+      </div>
+      <p>循环每跑一轮，Agent 都要回答同一个问题：<strong>“我现在掌握的证据，足以回答用户的研究问题吗？”</strong>判断同时看覆盖广度（每个子问题是否都有证据）和证据质量（来源是否权威、是否互相印证、是否矛盾）。不足就补检；充分才合成。这样避免两种失败：证据不足就草草收场，或无意义地无限检索。</p>
+
+      <h3>五个环节各自在做什么</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">Deep Research 循环的五个环节</caption>
+          <thead><tr><th scope="col">环节</th><th scope="col">做什么</th><th scope="col">关键点</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">查询规划</th><td>把复杂问题拆成可检索的子问题和搜索意图</td><td>子问题拆分、视角枚举、时间限定补全、去歧义改写；plan-first 可让用户审阅</td></tr>
+            <tr><th scope="row">并行 / 串行检索</th><td>独立子查询并行 fan-out，有依赖的串行 chain</td><td>本质是 Orchestrator-Worker：一个编排者规划与综合，多个 Worker 检索抽取</td></tr>
+            <tr><th scope="row">阅读 + 抽取</th><td>点进链接读网页 / PDF 全文，抽取事实、数据、观点、引用</td><td>不满足于搜索摘要；这是与普通搜索摘要的分水岭</td></tr>
+            <tr><th scope="row">充分性判断</th><td>检查覆盖广度和证据质量，找出缺口</td><td>停止条件；触发补充检索，避免草草收场或无限检索</td></tr>
+            <tr><th scope="row">综合 + 引用</th><td>跨源融合、去重、矛盾调和、观点归纳，标注来源</td><td>引用管理是幻觉引用的高发区</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <details>
+        <summary>查看原文核心循环 Mermaid 源码</summary>
+        <pre><code>flowchart TD
+    A["用户问题"] --&gt; B["查询规划与分解&lt;br/&gt;Query Planning"]
+    B --&gt; C["研究计划&lt;br/&gt;（子问题列表 / 搜索意图）"]
+    C --&gt; D["并行 / 串行检索&lt;br/&gt;Web Search + API"]
+    D --&gt; E["阅读 + 抽取&lt;br/&gt;读取全文，抽取关键片段"]
+    E --&gt; F["去重 + 可信度评估&lt;br/&gt;+ 引用登记"]
+    F --&gt; G{"证据是否充分？&lt;br/&gt;Sufficiency Check"}
+    G -- "否（存在缺口）" --&gt; H["补充检索 / 查询改写"]
+    H --&gt; D
+    G -- "是" --&gt; I["综合报告合成&lt;br/&gt;多章节 + 内联引用"]
+    I --&gt; J["带引用的结构化长报告"]
+    classDef proc fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    classDef decision fill:#fffde7,stroke:#f9a825,color:#795548
+    classDef store fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    class A,B,D,E,H,I proc
+    class C,F,J store
+    class G decision</code></pre>
+        <p class="source-footnote">源码按原文保留，仅做 HTML 转义；上方离线图用同一循环和回边呈现。</p>
+      </details>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="code-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">二 · 伪代码</p><h2 id="code-title">三个函数，<br>决定它是不是 Deep Research。</h2></div>
+      <p class="reading-intro">原文用简化伪代码刻画循环：规划、缺口分析与改写的多轮循环、带引用的报告合成。三者缺一，就退化成普通的 Agentic RAG。</p>
+    </div>
+    <div class="prose">
+      <details>
+        <summary>展开原文伪代码：DeepResearchAgent 骨架</summary>
+        <pre><code>from dataclasses import dataclass
+
+
+@dataclass
+class Evidence:
+    """单条证据：来自某个来源的、与某子问题相关的抽取结果"""
+    sub_question: str        # 对应哪个子问题
+    content: str             # 抽取出的关键信息
+    source_url: str          # 来源链接
+    credibility: float       # 可信度评分 0-1
+    cited: bool = False      # 是否已用于最终报告
+
+
+class DeepResearchAgent:
+    """Deep Research 核心循环的骨架实现"""
+
+    def __init__(self, llm, web_search, max_rounds: int = 10):
+        self.llm = llm
+        self.web_search = web_search
+        self.max_rounds = max_rounds
+
+    def run(self, question: str) -> str:
+        # 1. 查询规划：把复杂问题拆成子问题 + 搜索意图
+        plan = self._plan_research(question)          # -> list[str] 子问题
+        evidence_pool: list[Evidence] = []
+        pending_queries = plan[:]
+
+        # 2-4. 充分性感知的多轮检索循环
+        for round_idx in range(self.max_rounds):
+            # 2. 并行检索：独立子查询 fan-out
+            raw_results = self.web_search.batch(pending_queries)
+
+            # 3. 阅读全文 + 抽取关键信息
+            for query, docs in zip(pending_queries, raw_results):
+                for doc in docs:
+                    extracted = self._read_and_extract(doc, query)
+                    credibility = self._assess_credibility(doc)
+                    evidence_pool.append(Evidence(
+                        sub_question=query,
+                        content=extracted,
+                        source_url=doc.url,
+                        credibility=credibility,
+                    ))
+
+            # 4. 去重 + 覆盖度分析
+            evidence_pool = self._deduplicate(evidence_pool)
+            coverage = self._analyze_coverage(plan, evidence_pool)
+
+            # 充分性判断：所有子问题都有足够高质量证据？
+            gaps = self._find_gaps(coverage)          # 证据不足的子问题
+            if not gaps:
+                break                                  # 证据充分，退出循环
+
+            # 5. 针对缺口改写查询、补充检索
+            pending_queries = self._rewrite_for_gaps(gaps, evidence_pool)
+        else:
+            # 达到最大轮次仍未充分，降级处理
+            pass
+
+        # 6. 综合报告合成：多章节 + 内联引用
+        report = self._synthesize_report(question, plan, evidence_pool)
+        return report</code></pre>
+      </details>
+      <div class="callout">
+        <p class="callout-label">三个灵魂要素</p>
+        <p><code>_plan_research</code>（显式规划）、<code>_find_gaps</code> + <code>_rewrite_for_gaps</code>（充分性感知的迭代）、<code>_synthesize_report</code>（带引用的长报告合成）。三者缺一，就退化成普通的 Agentic RAG。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="compare-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三 · 边界划分</p><h2 id="compare-title">搜索、Agentic RAG、<br>Deep Research。</h2></div>
+      <p class="reading-intro">最容易混淆的是中间两列。判断口径很简单：用户要的是“答案”，用 Agentic RAG；要的是“报告”，用 Deep Research。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">传统搜索、Agentic RAG 与 Deep Research 的对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">传统搜索</th><th scope="col">Agentic RAG</th><th scope="col">Deep Research</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">抽象层次</th><td>工具 / 功能</td><td>检索增强模式（组件）</td><td>端到端产品形态</td></tr>
+            <tr><th scope="row">检索源</th><td>开放 Web</td><td>私有知识库 / 文档库为主</td><td>开放 Web 为主</td></tr>
+            <tr><th scope="row">检索轮数</th><td>1 次</td><td>通常 1–3 轮</td><td>数十轮，可读上百来源</td></tr>
+            <tr><th scope="row">是否读全文</th><td>否，只看 snippet</td><td>通常检索 chunk 片段</td><td>是，读取并抽取全文</td></tr>
+            <tr><th scope="row">停止条件</th><td>单次返回</td><td>找到答案即停</td><td>显式的充分性判断</td></tr>
+            <tr><th scope="row">典型输出</th><td>链接列表</td><td>针对问题的简短回答</td><td>多章节、带引用的长报告</td></tr>
+            <tr><th scope="row">是否显式规划</th><td>否</td><td>可选（ReAct 式）</td><td>是，plan-first</td></tr>
+            <tr><th scope="row">引用管理</th><td>无</td><td>弱（标注来源即可）</td><td>强（内联引用 + 去重 + 溯源）</td></tr>
+            <tr><th scope="row">延迟 / 成本</th><td>秒级、低</td><td>秒–分钟级、中</td><td>分钟–数十分钟级、高</td></tr>
+            <tr><th scope="row">适用场景</th><td>事实查询、导航</td><td>问答、知识库对话</td><td>长尾调研、行业分析、文献综述</td></tr>
+            <tr><th scope="row">类比</th><td>图书馆检索目录</td><td>带参考书的答题助手</td><td>一位能写报告的研究助理</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p><strong>Agentic RAG 的落点在“检索的自主性”</strong>：它解决 Agent 能不能自己决定何时检索、怎么改写、要不要多跳，输出仍是“答问题”。<strong>Deep Research 的落点在“调研的产品化”</strong>：它在自主检索之上，额外解决如何把数十个来源的证据组织成一篇可信报告，输出是“交报告”。</p>
+      <p>很多团队踩的坑是用 Agentic RAG 硬扛“出报告”的需求，结果要么检索不够深，要么合成不出结构化长文。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="products-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">四 · 主流产品</p><h2 id="products-title">同一套骨架，<br>三种产品取向。</h2></div>
+      <p class="reading-intro">2025 年 2 月，三家厂商先后推出 Deep Research 产品。差异主要在计划的可干预性、底层模型和检索管线归属。</p>
+    </div>
+    <div class="prose">
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">三家 Deep Research 产品的原文对比</caption>
+          <thead><tr><th scope="col">产品</th><th scope="col">底层模型</th><th scope="col">典型行为</th><th scope="col">特色</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">OpenAI Deep Research</th><td>o3 系列的 deep research 专版（API 提供 <code>o3-deep-research</code> / <code>o4-mini-deep-research</code>）</td><td>自主浏览 5–30 分钟，综合上百来源生成带引用报告</td><td>与 ChatGPT 深度集成，支持文本 / PDF / 图片输入</td></tr>
+            <tr><th scope="row">Perplexity Deep Research</th><td>自研模型 + 检索管线</td><td>单次查询执行数十轮搜索，迭代式规划—搜索—综合</td><td>引擎型产品，原文称免费用户每日 5 次，强可溯源性</td></tr>
+            <tr><th scope="row">Gemini Deep Research</th><td>Gemini</td><td>先生成多步研究计划供用户审阅 / 修改，再自主检索综合</td><td>plan-first 可控，可导出 Google Docs，企业级 Agent 平台集成</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="dr-source-note">以上型号、额度和产品能力均为原文版本，本页未联网核验。原文也提醒：产品能力会持续迭代，具体型号与额度以官方文档为准；面试重点是讲清共享的循环骨架，而不是背某一刻的参数。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="challenges-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">五 · 关键挑战</p><h2 id="challenges-title">成本、时效、<br>幻觉引用、来源偏见。</h2></div>
+      <p class="reading-intro">把 Deep Research 从 demo 推向可用，原文列出四类硬骨头。其中幻觉引用是最致命的失败模式。</p>
+    </div>
+    <div class="prose">
+      <div class="dr-four">
+        <article class="dr-risk"><span class="tag">01 · 成本</span><h3>多轮调用成本</h3><p>一次研究可能涉及几十次 Web 搜索 + 上百次全文阅读 + LLM 抽取 + 长文合成，token 消耗与延迟显著高于普通 RAG。成本控制是产品化的第一道门槛。</p></article>
+        <article class="dr-risk"><span class="tag">02 · 时效</span><h3>时效性</h3><p>开放 Web 更新频繁，结果依赖搜索引擎索引的新鲜度。对“最新进展”类问题，可能需要优先检索新闻源、限定时间窗等策略。</p></article>
+        <article class="dr-risk"><span class="tag">03 · 引用</span><h3>幻觉引用</h3><p>报告写了带引用的论断，但点开链接找不到对应内容，甚至链接是模型编造的。根因是综合阶段 LLM 可能“脑补”证据，而非忠实回指抽取到的原文。</p></article>
+        <article class="dr-risk"><span class="tag">04 · 信源</span><h3>来源偏见与可信度</h3><p>开放 Web 信源质量参差，热门话题容易被 SEO 内容、营销稿、片面报道主导。不做可信度评估与多源交叉印证，报告会被低质来源带偏。</p></article>
+      </div>
+      <div class="callout">
+        <p class="callout-label">缓解幻觉引用的核心思路</p>
+        <p>让引用可回溯：综合阶段强制 LLM 只能引用阅读阶段已抽取并登记的 evidence id，而不是自由生成 URL；对最终报告做引用校验；用可信度评分过滤低质来源，关键论断要求至少两个独立来源印证。</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="myths-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="myths-title">多跑几轮，<br>不等于 Deep Research。</h2></div>
+      <p class="reading-intro">两条误区针对“多轮 RAG”和“取代 RAG”；四条追问覆盖评估、成本、幻觉引用与适用场景。</p>
+    </div>
+    <div class="prose">
+      <div class="misconception">
+        <p class="misconception-label">误区 1</p>
+        <div><h3>“Deep Research 就是多跑几轮的 Agentic RAG。”</h3><p>这是最常见的降级理解。多轮检索只是表象，Deep Research 的实质是叠加了三个 Agentic RAG 通常不具备的能力：显式研究计划、充分性感知的迭代终止、面向长报告的综合与引用管理。判断一个系统是不是 Deep Research，看它有没有“出报告”的综合阶段和显式的充分性判断，而不是看它检索了几轮。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">误区 2</p>
+        <div><h3>“有了 Deep Research 就不需要 RAG 了。”</h3><p>二者检索的语料性质不同。Deep Research 主要检索开放 Web，回答“公开信息世界里的调研”；RAG 检索私有知识库 / 企业文档，回答“我自己数据里的问答”。企业内部场景（查合同、查规范、查客户档案）Web 搜不到，仍必须用 RAG。正确架构往往是两者并存：开放调研用 Deep Research，内部问答用 RAG。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 1</p>
+        <div><h3>如何评估 Deep Research 报告的质量？</h3><p>四个维度：（1）事实准确性——论断是否与来源一致，引用是否真实可溯源，可直接对抗幻觉引用；（2）覆盖度——是否覆盖问题的各个子主题，有无明显遗漏；（3）引用质量——来源是否权威、是否多源交叉印证；（4）连贯性与可读性——长报告是否结构清晰、逻辑自洽。学术上有专门的多跳检索问答基准；生产中常用人工抽检 + LLM-as-Judge 组合评估。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 2</p>
+        <div><h3>多轮检索的成本怎么控制？</h3><p>五种手段：（1）预算上限——设最大检索轮数与最大来源数，达到即降级合成；（2）早停 + 充分性判断——用轻量模型快速判断证据是否充分；（3）分级阅读——先用 snippet 筛选高相关来源，只对入选来源读全文；（4）缓存与去重——同一查询结果缓存、跨子问题去重；（5）并发——独立子查询并行检索，压缩墙钟延迟，但不省 token。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 3</p>
+        <div><h3>如何缓解幻觉引用？</h3><p>核心是让引用可回溯：综合阶段强制 LLM 只能引用“阅读阶段已抽取并登记”的证据，每条论断必须绑定一个已登记的 evidence id，而非自由生成 URL；对最终报告做引用校验（抓取链接核对内容是否匹配）；用可信度评分过滤低质来源，要求关键论断至少有两个独立来源印证。</p></div>
+      </div>
+      <div class="misconception">
+        <p class="misconception-label">追问 4</p>
+        <div><h3>什么场景该用 / 不该用 Deep Research？</h3><p><strong>该用</strong>：长尾调研、行业 / 竞品分析、文献综述、多角度对比、需要可溯源报告的决策支持。<strong>不该用</strong>：简单事实查询（直接搜索更快）、私有数据问答（Web 搜不到，用 RAG）、实时性要求极高的场景（几分钟到几十分钟的延迟难以接受）、成本敏感的大规模批量任务。</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《什么是 Deep Research / Agentic Search Agent？它和 Agentic RAG 有何区别？》。产品型号与能力均为原文版本，本页未联网核验。</p>
+    <details>
+      <summary>展开原文列出的十条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://openai.com/index/introducing-deep-research/" target="_blank" rel="noopener noreferrer">Introducing deep research · OpenAI</a></li>
+          <li><a href="https://developers.openai.com/api/docs/guides/deep-research" target="_blank" rel="noopener noreferrer">Deep Research · OpenAI API Docs</a></li>
+          <li><a href="https://help.openai.com/en/articles/10500283-deep-research-in-chatgpt" target="_blank" rel="noopener noreferrer">Deep research in ChatGPT · OpenAI Help Center</a></li>
+          <li><a href="https://www.perplexity.ai/hub/blog/introducing-perplexity-deep-research" target="_blank" rel="noopener noreferrer">Introducing Perplexity Deep Research · Perplexity Blog</a></li>
+          <li><a href="https://www.perplexity.ai/hub/blog/deep-research-now-in-computer" target="_blank" rel="noopener noreferrer">Deep Research, now in Computer · Perplexity Blog</a></li>
+          <li><a href="https://gemini.google/overview/deep-research/" target="_blank" rel="noopener noreferrer">Gemini Deep Research · Google</a></li>
+          <li><a href="https://ai.google.dev/gemini-api/docs/deep-research" target="_blank" rel="noopener noreferrer">Gemini Deep Research Agent · Gemini API Docs</a></li>
+          <li><a href="https://blog.google/products-and-platforms/products/gemini/google-gemini-deep-research/" target="_blank" rel="noopener noreferrer">Try Deep Research and Gemini 2.0 Flash Experimental · Google Blog</a></li>
+          <li><a href="https://www.anthropic.com/research/building-effective-agents" target="_blank" rel="noopener noreferrer">Building Effective Agents · Anthropic</a> — Orchestrator-Worker 等多步检索 Agent 模式</li>
+          <li><a href="https://arxiv.org/abs/2210.03629" target="_blank" rel="noopener noreferrer">ReAct: Synergizing Reasoning and Acting in Language Models · arXiv</a></li>
+        </ul>
+        <p class="source-footnote">以上链接按原文保留，不表示本页已核验。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+    <details>
+      <summary>展开原文延伸思考 / 交叉引用</summary>
+      <div class="source-content">
+        <ul>
+          <li>与 Agentic RAG 的对照：#018 Agentic RAG 是本题的产品化下层，#018 讲检索自主化的模式，#114 讲报告生成场景的产品化；RAG 基础见 #011。</li>
+          <li>检索作为工具：Deep Research 的检索层本质是把 Web 搜索当工具反复调用，工具调用机制见 #021，动态工具发现见 #029。</li>
+          <li>长报告与上下文管理：综合长报告要管理大量抽取片段，与 #041 上下文窗口管理、#102 Context Engineering 直接相关。</li>
+          <li>质量评估：报告质量评估可参考 #069 评估方法论，静态基准陷阱见 #076。</li>
+        </ul>
+        <p class="source-footnote">以上为原文交叉引用；未生成本批页面的篇目不提供链接，避免坏链。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>01-agent-architecture/114-deep-research-agent.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 3 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  (() => {
+    const byId = (id) => document.getElementById(id);
+
+    const BASE_LOG = ["规划：拆成 3 个子问题"];
+
+    const STEPS = [
+      {
+        title: "先拆问题：把大题目变成三个可检索子问题。",
+        desc: "plan-first：先列出研究计划和搜索意图，再开始搜索。原文提到 Gemini 会把计划显式给用户审阅和修改。",
+        action: "查询规划与分解",
+        round: 0,
+        read: 0,
+        queries: 0,
+        evidence: 0,
+        coverage: "0 / 3",
+        verdict: "计划待执行",
+        cls: "",
+        stop: "未触发停止",
+        stopHit: false,
+        state: ["待检索", "待检索", "待检索"],
+        clsQ: ["", "", ""],
+        srcs: [0, 0, 0],
+        evs: [0, 0, 0],
+        tracks: [0, 0, 0],
+        queryLabel: "本轮查询：尚未发起",
+        queryChips: [],
+        evidenceItems: [],
+        newEvidence: [],
+        report: false,
+        log: ["规划：拆成 3 个子问题"]
+      },
+      {
+        title: "第 1 轮检索：三个独立查询并行 fan-out。",
+        desc: "三个子问题互不依赖，可以并行检索。每个查询先拿回 2 个候选来源，共 6 个；此时还没有读全文。",
+        action: "并行检索 · 3 个查询",
+        round: 1,
+        read: 0,
+        queries: 3,
+        evidence: 0,
+        coverage: "0 / 3",
+        verdict: "检索完成，等待阅读",
+        cls: "",
+        stop: "未触发停止",
+        stopHit: false,
+        state: ["已检索", "已检索", "已检索"],
+        clsQ: ["", "", ""],
+        srcs: [2, 2, 2],
+        evs: [0, 0, 0],
+        tracks: [0, 0, 0],
+        queryLabel: "第 1 轮 · 3 个并行查询（固定教学数据）",
+        queryChips: ["A 定价 计费", "B 能力 工具 沙箱", "C 配额 限额"],
+        newChips: [],
+        evidenceItems: [],
+        newEvidence: [],
+        report: false,
+        log: ["规划：拆成 3 个子问题", "检索：3 个查询并行，拿回 6 个来源"]
+      },
+      {
+        title: "第 1 轮阅读：读 4 篇全文，登记 4 条证据。",
+        desc: "不只看 snippet，点进链接读全文再抽取。Q1 与 Q2 各有 2 条证据，Q3 一条都没有，覆盖出现缺口。",
+        action: "阅读全文 + 抽取 + 去重",
+        round: 1,
+        read: 4,
+        queries: 3,
+        evidence: 4,
+        coverage: "2 / 3",
+        verdict: "覆盖 2 / 3，有缺口",
+        cls: "go",
+        stop: "未触发停止",
+        stopHit: false,
+        state: ["证据充分", "证据充分", "缺口"],
+        clsQ: ["is-ok", "is-ok", "is-gap"],
+        srcs: [2, 2, 2],
+        evs: [2, 2, 0],
+        tracks: [100, 100, 0],
+        queryLabel: "第 1 轮 · 3 个并行查询（固定教学数据）",
+        queryChips: ["A 定价 计费", "B 能力 工具 沙箱", "C 配额 限额"],
+        newChips: [],
+        evidenceItems: [
+          { id: "S1", q: "Q1", text: "A 按 token 计费" },
+          { id: "S2", q: "Q1", text: "B 按会话计费" },
+          { id: "S3", q: "Q2", text: "A 支持 MCP 工具" },
+          { id: "S4", q: "Q2", text: "C 支持长会话" }
+        ],
+        newEvidence: ["S1", "S2", "S3", "S4"],
+        report: false,
+        log: ["规划：拆成 3 个子问题", "检索：3 个查询并行，拿回 6 个来源", "阅读：4 篇全文 → 4 条证据"]
+      },
+      {
+        title: "充分性检查：Q3 没有证据，不能收工。",
+        desc: "覆盖广度不够：Q3 配额与限额一条证据都没有。停止条件未满足，触发补充检索；不是继续堆阅读，而是针对缺口改写查询。",
+        action: "充分性判断 → 发现缺口",
+        round: 1,
+        read: 4,
+        queries: 3,
+        evidence: 4,
+        coverage: "2 / 3",
+        verdict: "不充分 → 补检",
+        cls: "go",
+        stop: "未满足：缺口 1 个",
+        stopHit: false,
+        state: ["证据充分", "证据充分", "缺口"],
+        clsQ: ["is-ok", "is-ok", "is-gap"],
+        srcs: [2, 2, 2],
+        evs: [2, 2, 0],
+        tracks: [100, 100, 0],
+        queryLabel: "第 1 轮 · 3 个并行查询（固定教学数据）",
+        queryChips: ["A 定价 计费", "B 能力 工具 沙箱", "C 配额 限额"],
+        newChips: [],
+        evidenceItems: [
+          { id: "S1", q: "Q1", text: "A 按 token 计费" },
+          { id: "S2", q: "Q1", text: "B 按会话计费" },
+          { id: "S3", q: "Q2", text: "A 支持 MCP 工具" },
+          { id: "S4", q: "Q2", text: "C 支持长会话" }
+        ],
+        newEvidence: [],
+        report: false,
+        log: ["规划：拆成 3 个子问题", "检索：3 个查询并行，拿回 6 个来源", "阅读：4 篇全文 → 4 条证据", "检查：Q3 缺口，触发补充检索"]
+      },
+      {
+        title: "第 2 轮补检：只查 Q3，新增 2 条证据。",
+        desc: "把 Q3 改写成两个更具体的查询，拿回 3 个来源，读其中 2 篇全文，新增 S5、S6。证据池从 4 条增至 6 条。",
+        action: "补充检索 + 阅读",
+        round: 2,
+        read: 6,
+        queries: 5,
+        evidence: 6,
+        coverage: "3 / 3",
+        verdict: "覆盖补齐，等待复核",
+        cls: "go",
+        stop: "未触发停止",
+        stopHit: false,
+        state: ["证据充分", "证据充分", "证据充分"],
+        clsQ: ["is-ok", "is-ok", "is-ok"],
+        srcs: [2, 2, 3],
+        evs: [2, 2, 2],
+        tracks: [100, 100, 100],
+        queryLabel: "第 2 轮 · 2 个补充查询（只针对 Q3）",
+        queryChips: ["C 配额 限额 官方", "C 免费额度 限制"],
+        newChips: ["C 配额 限额 官方", "C 免费额度 限制"],
+        evidenceItems: [
+          { id: "S1", q: "Q1", text: "A 按 token 计费" },
+          { id: "S2", q: "Q1", text: "B 按会话计费" },
+          { id: "S3", q: "Q2", text: "A 支持 MCP 工具" },
+          { id: "S4", q: "Q2", text: "C 支持长会话" },
+          { id: "S5", q: "Q3", text: "A 每月 10 万次调用" },
+          { id: "S6", q: "Q3", text: "C 免费额度 5 万次" }
+        ],
+        newEvidence: ["S5", "S6"],
+        report: false,
+        log: ["规划：拆成 3 个子问题", "检索：3 个查询并行，拿回 6 个来源", "阅读：4 篇全文 → 4 条证据", "检查：Q3 缺口，触发补充检索", "补检：2 个查询 → 新增 2 条证据"]
+      },
+      {
+        title: "再次检查：三个子问题都有证据，停止检索。",
+        desc: "Q1、Q2、Q3 都至少 2 条证据，覆盖 3 / 3，停止条件满足。循环退出，不再发起第 3 轮；如果一直不满足，则由最大轮数兜底降级。",
+        action: "充分性判断 → 通过",
+        round: 2,
+        read: 6,
+        queries: 5,
+        evidence: 6,
+        coverage: "3 / 3",
+        verdict: "充分 → 可以综合",
+        cls: "stop",
+        stop: "已满足：停止检索",
+        stopHit: true,
+        state: ["证据充分", "证据充分", "证据充分"],
+        clsQ: ["is-ok", "is-ok", "is-ok"],
+        srcs: [2, 2, 3],
+        evs: [2, 2, 2],
+        tracks: [100, 100, 100],
+        queryLabel: "第 2 轮 · 2 个补充查询（已结束）",
+        queryChips: ["C 配额 限额 官方", "C 免费额度 限制"],
+        newChips: [],
+        evidenceItems: [
+          { id: "S1", q: "Q1", text: "A 按 token 计费" },
+          { id: "S2", q: "Q1", text: "B 按会话计费" },
+          { id: "S3", q: "Q2", text: "A 支持 MCP 工具" },
+          { id: "S4", q: "Q2", text: "C 支持长会话" },
+          { id: "S5", q: "Q3", text: "A 每月 10 万次调用" },
+          { id: "S6", q: "Q3", text: "C 免费额度 5 万次" }
+        ],
+        newEvidence: [],
+        report: false,
+        log: ["规划：拆成 3 个子问题", "检索：3 个查询并行，拿回 6 个来源", "阅读：4 篇全文 → 4 条证据", "检查：Q3 缺口，触发补充检索", "补检：2 个查询 → 新增 2 条证据", "检查：覆盖 3 / 3，停止检索"]
+      },
+      {
+        title: "综合报告：每条论断都绑定已登记的引用。",
+        desc: "把 6 条证据组织成多章节报告，按 S1–S6 标注来源。综合阶段不允许模型自由编 URL；本页的报告和引用编号都只是固定教学示例。",
+        action: "综合报告 + 引用管理",
+        round: 2,
+        read: 6,
+        queries: 5,
+        evidence: 6,
+        coverage: "3 / 3",
+        verdict: "报告完成 → 结束",
+        cls: "stop",
+        stop: "已满足：停止检索",
+        stopHit: true,
+        state: ["证据充分", "证据充分", "证据充分"],
+        clsQ: ["is-ok", "is-ok", "is-ok"],
+        srcs: [2, 2, 3],
+        evs: [2, 2, 2],
+        tracks: [100, 100, 100],
+        queryLabel: "检索已停止 · 进入综合阶段",
+        queryChips: [],
+        newChips: [],
+        evidenceItems: [
+          { id: "S1", q: "Q1", text: "A 按 token 计费" },
+          { id: "S2", q: "Q1", text: "B 按会话计费" },
+          { id: "S3", q: "Q2", text: "A 支持 MCP 工具" },
+          { id: "S4", q: "Q2", text: "C 支持长会话" },
+          { id: "S5", q: "Q3", text: "A 每月 10 万次调用" },
+          { id: "S6", q: "Q3", text: "C 免费额度 5 万次" }
+        ],
+        newEvidence: [],
+        report: true,
+        log: ["规划：拆成 3 个子问题", "检索：3 个查询并行，拿回 6 个来源", "阅读：4 篇全文 → 4 条证据", "检查：Q3 缺口，触发补充检索", "补检：2 个查询 → 新增 2 条证据", "检查：覆盖 3 / 3，停止检索", "综合：6 条证据 → 带引用的报告"]
+      }
+    ];
+
+    let step = 1;
+
+    function render(announce = true) {
+      const data = STEPS[step - 1];
+      byId("dr-round").textContent = String(data.round);
+      byId("dr-read").textContent = String(data.read);
+      const stop = byId("dr-stop");
+      stop.textContent = data.stop;
+      stop.classList.toggle("is-hit", data.stopHit);
+
+      document.querySelectorAll("#dr-plan .dr-q").forEach((card, index) => {
+        card.classList.remove("is-gap", "is-ok");
+        if (data.clsQ[index]) card.classList.add(data.clsQ[index]);
+        card.querySelector("[data-state]").textContent = data.state[index];
+        card.querySelector("[data-src]").textContent = `${data.srcs[index]} 来源`;
+        card.querySelector("[data-ev]").textContent = `${data.evs[index]} 证据`;
+        card.querySelector("[data-track]").style.width = `${data.tracks[index]}%`;
+      });
+
+      byId("dr-query-label").textContent = data.queryLabel;
+      const queryRow = byId("dr-query-row");
+      queryRow.textContent = "";
+      if (data.queryChips.length === 0) {
+        const empty = document.createElement("span");
+        empty.className = "dr-query is-empty";
+        empty.textContent = data.round === 0 ? "等待规划" : "检索已停止";
+        queryRow.append(empty);
+      } else {
+        data.queryChips.forEach((text) => {
+          const chip = document.createElement("span");
+          chip.className = "dr-query" + (data.newChips.includes(text) ? " is-new" : "");
+          chip.textContent = text;
+          queryRow.append(chip);
+        });
+      }
+
+      byId("dr-ev-count").textContent = `${data.evidenceItems.length} 条`;
+      const evList = byId("dr-ev-list");
+      evList.textContent = "";
+      if (data.evidenceItems.length === 0) {
+        const empty = document.createElement("span");
+        empty.className = "dr-ev-empty";
+        empty.textContent = "还没有证据。阅读全文并抽取后才会登记。";
+        evList.append(empty);
+      } else {
+        data.evidenceItems.forEach((item) => {
+          const chip = document.createElement("span");
+          chip.className = "dr-ev" + (data.newEvidence.includes(item.id) ? " is-new" : "");
+          const id = document.createElement("b");
+          id.textContent = item.id;
+          const text = document.createElement("span");
+          text.textContent = `${item.q} · ${item.text}`;
+          chip.append(id, text);
+          evList.append(chip);
+        });
+      }
+
+      byId("dr-report").hidden = !data.report;
+      byId("dr-position").textContent = `第 ${step} / ${STEPS.length} 步`;
+      byId("dr-step-title").textContent = data.title;
+      byId("dr-step-description").textContent = data.desc;
+      byId("dr-m-queries").textContent = String(data.queries);
+      byId("dr-m-read").textContent = String(data.read);
+      byId("dr-m-evidence").textContent = String(data.evidence);
+      byId("dr-m-coverage").textContent = data.coverage;
+      const verdict = byId("dr-verdict");
+      verdict.textContent = data.verdict;
+      verdict.className = "dr-verdict" + (data.cls ? " " + data.cls : "");
+
+      byId("dr-caption-index").textContent = `图 1 · 第 ${step} / ${STEPS.length} 步`;
+      byId("dr-caption-title").textContent = data.title;
+      byId("dr-caption-desc").textContent = data.desc;
+      byId("dr-action-pill").textContent = data.action;
+
+      const log = byId("dr-log");
+      log.textContent = "";
+      data.log.forEach((line, index) => {
+        const item = document.createElement("li");
+        if (index === data.log.length - 1) item.className = "is-current";
+        const num = document.createElement("b");
+        num.textContent = `R${index}`;
+        const text = document.createElement("span");
+        text.textContent = line;
+        item.append(num, text);
+        log.append(item);
+      });
+
+      document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+        if (Number(button.dataset.step) === step) button.setAttribute("aria-current", "step");
+        else button.removeAttribute("aria-current");
+      });
+      byId("dr-prev").disabled = step === 1;
+      byId("dr-next").disabled = step === STEPS.length;
+      byId("dr-state-summary").textContent = `第 ${step} / ${STEPS.length} 步 · 未连接搜索引擎`;
+
+      if (announce) {
+        byId("dr-announcement").textContent = `第 ${step} 步，共 ${STEPS.length} 步。${data.title}${data.desc}当前停止条件：${data.stop}。`;
+      }
+    }
+
+    function setStep(next, announce = true) {
+      step = Math.max(1, Math.min(STEPS.length, next));
+      render(announce);
+    }
+
+    document.querySelectorAll("#explainer [data-step]").forEach((button) => {
+      button.addEventListener("click", () => setStep(Number(button.dataset.step)));
+    });
+    byId("dr-prev").addEventListener("click", () => setStep(step - 1));
+    byId("dr-next").addEventListener("click", () => setStep(step + 1));
+    byId("dr-reset").addEventListener("click", () => {
+      setStep(1);
+      byId("dr-announcement").textContent = "已重置，回到规划阶段。";
+    });
+    render(false);
+  })();
+</script>
+</body>
+</html>

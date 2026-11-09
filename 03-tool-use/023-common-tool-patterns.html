@@ -1,0 +1,922 @@
+<!doctype html>
+<html lang="zh-CN" data-register="paper">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <meta name="referrer" content="no-referrer">
+  <meta name="generator" content="agent-interview-100-html v1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-src 'none'">
+  <title>Tool Use 的常见模式：API 调用、数据库查询、代码执行 · Agent Interview 100</title>
+  <style>
+/* 全库公共壳 v1 —— 纸色、系统字体、离线单文件 */
+:root {
+  color-scheme: light;
+  --bg: #f5f3ed;
+  --surface: #fcfcfb;
+  --surface-soft: #f1f0eb;
+  --ink: #202421;
+  --text-dim: #5d625d;
+  --border: #dcded6;
+  --border-bright: #858d85;
+  --accent: #194f87;
+  --accent-dim: #eaf1f8;
+  --series-1: #2a78d6;
+  --series-2: #c2410c;
+  --series-3: #2e7d32;
+  --series-4: #6b21a8;
+  --focus: #194f87;
+  --t-label: 12px;
+  --t-small: 14px;
+  --t-body: 16px;
+  --t-h3: 19px;
+  --t-h2: clamp(23px, 2.2vw, 30px);
+  --t-h1: clamp(34px, 4vw, 54px);
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 20px;
+  --s-5: 28px;
+  --s-6: 40px;
+  --s-7: 56px;
+  --s-8: 80px;
+  --r-1: 6px;
+  --r-2: 14px;
+  --fast: 140ms;
+  --med: 220ms;
+  --ease: ease-out;
+  --sans: "Avenir Next", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --serif: "Iowan Old Style", "Baskerville", "Songti SC", "STSong", serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { scroll-behavior: smooth; scroll-padding-top: 24px; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: var(--t-body)/1.7 var(--sans); -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; }
+button { color: inherit; cursor: pointer; touch-action: manipulation; }
+button:disabled { cursor: default; }
+button, a, input, summary { -webkit-tap-highlight-color: transparent; }
+:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+a { color: var(--accent); text-underline-offset: 4px; overflow-wrap: anywhere; }
+p, h1, h2, h3, figure { margin: 0; }
+h1, h2, h3 { text-wrap: balance; }
+p { text-wrap: pretty; }
+code, pre, .mono { font-family: var(--mono); }
+code { font-size: .92em; }
+svg { display: block; max-width: 100%; height: auto; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 20; transform: translateY(-180%); padding: 10px 18px; background: var(--surface); border: 1px solid var(--ink); border-radius: var(--r-1); }
+.skip-link:focus { transform: translateY(0); }
+.shell { width: min(1220px, calc(100% - 96px)); margin-inline: auto; }
+.masthead { min-height: 82px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); font-size: var(--t-label); }
+.brand { display: flex; align-items: center; gap: 10px; letter-spacing: .1em; font-weight: 700; }
+.brand svg { width: 25px; height: 25px; flex: 0 0 auto; }
+.brand a { color: inherit; text-decoration: none; }
+.edition { color: var(--text-dim); letter-spacing: .05em; text-align: right; }
+.page-nav { min-height: 54px; display: flex; align-items: center; justify-content: space-between; gap: var(--s-3); flex-wrap: wrap; border-bottom: 1px solid var(--border); font-size: var(--t-label); color: var(--text-dim); }
+.page-nav a { display: inline-flex; align-items: center; min-height: 44px; color: var(--accent); }
+.page-nav-pager { display: flex; gap: var(--s-3); align-items: center; }
+.page-nav-pager .disabled { color: #8b908b; }
+.hero { padding: var(--s-7) 0 var(--s-6); display: grid; grid-template-columns: 1.05fr 1fr; gap: var(--s-7); align-items: end; }
+.eyebrow { color: var(--text-dim); font-size: var(--t-label); letter-spacing: .12em; margin-bottom: var(--s-3); }
+h1 { font: 600 var(--t-h1)/1.18 var(--serif); letter-spacing: -.025em; }
+.lead { font-size: 18px; line-height: 1.9; max-width: 31em; }
+.definition { margin-top: var(--s-3); color: var(--text-dim); font-size: var(--t-small); max-width: 34em; }
+.definition strong { color: var(--ink); font-weight: 600; }
+.hero-meta { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-top: var(--s-4); }
+.pill { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font-size: 11px; color: var(--text-dim); background: var(--surface); }
+.walkthrough { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-2); }
+.player-top { padding: var(--s-4) var(--s-5); display: flex; align-items: center; justify-content: space-between; gap: var(--s-4); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+.player-label { font-size: var(--t-small); font-weight: 600; }
+.player-label small { color: var(--text-dim); font-weight: 400; margin-left: var(--s-3); }
+.controls { display: flex; gap: var(--s-2); align-items: center; flex-wrap: wrap; }
+.button { min-height: 44px; padding: 9px 16px; border: 1px solid var(--border-bright); background: transparent; border-radius: var(--r-1); font-size: var(--t-small); white-space: nowrap; transition: background var(--fast) var(--ease); }
+.button:hover:not(:disabled) { background: var(--surface-soft); }
+.button-primary { background: var(--ink); color: var(--surface); border-color: var(--ink); }
+.button-primary:hover:not(:disabled) { background: #3a423b; }
+.button-quiet { border-color: transparent; color: var(--text-dim); }
+.button:disabled { color: #747a74; background: var(--surface-soft); border-color: var(--border); }
+.stage-nav { padding: var(--s-4) var(--s-5) 0; }
+.stage-nav ol { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--stages, 5), minmax(0, 1fr)); gap: var(--s-2); }
+.stage-button { width: 100%; display: flex; align-items: center; justify-content: center; gap: 9px; min-height: 48px; padding: 8px; border: 1px solid transparent; border-radius: var(--r-1); background: transparent; font-size: var(--t-small); color: var(--text-dim); }
+.stage-button:hover { background: var(--surface-soft); }
+.stage-button[aria-current="step"] { background: var(--accent-dim); border-color: #9eb4c9; color: var(--ink); font-weight: 600; }
+.stage-number { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; font: 12px/1 var(--mono); flex: 0 0 auto; }
+[aria-current="step"] .stage-number { color: white; background: var(--accent); border-color: var(--accent); }
+.scene-caption { padding: 18px var(--s-6) var(--s-5); }
+.figure-index { color: var(--text-dim); font: var(--t-label)/1.5 var(--mono); margin-bottom: var(--s-2); }
+.scene-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; letter-spacing: -.02em; }
+.scene-caption p:last-child { color: var(--text-dim); font-size: var(--t-small); margin-top: var(--s-2); max-width: 67em; }
+.scene-host { padding: 0 var(--s-6) var(--s-6); }
+.scene { animation: arrive var(--med) var(--ease); }
+@keyframes arrive { from { opacity: .4; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.demo-note { border-top: 1px solid var(--border); padding-top: var(--s-4); margin-top: var(--s-5); color: var(--text-dim); font-size: var(--t-label); }
+.walkthrough-foot { padding: var(--s-3) var(--s-5); border-top: 1px solid var(--border); display: flex; justify-content: space-between; gap: var(--s-3); font-size: 11px; color: var(--text-dim); flex-wrap: wrap; }
+.reading { padding-block: var(--s-8) var(--s-7); }
+.reading-header { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s-6); align-items: end; }
+.reading h2 { font: 600 var(--t-h2)/1.5 var(--serif); }
+.reading-intro { font-size: var(--t-small); color: var(--text-dim); max-width: 35em; }
+.prose { margin-top: var(--s-6); }
+.prose h3 { font-size: var(--t-h3); line-height: 1.5; font-weight: 600; margin-top: var(--s-6); }
+.prose h3:first-child { margin-top: 0; }
+.prose p, .prose li { font-size: var(--t-small); }
+.prose p { max-width: 48em; margin-top: var(--s-3); }
+.prose ul, .prose ol { margin-top: var(--s-3); padding-left: 1.3em; max-width: 48em; }
+.prose li { margin-block: 6px; padding-left: 3px; }
+.prose strong { font-weight: 600; }
+.section-rule { border: 0; border-top: 1px solid var(--border); margin-block: var(--s-6); }
+.callout { border: 1px solid var(--border); background: var(--surface); border-radius: var(--r-1); padding: var(--s-4) var(--s-5); margin-top: var(--s-4); }
+.callout p { font-size: var(--t-small); max-width: 52em; }
+.callout p + p { margin-top: var(--s-2); }
+.callout-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); letter-spacing: .06em; margin-bottom: var(--s-1); }
+.quote { border-left: 3px solid var(--accent); padding: var(--s-2) 0 var(--s-2) var(--s-4); margin-top: var(--s-4); font: 500 19px/1.7 var(--serif); max-width: 34em; }
+.table-wrap { overflow-x: auto; margin-top: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); }
+table.data { width: 100%; border-collapse: collapse; font-size: var(--t-small); font-variant-numeric: tabular-nums; }
+table.data th, table.data td { padding: 10px 12px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+table.data thead th { color: var(--text-dim); font-size: var(--t-label); font-weight: 500; background: var(--surface-soft); white-space: nowrap; }
+table.data tbody tr:last-child td, table.data tbody tr:last-child th { border-bottom: 0; }
+table.data td.num, table.data th.num { text-align: right; font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+table.data code { overflow-wrap: anywhere; }
+pre { background: #ebede7; border-radius: var(--r-1); padding: var(--s-4); font-size: 12px; line-height: 1.8; overflow-x: auto; margin-top: var(--s-3); tab-size: 4; }
+pre code { font-size: inherit; }
+.code-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); margin-top: var(--s-4); }
+details { margin-top: var(--s-4); border-top: 1px solid var(--border); }
+summary { cursor: pointer; min-height: 44px; padding-block: 10px; font-weight: 500; font-size: var(--t-small); }
+summary::marker { color: var(--text-dim); }
+details pre { margin-top: 0; }
+.source-section { padding-bottom: var(--s-7); }
+.source-section > .eyebrow { margin-bottom: var(--s-2); }
+.source-heading { font-size: 21px; font-weight: 600; line-height: 1.5; }
+.source-summary { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 52em; }
+.source-content { padding: 0 0 var(--s-4); }
+.source-content h3 { font-size: var(--t-body); margin-bottom: var(--s-3); font-weight: 600; margin-top: var(--s-4); }
+.source-content p, .source-content li { font-size: var(--t-small); }
+.source-content ul { margin: 0; padding-left: 1.2em; }
+.source-content li { padding-left: 4px; margin-bottom: var(--s-3); }
+.source-footnote { color: var(--text-dim); margin-top: var(--s-3); max-width: 52em; }
+.misconception { display: grid; grid-template-columns: 145px 1fr; gap: var(--s-6); padding: var(--s-5) 0; margin-top: var(--s-6); border-block: 1px solid var(--border); }
+.misconception-label { font: var(--t-label)/1.8 var(--mono); color: var(--text-dim); }
+.misconception h3 { font-size: var(--t-h3); font-weight: 600; line-height: 1.5; }
+.misconception p { font-size: var(--t-small); color: var(--text-dim); margin-top: var(--s-2); max-width: 55em; }
+.misconception p strong { color: var(--ink); }
+footer { display: flex; justify-content: space-between; gap: var(--s-4); padding-block: var(--s-4) var(--s-5); border-top: 1px solid var(--border); color: var(--text-dim); font-size: 11px; flex-wrap: wrap; }
+footer code { font-size: 11px; overflow-wrap: anywhere; }
+@media (min-width: 1200px) { .reading-header h2 { max-width: 16em; } }
+@media (max-width: 1000px) {
+  .shell { width: calc(100% - 56px); }
+  .hero { gap: var(--s-5); }
+  .scene-caption, .scene-host { padding-inline: var(--s-5); }
+}
+@media (max-width: 720px) {
+  .shell { width: calc(100% - 32px); }
+  .masthead { min-height: 64px; gap: var(--s-2); }
+  .brand { font-size: 10px; letter-spacing: .055em; gap: 7px; }
+  .edition { font-size: 10px; letter-spacing: 0; max-width: 55%; }
+  .page-nav { font-size: 11px; }
+  .hero { grid-template-columns: 1fr; gap: var(--s-4); padding-block: 30px; }
+  h1 { font-size: 36px; }
+  .hero h1 br { display: none; }
+  .lead { font-size: var(--t-body); line-height: 1.8; }
+  .definition { font-size: 12px; line-height: 1.8; margin-top: var(--s-2); }
+  .eyebrow { font-size: 11px; margin-bottom: var(--s-2); }
+  .player-top { padding: var(--s-3); gap: var(--s-2); }
+  .player-label { font-size: var(--t-label); }
+  .player-label small { display: none; }
+  .controls { gap: 4px; }
+  .button { padding: 8px 10px; font-size: 12px; }
+  .button-quiet { padding-inline: 7px; }
+  .stage-nav { padding: var(--s-3) var(--s-3) 0; }
+  .stage-nav ol { gap: 3px; }
+  .stage-button { flex-direction: column; gap: 5px; padding: 8px 3px; font-size: 12px; line-height: 1.4; }
+  .stage-number { width: 22px; height: 22px; font-size: 11px; }
+  .scene-caption { padding: var(--s-4); }
+  .scene-caption h2 { font-size: 23px; }
+  .scene-caption p:last-child { font-size: 13px; }
+  .scene-host { padding: 0 var(--s-4) var(--s-5); }
+  .walkthrough-foot { padding: var(--s-3) var(--s-4); flex-direction: column; gap: 3px; }
+  .reading { padding-block: var(--s-7) var(--s-6); }
+  .reading-header { grid-template-columns: 1fr; gap: var(--s-3); }
+  .reading h2 { font-size: 25px; }
+  .misconception { grid-template-columns: 1fr; gap: var(--s-3); margin-top: var(--s-5); }
+  .misconception h3 { font-size: 18px; }
+  .source-heading { font-size: 19px; }
+  footer { flex-direction: column; gap: var(--s-2); }
+  .quote { font-size: 17px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+@media (forced-colors: active) {
+  .stage-button[aria-current="step"] { border: 2px solid Highlight; }
+  .pill { border-color: CanvasText; }
+}
+@media print {
+  body { background: white; }
+  .shell { width: 100%; }
+  .controls, .stage-nav, .skip-link, .page-nav { display: none !important; }
+  .scene[hidden] { display: block !important; margin-bottom: 24px; }
+  .scene { break-inside: avoid; }
+  .walkthrough { border-color: #888; }
+  .hero { padding-top: 20px; }
+  .reading { padding-block: 30px; }
+  a { color: inherit; }
+  details { display: block; }
+  details > summary { display: none; }
+  details:not([open]) > *:not(summary) { display: revert; }
+}
+
+  /* 023 工具模式与风险闸门 */
+  .tp-stage { padding: var(--s-5) var(--s-6) var(--s-6); }
+  .tp-grid { display: grid; grid-template-columns: minmax(0, .95fr) minmax(0, 1.2fr); gap: var(--s-4); align-items: start; }
+  .tp-grid > * { min-width: 0; }
+  .tp-card { border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-4); min-width: 0; }
+  .tp-card h2 { font-size: 16px; line-height: 1.5; font-weight: 600; }
+  .tp-card .figure-index { margin-bottom: 3px; }
+  .tp-task { padding: var(--s-4); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface-soft); }
+  .tp-task-label { font-size: var(--t-label); color: var(--text-dim); }
+  .tp-task-text { font: 500 20px/1.6 var(--mono); margin-top: var(--s-3); overflow-wrap: anywhere; }
+  .tp-badges { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--s-3); }
+  .tp-badge { display: inline-flex; align-items: center; min-height: 25px; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--border-bright); font: 600 10px/1.5 var(--mono); white-space: nowrap; background: var(--surface); color: var(--text-dim); }
+  .tp-badge.low { color: #1b5e20; border-color: #9bc59b; background: #f1f8f1; }
+  .tp-badge.mid { color: #7a4a00; border-color: #d8b36a; background: #fffaf0; }
+  .tp-badge.high { color: #8b1a1a; border-color: #d99b9b; background: #fff6f6; }
+  .tp-badge.approval { color: #5b2a6e; border-color: #c9a5d9; background: #faf3fd; }
+  .tp-badge.sandbox { color: #194f87; border-color: #9eb4c9; background: var(--accent-dim); }
+  .tp-badge.auto { color: #1b5e20; border-color: #9bc59b; background: #f1f8f1; }
+  .tp-path { list-style: none; margin: var(--s-3) 0 0; padding: 0; display: grid; gap: 0; }
+  .tp-step { position: relative; display: grid; grid-template-columns: 26px minmax(0, 1fr); gap: 9px; padding: 7px 0 10px; }
+  .tp-step::before { content: ""; position: absolute; left: 12px; top: 29px; bottom: 0; border-left: 1px dashed var(--border-bright); }
+  .tp-step:last-child::before { display: none; }
+  .tp-step-num { display: inline-grid; place-items: center; width: 24px; height: 24px; border: 1px solid var(--border-bright); border-radius: 50%; background: var(--surface); font: 10px/1 var(--mono); color: var(--text-dim); z-index: 1; }
+  .tp-step-body { border: 1px solid var(--border); border-radius: 5px; background: var(--surface); padding: 7px 10px; font-size: 12px; line-height: 1.6; }
+  .tp-step-body b { display: block; font-size: 12px; font-weight: 600; }
+  .tp-step-body span { color: var(--text-dim); }
+  .tp-gates { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; margin-top: var(--s-4); }
+  .tp-gate { border: 1px solid var(--border); border-radius: 5px; background: var(--surface-soft); padding: 8px 6px; text-align: center; font: 10px/1.5 var(--mono); color: var(--text-dim); }
+  .tp-gate strong { display: block; font-size: 11px; color: var(--ink); }
+  .tp-gate.is-on { border-color: var(--accent); background: var(--accent-dim); color: var(--ink); box-shadow: inset 0 0 0 1px var(--accent); }
+  .tp-gate.is-on strong { color: var(--accent); }
+  .tp-gate-note { margin-top: var(--s-2); font-size: 11px; line-height: 1.7; color: var(--text-dim); }
+  .tp-boundary { margin-top: var(--s-3); border: 1px solid var(--border); border-radius: var(--r-1); background: var(--surface); padding: var(--s-3) var(--s-4); }
+  .tp-boundary h3 { font-size: 13px; line-height: 1.5; font-weight: 600; }
+  .tp-boundary ul { margin: 6px 0 0; padding-left: 1.2em; font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .tp-boundary li { margin-block: 3px; }
+  .tp-approval { margin-top: var(--s-3); border: 1px solid #c9a5d9; border-radius: var(--r-1); background: #faf3fd; padding: var(--s-3) var(--s-4); font-size: 12px; line-height: 1.7; }
+  .tp-approval strong { color: #5b2a6e; }
+  .tp-return { margin-top: var(--s-3); }
+  .tp-return h3 { font-size: 13px; line-height: 1.5; font-weight: 600; }
+  .tp-return pre { margin-top: 6px; }
+  .tp-why { margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px solid var(--border); font-size: 12px; line-height: 1.7; color: var(--text-dim); }
+  .tp-why strong { color: var(--ink); }
+  .tp-caption { margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border); }
+  .tp-caption h2 { font-size: var(--t-h2); line-height: 1.4; font-weight: 600; }
+  .tp-caption p:not(.figure-index):not(.tp-action) { margin-top: var(--s-2); font-size: var(--t-small); color: var(--text-dim); max-width: 66em; }
+  .tp-action { display: inline-block; margin-top: var(--s-3); padding: 4px 10px; border: 1px solid var(--border-bright); border-radius: 999px; font: 11px/1.6 var(--mono); color: var(--accent); background: var(--accent-dim); }
+  .tp-risk-legend { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .tp-risk-item { border: 1px solid var(--border); border-radius: var(--r-1); padding: var(--s-3); background: var(--surface); font-size: 12px; line-height: 1.7; }
+  .tp-risk-item strong { display: block; font-size: 13px; }
+  .tp-risk-item.low { border-color: #cfe3cf; background: #f6faf6; }
+  .tp-risk-item.mid { border-color: #e3cfa5; background: #fffaf0; }
+  .tp-risk-item.high { border-color: #e3b5b5; background: #fff6f6; }
+  .tp-scenarios { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--s-3); margin-top: var(--s-4); }
+  .tp-scenario { border: 1px solid var(--border); border-radius: var(--r-1); padding: var(--s-3) var(--s-4); background: var(--surface); font-size: 12px; line-height: 1.7; }
+  .tp-scenario strong { display: block; font-size: 13px; }
+  .tp-scenario span { color: var(--text-dim); }
+  @media (max-width: 900px) {
+    .tp-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 720px) {
+    .tp-stage { padding: var(--s-4); }
+    .tp-card { padding: var(--s-3); }
+    .tp-task-text { font-size: 16px; }
+    .tp-gates, .tp-risk-legend, .tp-scenarios { grid-template-columns: 1fr; }
+    .tp-caption h2 { font-size: 22px; }
+  }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
+  <div class="shell">
+    <header class="masthead">
+      <div class="brand"><svg viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M4 14h6m0 0V5h8m-8 9v9h8m0-18h6m-6 18h6" stroke="currentColor" stroke-width="1.5"/><circle cx="4" cy="14" r="2.5" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="2" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/><rect x="18" y="20" width="7" height="6" rx="1" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/></svg><a href="../index.html"><span>AGENT INTERVIEW 100</span></a></div>
+      <span class="edition">023 / 工具常见模式</span>
+    </header>
+    <nav class="page-nav" aria-label="整库导航">
+      <a href="../index.html">← 整库索引</a>
+      <span>本批第 19 / 20 页 · 模板 v1</span>
+      <div class="page-nav-pager"><a href="022-tool-schema-design.html">← 上一页 · 如何为 LLM 定义和描述工具（To…</a><a href="024-tool-gateway-permissions.html">下一页 → · 如何设计 Tool Gateway …</a></div>
+    </nav>
+<main id="main-content">
+  <header class="hero">
+    <div>
+      <p class="eyebrow">基础 · Tool Use · 可交互讲解</p>
+      <h1>先看风险，<br>再选模式。</h1>
+    </div>
+    <div>
+      <p class="lead">工具使用可以分成三类模式：数据访问（API、SQL、向量检索）、计算与代码执行（沙箱里跑代码）、写操作与动作执行（发邮件、建工单、改数据库）。读操作相对安全；写操作会改变外部状态，需要严格的权限控制、确认机制和审计。</p>
+      <p class="definition">关键边界：<strong>风险等级由“会造成什么后果”决定</strong>，不是由“是不是写操作”简单二分。创建草稿不改对外状态，可以自动放行；发送邮件不可撤回，必须人工审批。</p>
+      <div class="hero-meta"><span class="pill">基础</span><span class="pill">Tool Use</span><span class="pill">API / SQL / 沙箱 / 写操作</span><span class="pill">固定教学数据</span></div>
+    </div>
+  </header>
+
+  <section class="walkthrough" id="explainer" aria-label="工具模式与风险闸门演示">
+    <div class="player-top">
+      <div class="player-label">模式选择与风险闸门 <small>六个固定任务，看推荐模式和执行边界</small></div>
+      <div class="controls" role="group" aria-label="工具模式演示控制">
+        <button type="button" class="button button-quiet" id="tp-reset">重置</button>
+        <button type="button" class="button" id="tp-prev" disabled>上一个</button>
+        <button type="button" class="button button-primary" id="tp-next">下一个 →</button>
+      </div>
+    </div>
+    <nav class="stage-nav" aria-label="六个固定工具任务">
+      <ol style="--stages: 6">
+        <li><button type="button" class="stage-button" data-task="0" aria-current="step" aria-controls="tp-scene" aria-label="任务 1：查股价"><span class="stage-number">1</span><span>查股价</span></button></li>
+        <li><button type="button" class="stage-button" data-task="1" aria-controls="tp-scene" aria-label="任务 2：查订单"><span class="stage-number">2</span><span>查订单</span></button></li>
+        <li><button type="button" class="stage-button" data-task="2" aria-controls="tp-scene" aria-label="任务 3：跑代码"><span class="stage-number">3</span><span>跑代码</span></button></li>
+        <li><button type="button" class="stage-button" data-task="3" aria-controls="tp-scene" aria-label="任务 4：改记录"><span class="stage-number">4</span><span>改记录</span></button></li>
+        <li><button type="button" class="stage-button" data-task="4" aria-controls="tp-scene" aria-label="任务 5：发邮件"><span class="stage-number">5</span><span>发邮件</span></button></li>
+        <li><button type="button" class="stage-button" data-task="5" aria-controls="tp-scene" aria-label="任务 6：建草稿"><span class="stage-number">6</span><span>建草稿</span></button></li>
+      </ol>
+    </nav>
+    <div class="tp-stage scene" id="tp-scene" data-scene="tool-patterns">
+      <div class="tp-grid">
+        <div>
+          <div class="tp-task">
+            <p class="tp-task-label">固定教学任务</p>
+            <p class="tp-task-text" id="tp-task"></p>
+            <div class="tp-badges" id="tp-badges"></div>
+          </div>
+          <div class="tp-card" style="margin-top:12px;">
+            <p class="figure-index">执行闸门</p>
+            <h2 id="tp-gate-title">这条任务应该被哪道门拦住？</h2>
+            <div class="tp-gates" id="tp-gates" aria-label="三档执行闸门">
+              <div class="tp-gate" data-gate="auto"><strong>自动放行</strong>只读或可逆</div>
+              <div class="tp-gate" data-gate="sandbox"><strong>沙箱隔离</strong>执行不可信代码</div>
+              <div class="tp-gate" data-gate="approval"><strong>人工审批</strong>不可逆的外部动作</div>
+            </div>
+            <p class="tp-gate-note" id="tp-gate-note"></p>
+            <div class="tp-approval" id="tp-approval" hidden><strong>人工审批边界：</strong>本页只展示“必须先审批”的要求，不发起真实审批，不执行写操作，也不连接任何业务系统。</div>
+          </div>
+        </div>
+        <div class="tp-card">
+          <p class="figure-index">决策路径 · 为什么是这种模式</p>
+          <h2 id="tp-path-title"></h2>
+          <ol class="tp-path" id="tp-path"></ol>
+          <div class="tp-boundary">
+            <h3>执行边界</h3>
+            <ul id="tp-boundary-list"></ul>
+          </div>
+          <div class="tp-return">
+            <h3>返回值设计</h3>
+            <pre><code id="tp-return"></code></pre>
+          </div>
+          <p class="tp-why" id="tp-why"></p>
+        </div>
+      </div>
+      <div class="tp-caption">
+        <p class="figure-index" id="tp-caption-index">图 1 · 第 1 / 6 个任务</p>
+        <h2 id="tp-caption-title"></h2>
+        <p id="tp-caption-desc"></p>
+        <p class="tp-action" id="tp-action"></p>
+      </div>
+      <p class="demo-note">固定教学数据：六个任务、推荐模式、风险等级、闸门、执行边界和返回值样例都是写死的；本页不调用 API、不查询数据库、不执行代码、不发送邮件、不发起审批。</p>
+    </div>
+    <div class="walkthrough-foot"><span>固定教学数据 · 闸门由页面脚本切换</span><span id="tp-state-summary">任务 1 / 6 · 没有执行任何工具</span></div>
+  </section>
+  <p id="tp-announcement" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p>
+
+  <section class="reading" aria-labelledby="modes-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">三大类模式</p><h2 id="modes-title">数据、计算、<br>动作。</h2></div>
+      <p class="reading-intro">数据访问负责取信息，代码执行负责算和处理，写操作负责改变外部状态。前两类主要防“取错、算错”，第三类还要防“做错且收不回”。</p>
+    </div>
+    <div class="prose">
+      <div class="tp-risk-legend">
+        <div class="tp-risk-item low"><strong>数据访问</strong>API 调用、SQL 查询、向量检索。重点是超时、返回值精简、注入防护和数据敏感度。</div>
+        <div class="tp-risk-item mid"><strong>计算与代码执行</strong>在沙箱中运行代码做数据处理、计算或可视化。重点是真正的进程 / 容器隔离和资源限制。</div>
+        <div class="tp-risk-item high"><strong>写操作与动作执行</strong>发邮件、创建工单、修改数据库。重点是权限控制、人工审批、幂等和审计。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="api-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">模式 1 · API 调用</p><h2 id="api-title">拿外部实时数据，<br>别把整包响应塞回去。</h2></div>
+      <p class="reading-intro">最常见的工具类型：让 Agent 调用外部 REST API 获取实时数据。设计重点是超时、精简返回值和有意义的错误信息。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文代码 · 股票价格工具</p>
+      <pre><code># 工具定义
+{
+    "name": "get_stock_price",
+    "description": "获取股票的实时价格。输入股票代码（如 AAPL, GOOGL）。",
+    "input_schema": {
+        "properties": {
+            "symbol": {"type": "string", "description": "股票代码"},
+            "market": {"type": "string", "enum": ["US", "HK", "CN"]}
+        },
+        "required": ["symbol"]
+    }
+}
+
+# 工具实现
+import httpx
+
+async def get_stock_price(symbol: str, market: str = "US") -&gt; dict:
+    async with httpx.AsyncClient() as client:
+        response = await client.get(
+            f"https://api.stockdata.com/v1/quote",
+            params={"symbol": symbol, "market": market},
+            headers={"Authorization": f"Bearer {API_KEY}"},
+            timeout=10.0  # 超时设置
+        )
+        response.raise_for_status()
+        data = response.json()
+        return {
+            "symbol": symbol,
+            "price": data["price"],
+            "change": data["change_percent"],
+            "timestamp": data["timestamp"]
+        }</code></pre>
+      <p>设计要点：设置合理超时，避免 Agent 卡住；返回值精简，不要把整个 API 响应扔给 LLM；错误信息要有意义，让 LLM 能根据错误决定下一步。代码里的 <code>API_KEY</code> 是占位符，生产环境应从密钥管理服务注入。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="db-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">模式 2 · 数据库查询</p><h2 id="db-title">Text-to-SQL，<br>还是预定义查询。</h2></div>
+      <p class="reading-intro">让 Agent 用自然语言查询数据库有两种实现：让它生成 SQL，或者只提供经过人工验证的固定查询。灵活性和安全性在这里直接冲突。</p>
+    </div>
+    <div class="prose">
+      <h3>方式 A：Text-to-SQL</h3>
+      <p class="code-label">原文代码 · 先看表，再看结构，再查询</p>
+      <pre><code># 给 Agent 提供数据库 Schema，让它生成 SQL
+tools = [
+    {
+        "name": "list_tables",
+        "description": "列出数据库中所有表名",
+    },
+    {
+        "name": "get_table_schema",
+        "description": "获取指定表的列定义",
+        "input_schema": {"properties": {"table_name": {"type": "string"}}}
+    },
+    {
+        "name": "execute_sql",
+        "description": "执行只读 SQL 查询并返回结果。仅支持 SELECT 语句。",
+        "input_schema": {"properties": {"query": {"type": "string"}}}
+    }
+]
+
+# Agent 的工作流：
+# 1. list_tables() → 了解有哪些表
+# 2. get_table_schema("orders") → 了解表结构
+# 3. execute_sql("SELECT ... FROM orders WHERE ...") → 查询数据</code></pre>
+
+      <h3>方式 B：预定义查询工具</h3>
+      <p class="code-label">原文代码 · 参数化查询</p>
+      <pre><code># 不让 LLM 写 SQL，而是提供预定义的查询工具
+{
+    "name": "get_order_status",
+    "description": "根据订单号查询订单状态",
+    "input_schema": {
+        "properties": {
+            "order_id": {"type": "string"},
+        }
+    }
+}
+
+def get_order_status(order_id: str) -&gt; dict:
+    # 内部执行参数化 SQL，防止注入
+    result = db.execute(
+        "SELECT status, updated_at FROM orders WHERE id = %s",
+        [order_id]
+    )
+    return {"order_id": order_id, "status": result.status}</code></pre>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">Text-to-SQL 与预定义查询在灵活性、安全性、准确性和适用场景上的对比</caption>
+          <thead><tr><th scope="col">维度</th><th scope="col">Text-to-SQL</th><th scope="col">预定义查询</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">灵活性</th><td>高：任意查询</td><td>低：固定查询</td></tr>
+            <tr><th scope="row">安全性</th><td>低：SQL 注入风险</td><td>高：参数化查询</td></tr>
+            <tr><th scope="row">准确性</th><td>中：LLM 可能写错 SQL</td><td>高：人工验证过</td></tr>
+            <tr><th scope="row">适用场景</th><td>数据探索、分析</td><td>生产环境、敏感数据</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>原文的判断很明确：生产环境中让 LLM 直接写 SQL 极其危险，推荐预定义查询工具加参数化查询，除非是面向数据分析师的内部工具。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="code-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">模式 3 · 代码执行</p><h2 id="code-title">沙箱靠隔离，<br>不靠黑名单。</h2></div>
+      <p class="reading-intro">让 Agent 在沙箱中运行代码，用于计算、数据处理或可视化。安全的关键是进程或容器隔离，而不是禁止几个字符串。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文代码 · run_python</p>
+      <pre><code>{
+    "name": "run_python",
+    "description": "在安全沙箱中执行 Python 代码。可用库：pandas, numpy, matplotlib。用于数据分析、计算和图表生成。",
+    "input_schema": {
+        "properties": {
+            "code": {"type": "string", "description": "Python 代码"},
+        },
+        "required": ["code"]
+    }
+}
+
+import subprocess
+import tempfile
+
+def run_python(code: str) -&gt; dict:
+    """在隔离环境中执行代码。
+
+    重要：不要用"子串黑名单"做沙箱（如禁止 'os.system'、'eval(' 等）——
+    这是被广泛证伪的反模式。攻击者可以用 getattr/__import__('os')/字符串拼接/
+    base64/exec(compile(...)) 等任意手法绕过。真正的沙箱必须依赖**进程/容器隔离**
+    （Docker、gVisor、E2B/Modal/Daytona 等 Runtime）+ seccomp + 无网络/无文件系统。
+    """
+    # 注：Windows 上 NamedTemporaryFile 默认独占锁会让子进程读不到文件，
+    # 跨平台写法应该用 delete=False + 手动 unlink，或 mkstemp。
+    with tempfile.NamedTemporaryFile(suffix=".py", mode="w", delete=False) as f:
+        f.write(code)
+        f.flush()
+        # 仅作为本地 demo：生产应换成 E2B / Modal / Daytona 等隔离 Runtime
+        result = subprocess.run(
+            ["docker", "run", "--rm", "--network=none",
+             "--memory=512m", "--cpus=1",
+             "-v", f"{f.name}:/code.py:ro",
+             "python:3.12-slim", "python", "/code.py"],
+            capture_output=True, text=True,
+            timeout=30,
+        )
+    return {
+        "stdout": result.stdout[:2000],  # 截断防止 token 爆炸
+        "stderr": result.stderr[:500],
+        "returncode": result.returncode
+    }</code></pre>
+      <p>安全要点：真隔离要用 Docker、gVisor、Firecracker、V8 Isolate 这类机制，而不是子串黑名单；设置 CPU、内存和时间限制；禁止网络访问，除非明确需要；禁止文件系统写入或限制路径；生产环境推荐 E2B、Modal、Daytona、Cloudflare Workers 这类专用沙箱 Runtime。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="write-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">模式 4 · 写操作</p><h2 id="write-title">改变外部状态，<br>就要有审批边界。</h2></div>
+      <p class="reading-intro">写操作会改变外部系统的状态，最需要谨慎。低风险写操作可以先创建草稿；高风险写操作必须人工审批，并保留可审计的前后状态。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文代码 · 草稿、发送与 Read-Before-Write</p>
+      <pre><code># 低风险写操作：创建草稿
+{
+    "name": "create_draft_email",
+    "description": "创建邮件草稿（不会发送）。创建后用户需确认才会发送。",
+}
+
+# 高风险写操作：直接发送
+{
+    "name": "send_email",
+    "description": "发送邮件。这是不可逆操作，务必在调用前确认收件人和内容正确。",
+}
+
+# Read-Before-Write 模式
+async def update_record(record_id: str, updates: dict):
+    # 1. 先读取当前状态
+    current = await db.get(record_id)
+    # 2. 验证更新是否合理
+    if not validate_update(current, updates):
+        return {"error": "更新不合理，请检查"}
+    # 3. 执行更新
+    await db.update(record_id, updates)
+    return {"status": "updated", "previous": current, "current": updates}</code></pre>
+      <div class="callout"><p class="callout-label">边界提醒</p><p>描述里写“请确认”不等于系统真的审批了。写操作的权限校验、人工审批、幂等和审计必须在执行层或 Gateway 层实现；模型输出的 confirmation 字段只能作为一道结构提示。</p></div>
+      <h3>各类工具的风险等级</h3>
+      <div class="table-wrap">
+        <table class="data">
+          <caption class="sr-only">五类工具模式的风险等级、是否需要确认和示例</caption>
+          <thead><tr><th scope="col">模式</th><th scope="col">风险</th><th scope="col">需要确认？</th><th scope="col">示例</th></tr></thead>
+          <tbody>
+            <tr><th scope="row">API 读取</th><td>低</td><td>否</td><td>天气、股价查询</td></tr>
+            <tr><th scope="row">数据库读取</th><td>低到中</td><td>视数据敏感度</td><td>查询订单状态</td></tr>
+            <tr><th scope="row">代码执行</th><td>中</td><td>视场景</td><td>数据分析、计算</td></tr>
+            <tr><th scope="row">API 写入</th><td>高</td><td>是</td><td>发邮件、创建工单</td></tr>
+            <tr><th scope="row">数据库写入</th><td>高</td><td>是</td><td>修改 / 删除记录</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="return-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">返回值设计</p><h2 id="return-title">够用就好，<br>别把日志当结果。</h2></div>
+      <p class="reading-intro">返回太多数据浪费 token，还可能干扰 LLM 判断；返回太少则 LLM 无法做正确决策。原文的建议是“关键信息加下一步提示”。</p>
+    </div>
+    <div class="prose">
+      <p class="code-label">原文代码 · 差返回与好返回</p>
+      <pre><code># 差的返回：原始 API 响应（太长，浪费 token）
+return api_response.json()  # 可能有 KB 级数据
+
+# 好的返回：精简、结构化、有上下文
+return {
+    "status": "success",
+    "data": {
+        "order_id": "12345",
+        "status": "shipped",
+        "tracking_url": "https://..."
+    },
+    "hint": "如果用户需要更多详情，可以使用 get_order_details 工具"
+}</code></pre>
+      <p>“有下一步提示”不等于让工具替 Agent 做决策；它只是告诉模型还有哪些可用动作，是否调用仍由 Agent Loop 决定。</p>
+    </div>
+  </section>
+
+  <section class="reading" aria-labelledby="mis-title">
+    <div class="reading-header">
+      <div><p class="eyebrow">常见误区 / 面试追问</p><h2 id="mis-title">四个容易<br>被追问的点。</h2></div>
+      <p class="reading-intro">前两条是误区，后两条是面试追问；答案都来自原文。</p>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 1</p>
+      <div><h3>“让 LLM 直接写 SQL 很方便。”</h3><p>在生产环境中极其危险。LLM 可能生成恶意 SQL 或写错 SQL。推荐预定义查询工具加参数化查询，除非是面向数据分析师的内部工具。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">误区 2</p>
+      <div><h3>“代码执行不需要沙箱。”</h3><p>即使 Agent 没有代码解释器，LLM 生成的任何字符串用于系统调用前都应视为不可信输入。必须做输入验证、容器隔离和运行时监控。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 1</p>
+      <div><h3>如何处理工具链，一个工具的结果是另一个的输入？</h3><p>用 Agent Loop：LLM 调用工具 A，观察结果，再决定是否需要调用工具 B。不要在工具之间硬编码依赖。</p></div>
+    </div>
+    <div class="misconception">
+      <p class="misconception-label">追问 2</p>
+      <div><h3>工具的返回值应该多详细？</h3><p>够用就好。返回太多数据浪费 token，且可能干扰 LLM 判断；返回太少则 LLM 无法做出正确决策。关键信息加下一步提示是最佳实践。</p></div>
+    </div>
+  </section>
+
+  <section class="source-section" aria-labelledby="source-title">
+    <p class="eyebrow">技术细节，按需展开</p>
+    <h2 class="source-heading" id="source-title">原文参考资料</h2>
+    <p class="source-summary">讲解依据《Tool Use 的常见模式：API 调用、数据库查询、代码执行》。原文用于解释本题，不代表其经验建议已通过独立准确性审计。</p>
+    <details>
+      <summary>展开原文列出的五条参考链接</summary>
+      <div class="source-content">
+        <ul>
+          <li><a href="https://machinelearningmastery.com/mastering-llm-tool-calling-the-complete-framework-for-connecting-models-to-the-real-world/" target="_blank" rel="noopener noreferrer">Mastering LLM Tool Calling · Machine Learning Mastery</a></li>
+          <li><a href="https://www.promptingguide.ai/research/llm-agents" target="_blank" rel="noopener noreferrer">LLM Agents · Prompt Engineering Guide</a></li>
+          <li><a href="https://www.promptingguide.ai/applications/function_calling" target="_blank" rel="noopener noreferrer">Function Calling with LLMs · Prompt Engineering Guide</a></li>
+          <li><a href="https://www.willvelida.com/posts/preventing-unexpected-code-execution-in-agents" target="_blank" rel="noopener noreferrer">Preventing Unexpected Code Execution in AI Agents · Will Velida</a></li>
+          <li><a href="https://google.github.io/adk-docs/agents/llm-agents/" target="_blank" rel="noopener noreferrer">LLM Agents · Google ADK</a></li>
+        </ul>
+        <p class="source-footnote">这些链接按原文保留，不表示本页已核验外部文章。只有主动点击外链才会离开本页。</p>
+      </div>
+    </details>
+  </section>
+</main>
+    <footer><span>Agent-Interview-100 · <code>03-tool-use/023-common-tool-patterns.md</code></span><span>原文 <code>03d6f0c</code> · 模板 v1 · 第 3 批 · 离线单文件</span></footer>
+  </div>
+<script>
+  "use strict";
+  const TP_TASKS = Object.freeze([
+    {
+      label: "查股价",
+      task: "查询 AAPL 当前股价。",
+      pattern: "API 调用（读）",
+      risk: "低",
+      riskTone: "low",
+      gate: "auto",
+      gateText: "只读外部数据，调用失败可以重试；不需要人工审批。",
+      path: [
+        ["会改变外部状态？", "否，只是读取实时行情。"],
+        ["需要执行不可信代码？", "否，调用固定 REST API。"],
+        ["数据来自哪里？", "外部实时数据，所以用 API 读取而不是查内部知识库。"]
+      ],
+      boundary: ["超时 10 秒，避免 Agent 卡住。", "返回值只保留 symbol、price、change、timestamp。", "错误信息要能指导下一步，例如代码不存在或市场参数不合法。"],
+      returnText: `{
+  "symbol": "AAPL",
+  "price": 0.0,
+  "change": 0.0,
+  "timestamp": "..."
+}`,
+      why: "<strong>为什么不是写操作：</strong>它不改变任何外部状态，失败最多是拿不到数据。风险低，但仍要处理超时、限流和返回值膨胀。",
+      caption: "读行情：自动放行，但超时和返回值要收住。",
+      desc: "API 读取是风险最低的模式。它不需要审批，设计重点落在超时、错误信息和返回值的 token 成本上。",
+      action: "闸门：自动放行 · 固定教学数据"
+    },
+    {
+      label: "查订单",
+      task: "查询订单 12345 的状态。",
+      pattern: "数据库查询（预定义）",
+      risk: "低到中",
+      riskTone: "mid",
+      gate: "auto",
+      gateText: "只读查询，但订单数据可能有敏感字段；自动放行，同时做字段脱敏。",
+      path: [
+        ["会改变外部状态？", "否，只读订单表。"],
+        ["需要任意 SQL？", "否，订单状态是固定查询，用预定义工具。"],
+        ["如何防注入？", "不拼接 SQL，内部用参数化查询。"],
+        ["返回哪些字段？", "只返回 order_id、status、updated_at；敏感字段脱敏。"]
+      ],
+      boundary: ["预定义查询，不让 LLM 写 SQL。", "参数化查询防注入。", "只返回必要字段，敏感信息脱敏。", "查不到订单时返回明确错误，而不是空对象。"],
+      returnText: `{
+  "order_id": "12345",
+  "status": "shipped",
+  "updated_at": "..."
+}`,
+      why: "<strong>为什么不是 Text-to-SQL：</strong>订单状态是固定查询，不需要任意 SQL。预定义查询牺牲灵活性，换来可验证的准确性和注入防护。",
+      caption: "固定查询：用参数化 SQL 换安全。",
+      desc: "数据库读取的风险取决于数据敏感度。订单状态查询用预定义工具就够，不需要把写 SQL 的能力交给模型。",
+      action: "闸门：自动放行 + 字段脱敏 · 固定教学数据"
+    },
+    {
+      label: "跑代码",
+      task: "统计这份 CSV 的月度均值并画图。",
+      pattern: "代码执行（沙箱）",
+      risk: "中",
+      riskTone: "mid",
+      gate: "sandbox",
+      gateText: "要执行模型生成的代码，必须放进隔离沙箱；本页不运行任何代码。",
+      path: [
+        ["会改变外部状态？", "否，只在沙箱里做计算和画图。"],
+        ["需要执行模型生成的代码？", "是，所以走代码执行模式。"],
+        ["如何隔离？", "容器 / 进程隔离 + 资源限制，不用子串黑名单。"],
+        ["需要联网吗？", "不需要，默认关闭网络。"],
+        ["需要写文件吗？", "只读挂载输入，输出通过 stdout 返回。"]
+      ],
+      boundary: ["真隔离：Docker / gVisor / Firecracker / V8 Isolate。", "CPU 1、内存 512MB、超时 30 秒。", "禁止网络；文件系统只读或限制路径。", "stdout 截断 2000 字符，stderr 截断 500 字符。"],
+      returnText: `{
+  "stdout": "...",
+  "stderr": "",
+  "returncode": 0
+}`,
+      why: "<strong>为什么不靠黑名单：</strong>攻击者可以用 getattr、__import__、字符串拼接、base64 或 exec(compile(...)) 绕过子串检查。隔离必须由运行时提供。",
+      caption: "跑代码：闸门是沙箱，不是关键词过滤。",
+      desc: "代码执行的风险是中等级，因为代码可能读写文件或访问网络。正确的做法是给它一个受限的运行时，而不是在 Prompt 里写“不要做坏事”。",
+      action: "闸门：沙箱隔离 · 本页不执行代码"
+    },
+    {
+      label: "改记录",
+      task: "把订单 12345 标记为已发货。",
+      pattern: "数据库写入",
+      risk: "高",
+      riskTone: "high",
+      gate: "approval",
+      gateText: "会改变订单状态并影响客户，必须先人工审批；本页不执行写操作。",
+      path: [
+        ["会改变外部状态？", "是，订单状态会被修改。"],
+        ["影响客户或不可逆？", "是，所以进入人工审批闸门。"],
+        ["执行前还要做什么？", "Read-Before-Write：先读当前状态，再校验更新是否合理。"],
+        ["如何留痕？", "返回 previous 和 current，写审计日志。"]
+      ],
+      boundary: ["先读取当前状态，校验状态迁移是否允许。", "人工审批通过后才执行数据库更新。", "返回 previous / current，便于审计和补偿。", "重复调用要幂等，避免重复发货。"],
+      returnText: `{
+  "status": "updated",
+  "previous": { "status": "paid" },
+  "current": { "status": "shipped" }
+}`,
+      why: "<strong>为什么必须审批：</strong>写操作改变外部状态，错误会影响真实订单。描述里的“请确认”不能替代系统审批，执行层必须有一道真正的门。",
+      caption: "改订单：人工审批是硬边界，不是提示词。",
+      desc: "数据库写入属于高风险。即使 Schema 要求 confirmation，也只是结构提示；真正的权限校验、审批和审计必须在执行层完成。",
+      action: "闸门：人工审批 · 本页不执行写操作"
+    },
+    {
+      label: "发邮件",
+      task: "给客户发送退款确认邮件。",
+      pattern: "API 写入（外部动作）",
+      risk: "高",
+      riskTone: "high",
+      gate: "approval",
+      gateText: "邮件一旦发出不可撤回，必须先预览并由人工审批；本页不发送邮件。",
+      path: [
+        ["会改变外部状态？", "是，邮件会进入客户的邮箱。"],
+        ["对外可见且不可撤回？", "是，所以需要人工审批。"],
+        ["如何降低风险？", "先创建草稿，人工确认收件人和内容后再发送。"],
+        ["失败怎么办？", "记录审计日志，重试要防止重复发送。"]
+      ],
+      boundary: ["create_draft_email → 人工确认 → send_email，分两步。", "发送前展示收件人、主题和正文预览。", "记录谁在什么时候批准了哪封邮件。", "重试要幂等，避免客户收到多封。"],
+      returnText: `{
+  "status": "draft_created",
+  "draft_id": "draft_..."
+}`,
+      why: "<strong>为什么不能直接发：</strong>发送是不可逆的外部动作，错误内容会直接影响客户。草稿把“生成”和“发送”拆开，审批才有介入的位置。",
+      caption: "发邮件：先草稿，再人工确认，最后才发送。",
+      desc: "写操作的风险不只看“写没写”，还要看“对外可见吗、能撤回吗”。发送邮件两者都占，必须有人工审批。",
+      action: "闸门：人工审批 + 发送前预览 · 本页不发送"
+    },
+    {
+      label: "建草稿",
+      task: "创建一封退款确认邮件草稿。",
+      pattern: "API 写入（低风险）",
+      risk: "低到中",
+      riskTone: "mid",
+      gate: "auto",
+      gateText: "只创建草稿，不发送、不对外可见，可以自动放行；发送仍需另一次审批。",
+      path: [
+        ["会改变外部状态？", "是，会创建一条草稿记录。"],
+        ["对外可见或不可撤回？", "否，草稿不会发送，可以删除。"],
+        ["所以怎么处理？", "自动放行创建草稿；发送动作仍然走 send_email 的审批。"]
+      ],
+      boundary: ["草稿不发送，描述里明确写“不会发送”。", "返回 draft_id，后续发送需要单独调用。", "草稿可以修改或删除，风险可逆。", "不要把“创建草稿”和“发送”合并成一个工具。"],
+      returnText: `{
+  "status": "draft_created",
+  "draft_id": "draft_..."
+}`,
+      why: "<strong>为什么同是写操作却不用审批：</strong>它只改内部草稿状态，不对外可见，也可以撤回。风险等级由后果决定，不是由“写”这个字决定。",
+      caption: "建草稿：写操作也可以自动放行，因为可逆。",
+      desc: "这条任务和发邮件形成对照：两者都会写数据，但草稿可逆、不对外可见，所以闸门不同。把发送拆出来，审批才有意义。",
+      action: "闸门：自动放行 · 发送仍需单独审批"
+    }
+  ]);
+
+  const tpState = { index: 0 };
+  const tpById = (id) => document.getElementById(id);
+
+  function tpRenderBadges(task) {
+    const host = tpById("tp-badges");
+    host.textContent = "";
+    const add = (text, tone) => {
+      const span = document.createElement("span");
+      span.className = "tp-badge " + tone;
+      span.textContent = text;
+      host.append(span);
+    };
+    add("模式：" + task.pattern, "mode");
+    add("风险：" + task.risk, task.riskTone);
+    add(task.gate === "approval" ? "闸门：人工审批" : task.gate === "sandbox" ? "闸门：沙箱隔离" : "闸门：自动放行", task.gate);
+  }
+
+  function tpRender(task) {
+    tpById("tp-task").textContent = task.task;
+    tpRenderBadges(task);
+    tpById("tp-path-title").textContent = `${task.pattern}：${task.risk}风险。`;
+    const list = tpById("tp-path");
+    list.textContent = "";
+    task.path.forEach(([question, answer], index) => {
+      const li = document.createElement("li");
+      li.className = "tp-step";
+      const num = document.createElement("span");
+      num.className = "tp-step-num";
+      num.textContent = String(index + 1);
+      const body = document.createElement("div");
+      body.className = "tp-step-body";
+      const q = document.createElement("b");
+      q.textContent = question;
+      const a = document.createElement("span");
+      a.textContent = answer;
+      body.append(q, a);
+      li.append(num, body);
+      list.append(li);
+    });
+    const boundaryList = tpById("tp-boundary-list");
+    boundaryList.textContent = "";
+    task.boundary.forEach((item) => {
+      const li = document.createElement("li");
+      li.textContent = item;
+      boundaryList.append(li);
+    });
+    tpById("tp-return").textContent = task.returnText;
+    tpById("tp-why").innerHTML = task.why;
+    tpById("tp-gate-title").textContent = task.gate === "approval" ? "不可逆的外部动作，必须人工审批。" : task.gate === "sandbox" ? "模型生成的代码，必须放进沙箱。" : "只读或可逆，可以自动放行。";
+    tpById("tp-gate-note").textContent = task.gateText;
+    document.querySelectorAll("#tp-gates [data-gate]").forEach((gate) => {
+      gate.classList.toggle("is-on", gate.dataset.gate === task.gate);
+    });
+    tpById("tp-approval").hidden = task.gate !== "approval";
+    tpById("tp-caption-index").textContent = `图 1 · 第 ${tpState.index + 1} / ${TP_TASKS.length} 个任务`;
+    tpById("tp-caption-title").textContent = task.caption;
+    tpById("tp-caption-desc").textContent = task.desc;
+    tpById("tp-action").textContent = task.action;
+    tpById("tp-state-summary").textContent = `任务 ${tpState.index + 1} / ${TP_TASKS.length} · 没有执行任何工具`;
+
+    document.querySelectorAll("#explainer [data-task]").forEach((button) => {
+      if (Number(button.dataset.task) === tpState.index) button.setAttribute("aria-current", "step");
+      else button.removeAttribute("aria-current");
+    });
+    tpById("tp-prev").disabled = tpState.index === 0;
+    tpById("tp-next").disabled = tpState.index === TP_TASKS.length - 1;
+    tpById("tp-next").textContent = tpState.index === TP_TASKS.length - 1 ? "已到最后" : "下一个 →";
+  }
+
+  function tpGoto(index, announce = true) {
+    tpState.index = Math.max(0, Math.min(TP_TASKS.length - 1, index));
+    const task = TP_TASKS[tpState.index];
+    tpRender(task);
+    if (announce) {
+      tpById("tp-announcement").textContent = `任务 ${tpState.index + 1}，${task.task} 推荐${task.pattern}，风险${task.risk}。${task.action}`;
+    }
+  }
+
+  tpById("tp-prev").addEventListener("click", () => tpGoto(tpState.index - 1));
+  tpById("tp-next").addEventListener("click", () => tpGoto(tpState.index + 1));
+  tpById("tp-reset").addEventListener("click", () => tpGoto(0));
+  document.querySelectorAll("#explainer [data-task]").forEach((button) => {
+    button.addEventListener("click", () => tpGoto(Number(button.dataset.task)));
+  });
+
+  tpGoto(0, false);
+</script>
+</body>
+</html>
