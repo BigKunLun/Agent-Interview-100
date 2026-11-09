@@ -2,6 +2,10 @@
   <h1 align="center">🤖 Agent Interview 100</h1>
   <p align="center"><strong>AI Agent 知识库 — 100 个精选问题，以问题驱动学习，系统掌握 Agent 技术栈，同时搞定面试</strong></p>
   <p align="center">
+    <a href="https://bigkunlun.github.io/Agent-Interview-100/"><strong>🌐 在线阅读 HTML 版 →</strong></a><br/>
+    <sub>交互图解 · 固定教学演示 · 桌面 / 手机适配 · 单页可离线保存</sub>
+  </p>
+  <p align="center">
     <img src="https://img.shields.io/badge/题目数量-100-blue?style=flat-square" />
     <img src="https://img.shields.io/badge/主题模块-11-green?style=flat-square" />
     <img src="https://img.shields.io/badge/难度覆盖-基础 · 中级 · 高级-orange?style=flat-square" />
@@ -13,18 +17,28 @@
 
 ---
 
-## 🗺️ 全库知识地图
+[![Agent Interview 100 HTML 版预览：一篇文章的标题与交互讲解区](assets/html-preview.png)](https://bigkunlun.github.io/Agent-Interview-100/)
 
-![Agent 技术栈全景](assets/agent-stack-map.png)
-
-> 四阶递进：入门基础（Agent 架构）→ 核心能力（RAG / 工具调用 / 多智能体 / 记忆 / 规划推理）→ 工程实践（提示 / 评估 / 安全）→ 生产生态（部署 / 框架）。源文件为 [assets/agent-stack-map.drawio](assets/agent-stack-map.drawio)，可用 draw.io 编辑更新。
+> 预览：HTML 版把每道题做成可交互的讲解页，桌面和手机都能读，单页保存后离线也能打开。
 
 ---
 
 ## 🖥️ 两种阅读方式
 
-- **HTML 在线阅读**：[bigkunlun.github.io/Agent-Interview-100](https://bigkunlun.github.io/Agent-Interview-100/) — 带交互图解和固定教学演示，桌面 / 手机都能读，页面可离线保存，适合通读和面试复盘。
-- **Markdown 源文件**：仓库内 `.md` 文件与 HTML 一一对应，适合搜索、复制代码、提交 PR 和引用原文。
+| 方式 | 入口 | 适合 |
+|------|------|------|
+| 🌐 **HTML 在线阅读** | [bigkunlun.github.io/Agent-Interview-100](https://bigkunlun.github.io/Agent-Interview-100/) | 通读、面试复盘、手机阅读；带交互图解 |
+| 📝 **Markdown 源文件** | 下方「目录结构」中的 `.md` 链接 | 搜索、复制代码、提交 PR、引用原文 |
+
+> 两个版本内容同源：HTML 由 Markdown 逐页生成并经过独立检查，`.md` 是唯一的文字源。第一次来可以直接从[在线阅读版](https://bigkunlun.github.io/Agent-Interview-100/)的 [#001 什么是 LLM Agent](https://bigkunlun.github.io/Agent-Interview-100/01-agent-architecture/001-what-is-llm-agent.html) 开始。
+
+---
+
+## 🗺️ 全库知识地图
+
+![Agent 技术栈全景](assets/agent-stack-map.png)
+
+> 四阶递进：入门基础（Agent 架构）→ 核心能力（RAG / 工具调用 / 多智能体 / 记忆 / 规划推理）→ 工程实践（提示 / 评估 / 安全）→ 生产生态（部署 / 框架）。源文件为 [assets/agent-stack-map.drawio](assets/agent-stack-map.drawio)，可用 draw.io 编辑更新。
 
 ---
 
